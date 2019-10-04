@@ -29,12 +29,6 @@ from .config import (
     spec_name
 )
 
-def max_string(lst):
-    return str(max([eval(x) for x in lst]))
-
-def plot_no_zero(ax, x, y):
-    ax.plot(x[y > 0], y[y > 0])
-
 def tth_scan(scan_number, data_points):
     data_queue = mp.Queue()
     command_queue = mp.Queue()
