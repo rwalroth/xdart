@@ -14,4 +14,4 @@ if __name__ == '__main__':
         elif command == 'a':
             ttheta_scan.main()
         else:
-            print('***Invalid command***\n\n')
+            print('***Invalid command***\n')
