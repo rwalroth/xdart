@@ -7,7 +7,7 @@ from paws.plugins.ewald import EwaldSphere, EwaldArch
 from paws.containers import PONI
 from paws.pawstools import catch_h5py_file
 
-class dummy_reducer(object):
+class Analyzer(object):
     def __init__(self, data_queue, data_file, sphere_args):
         self.data_q = data_queue
         self.plugin = EwaldSphere
