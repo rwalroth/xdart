@@ -16,52 +16,62 @@ import numpy as np
 from paws.operations.SPEC.LoadSpecFile import LoadSpecFile
 
 from .analyzer import Analyzer
-from .server import Server
+from .spec_server import Server
 from . import visualizer as vis
 
+# fs -> from spec in future
 from .config import (
-    user, 
-    image_dir,  
-    lsf_inputs, 
-    mp_inputs,  
+    user, # fs
+    image_dir, # fs
+    lsf_inputs, # fs
+    mp_inputs,
     data_file, 
     sphere_args,
     spec_name
 )
 
 def tth_scan(scan_number, data_points):
-    data_queue = mp.Queue()
-    command_queue = mp.Queue()
+    """Main function for handling a scan. Currently operates on a scan
+    by scan basis rather than communicating with spec. Called by the
+    user triggering a scan with specific number of data points.
+    """
+    data_queue = mp.Queue() # produced by server, consumed by analyzer
+    command_queue = mp.Queue() # produced by main, consumed by server
     scan_name = 'scan' + str(scan_number).zfill(2)
     sphere_args.update({'name': scan_name})
 
-    proc = Server(data_queue, command_queue, spec_name, user, image_dir, 
+    server = Server(data_queue, command_queue, spec_name, user, image_dir, 
                     data_points, scan_number, lsf_inputs, mp_inputs)
-    red = Analyzer(data_queue, data_file, sphere_args)
+    analyzer = Analyzer(data_queue, data_file, sphere_args)
     
-    proc_thread = mp.Process(target=proc.run)
-    red_thread = mp.Process(target=red.run)
+    server_proc = mp.Process(target=server.run)
+    analyzer_proc = mp.Process(target=analyzer.run)
 
-    proc_thread.start()
-    red_thread.start()
+    server_proc.start()
+    analyzer_proc.start()
     #time.sleep(1)
     fig = plt.figure()
     ax1 = fig.add_subplot(2,1,1)
     ax2 = fig.add_subplot(2,1,2)
 
     def animate(i):
+        """Needs to be defined per scan, updats the figure animation.
+        Will be replaced by gui eventually.
+        """
         vis.animation(data_file, scan_name, ax1, ax2)
     ani = animation.FuncAnimation(fig, animate, interval=100)
 
     plt.show()
-    proc_thread.join()
-    red_thread.join()
+    server_proc.join()
+    analyzer_proc.join()
 
-    start = time.time()
-    
+    # Animated figure not interactive, after closing a new figure is generated
+    # that can be interacted with
     fig = plt.figure()
     ax1 = fig.add_subplot(2,1,1)
     ax2 = fig.add_subplot(2,1,2)
+
+    start = time.time()
     while True:
         if time.time() - start > 5:
             break
@@ -94,5 +104,6 @@ def main():
         else:
             print('Invalid command')
         
-
+if __name__ == '__main__':
+    main()
 
