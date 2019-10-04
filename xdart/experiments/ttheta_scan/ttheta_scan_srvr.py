@@ -5,7 +5,7 @@ from paws.operations.SPEC import LoadSpecFile, MakePONI
 import time
 from paws.containers import PONI
 
-class dummy_processor(object):
+class Server(object):
     def __init__(self, data_queue, command_queue, spec_name, user, image_dir, 
                  data_points, scan_number, lsf_inputs, mp_inputs, timeout=5):
         self.user = user

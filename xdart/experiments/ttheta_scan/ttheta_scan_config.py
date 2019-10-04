@@ -5,9 +5,9 @@ import pandas as pd
 # dummy_workbench inputs
 user = "b_stone"
 spec_name = "pd_LaB6"
-image_dir = r"C:\Users\walroth\Box Sync\out_dir"
+image_dir = r"C:\Users\walroth\OneDrive - SLAC National Accelerator Laboratory\out_dir"
 lsf_inputs = OrderedDict(
-        spec_file_path=r"C:\Users\walroth\Box Sync\out_dir",
+        spec_file_path=r"C:\Users\walroth\OneDrive - SLAC National Accelerator Laboratory\out_dir",
         spec_file_name="pd_LaB6_out"
         )
 mp_inputs = OrderedDict(
@@ -21,10 +21,10 @@ mp_inputs = OrderedDict(
         "rot2": 0,
         "rot3": 0
     },
-    poni_file = r"C:\Users\walroth\Box Sync\out_dir\poni.poni",
+    poni_file = r"C:\Users\walroth\OneDrive - SLAC National Accelerator Laboratory\out_dir\poni.poni",
     spec_dict = {}
 )
-data_file = r"C:\Users\walroth\Box Sync\out_dir\test.h5"
+data_file = r"C:\Users\walroth\OneDrive - SLAC National Accelerator Laboratory\out_dir\test.h5"
 sphere_args = OrderedDict(
     arches=[], 
     data_file='scan0',
@@ -39,7 +39,3 @@ sphere_args = OrderedDict(
     }, 
     bai_2d_args={}
 )
-
-# dummy_spec inputs
-in_dir = r"C:\Users\walroth\Box Sync\in_dir"
-out_spec_dir = r"C:\Users\walroth\Box Sync\out_dir"
