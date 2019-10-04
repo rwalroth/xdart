@@ -1,1 +1,1 @@
-from .ttheta_scan_exp import main
+from .experiment import main
