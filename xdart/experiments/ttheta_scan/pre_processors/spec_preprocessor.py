@@ -5,7 +5,7 @@ from paws.operations.SPEC import LoadSpecFile, MakePONI
 import time
 from paws.containers import PONI
 
-class Server(object):
+class SpecPreProcessor(object):
     """Process which watches for new image files and changes to spec
     file. Passes information on to analyzer in generic format, future
     servers can stand in as long as they provide the same data.

@@ -2,7 +2,7 @@ from collections import OrderedDict
 from pyFAI import units
 import pandas as pd
 
-# dummy_workbench inputs
+
 user = "b_stone"
 spec_name = "pd_LaB6"
 image_dir = r"C:\Users\walroth\OneDrive - SLAC National Accelerator Laboratory\out_dir"

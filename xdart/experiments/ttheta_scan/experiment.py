@@ -11,16 +11,18 @@ from matplotlib import pyplot as plt
 from matplotlib import animation
 import h5py 
 import numpy as np
+from pyqtgraph.Qt import QtGui, QtCore
 
 # paws
 from paws.operations.SPEC.LoadSpecFile import LoadSpecFile
 
-from .analyzer import Analyzer
-from .spec_server import Server
-from . import visualizer as vis
+from analyzer import Analyzer
+from pre_processors import *
+from gui import visualizer as vis
+from gui import TThetaGUI
 
 # fs -> from spec in future
-from .config import (
+from config import (
     user, # fs
     image_dir, # fs
     lsf_inputs, # fs
@@ -30,6 +32,14 @@ from .config import (
     spec_name
 )
 
+PreProcessor = SpecPreProcessor
+
+def visualize(data_file, scan_name):
+    app = QtGui.QApplication([])
+    win = TThetaGUI(data_file, scan_name)
+    win.show()
+    app.exec_()
+
 def tth_scan(scan_number, data_points):
     """Main function for handling a scan. Currently operates on a scan
     by scan basis rather than communicating with spec. Called by the
@@ -38,52 +48,25 @@ def tth_scan(scan_number, data_points):
     data_queue = mp.Queue() # produced by server, consumed by analyzer
     command_queue = mp.Queue() # produced by main, consumed by server
     scan_name = 'scan' + str(scan_number).zfill(2)
+
     sphere_args.update({'name': scan_name})
 
-    server = Server(data_queue, command_queue, spec_name, user, image_dir, 
+    preprocessor = PreProcessor(data_queue, command_queue, spec_name, user, image_dir, 
                     data_points, scan_number, lsf_inputs, mp_inputs)
     analyzer = Analyzer(data_queue, data_file, sphere_args)
     
-    server_proc = mp.Process(target=server.run)
+    preproc_proc = mp.Process(target=preprocessor.run)
     analyzer_proc = mp.Process(target=analyzer.run)
+    visualize_proc = mp.Process(target=visualize, args=(data_file, scan_name))
 
-    server_proc.start()
+    preproc_proc.start()
     analyzer_proc.start()
+    visualize_proc.start()
     #time.sleep(1)
-    fig = plt.figure()
-    ax1 = fig.add_subplot(2,1,1)
-    ax2 = fig.add_subplot(2,1,2)
 
-    def animate(i):
-        """Needs to be defined per scan, updats the figure animation.
-        Will be replaced by gui eventually.
-        """
-        vis.animation(data_file, scan_name, ax1, ax2)
-    ani = animation.FuncAnimation(fig, animate, interval=100)
-
-    plt.show()
-    server_proc.join()
+    preproc_proc.join()
     analyzer_proc.join()
-
-    # Animated figure not interactive, after closing a new figure is generated
-    # that can be interacted with
-    fig = plt.figure()
-    ax1 = fig.add_subplot(2,1,1)
-    ax2 = fig.add_subplot(2,1,2)
-
-    start = time.time()
-    while True:
-        if time.time() - start > 5:
-            break
-        try:
-            with h5py.File(data_file, 'r') as file:
-                map_norm, tth, all_norm, arch_int_norm = vis.get_last_arch(file, scan_name)
-            vis.update_fig(ax1, ax2, map_norm, tth, all_norm, arch_int_norm)
-            break
-        except (KeyError, ValueError):
-            pass
-    
-    plt.show()
+    visualize_proc.join()
     
 
 def main():
@@ -103,7 +86,7 @@ def main():
             tth_scan(scan_number, data_points)
         else:
             print('Invalid command')
-        
+
 if __name__ == '__main__':
     main()
 
