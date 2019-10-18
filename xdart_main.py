@@ -1,4 +1,6 @@
 # Top level script for running gui based program
+__version__ = 0.0.1
+
 import sys
 import os
 

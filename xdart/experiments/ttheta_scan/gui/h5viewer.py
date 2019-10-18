@@ -1,7 +1,7 @@
 import h5py
 
 from PyQt5.QtWidgets import QWidget
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
 
 class H5Viewer(QWidget):
@@ -25,11 +25,16 @@ class H5Viewer(QWidget):
         if isinstance(self.file, h5py.File):
             self._h5_to_tree(self.tree_top, file)
     
-    def _h5_to_tree(self, tree, file):
+    def _h5_to_tree(self, item, file):
         for key in file:
-            item = QTreeWidgetItem(tree)
-            item.setText(0, key)
+            new_item = QTreeWidgetItem(item)
+            new_item.setText(0, key)
             if isinstance(file[key], h5py.Group):
-                self._h5_to_tree(item, file[key])
-            self.tree_top.addChild(item)
+                if 'arches' in file[key]:
+                    for arc in file[key]['arches']:
+                        arch_item = QTreeWidgetItem(new_item)
+                        arch_item.setData(0, 0, int(arc))
+                    new_item.sortChildren(0, QtCore.Qt.AscendingOrder)
+                        
+                        
 
