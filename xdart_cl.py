@@ -1,6 +1,8 @@
 import sys
-
-from experiments import ttheta_scan
+try:
+    from . import xdart
+except ImportError:
+    import xdart
 
 if __name__ == '__main__':
     while True:
@@ -12,6 +14,6 @@ if __name__ == '__main__':
         if command == 'q':
             sys.exit()
         elif command == 'a':
-            ttheta_scan.main()
+            xdart.experiments.ttheta_scan.main()
         else:
             print('***Invalid command***\n')

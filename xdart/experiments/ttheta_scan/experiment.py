@@ -16,21 +16,40 @@ from pyqtgraph.Qt import QtGui, QtCore
 # paws
 from paws.operations.SPEC.LoadSpecFile import LoadSpecFile
 
-from analyzer import Analyzer
-from pre_processors import *
-from gui import visualizer as vis
-from gui import TThetaGUI
+# TODO: when deployed as plugin these should be deleted
+if __name__ == '__main__':
+    from analyzer import Analyzer
+    from pre_processors import *
+    from gui import visualizer as vis
+    from gui import TThetaGUI
 
-# fs -> from spec in future
-from config import (
-    user, # fs
-    image_dir, # fs
-    lsf_inputs, # fs
-    mp_inputs,
-    data_file, 
-    sphere_args,
-    spec_name
-)
+    # fs -> from spec in future
+    from config import (
+        user, # fs
+        image_dir, # fs
+        lsf_inputs, # fs
+        mp_inputs,
+        data_file, 
+        sphere_args,
+        spec_name
+    )
+
+else:
+    from .analyzer import Analyzer
+    from .pre_processors import *
+    from .gui import visualizer as vis
+    from .gui import TThetaGUI
+
+    # fs -> from spec in future
+    from .config import (
+        user, # fs
+        image_dir, # fs
+        lsf_inputs, # fs
+        mp_inputs,
+        data_file, 
+        sphere_args,
+        spec_name
+    )
 
 PreProcessor = SpecPreProcessor
 
