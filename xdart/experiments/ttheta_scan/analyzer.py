@@ -19,6 +19,7 @@ class Analyzer(object):
         self.data_file = data_file
     
     def run(self):
+        print("Analyzer called")
         # Plugin instantiated within process to avoid conflicts with locks
         sphere = self.plugin(**self.plugin_args)
 

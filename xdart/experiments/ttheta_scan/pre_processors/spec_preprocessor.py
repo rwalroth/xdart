@@ -25,6 +25,7 @@ class SpecPreProcessor(object):
     
     def run(self):
         # Operation instantiated within process to avoid conflicts with locks
+        print("Processor launched")
         make_poni = MakePONI()
         make_poni.inputs.update(self.mp_inputs)
 

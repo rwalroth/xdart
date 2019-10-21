@@ -74,10 +74,13 @@ def tth_scan(scan_number, data_points):
                     data_points, scan_number, lsf_inputs, mp_inputs)
     analyzer = Analyzer(data_queue, data_file, sphere_args)
     
+    print("Launching processors")
+    
     preproc_proc = mp.Process(target=preprocessor.run)
     analyzer_proc = mp.Process(target=analyzer.run)
     visualize_proc = mp.Process(target=visualize, args=(data_file, scan_name))
-
+    
+    print("Starting processors")
     preproc_proc.start()
     analyzer_proc.start()
     visualize_proc.start()

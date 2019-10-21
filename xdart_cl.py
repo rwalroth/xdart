@@ -1,8 +1,6 @@
 import sys
-try:
-    from . import xdart
-except ImportError:
-    import xdart
+import xdart
+
 
 if __name__ == '__main__':
     while True:
@@ -17,3 +15,4 @@ if __name__ == '__main__':
             xdart.experiments.ttheta_scan.main()
         else:
             print('***Invalid command***\n')
+
