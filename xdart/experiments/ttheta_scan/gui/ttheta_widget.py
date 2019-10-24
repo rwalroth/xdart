@@ -62,6 +62,9 @@ class tthetaWidget(QWidget):
         self.plotframe.sphere = self.sphere
 
     def set_data(self, q, col):
+        self.plotframe.auto_last = False
+        self.plotframe.ui.pushRightLast.setEnabled(True)
+
         if self.sphere is None:
             return
         

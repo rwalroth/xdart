@@ -16,6 +16,7 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
         super().__init__(parent)
         self.sphere = None
         self.arch = None
+        self.auto_last = False
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -55,14 +56,27 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.plotNRP.activated.connect(self.update)
         self.ui.plotOverlay.stateChanged.connect(self.update)
 
+        self.ui.pushRight.clicked.connect(self.next_arch)
+        self.ui.pushLeft.clicked.connect(self.prev_arch)
+        self.ui.pushRightLast.clicked.connect(self.last_arch)
+        self.ui.pushLeftLast.clicked.connect(self.first_arch)
+
         self.update()
     
     def update(self):
+        if self.sphere is not None:
+            if self.arch is None:
+                self.ui.labelCurrent.setText(self.sphere.name)
+            else:
+                self.ui.labelCurrent.setText("Image " + str(self.arch))
+
         if self.ui.shareAxis.isChecked():
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
             self.plot.setXLink(self.image_plot)
         else:
             self.plot.setXLink(None)
+        if self.auto_last and self.sphere is not None:
+            self.arch = self.sphere.arches.iloc[-1].idx
         self.update_image(self.sphere, self.arch)
         self.update_plot(self.sphere, self.arch)
 
@@ -168,6 +182,48 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
             else:
                 self.curve1.setData(*return_no_zero(xdata, s_ydata))
                 self.curve2.clear()
+    
+    def next_arch(self):
+        if self.arch == self.sphere.arches.iloc[-1].idx or self.arch is None:
+            pass
+        else:
+            self.arch += 1
+            self.auto_last = False
+            self.ui.pushRightLast.setEnabled(True)
+            self.update()
+    
+    def prev_arch(self):
+        if self.arch == self.sphere.arches.iloc[0].idx or self.arch is None:
+            pass
+        else:
+            self.arch -= 1
+            self.auto_last = False
+            self.ui.pushRightLast.setEnabled(True)
+            self.update()
+    
+    def last_arch(self):
+        if self.arch is None:
+            pass
+
+        else: 
+            if self.arch == self.sphere.arches.iloc[-1].idx:
+                pass
+
+            else:
+                self.arch = self.sphere.arches.iloc[-1].idx
+                self.update()
+        
+            self.auto_last = True
+            self.ui.pushRightLast.setEnabled(False)
+
+    def first_arch(self):
+        if self.arch == self.sphere.arches.iloc[0].idx or self.arch is None:
+            pass
+        else:
+            self.arch = self.sphere.arches.iloc[0].idx
+            self.auto_last = False
+            self.ui.pushRightLast.setEnabled(True)
+            self.update()
           
         
 
