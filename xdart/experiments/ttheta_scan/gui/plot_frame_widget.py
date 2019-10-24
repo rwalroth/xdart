@@ -34,6 +34,7 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.imageUnit.activated.connect(self.update)
         self.ui.imageNRP.activated.connect(self.update)
         self.ui.imageMask.stateChanged.connect(self.update)
+        self.ui.shareAxis.stateChanged.connect(self.update)
 
         self.plot_layout = Qt.QtWidgets.QVBoxLayout(self.ui.plotFrame)
         self.plot_win = pg.GraphicsLayoutWidget()
@@ -48,14 +49,35 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
             symbolSize=4
         )
 
+        self.ui.plotUnit.setItemText(0, _translate("Form", "2" + u"\u03B8"))
+        self.ui.plotMethod.activated.connect(self.update)
+        self.ui.plotUnit.activated.connect(self.update)
+        self.ui.plotNRP.activated.connect(self.update)
+        self.ui.plotOverlay.stateChanged.connect(self.update)
+
         self.update()
     
     def update(self):
         self.update_image(self.sphere, self.arch)
         self.update_plot(self.sphere, self.arch)
+
+    def read_NRP(self, box, int_data):
+        if box.currentIndex() == 0:
+            data = int_data.norm[()].T
+        elif box.currentIndex() == 1:
+            data = int_data.raw[()].T
+        elif box.currentIndex() == 2:
+            data = int_data.pcount[()].T
+        return data
+
+    def get_xdata(self, box, int_data):
+        if box.currentIndex() == 0:
+            xdata = int_data.ttheta
+        elif box.currentIndex() == 1:
+            xdata = int_data.q
+        return xdata
     
     def update_image(self, sphere, arch):
-
         if sphere is None:
             data = np.arange(100).reshape(10,10)
             rect = Qt.QtCore.QRect(1,1,1,1)
@@ -78,41 +100,27 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
         elif self.ui.imageMethod.currentIndex() == 1:
             int_data = sphere.bai_2d
         
-        ydata = int_data.chi
-        if self.ui.imageUnit.currentIndex() == 0:
-            xdata = int_data.ttheta
-        elif self.ui.imageUnit.currentIndex() == 1:
-            xdata = int_data.q
-        rect = get_rect(xdata, ydata, force_1=False)
+        rect = get_rect(
+            self.get_xdata(self.ui.imageUnit, int_data), 
+            int_data.chi
+        )
         
-        if self.ui.imageNRP.currentIndex() == 0:
-            data = int_data.norm[()].T
-        elif self.ui.imageNRP.currentIndex() == 1:
-            data = int_data.raw[()].T
-        elif self.ui.imageNRP.currentIndex() == 2:
-            data = int_data.pcount[()].T
+        data = self.read_NRP(self.ui.imageNRP, int_data)
         
         return data, rect
 
     def get_arch_data_2d(self, sphere, arch):
-        arc = self.sphere.arches[arch]
+        arc = sphere.arches[arch]
         int_data = arc.int_2d
         
-        ydata = int_data.chi
-        if self.ui.imageUnit.currentIndex() == 0:
-            xdata = int_data.ttheta
-        elif self.ui.imageUnit.currentIndex() == 1:
-            xdata = int_data.q
-        
-        rect = get_rect(xdata, ydata, force_1=False)
+        rect = get_rect(
+            self.get_xdata(self.ui.imageUnit, int_data), 
+            int_data.chi
+        )
         
         if self.ui.imageIntRaw.currentIndex() == 0:
-            if self.ui.imageNRP.currentIndex() == 0:
-                data = int_data.norm.copy().T
-            elif self.ui.imageNRP.currentIndex() == 1:
-                data = int_data.raw.copy().T
-            elif self.ui.imageNRP.currentIndex() == 2:
-                data = int_data.pcount.copy().T
+            data = self.read_NRP(self.ui.imageNRP, int_data)
+        
         elif self.ui.imageIntRaw.currentIndex() == 1:
             if self.ui.imageNRP.currentIndex() == 0:
                 data = arc.map_norm.copy()
@@ -129,19 +137,32 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
             self.curve1.setData(data[0], data[1])
             self.curve2.setData(data[0], data[1])
         
-        elif arch is not None:
-            self.plot_win
-            data_arch = sphere.arches[arch].int_1d.norm[()]
-            data_sphere = sphere.bai_1d.norm[()]
-            tth = sphere.bai_1d.ttheta[()]
-            self.curve1.setData(*return_no_zero(tth, data_sphere))
-            self.curve2.setData(*return_no_zero(tth, data_arch))
-        
         else:
-            data = sphere.bai_1d.norm[()]
-            tth = sphere.bai_1d.ttheta[()]
-            self.curve1.setData(*return_no_zero(tth, data))
-            self.curve2.clear()
+            if self.ui.plotMethod.currentIndex() == 0:
+                sphere_int_data = sphere.mgi_1d
+                if type(sphere_int_data.ttheta) == int:
+                    self.ui.plotMethod.setCurrentIndex(1)
+                    sphere_int_data = sphere.bai_1d
+            elif self.ui.plotMethod.currentIndex() == 1:
+                sphere_int_data = sphere.bai_1d
+            
+            s_ydata = self.read_NRP(self.ui.plotNRP, sphere_int_data)
+            xdata = self.get_xdata(self.ui.plotUnit, sphere_int_data)
+
+            if arch is not None:
+                arc_int_data = sphere.arches[arch].int_1d
+
+                if self.ui.plotOverlay.isChecked():
+                    self.curve1.setData(*return_no_zero(xdata, s_ydata))
+                else:
+                    self.curve1.clear()
+                
+                a_ydata = self.read_NRP(self.ui.plotNRP, arc_int_data)
+                self.curve2.setData(*return_no_zero(xdata, a_ydata))
+            
+            else:
+                self.curve1.setData(*return_no_zero(xdata, s_ydata))
+                self.curve2.clear()
           
         
 

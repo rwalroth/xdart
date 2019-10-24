@@ -95,6 +95,11 @@ class tthetaWidget(QWidget):
     def close(self):
         if self.file is not None:
             self.file.close()
+        del(self.sphere)
+        del(self.plotframe.sphere)
+        del(self.arch)
+        del(self.plotframe.arch)
+        super().close()
     
     def h5toolbar(self, q):
         if q.text() == 'Open':

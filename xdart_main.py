@@ -3,6 +3,7 @@ __version__ = '0.0.1'
 
 import sys
 import os
+import gc
 
 os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
@@ -61,6 +62,7 @@ class Main(QMainWindow):
         self.tabwidget.setCurrentIndex(q)
         self.tabwidget.currentWidget().close()
         self.tabwidget.removeTab(q)
+        gc.collect()
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

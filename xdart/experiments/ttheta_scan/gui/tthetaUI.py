@@ -24,6 +24,7 @@ class Ui_Form(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.leftFrame.sizePolicy().hasHeightForWidth())
         self.leftFrame.setSizePolicy(sizePolicy)
+        self.leftFrame.setMinimumSize(QtCore.QSize(115, 0))
         self.leftFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.leftFrame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.leftFrame.setObjectName("leftFrame")

@@ -297,6 +297,12 @@
           </item>
           <item>
            <widget class="QCheckBox" name="plotOverlay">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string>Overlay</string>
             </property>
