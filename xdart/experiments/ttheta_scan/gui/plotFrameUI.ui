@@ -106,130 +106,95 @@
         </widget>
        </item>
        <item>
-        <widget class="QFrame" name="imageToolBar">
+        <widget class="QFrame" name="imageToolbar">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>40</height>
+          </size>
+         </property>
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
          <property name="frameShadow">
           <enum>QFrame::Raised</enum>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <widget class="QRadioButton" name="imageIntegrated">
-            <property name="text">
-             <string>Int.</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">imageBGInt</string>
-            </attribute>
+           <widget class="QComboBox" name="imageIntRaw">
+            <item>
+             <property name="text">
+              <string>Integrated</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Raw</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="imageNonIntegrated">
-            <property name="text">
-             <string>Raw</string>
+           <widget class="QComboBox" name="imageMethod">
+            <property name="currentIndex">
+             <number>0</number>
             </property>
-            <attribute name="buttonGroup">
-             <string notr="true">imageBGInt</string>
-            </attribute>
+            <item>
+             <property name="text">
+              <string>Multi. Geo.</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>By image</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
+           <widget class="QComboBox" name="imageUnit">
+            <item>
+             <property name="text">
+              <string>2 u038</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>q (A-1)</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
-           <widget class="QRadioButton" name="imageUnitQ">
-            <property name="text">
-             <string>q</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">imageBGUnit</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="imageUnit2Theta">
-            <property name="text">
-             <string>2 u3B8</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">imageBGUnit</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_3">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="imageNorm">
-            <property name="text">
-             <string>Norm.</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">imageBGNorm</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="imageRaw">
-            <property name="text">
-             <string>Raw</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">imageBGNorm</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="imagePCount">
-            <property name="text">
-             <string>PC</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">imageBGNorm</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_2">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
+           <widget class="QComboBox" name="imageNRP">
+            <item>
+             <property name="text">
+              <string>Normalized</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Raw</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Pixel Count</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
            <widget class="QCheckBox" name="imageMask">
             <property name="text">
              <string>Mask</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="shareAxis">
+            <property name="text">
+             <string>Share Axis</string>
             </property>
            </widget>
           </item>
@@ -270,102 +235,70 @@
        </item>
        <item>
         <widget class="QFrame" name="plotToolBar">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>40</height>
+          </size>
+         </property>
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
          <property name="frameShadow">
           <enum>QFrame::Raised</enum>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <property name="spacing">
-           <number>6</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
+         <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
-           <widget class="QRadioButton" name="plotUnitQ">
+           <widget class="QComboBox" name="plotMethod">
+            <item>
+             <property name="text">
+              <string>Multi. Geo.</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>By image</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="plotUnit">
+            <item>
+             <property name="text">
+              <string>2 u\u03B8</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>q (A-1)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="plotNRP">
+            <item>
+             <property name="text">
+              <string>Normalized</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Raw</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Pixel Count</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="plotOverlay">
             <property name="text">
-             <string>q</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">plotBGUnit</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="plotUnit2Theta">
-            <property name="text">
-             <string>2 u3B8</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">plotBGUnit</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_5">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="plotNorm">
-            <property name="text">
-             <string>Norm.</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">plotBGNorm</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="plotRaw">
-            <property name="text">
-             <string>Raw</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">plotBGNorm</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="plotPCount">
-            <property name="text">
-             <string>PC</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">plotBGNorm</string>
-            </attribute>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="line_6">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="plotShareAxis">
-            <property name="text">
-             <string>Share Axis</string>
+             <string>Overlay</string>
             </property>
            </widget>
           </item>
@@ -430,5 +363,7 @@
   <buttongroup name="imageBGNorm"/>
   <buttongroup name="plotBGUnit"/>
   <buttongroup name="plotBGNorm"/>
+  <buttongroup name="sphereBGUnit"/>
+  <buttongroup name="sphereBGIntRaw"/>
  </buttongroups>
 </ui>

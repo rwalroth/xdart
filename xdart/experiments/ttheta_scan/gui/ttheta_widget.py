@@ -15,6 +15,7 @@ class tthetaWidget(QWidget):
         self.file = None
         self.fname = None
         self.sphere = None
+        self.arch = None
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -58,17 +59,28 @@ class tthetaWidget(QWidget):
             self.sphere = EwaldSphere(name)
         
         self.sphere.load_from_h5(self.file)
+        self.plotframe.sphere = self.sphere
 
     def set_data(self, q, col):
         if self.sphere is None:
             return
         
         elif type(q.data(col, 0)) == int:
+            self.arch = q.data(col, 0)
+            self.plotframe.arch = q.data(col, 0)
             if self.sphere.name == q.parent().data(0, 0):
-                self.plotframe.update(self.sphere, q.data(col, 0))
+                self.plotframe.update()
+                self.plotframe.ui.imageIntRaw.setEnabled(True)
+                self.plotframe.ui.imageMethod.setEnabled(False)
+                self.plotframe.ui.imageMask.setEnabled(True)
         
         elif self.sphere.name == q.data(col, 0):
-            self.plotframe.update(self.sphere)
+            self.arch = q.data(col, 0)
+            self.plotframe.arch = None
+            self.plotframe.update()
+            self.plotframe.ui.imageIntRaw.setEnabled(False)
+            self.plotframe.ui.imageMethod.setEnabled(True)
+            self.plotframe.ui.imageMask.setEnabled(False)
 
     def load_and_set(self, q, col):
         if type(q.data(col, 0)) == int:
