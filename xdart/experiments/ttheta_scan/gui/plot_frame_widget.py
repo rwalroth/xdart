@@ -58,6 +58,11 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
         self.update()
     
     def update(self):
+        if self.ui.shareAxis.isChecked():
+            self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
+            self.plot.setXLink(self.image_plot)
+        else:
+            self.plot.setXLink(None)
         self.update_image(self.sphere, self.arch)
         self.update_plot(self.sphere, self.arch)
 
