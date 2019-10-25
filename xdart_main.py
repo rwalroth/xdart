@@ -44,8 +44,10 @@ class Main(QMainWindow):
             sys.exit()
 
     def openFile(self):
-        self.fname, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File')
-        self.tabwidget.currentWidget().update_file(self.fname)
+        try:
+            self.tabwidget.currentWidget().open_file()
+        except Exception as e:
+            print(e)
         
 
     def set_experiments(self):

@@ -9,10 +9,39 @@ class H5Viewer(QWidget):
         super().__init__(parent)
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
+
         self.toolbar = QtWidgets.QToolBar('Tools')
-        self.toolbar.addAction('Open')
-        self.toolbar.addAction('Save')
+
+        self.actionOpen = QtWidgets.QAction()
+        self.actionOpen.setText('Open')
+
+        self.saveMenu = QtWidgets.QMenu()
+        self.saveMenu.setTitle('Save')
+
+        self.actionSaveImage = QtWidgets.QAction()
+        self.actionSaveImage.setText('Current Image')
+        self.saveMenu.addAction(self.actionSaveImage)
+
+        self.actionSaveArray = QtWidgets.QAction()
+        self.actionSaveArray.setText('Current 1D Array')
+        self.saveMenu.addAction(self.actionSaveArray)
+        
+        self.actionSaveData = QtWidgets.QAction()
+        self.actionSaveData.setText('Data')
+        self.saveMenu.addAction(self.actionSaveData)
+
+        self.fileMenu = QtWidgets.QMenu()
+        self.fileMenu.addAction(self.actionOpen)
+        self.fileMenu.addMenu(self.saveMenu)
+
+        self.fileButton = QtWidgets.QToolButton()
+        self.fileButton.setText('File')
+        self.fileButton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        self.fileButton.setMenu(self.fileMenu)
+
+        self.toolbar.addWidget(self.fileButton)
         self.layout.addWidget(self.toolbar)
+
         self.tree = QTreeWidget()
         self.tree_top = QTreeWidgetItem()
         self.tree.addTopLevelItem(self.tree_top)

@@ -2,12 +2,18 @@ import os
 from functools import partial
 
 import h5py
+from matplotlib import pyplot as plt
+
 from paws.plugins.ewald import EwaldSphere
 
+from pyqtgraph import Qt
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QFileDialog
+
 from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .plot_frame_widget import plotFrameWidget
+
+supportedImageFormats = Qt.QtGui.QImageReader.supportedImageFormats
 
 class tthetaWidget(QWidget):
     def __init__(self, parent=None):
@@ -19,16 +25,17 @@ class tthetaWidget(QWidget):
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+
         self.h5viewer = H5Viewer(self.file, self.fname, self.ui.hdf5Frame)
         self.h5viewer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.h5viewer.toolbar.actionTriggered.connect(self.h5toolbar)
+        self.h5viewer.actionOpen.triggered.connect(self.open_file)
+        self.h5viewer.actionSaveImage.triggered.connect(self.save_image)
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
+        self.h5viewer.tree.itemDoubleClicked.connect(self.load_and_set)
+        self.h5viewer.tree.itemClicked.connect(self.set_data)
 
         self.plotframe = plotFrameWidget(parent=self.ui.middleFrame)
         self.ui.middleFrame.setLayout(self.plotframe.ui.layout)
-
-        self.h5viewer.tree.itemDoubleClicked.connect(self.load_and_set)
-        self.h5viewer.tree.itemClicked.connect(self.set_data)
 
         self.show()
     
@@ -106,7 +113,31 @@ class tthetaWidget(QWidget):
     
     def h5toolbar(self, q):
         if q.text() == 'Open':
-            fname, _ = QFileDialog().getOpenFileName()
-            self.update_file(fname)
+            self.open_file()
+    
+    def open_file(self):
+        fname, _ = QFileDialog().getOpenFileName()
+        print(_)
+        self.update_file(fname)
+    
+    def save_image(self):
+        to_string = lambda f: str(f.data(), encoding='utf-8').lower()
+        formats = [to_string(f) for f in supportedImageFormats()]
+
+        filter = "Images ("
+        for f in formats:
+            filter += "*." + f + " "
+        filter += ")"
+
+        fname, _ = QFileDialog.getSaveFileName(
+            filter=filter
+        )
+        name, ext = fname.split('.')
+        if ext.lower() in formats:
+            self.plotframe.image.save(fname)
+        
+        elif ext.lower() == 'tif':
+            data = self.plotframe.image.image
+            plt.imsave(data, fname)
     
         
