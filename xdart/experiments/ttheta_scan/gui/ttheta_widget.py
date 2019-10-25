@@ -9,11 +9,16 @@ from paws.plugins.ewald import EwaldSphere
 from pyqtgraph import Qt
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QFileDialog
 
+from .... import utils as ut
 from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .plot_frame_widget import plotFrameWidget
 
-supportedImageFormats = Qt.QtGui.QImageReader.supportedImageFormats
+formats = [
+    str(f.data(), encoding='utf-8').lower() for f in
+    Qt.QtGui.QImageReader.supportedImageFormats()
+]
+
 
 class tthetaWidget(QWidget):
     def __init__(self, parent=None):
@@ -30,6 +35,7 @@ class tthetaWidget(QWidget):
         self.h5viewer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.h5viewer.actionOpen.triggered.connect(self.open_file)
         self.h5viewer.actionSaveImage.triggered.connect(self.save_image)
+        self.h5viewer.actionSaveArray.triggered.connect(self.save_array)
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
         self.h5viewer.tree.itemDoubleClicked.connect(self.load_and_set)
         self.h5viewer.tree.itemClicked.connect(self.set_data)
@@ -121,23 +127,31 @@ class tthetaWidget(QWidget):
         self.update_file(fname)
     
     def save_image(self):
-        to_string = lambda f: str(f.data(), encoding='utf-8').lower()
-        formats = [to_string(f) for f in supportedImageFormats()]
-
         filter = "Images ("
         for f in formats:
             filter += "*." + f + " "
         filter += ")"
 
-        fname, _ = QFileDialog.getSaveFileName(
-            filter=filter
-        )
+        fname, _ = QFileDialog.getSaveFileName(filter=filter)
+
         name, ext = fname.split('.')
         if ext.lower() in formats:
             self.plotframe.image.save(fname)
         
         elif ext.lower() == 'tif':
-            data = self.plotframe.image.image
+            data = self.plotframe.image.qimage
             plt.imsave(data, fname)
     
+    def save_array(self):
+        fname, _ = QFileDialog.getSaveFileName(filter="XRD Files (*.xye *.csv)")
+
+        xdata, ydata = self.plotframe.update_plot(self.sphere, self.arch)
+
+        name, ext = fname.split('.')
+        if ext.lower() == 'xye':
+            ut.write_xye(fname, xdata, ydata)
         
+        elif ext.lower() == 'csv':
+            ut.write_csv(fname, xdata, ydata)
+
+

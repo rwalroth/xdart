@@ -155,6 +155,7 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
             data = (np.arange(100), np.arange(100))
             self.curve1.setData(data[0], data[1])
             self.curve2.setData(data[0], data[1])
+            return data
         
         else:
             if self.ui.plotMethod.currentIndex() == 0:
@@ -178,10 +179,14 @@ class plotFrameWidget(Qt.QtWidgets.QWidget):
                 
                 a_ydata = self.read_NRP(self.ui.plotNRP, arc_int_data)
                 self.curve2.setData(*return_no_zero(xdata, a_ydata))
+
+                return return_no_zero(xdata, a_ydata)
             
             else:
                 self.curve1.setData(*return_no_zero(xdata, s_ydata))
                 self.curve2.clear()
+
+                return return_no_zero(xdata, s_ydata)
     
     def next_arch(self):
         if self.arch == self.sphere.arches.iloc[-1].idx or self.arch is None:

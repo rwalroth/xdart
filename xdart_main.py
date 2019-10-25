@@ -4,6 +4,7 @@ __version__ = '0.0.1'
 import sys
 import os
 import gc
+import time
 
 os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
@@ -39,7 +40,8 @@ class Main(QMainWindow):
 
     def exit(self):
         try:
-            self.file.close()
+            for i in range(self.tabwidget.count()):
+                self.closeExperiment(i)
         finally:
             sys.exit()
 
