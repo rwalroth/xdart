@@ -34,13 +34,16 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.auto_last = False
 
         # Image pane setup
-        self.image_layout = Qt.QtWidgets.QVBoxLayout(self.ui.imageFrame)
+        self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
         self.image_win = pg.GraphicsLayoutWidget()
         self.image_layout.addWidget(self.image_win)
+        self.histogram = pg.HistogramLUTWidget(self.image_win)
+        self.image_layout.addWidget(self.histogram)
         self.imageViewBox = RectViewBox()
         self.image_plot = self.image_win.addPlot(viewBox=self.imageViewBox)
         self.image = pg.ImageItem()
         self.image_plot.addItem(self.image)
+        self.histogram.setImageItem(self.image)
 
         # Image pane signal connections
         self.ui.imageIntRaw.activated.connect(self.update)
