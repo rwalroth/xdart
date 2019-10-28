@@ -1,6 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+@author: walroth
+"""
+__version__ = '0.1.0'
 # Top level script for running gui based program
-__version__ = '0.0.1'
 
+# Standard library imports
 import sys
 import os
 import gc
@@ -8,16 +13,19 @@ import time
 
 os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
-from pyqtgraph import Qt
-
+# Other imports
 import numpy as np
 import h5py
+
+# Qt imports
+from pyqtgraph import Qt
 from pyqtgraph.Qt import QtGui, QtCore
 from PyQt5.QtWidgets import QMainWindow
 from PyQt5 import QtWidgets
 import qdarkstyle
 import pyqtgraph as pg
 
+# This module imports
 import xdart
 from xdart.gui.mainWindow import Ui_MainWindow
 from xdart import experiments

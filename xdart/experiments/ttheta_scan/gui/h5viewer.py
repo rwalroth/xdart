@@ -1,17 +1,32 @@
+# -*- coding: utf-8 -*-
+"""
+@author: walroth
+"""
+# Standard library imorts
+
+# Other imports
 import h5py
 
+# Qt imports
 from PyQt5.QtWidgets import QWidget
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
 
+# This module imports
+from .h5viewerUI import *
+
 class H5Viewer(QWidget):
     def __init__(self, file, fname, parent=None):
         super().__init__(parent)
-        self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.ui = Ui_Form()
+        self.ui.setupUi(self)
 
+        self.layout = self.ui.layout
+
+        # Toolbar setup
         self.toolbar = QtWidgets.QToolBar('Tools')
 
+        # File menu setup (part of toolbar)
         self.actionOpen = QtWidgets.QAction()
         self.actionOpen.setText('Open')
 
@@ -38,31 +53,28 @@ class H5Viewer(QWidget):
         self.fileButton.setText('File')
         self.fileButton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
         self.fileButton.setMenu(self.fileMenu)
+        # End file menu setup
 
         self.toolbar.addWidget(self.fileButton)
-        self.layout.addWidget(self.toolbar)
+        # End toolbar setup
 
-        self.tree = QTreeWidget()
-        self.tree_top = QTreeWidgetItem()
-        self.tree.addTopLevelItem(self.tree_top)
-        self.update(file)
-        self.layout.addWidget(self.tree)
+        self.layout.addWidget(self.toolbar, 0, 0, 1, 2)
+
         self.show()
 
     def update(self, file):
+        """Takes in file, adds keys to scan list
+        """
         if isinstance(file, h5py.File):
-            self._h5_to_tree(self.tree_top, file)
+            self.ui.listScans.clear()
+            for key in file:
+                self.ui.listScans.addItem(key)
     
-    def _h5_to_tree(self, item, file):
-        for key in file:
-            new_item = QTreeWidgetItem(item)
-            new_item.setText(0, key)
-            if isinstance(file[key], h5py.Group):
-                if 'arches' in file[key]:
-                    for arc in file[key]['arches']:
-                        arch_item = QTreeWidgetItem(new_item)
-                        arch_item.setData(0, 0, int(arc))
-                    new_item.sortChildren(0, QtCore.Qt.AscendingOrder)
-                        
-                        
+    def set_data(self, sphere):
+        """Takes sphere object and updates list with all arch ids
+        """
+        self.ui.listData.clear()
+        self.ui.listData.addItem('Overall')
+        for arch in sphere.arches.sort_index():
+            self.ui.listData.addItem(str(arch.idx))
 
