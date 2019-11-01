@@ -76,15 +76,7 @@
            <enum>QFrame::Raised</enum>
           </property>
          </widget>
-         <widget class="QFrame" name="batchFrame">
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-         </widget>
-         <widget class="QFrame" name="fileFrame">
+         <widget class="QFrame" name="metaFrame">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
@@ -141,7 +133,7 @@
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
-         <widget class="QFrame" name="intParamFrame">
+         <widget class="QFrame" name="integratorFrame">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
@@ -149,7 +141,7 @@
            <enum>QFrame::Raised</enum>
           </property>
          </widget>
-         <widget class="QFrame" name="metaFrame">
+         <widget class="QFrame" name="wranglerFrame">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>

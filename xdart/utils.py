@@ -1,4 +1,15 @@
+# -*- coding: utf-8 -*-
+"""
+@author: walroth
+"""
+
+# Standard library imports
+
+# Other imports
 import numpy as np
+
+# This module imports
+
 
 def write_xye(fname, xdata, ydata):
     with open(fname, "w") as file:

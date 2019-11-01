@@ -15,6 +15,9 @@ from matplotlib import pyplot as plt
 # Qt imports
 from pyqtgraph import Qt
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QFileDialog
+from pyqtgraph.parametertree import (
+    Parameter, ParameterTree, ParameterItem, registerParameterType
+)
 
 # paws imports
 from paws.plugins.ewald import EwaldSphere
@@ -24,12 +27,21 @@ from .... import utils as ut
 from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
+from .integrator import integratorTree
+from .sphere_threads import integratorThread
 
 formats = [
     str(f.data(), encoding='utf-8').lower() for f in
     Qt.QtGui.QImageReader.supportedImageFormats()
 ]
 
+def spherelocked(func):
+    def wrapper(self, *args, **kwargs):
+        if isinstance(self.sphere, EwaldSphere):
+            with self.sphere.sphere_lock:
+                func(self, *args, **kwargs)
+                return func(self, *args, **kwargs)
+    return wrapper
 
 class tthetaWidget(QWidget):
     def __init__(self, parent=None):
@@ -40,6 +52,7 @@ class tthetaWidget(QWidget):
         self.fname = None
         self.sphere = None
         self.arch = None
+        self.integrator_thread = integratorThread(self.sphere, self.arch)
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -69,6 +82,22 @@ class tthetaWidget(QWidget):
         self.displayframe.ui.pushLeft.clicked.connect(self.prev_arch)
         self.displayframe.ui.pushRightLast.clicked.connect(self.last_arch)
         self.displayframe.ui.pushLeftLast.clicked.connect(self.first_arch)
+        self.integrator_thread.finished.connect(self.displayframe.update)
+        self.integrator_thread.update.connect(self.displayframe.update)
+
+        # IntegratorFrame setup
+        self.integratorTree = integratorTree()
+        self.ui.integratorFrame.setLayout(self.integratorTree.ui.layout)
+
+        # Integrator signal connections
+        self.integratorTree.bai_1d_pars.sigTreeStateChanged.connect(
+            self.update_bai_1d_args
+        )
+        self.integratorTree.bai_2d_pars.sigTreeStateChanged.connect(
+            self.update_bai_2d_args
+        )
+        self.integratorTree.ui.integrateBAI1D.clicked.connect(self.bai_1d)
+        self.integratorTree.ui.integrateBAI2D.clicked.connect(self.bai_2d)
 
         self.show()
     
@@ -105,12 +134,16 @@ class tthetaWidget(QWidget):
             self.sphere = EwaldSphere(name)
         
         elif self.sphere.name != name:
-            self.sphere = EwaldSphere(name)
+            with self.sphere.sphere_lock:
+                self.sphere = EwaldSphere(name)
         
         self.sphere.load_from_h5(self.file)
         self.displayframe.sphere = self.sphere
+        with self.integrator_thread.lock:
+            self.integrator_thread.sphere = self.sphere
         self.h5viewer.set_data(self.sphere)
         self.h5viewer.ui.listData.setCurrentRow(0)
+        self.integratorTree.update(self.sphere)
 
     def set_data(self, q):
         """Updates data in displayframe
@@ -129,6 +162,9 @@ class tthetaWidget(QWidget):
                 self.displayframe.ui.imageIntRaw.setEnabled(False)
                 self.displayframe.ui.imageMethod.setEnabled(True)
                 self.displayframe.ui.imageMask.setEnabled(False)
+
+                self.integratorTree.ui.integrateBAIAll.setChecked(True)
+                self.integratorTree.ui.integrateBAIAll.setEnabled(False)
             
             else:
                 self.arch = int(q.data(0))
@@ -137,6 +173,8 @@ class tthetaWidget(QWidget):
                 self.displayframe.ui.imageIntRaw.setEnabled(True)
                 self.displayframe.ui.imageMethod.setEnabled(False)
                 self.displayframe.ui.imageMask.setEnabled(True)
+
+                self.integratorTree.ui.integrateBAIAll.setEnabled(True)
 
     def load_and_set(self, q):
         """Combination of load and setting functions
@@ -278,5 +316,86 @@ class tthetaWidget(QWidget):
         del(self.arch)
         del(self.displayframe.arch)
         super().close()
+    
+    @spherelocked
+    def update_bai_1d_args(self, param, changes):
+        for change in changes:
+            if 'range' in change[0].parent().name():
+                _range = change[0].parent()
+                if _range.child('Auto').value():
+                    self.sphere.bai_1d_args[_range.name()] = None
+                else:
+                    self.sphere.bai_1d_args[_range.name()] = [
+                        _range.child('Low').value(),
+                        _range.child('High').value(),
+                    ]
+            elif change[0].name() == 'polarization_factor':
+                if change[0].parent().child('Apply polarization factor').value():
+                    self.sphere.bai_1d_args['polarization_factor'] = change[2]
+            
+            elif change[0].name() == 'Apply polarization factor':
+                if change[2]:
+                    self.sphere.bai_1d_args['polarization_factor'] = \
+                        self.integratorTree.bai_1d_pars.child('polarization_factor').value()
+                else:
+                    self.sphere.bai_1d_args['polarization_factor'] = None
+            else:
+                self.sphere.bai_1d_args.update(
+                    [(change[0].name(), change[2])]
+                )
+        print(self.sphere.bai_1d_args)
+
+    @spherelocked
+    def update_bai_2d_args(self, param, changes):
+        for change in changes:
+            if 'range' in change[0].parent().name():
+                _range = change[0].parent()
+                if _range.child('Auto').value():
+                    self.sphere.bai_2d_args[_range.name()] = None
+                else:
+                    self.sphere.bai_2d_args[_range.name()] = [
+                        _range.child('Low').value(),
+                        _range.child('High').value(),
+                    ]
+            elif change[0].name() == 'polarization_factor':
+                if change[0].parent().child('Apply polarization factor').value():
+                    self.sphere.bai_2d_args['polarization_factor'] = change[2]
+            
+            elif change[0].name() == 'Apply polarization factor':
+                if change[2]:
+                    self.sphere.bai_2d_args['polarization_factor'] = \
+                        self.integratorTree.bai_1d_pars.child('polarization_factor').value()
+                else:
+                    self.sphere.bai_2d_args['polarization_factor'] = None
+            else:
+                self.sphere.bai_2d_args.update(
+                    [(change[0].name(), change[2])]
+                )
+    
+    def bai_1d(self, q):
+        print('bai1d')
+        with self.integrator_thread.lock:
+            print('lock acquired')
+            self.integrator_thread.sphere = self.sphere
+            self.integrator_thread.arch = self.arch
+            if self.integratorTree.ui.integrateBAIAll.isChecked():
+                self.integrator_thread.method = 'bai_1d_all'
+            else:
+                self.integrator_thread.method = 'bai_1d_SI'
+        print('starting thread')
+        self.integrator_thread.start()
+        print(self.integrator_thread.isRunning())
+
+    def bai_2d(self, q):
+        print('bai2d')
+        with self.integrator_thread.lock:
+            self.integrator_thread.sphere = self.sphere
+            self.integrator_thread.arch = self.arch
+            if self.integratorTree.ui.integrateBAIAll.isChecked():
+                self.integrator_thread.method = 'bai_2d_all'
+            else:
+                self.integrator_thread.method = 'bai_2d_SI'
+        self.integrator_thread.start()
+                
 
 

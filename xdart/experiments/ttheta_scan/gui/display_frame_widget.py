@@ -15,7 +15,7 @@ from pyqtgraph import Qt
 
 # This module imports
 from .displayFrameUI import * 
-from .gui_utils import *
+from ....gui.gui_utils import *
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
     def __init__(self, parent=None, sphere=None):
@@ -121,7 +121,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Returns data and QRect for data in arch
         """
         arc = sphere.arches[arch]
-        int_data = arc.int_2d
+        with arc.arch_lock:
+            int_data = arc.int_2d
         
         rect = get_rect(
             self.get_xdata(self.ui.imageUnit, int_data), 
@@ -132,25 +133,27 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             data = self.read_NRP(self.ui.imageNRP, int_data)
         
         elif self.ui.imageIntRaw.currentIndex() == 1:
-            if self.ui.imageNRP.currentIndex() == 0:
-                data = arc.map_norm.copy()
-            else:
-                data = arc.map_raw.copy()
-            if self.ui.imageMask.isChecked():
-                data *= np.where(arc.mask==1, 0, np.ones_like(arc.mask))
+            with arc.arch_lock:
+                if self.ui.imageNRP.currentIndex() == 0:
+                    data = arc.map_norm.copy()
+                else:
+                    data = arc.map_raw.copy()
+                if self.ui.imageMask.isChecked():
+                    data *= np.where(arc.mask==1, 0, np.ones_like(arc.mask))
         
         return data, rect
 
     def get_sphere_data_2d(self, sphere):
         """Returns data and QRect for data in sphere
         """
-        if self.ui.imageMethod.currentIndex() == 0:
-            int_data = sphere.mgi_2d
-            if type(int_data.ttheta) == int:
-                self.ui.imageMethod.setCurrentIndex(1)
+        with self.sphere.sphere_lock:
+            if self.ui.imageMethod.currentIndex() == 0:
+                int_data = sphere.mgi_2d
+                if type(int_data.ttheta) == int:
+                    self.ui.imageMethod.setCurrentIndex(1)
+                    int_data = sphere.bai_2d
+            elif self.ui.imageMethod.currentIndex() == 1:
                 int_data = sphere.bai_2d
-        elif self.ui.imageMethod.currentIndex() == 1:
-            int_data = sphere.bai_2d
         
         rect = get_rect(
             self.get_xdata(self.ui.imageUnit, int_data), 
@@ -171,35 +174,38 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             return data
         
         else:
-            if self.ui.plotMethod.currentIndex() == 0:
-                sphere_int_data = sphere.mgi_1d
-                if type(sphere_int_data.ttheta) == int:
-                    self.ui.plotMethod.setCurrentIndex(1)
+            with sphere.sphere_lock:
+                if self.ui.plotMethod.currentIndex() == 0:
+                    sphere_int_data = sphere.mgi_1d
+                    if type(sphere_int_data.ttheta) == int:
+                        self.ui.plotMethod.setCurrentIndex(1)
+                        sphere_int_data = sphere.bai_1d
+                elif self.ui.plotMethod.currentIndex() == 1:
                     sphere_int_data = sphere.bai_1d
-            elif self.ui.plotMethod.currentIndex() == 1:
-                sphere_int_data = sphere.bai_1d
             
             s_ydata = self.read_NRP(self.ui.plotNRP, sphere_int_data)
-            xdata = self.get_xdata(self.ui.plotUnit, sphere_int_data)
+            s_xdata = self.get_xdata(self.ui.plotUnit, sphere_int_data)
 
             if arch is not None:
-                arc_int_data = sphere.arches[arch].int_1d
+                with sphere.arches[arch].arch_lock:
+                    arc_int_data = sphere.arches[arch].int_1d
 
                 if self.ui.plotOverlay.isChecked():
-                    self.curve1.setData(*return_no_zero(xdata, s_ydata))
+                    self.curve1.setData(*return_no_zero(s_xdata, s_ydata))
                 else:
                     self.curve1.clear()
                 
                 a_ydata = self.read_NRP(self.ui.plotNRP, arc_int_data)
-                self.curve2.setData(*return_no_zero(xdata, a_ydata))
+                a_xdata = self.get_xdata(self.ui.plotUnit, arc_int_data)
+                self.curve2.setData(*return_no_zero(a_xdata, a_ydata))
 
-                return return_no_zero(xdata, a_ydata)
+                return return_no_zero(a_xdata, a_ydata)
             
             else:
-                self.curve1.setData(*return_no_zero(xdata, s_ydata))
+                self.curve1.setData(*return_no_zero(s_xdata, s_ydata))
                 self.curve2.clear()
 
-                return return_no_zero(xdata, s_ydata)
+                return return_no_zero(s_xdata, s_ydata)
 
     def read_NRP(self, box, int_data):
         """Reads the norm, raw, pcount option box and returns
