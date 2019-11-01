@@ -90,14 +90,14 @@ class tthetaWidget(QWidget):
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.layout)
 
         # Integrator signal connections
-        self.integratorTree.bai_1d_pars.sigTreeStateChanged.connect(
-            self.update_bai_1d_args
-        )
-        self.integratorTree.bai_2d_pars.sigTreeStateChanged.connect(
-            self.update_bai_2d_args
+        self.integratorTree.parameters.sigTreeStateChanged.connect(
+            self.parse_param_change
         )
         self.integratorTree.ui.integrateBAI1D.clicked.connect(self.bai_1d)
         self.integratorTree.ui.integrateBAI2D.clicked.connect(self.bai_2d)
+        self.integratorTree.ui.setupMG.clicked.connect(self.mg_setup)
+        self.integratorTree.ui.integrateMG1D.clicked.connect(self.mg_1d)
+        self.integratorTree.ui.integrateMG2D.clicked.connect(self.mg_2d)
 
         self.show()
     
@@ -318,59 +318,68 @@ class tthetaWidget(QWidget):
         super().close()
     
     @spherelocked
-    def update_bai_1d_args(self, param, changes):
+    def parse_param_change(self, param, changes):
         for change in changes:
-            if 'range' in change[0].parent().name():
-                _range = change[0].parent()
-                if _range.child('Auto').value():
-                    self.sphere.bai_1d_args[_range.name()] = None
+            SI = False
+            smg = False
+            d1 = False
+            par = change[0]
+            while par.parent() is not None:
+                if par.name() == 'Integrate 1D':
+                    d1 = True
+                elif par.name() == 'Multi Geometry Setup':
+                    smg = True
+                    break
+                elif par.name() == 'Single Image':
+                    SI = True
+                    break
+                par = par.parent()
+            if SI:
+                if d1:
+                    self.update_args(change, self.sphere.bai_1d_args)
                 else:
-                    self.sphere.bai_1d_args[_range.name()] = [
-                        _range.child('Low').value(),
-                        _range.child('High').value(),
-                    ]
-            elif change[0].name() == 'polarization_factor':
-                if change[0].parent().child('Apply polarization factor').value():
-                    self.sphere.bai_1d_args['polarization_factor'] = change[2]
-            
-            elif change[0].name() == 'Apply polarization factor':
-                if change[2]:
-                    self.sphere.bai_1d_args['polarization_factor'] = \
-                        self.integratorTree.bai_1d_pars.child('polarization_factor').value()
-                else:
-                    self.sphere.bai_1d_args['polarization_factor'] = None
+                    self.update_args(change, self.sphere.bai_2d_args)
             else:
-                self.sphere.bai_1d_args.update(
-                    [(change[0].name(), change[2])]
-                )
-        print(self.sphere.bai_1d_args)
+                if smg:
+                    self.update_args(change, self.sphere.mg_args)
+                else:
+                    with self.integrator_thread.lock:
+                        if d1:
+                            self.update_args(
+                                change, self.integrator_thread.mg_1d_args)
+                        else:
+                            self.update_args(
+                                change, self.integrator_thread.mg_2d_args)
+    
 
-    @spherelocked
-    def update_bai_2d_args(self, param, changes):
-        for change in changes:
-            if 'range' in change[0].parent().name():
-                _range = change[0].parent()
-                if _range.child('Auto').value():
-                    self.sphere.bai_2d_args[_range.name()] = None
-                else:
-                    self.sphere.bai_2d_args[_range.name()] = [
-                        _range.child('Low').value(),
-                        _range.child('High').value(),
-                    ]
-            elif change[0].name() == 'polarization_factor':
-                if change[0].parent().child('Apply polarization factor').value():
-                    self.sphere.bai_2d_args['polarization_factor'] = change[2]
-            
-            elif change[0].name() == 'Apply polarization factor':
-                if change[2]:
-                    self.sphere.bai_2d_args['polarization_factor'] = \
-                        self.integratorTree.bai_1d_pars.child('polarization_factor').value()
-                else:
-                    self.sphere.bai_2d_args['polarization_factor'] = None
+    def update_args(self, change, args):
+        if change[2] == 'None':
+            upval = None
+        else:
+            upval = change[2]
+        if 'range' in change[0].parent().name():
+            _range = change[0].parent()
+            if _range.child('Auto').value():
+                args[_range.name()] = None
             else:
-                self.sphere.bai_2d_args.update(
-                    [(change[0].name(), change[2])]
-                )
+                args[_range.name()] = [
+                    _range.child('Low').value(),
+                    _range.child('High').value(),
+                ]
+        elif change[0].name() == 'polarization_factor':
+            if change[0].parent().child('Apply polarization factor').value():
+                args['polarization_factor'] = upval
+
+        elif change[0].name() == 'Apply polarization factor':
+            if upval:
+                args['polarization_factor'] = \
+                    self.integratorTree.bai_1d_pars.child('polarization_factor').value()
+            else:
+                args['polarization_factor'] = None
+        else:
+            args.update(
+                [(change[0].name(), upval)]
+            )
     
     def bai_1d(self, q):
         print('bai1d')
@@ -395,6 +404,30 @@ class tthetaWidget(QWidget):
                 self.integrator_thread.method = 'bai_2d_all'
             else:
                 self.integrator_thread.method = 'bai_2d_SI'
+        self.integrator_thread.start()
+
+    def mg_setup(self, q):
+        print('mgsetup')
+        with self.integrator_thread.lock:
+            self.integrator_thread.sphere = self.sphere
+            self.integrator_thread.arch = self.arch
+            self.integrator_thread.method = 'mg_setup'
+        self.integrator_thread.start()
+
+    def mg_1d(self, q):
+        print('mg1d')
+        with self.integrator_thread.lock:
+            self.integrator_thread.sphere = self.sphere
+            self.integrator_thread.arch = self.arch
+            self.integrator_thread.method = 'mg_1d'
+        self.integrator_thread.start()
+    
+    def mg_2d(self, q):
+        print('mg2d')
+        with self.integrator_thread.lock:
+            self.integrator_thread.sphere = self.sphere
+            self.integrator_thread.arch = self.arch
+            self.integrator_thread.method = 'mg_2d'
         self.integrator_thread.start()
                 
 

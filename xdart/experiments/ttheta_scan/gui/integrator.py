@@ -88,6 +88,49 @@ params = [
             }
         ]
 
+    },
+    {'name': 'Multi. Geometry', 'type': 'group', 'children': [
+            {'name': 'Multi Geometry Setup', 'type': 'group', 'children': [
+                {'name': 'unit', 'type': 'list', 'values': {
+                    "2" + u"\u03B8": units.TTH_DEG, "q (A-1)": units.Q_A
+                    }, 'value': units.TTH_DEG},
+                {'name': 'radial_range', 'type': 'group', 'children': [
+                        {'name': 'Low', 'type': 'float', 'value': 0.0},
+                        {'name': 'High', 'type': 'float', 'value': 180.0},
+                        {'name': 'Auto', 'type': 'bool', 'value': True},
+                    ]
+                },
+                {'name': 'azimuth_range', 'type': 'group', 'children': [
+                        {'name': 'Low', 'type': 'float', 'value': -180.0},
+                        {'name': 'High', 'type': 'float', 'value': 180.0},
+                        {'name': 'Auto', 'type': 'bool', 'value': True},
+                    ]
+                },
+                {'name': 'empty', 'type': 'float', 'value': -1.0},
+                {'name': 'chi_disc', 'type': 'float', 'value': 180},
+            ]
+            },
+            {'name': 'Integrate 1D', 'type': 'group', 'children': [
+                {'name': 'npt', 'type': 'int', 'value': 1000},
+                {'name': 'monitor', 'type': 'str', 'value': 'None'},
+                {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
+                {'name': 'Apply polarization factor', 'type': 'bool', 'value': False},
+                {'name': 'polarization_factor', 'type': 'float', 'value': 0, 
+                    'limits': (-1, 1)}
+                ]
+            },
+            {'name': 'Integrate 2D', 'type': 'group', 'children': [
+                {'name': 'npt_rad', 'type': 'int', 'value': 1000},
+                {'name': 'npt_azim', 'type': 'int', 'value': 1000},
+                {'name': 'monitor', 'type': 'str', 'value': 'None'},
+                {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
+                {'name': 'Apply polarization factor', 'type': 'bool', 'value': False},
+                {'name': 'polarization_factor', 'type': 'float', 'value': 0, 
+                    'limits': (-1, 1)}
+                ]
+            }
+        ]
+
     }
 ]
 

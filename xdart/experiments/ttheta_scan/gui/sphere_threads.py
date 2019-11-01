@@ -23,30 +23,43 @@ class integratorThread(Qt.QtCore.QThread):
         self.arch = arch
         self.method = None
         self.lock = Condition()
+        self.mg_1d_args = {}
+        self.mg_2d_args = {}
     
     def run(self):
-        print(self.sphere.bai_1d_args)
         with self.lock:
-            if self.method == 'bai_1d_SI':
-                self.sphere.arches[self.arch].integrate_1d(**self.sphere.bai_1d_args)
-            
-            elif self.method == 'bai_1d_all':
-                with self.sphere.sphere_lock:
-                    self.sphere.bai_1d = int_1d_data()
-                for arch in self.sphere.arches:
-                    arch.integrate_1d(**self.sphere.bai_1d_args)
-                    self.sphere._update_bai_1d(arch)
-                    self.update.emit()
+            method = getattr(self, self.method)
+            method()
 
-            elif self.method == 'bai_2d_SI':
-                self.sphere.arches[self.arch].integrate_2d(**self.sphere.bai_2d_args)
-            
-            elif self.method == 'bai_2d_all':
-                with self.sphere.sphere_lock:
-                    self.sphere.bai_2d = int_2d_data()
-                for arch in self.sphere.arches:
-                    arch.integrate_2d(**self.sphere.bai_2d_args)
-                    self.sphere._update_bai_2d(arch)
-                    self.update.emit()
+    def mg_2d(self):
+        self.sphere.multigeometry_integrate_2d(**self.mg_2d_args)
+
+    def mg_1d(self):
+        self.sphere.multigeometry_integrate_1d(**self.mg_1d_args)
+
+    def mg_setup(self):
+        self.sphere.set_multi_geo()
+
+    def bai_2d_all(self):
+        with self.sphere.sphere_lock:
+            self.sphere.bai_2d = int_2d_data()
+        for arch in self.sphere.arches:
+            arch.integrate_2d(**self.sphere.bai_2d_args)
+            self.sphere._update_bai_2d(arch)
+            self.update.emit()
+
+    def bai_2d_SI(self):
+        self.sphere.arches[self.arch].integrate_2d(**self.sphere.bai_2d_args)
+
+    def bai_1d_all(self):
+        with self.sphere.sphere_lock:
+            self.sphere.bai_1d = int_1d_data()
+        for arch in self.sphere.arches:
+            arch.integrate_1d(**self.sphere.bai_1d_args)
+            self.sphere._update_bai_1d(arch)
+            self.update.emit()
+
+    def bai_1d_SI(self):
+        self.sphere.arches[self.arch].integrate_1d(**self.sphere.bai_1d_args)
                 
 
