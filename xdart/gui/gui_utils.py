@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.Point import Point
@@ -63,3 +64,31 @@ class RectViewBox(pg.ViewBox):
             if x is not None or y is not None:
                 self.translateBy(x=x, y=y)
             self.sigRangeChangedManually.emit(self.state['mouseEnabled'])
+
+class DFTableModel(QtCore.QAbstractTableModel):
+    def __init__(self, data=None, parent=None):
+        super().__init__(parent)
+        if data is None:
+            data = pd.DataFrame()
+        self.dataFrame = data
+    
+    def data(self, index, role=QtCore.Qt.DisplayRole):
+        if index.isValid():
+            if role == QtCore.Qt.DisplayRole:
+                return str(self.dataFrame.iloc[index.row(), index.column()])
+        return None
+
+    def rowCount(self, parent):
+        return self.dataFrame.shape[0]
+    
+    def columnCount(self, parent):
+        return self.dataFrame.shape[1]
+    
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return str(self.dataFrame.columns.values[section])
+            elif orientation == QtCore.Qt.Vertical:
+                return str(self.dataFrame.index[section])
+        return QtCore.QAbstractTableModel.headerData(self, section, orientation, role)
+    
