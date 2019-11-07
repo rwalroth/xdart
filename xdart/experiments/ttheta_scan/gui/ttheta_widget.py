@@ -29,6 +29,7 @@ from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .sphere_threads import integratorThread
+from .metadata import metadataWidget
 
 formats = [
     str(f.data(), encoding='utf-8').lower() for f in
@@ -99,6 +100,10 @@ class tthetaWidget(QWidget):
         self.integratorTree.ui.integrateMG1D.clicked.connect(self.mg_1d)
         self.integratorTree.ui.integrateMG2D.clicked.connect(self.mg_2d)
 
+        # Metadata setup
+        self.metawidget = metadataWidget()
+        self.ui.metaFrame.setLayout(self.metawidget.layout)
+
         self.show()
     
     def open_file(self):
@@ -144,6 +149,7 @@ class tthetaWidget(QWidget):
         self.h5viewer.set_data(self.sphere)
         self.h5viewer.ui.listData.setCurrentRow(0)
         self.integratorTree.update(self.sphere)
+        self.metawidget.update(self.sphere)
 
     def set_data(self, q):
         """Updates data in displayframe
@@ -165,6 +171,8 @@ class tthetaWidget(QWidget):
 
                 self.integratorTree.ui.integrateBAIAll.setChecked(True)
                 self.integratorTree.ui.integrateBAIAll.setEnabled(False)
+                
+                self.metawidget.update(self.sphere)
             
             else:
                 self.arch = int(q.data(0))
@@ -175,6 +183,8 @@ class tthetaWidget(QWidget):
                 self.displayframe.ui.imageMask.setEnabled(True)
 
                 self.integratorTree.ui.integrateBAIAll.setEnabled(True)
+                
+                self.metawidget.update(self.sphere, self.arch)
 
     def load_and_set(self, q):
         """Combination of load and setting functions
