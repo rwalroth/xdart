@@ -29,7 +29,7 @@ from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
-from .sphere_threads import integratorThread
+from .sphere_threads import integratorThread, batchIntegrator
 from .metadata import metadataWidget
 from .wranglers import specWrangler
 
@@ -87,8 +87,6 @@ class tthetaWidget(QWidget):
         self.displayframe.ui.pushLeft.clicked.connect(self.prev_arch)
         self.displayframe.ui.pushRightLast.clicked.connect(self.last_arch)
         self.displayframe.ui.pushLeftLast.clicked.connect(self.first_arch)
-        self.integrator_thread.finished.connect(self.displayframe.update)
-        self.integrator_thread.update.connect(self.displayframe.update)
 
         # IntegratorFrame setup
         self.integratorTree = integratorTree()
@@ -103,19 +101,25 @@ class tthetaWidget(QWidget):
         self.integratorTree.ui.setupMG.clicked.connect(self.mg_setup)
         self.integratorTree.ui.integrateMG1D.clicked.connect(self.mg_1d)
         self.integratorTree.ui.integrateMG2D.clicked.connect(self.mg_2d)
+        self.integrator_thread.update.connect(self.displayframe.update)
+        self.integrator_thread.finished.connect(self.thread_finished)
 
         # Metadata setup
         self.metawidget = metadataWidget()
         self.ui.metaFrame.setLayout(self.metawidget.layout)
+
         # Wrangler frame setup
         for name, w in wranglers.items():
             self.ui.wranglerStack.addWidget(w())
             self.ui.wranglerBox.addItem(name)
-        self.ui.batchStart.connect(self.start_batch)
-        self.ui.batchPause.connect(self.pause_batch)
-        self.ui.batchContinue.connect(self.continue_batch)
-        self.ui.batchStop.connect(self.stop_batch)
+        self.ui.batchStart.clicked.connect(self.start_batch)
+        self.ui.batchPause.clicked.connect(self.pause_batch)
+        self.ui.batchContinue.clicked.connect(self.continue_batch)
+        self.ui.batchStop.clicked.connect(self.stop_batch)
         self.command_queue = Queue()
+        self.batch_integrator = batchIntegrator(self.sphere, None, self.command_queue)
+        self.batch_integrator.update.connect(self.update_all)
+        self.batch_integrator.finished.connect(self.thread_finished)
 
         self.show()
     
@@ -405,21 +409,17 @@ class tthetaWidget(QWidget):
             )
     
     def bai_1d(self, q):
-        print('bai1d')
         with self.integrator_thread.lock:
-            print('lock acquired')
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
             if self.integratorTree.ui.integrateBAIAll.isChecked():
                 self.integrator_thread.method = 'bai_1d_all'
             else:
                 self.integrator_thread.method = 'bai_1d_SI'
-        print('starting thread')
+        self.enable_integration(False)
         self.integrator_thread.start()
-        print(self.integrator_thread.isRunning())
 
     def bai_2d(self, q):
-        print('bai2d')
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
@@ -427,22 +427,23 @@ class tthetaWidget(QWidget):
                 self.integrator_thread.method = 'bai_2d_all'
             else:
                 self.integrator_thread.method = 'bai_2d_SI'
+        self.enable_integration(False)
         self.integrator_thread.start()
 
     def mg_setup(self, q):
-        print('mgsetup')
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
             self.integrator_thread.method = 'mg_setup'
+        self.enable_integration(False)
         self.integrator_thread.start()
 
     def mg_1d(self, q):
-        print('mg1d')
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
             self.integrator_thread.method = 'mg_1d'
+        self.enable_integration(False)
         self.integrator_thread.start()
     
     def mg_2d(self, q):
@@ -451,7 +452,76 @@ class tthetaWidget(QWidget):
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
             self.integrator_thread.method = 'mg_2d'
+        self.enable_integration(False)
         self.integrator_thread.start()
+    
+    def enable_integration(self, enable=True):
+        self.integratorTree.tree.setEnabled(enable)
+        
+        self.integratorTree.ui.integrateBAI1D.setEnabled(enable)
+        self.integratorTree.ui.integrateBAI2D.setEnabled(enable)
+        self.integratorTree.ui.setupMG.setEnabled(enable)
+        self.integratorTree.ui.integrateMG1D.setEnabled(enable)
+        self.integratorTree.ui.integrateMG2D.setEnabled(enable)
+        
+        self.ui.batchStart.setEnabled(enable)
+
+    def update_all(self):
+        self.displayframe.update()
+        self.h5viewer.set_data(self.sphere)
+    
+    def thread_finished(self):
+        self.enable_integration(True)
+        self.ui.wranglerBox.setEnabled(True)
+        wrangler = self.ui.wranglerStack.currentWidget()
+        wrangler.enabled(True)
+        self.update()
+    
+    def start_batch(self):
+        self.ui.wranglerBox.setEnabled(False)
+        wrangler = self.ui.wranglerStack.currentWidget()
+        wrangler.enabled(False)
+        self.enable_integration(False)
+        
+        scan_name = 'scan' + str(wrangler.scan_number).zfill(2)
+        self.sphere = EwaldSphere(scan_name)
+        self.get_all_args()
+        self.h5viewer.set_data(self.sphere)
+        self.displayframe.sphere = self.sphere
+        self.batch_integrator.sphere = self.sphere
+        self.batch_integrator.wrangler = wrangler
+        self.batch_integrator.start()
+    
+    def unroll_tree(self, changes, param):
+        if param.hasChildren():
+            for child in param.children():
+                if child.isType('group'):
+                    changes = self.unroll_tree(changes, child)
+                else:
+                    changes.append((child, None, child.value()))
+        elif not param.isType('group'):
+            changes.append((param, None, param.value()))
+        
+        return changes
+        
+    def get_all_args(self):
+        changes = []
+        changes = self.unroll_tree(changes, self.integratorTree.parameters)
+        self.parse_param_change(None, changes)
+
+
+    def pause_batch(self):
+        if self.batch_integrator.isRunning():
+            self.command_queue.put('pause')
+
+    def continue_batch(self):
+        if self.batch_integrator.isRunning():
+            self.command_queue.put('continue')
+
+    def stop_batch(self):
+        if self.batch_integrator.isRunning():
+            self.command_queue.put('stop')
+
                 
 
 

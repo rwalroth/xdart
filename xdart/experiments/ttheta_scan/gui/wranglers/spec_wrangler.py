@@ -71,6 +71,8 @@ class specWrangler(Qt.QtWidgets.QWidget):
         self.specFile = {}
         self.spec_name = None
         self.user = None
+        self.scan_number = 0
+        self.timeout = 5
         self.parameters.sigTreeStateChanged.connect(self.update)
         self.update()
         self.showLabel.connect(self.ui.specLabel.setText)
@@ -125,7 +127,7 @@ class specWrangler(Qt.QtWidgets.QWidget):
         return mp_inputs
 
     def _get_lsf_inputs(self):
-        dirname, fname = os.path.split(self.parameters.child('Spec File'))
+        dirname, fname = os.path.split(self.parameters.child('Spec File').value())
         lsf_inputs = OrderedDict(
             spec_file_path=dirname,
             spec_file_name=fname
@@ -146,7 +148,7 @@ class specWrangler(Qt.QtWidgets.QWidget):
     def read_raw(self, file, mask=True):
         with open(file, 'rb') as im:
             arr = np.fromstring(im.read(), dtype='int32')
-            arr.reshape((195, 487))
+            arr = arr.reshape((195, 487))
             if mask:
                 for i in range(0, 10):
                     arr[:,i] = -2.0
@@ -157,7 +159,12 @@ class specWrangler(Qt.QtWidgets.QWidget):
 
     def update(self):
         self.poniGen.inputs.update(self._get_mp_inputs())
-        self.specFileReader.inputs.update(self._get_lsf_inputs)
+        self.specFileReader.inputs.update(self._get_lsf_inputs())
+        self.scan_number = self.parameters.child('Scan Number').value()
+        self.timeout = self.parameters.child('Timeout').value()
+    
+    def enabled(self, enable):
+        self.tree.setEnabled(enable)
 
     def wrangle(self, i):
         self.showLabel.emit(f'Checking for {i}')
@@ -165,25 +172,30 @@ class specWrangler(Qt.QtWidgets.QWidget):
         # image file names formed as predictable pattern
 
         start = time.time()
+        limit = np.inf
         while True:
+            if i > limit:
+                return 'TERMINATE', None
             # Looks for relevant data, loops until it is found or a
             # timeout occurs
             try:
                 # reads in spec data file
-                self.specFile.update(self.specFileReader.run())
+                self.specFile = self.specFileReader.run()
 
                 if self.user is None:
                     self.user = self.specFile['header']['meta']['User']
                 if self.spec_name is None:
-                    self.spec_name = self.specFile['header']['meta']['File']
+                    self.spec_name = self.specFile['header']['meta']['File'][0]
 
                 raw_file = self._get_raw_path(i)
 
                 if self.scan_number in self.specFile['scans'].keys():
+                    print(self.scan_number)
                     image_meta = self.specFile['scans']\
                                         [self.scan_number].loc[i].to_dict()
                 
                 else:
+                    print('not found')
                     image_meta = self.specFile['current_scan'].loc[i].to_dict()
                 self.poniGen.inputs['spec_dict'] = \
                     copy.deepcopy(image_meta)
@@ -192,7 +204,8 @@ class specWrangler(Qt.QtWidgets.QWidget):
                 self.showLabel.emit(f'Image {i} wrangled')
         
                 return 'image', (i, arr, image_meta, poni)
-            except (KeyError, FileNotFoundError, AttributeError, ValueError):
+            except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
+                print(e)
                 elapsed = time.time() - start
             if elapsed > self.timeout:
                 self.showLabel.emit("Timeout occurred")

@@ -97,13 +97,15 @@ params = [
                 {'name': 'radial_range', 'type': 'group', 'children': [
                         {'name': 'Low', 'type': 'float', 'value': 0.0},
                         {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': True},
+                        {'name': 'Auto', 'type': 'bool', 'value': False, 
+                         'visible': False, 'enabled': False},
                     ]
                 },
                 {'name': 'azimuth_range', 'type': 'group', 'children': [
                         {'name': 'Low', 'type': 'float', 'value': -180.0},
                         {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': True},
+                        {'name': 'Auto', 'type': 'bool', 'value': False, 
+                         'visible': False, 'enabled': False},
                     ]
                 },
                 {'name': 'empty', 'type': 'float', 'value': -1.0},
