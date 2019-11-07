@@ -7,6 +7,7 @@
 import os
 from functools import partial
 import time
+from queue import Queue
 
 # Other imports
 import h5py
@@ -29,6 +30,9 @@ from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .sphere_threads import integratorThread
+from .wranglers import specWrangler
+
+wranglers = {'SPEC': specWrangler}
 
 formats = [
     str(f.data(), encoding='utf-8').lower() for f in
@@ -98,6 +102,16 @@ class tthetaWidget(QWidget):
         self.integratorTree.ui.setupMG.clicked.connect(self.mg_setup)
         self.integratorTree.ui.integrateMG1D.clicked.connect(self.mg_1d)
         self.integratorTree.ui.integrateMG2D.clicked.connect(self.mg_2d)
+
+        # Wrangler frame setup
+        for name, w in wranglers.items():
+            self.ui.wranglerStack.addWidget(w())
+            self.ui.wranglerBox.addItem(name)
+        self.ui.batchStart.connect(self.start_batch)
+        self.ui.batchPause.connect(self.pause_batch)
+        self.ui.batchContinue.connect(self.continue_batch)
+        self.ui.batchStop.connect(self.stop_batch)
+        self.command_queue = Queue()
 
         self.show()
     
