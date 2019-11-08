@@ -58,6 +58,9 @@ class tthetaWidget(QWidget):
         self.sphere = None
         self.arch = None
         self.integrator_thread = integratorThread(self.sphere, self.arch)
+        self.timer = Qt.QtCore.QTimer()
+        self.timer.timeout.connect(self.clock)
+        self.timer.start(42)
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -122,6 +125,15 @@ class tthetaWidget(QWidget):
         self.batch_integrator.finished.connect(self.thread_finished)
 
         self.show()
+    
+    def clock(self):
+        if isinstance(self.sphere, EwaldSphere):
+            if self.sphere.sphere_lock._lock._count > 0:
+                self.h5viewer.ui.listScans.setEnabled(False)
+                self.h5viewer.ui.listData.setEnabled(False)
+            else:
+                self.h5viewer.ui.listScans.setEnabled(True)
+                self.h5viewer.ui.listData.setEnabled(True)
     
     def open_file(self):
         """Reads hdf5 file, populates list of scans in h5viewer. 

@@ -156,7 +156,6 @@ class specWrangler(Qt.QtWidgets.QWidget):
                     arr[:,i] = -2.0
             return arr.T
 
-
     def update(self):
         self.poniGen.inputs.update(self._get_mp_inputs())
         self.specFileReader.inputs.update(self._get_lsf_inputs())
