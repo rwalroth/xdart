@@ -19,6 +19,7 @@ from pyqtgraph import Qt
 from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
+from .wrangler_widget import wranglerWidget
 from .specUI import *
 from .....gui.gui_utils import NamedActionParameter
 
@@ -44,18 +45,24 @@ params = [
 
 ]
 
-class specWrangler(Qt.QtWidgets.QWidget):
+class specWrangler(wranglerWidget):
     showLabel = Qt.QtCore.Signal(str)
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+        self.ui.startButton.clicked.connect(self.sigStart.emit)
+        self.ui.pauseButton.clicked.connect(self.sigPause.emit)
+        self.ui.stopButton.clicked.connect(self.sigStop.emit)
+        self.ui.continueButton.clicked.connect(self.sigContinue.emit)
+
         self.tree = ParameterTree()
         self.parameters = Parameter.create(
             name='params', type='group', children=params
         )
         self.tree.setParameters(self.parameters, showTop=False)
         self.layout = Qt.QtWidgets.QVBoxLayout(self.ui.paramFrame)
+        self.layout.setContentsMargins(0,0,0,0)
         self.layout.addWidget(self.tree)
         self.parameters.child('spec_file_browse').sigActivated.connect(
             self.set_spec_file
@@ -164,6 +171,7 @@ class specWrangler(Qt.QtWidgets.QWidget):
     
     def enabled(self, enable):
         self.tree.setEnabled(enable)
+        self.ui.startButton.setEnabled(enable)
 
     def wrangle(self, i):
         self.showLabel.emit(f'Checking for {i}')

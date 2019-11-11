@@ -35,6 +35,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # Image pane setup
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
+        self.image_layout.setContentsMargins(0, 0, 0, 0)
+        self.image_layout.setSpacing(0)
         self.image_win = pg.GraphicsLayoutWidget()
         self.image_layout.addWidget(self.image_win)
         self.histogram = pg.HistogramLUTWidget(self.image_win)
@@ -54,6 +56,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.shareAxis.stateChanged.connect(self.update)
 
         self.plot_layout = Qt.QtWidgets.QVBoxLayout(self.ui.plotFrame)
+        self.plot_layout.setContentsMargins(0, 0, 0, 0)
         self.plot_win = pg.GraphicsLayoutWidget()
         self.plot_layout.addWidget(self.plot_win)
         vb = RectViewBox()

@@ -19,6 +19,7 @@ class metadataWidget(Qt.QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.layout = Qt.QtWidgets.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
         self.tableview = Qt.QtWidgets.QTableView()
         self.tableview.setModel(DFTableModel())

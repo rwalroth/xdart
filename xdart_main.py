@@ -33,6 +33,7 @@ from xdart import experiments
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.experiments = {}
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.actionOpen.triggered.connect(self.openFile)
@@ -67,13 +68,16 @@ class Main(QMainWindow):
     
     def openExperiment(self, q):
         if q.text() == 'ttheta_scan':
-            self.ttheta_tab = experiments.ttheta_scan.tthetaWidget()
-            self.tabwidget.addTab(self.ttheta_tab, 'ttheta_scan')
+            if 'ttheta_scan' not in self.experiments:
+                self.experiments['ttheta_scan'] = experiments.ttheta_scan.tthetaWidget()
+                self.tabwidget.addTab(self.experiments['ttheta_scan'], 'ttheta_scan')
     
     def closeExperiment(self, q):
-        self.tabwidget.setCurrentIndex(q)
-        self.tabwidget.currentWidget().close()
+        _to_close = self.tabwidget.widget(q)
+        name = self.tabwidget.tabText(q)
+        _to_close.close()
         self.tabwidget.removeTab(q)
+        del self.experiments[name]
         gc.collect()
 
 if __name__ == '__main__':

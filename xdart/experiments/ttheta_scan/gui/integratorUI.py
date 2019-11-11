@@ -13,6 +13,8 @@ class Ui_Form(object):
         Form.setObjectName("Form")
         Form.resize(400, 300)
         self.layout = QtWidgets.QVBoxLayout(Form)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
         self.layout.setObjectName("layout")
         self.parameterFrame = QtWidgets.QFrame(Form)
         self.parameterFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)

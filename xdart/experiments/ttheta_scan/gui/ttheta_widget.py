@@ -115,10 +115,8 @@ class tthetaWidget(QWidget):
         for name, w in wranglers.items():
             self.ui.wranglerStack.addWidget(w())
             self.ui.wranglerBox.addItem(name)
-        self.ui.batchStart.clicked.connect(self.start_batch)
-        self.ui.batchPause.clicked.connect(self.pause_batch)
-        self.ui.batchContinue.clicked.connect(self.continue_batch)
-        self.ui.batchStop.clicked.connect(self.stop_batch)
+        self.ui.wranglerStack.currentChanged.connect(self.set_wrangler)
+        self.set_wrangler(self.ui.wranglerStack.currentIndex())
         self.command_queue = Queue()
         self.batch_integrator = batchIntegrator(self.sphere, None, self.command_queue)
         self.batch_integrator.update.connect(self.update_all)
@@ -475,8 +473,6 @@ class tthetaWidget(QWidget):
         self.integratorTree.ui.setupMG.setEnabled(enable)
         self.integratorTree.ui.integrateMG1D.setEnabled(enable)
         self.integratorTree.ui.integrateMG2D.setEnabled(enable)
-        
-        self.ui.batchStart.setEnabled(enable)
 
     def update_all(self):
         self.displayframe.update()
@@ -485,23 +481,28 @@ class tthetaWidget(QWidget):
     def thread_finished(self):
         self.enable_integration(True)
         self.ui.wranglerBox.setEnabled(True)
-        wrangler = self.ui.wranglerStack.currentWidget()
-        wrangler.enabled(True)
+        self.wrangler.enabled(True)
         self.update()
     
+    def set_wrangler(self, qint):
+        self.wrangler = self.ui.wranglerStack.widget(qint)
+        self.wrangler.sigStart.connect(self.start_batch)
+        self.wrangler.sigPause.connect(self.pause_batch)
+        self.wrangler.sigContinue.connect(self.continue_batch)
+        self.wrangler.sigStop.connect(self.stop_batch)
+
     def start_batch(self):
         self.ui.wranglerBox.setEnabled(False)
-        wrangler = self.ui.wranglerStack.currentWidget()
-        wrangler.enabled(False)
+        self.wrangler.enabled(False)
         self.enable_integration(False)
         
-        scan_name = 'scan' + str(wrangler.scan_number).zfill(2)
+        scan_name = 'scan' + str(self.wrangler.scan_number).zfill(2)
         self.sphere = EwaldSphere(scan_name)
         self.get_all_args()
         self.h5viewer.set_data(self.sphere)
         self.displayframe.sphere = self.sphere
         self.batch_integrator.sphere = self.sphere
-        self.batch_integrator.wrangler = wrangler
+        self.batch_integrator.wrangler = self.wrangler
         self.batch_integrator.start()
     
     def unroll_tree(self, changes, param):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'c:\Users\walroth\Documents\repos\xdart\xdart\experiments\ttheta_scan\gui\plotFrameUI.ui'
+# Form implementation generated from reading ui file 'c:\Users\walroth\Documents\repos\xdart\xdart\experiments\ttheta_scan\gui\displayFrameUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -14,6 +14,7 @@ class Ui_Form(object):
         Form.resize(954, 442)
         self.layout = QtWidgets.QHBoxLayout(Form)
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
         self.layout.setObjectName("layout")
         self.frame = QtWidgets.QFrame(Form)
         self.frame.setMaximumSize(QtCore.QSize(50, 16777215))
@@ -21,7 +22,7 @@ class Ui_Form(object):
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.frame)
-        self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_2.setContentsMargins(4, 0, 4, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.pushLeft = QtWidgets.QPushButton(self.frame)
         self.pushLeft.setObjectName("pushLeft")
@@ -36,9 +37,11 @@ class Ui_Form(object):
         self.imageWindow = QtWidgets.QFrame(self.splitter)
         self.imageWindow.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.imageWindow.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.imageWindow.setLineWidth(3)
         self.imageWindow.setObjectName("imageWindow")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.imageWindow)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_3.setSpacing(0)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
         self.labelCurrent = QtWidgets.QLabel(self.imageWindow)
         self.labelCurrent.setMinimumSize(QtCore.QSize(0, 20))
@@ -89,9 +92,11 @@ class Ui_Form(object):
         self.plotWindow = QtWidgets.QFrame(self.splitter)
         self.plotWindow.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.plotWindow.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.plotWindow.setLineWidth(3)
         self.plotWindow.setObjectName("plotWindow")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.plotWindow)
         self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_4.setSpacing(0)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.plotFrame = QtWidgets.QFrame(self.plotWindow)
         self.plotFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -133,7 +138,7 @@ class Ui_Form(object):
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.frame_2)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setContentsMargins(4, 0, 4, 0)
         self.verticalLayout.setObjectName("verticalLayout")
         self.pushRight = QtWidgets.QPushButton(self.frame_2)
         self.pushRight.setObjectName("pushRight")
