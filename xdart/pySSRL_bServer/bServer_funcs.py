@@ -4,7 +4,7 @@ import uuid
 import pandas as pd
 import re
 import time
-from helper_funcs import find_between, find_between_r
+from .helper_funcs import find_between, find_between_r
 
 bServer = "http://127.0.0.1:18085/SIS/"
 

@@ -32,9 +32,9 @@ from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .sphere_threads import integratorThread, batchIntegrator
 from .metadata import metadataWidget
-from .wranglers import specWrangler
+from .wranglers import specWrangler, liveSpecWrangler
 
-wranglers = {'SPEC': specWrangler}
+wranglers = {'SPEC': specWrangler, 'Live Spec': liveSpecWrangler}
 
 formats = [
     str(f.data(), encoding='utf-8').lower() for f in
@@ -62,6 +62,7 @@ class tthetaWidget(QWidget):
         self.timer = Qt.QtCore.QTimer()
         self.timer.timeout.connect(self.clock)
         self.timer.start(42)
+        self.start_next = False
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -507,6 +508,8 @@ class tthetaWidget(QWidget):
         self.ui.wranglerBox.setEnabled(True)
         self.wrangler.enabled(True)
         self.update()
+        if self.start_next:
+            self.start_batch()
     
     def set_wrangler(self, qint):
         self.wrangler = self.ui.wranglerStack.widget(qint)
@@ -514,8 +517,14 @@ class tthetaWidget(QWidget):
         self.wrangler.sigPause.connect(self.pause_batch)
         self.wrangler.sigContinue.connect(self.continue_batch)
         self.wrangler.sigStop.connect(self.stop_batch)
+        self.wrangler.sigEndScan.connect(self.save_data)
+        self.wrangler.sigNewScan.connect(self.new_scan)
+    
+    def new_scan(self, q):
+        self.start_next = True
 
     def start_batch(self):
+        self.start_next = False
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
         self.enable_integration(False)

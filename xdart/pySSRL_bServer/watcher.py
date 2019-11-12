@@ -19,6 +19,8 @@ class Watcher(Process):
         self.pollingPeriod = pollingPeriod
         if len(queues) < 1:
             self.queues = {ftype: Queue() for ftype in filetypes}
+        else:
+            self.queues = queues
         self.verbose = verbose
         
     
