@@ -295,9 +295,12 @@ class tthetaWidget(QWidget):
     def save_data(self):
         """Saves all data to hdf5 file.
         """
-        if isinstance(self.sphere, EwaldSphere) and isinstance(self.file, h5py.File):
-            self.sphere.save_to_h5(self.file, replace=True)
-            self.h5viewer.update(self.file)
+        if isinstance(self.sphere, EwaldSphere):
+            if isinstance(self.file, h5py.File):
+                self.sphere.save_to_h5(self.file, replace=True)
+                self.h5viewer.update(self.file)
+            else:
+                self.save_data_as()
     
     def set_defaults(self):
         parameters = [self.integratorTree.parameters]
