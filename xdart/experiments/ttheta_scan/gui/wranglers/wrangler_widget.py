@@ -10,6 +10,7 @@
 # Qt imports
 import pyqtgraph as pg
 from pyqtgraph import Qt
+from pyqtgraph.parametertree import Parameter
 
 # This module imports
 
@@ -23,6 +24,9 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.scan_number = 0 # this attribute must be an int
+        self.parameters = Parameter.create(
+            name='wrangler_widget', type='int', value=0
+        )
     
     def wrangle(self, i):
         """This function will be called to get data from wrangler. Must

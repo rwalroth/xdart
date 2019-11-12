@@ -1,11 +1,29 @@
+# -*- coding: utf-8 -*-
+"""
+@author: walroth
+"""
+
+# Standard library imports
+import os
+import json
+
+# Other imports
 import numpy as np
 import pandas as pd
+from pyFAI.units import Unit
+
+# Qt imports
 import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.Point import Point
 from PyQt5 import QtCore, QtGui, QtWidgets
 from pyqtgraph.parametertree.ParameterItem import ParameterItem
 from pyqtgraph.parametertree.Parameter import Parameter
+
+# paws imports
+
+# This module imports
+
 
 def return_no_zero(x, y):
     return x[y > 0], y[y > 0]
@@ -136,5 +154,96 @@ class NamedActionParameter(Parameter):
     def activate(self):
         self.sigActivated.emit(self)
         self.emitStateChanged('activated', None)
+
+
+class XdartEncoder(json.JSONEncoder):
+    def default(self, o):
+        if type(o) == Unit:
+            return {
+                '_type': 'pfunit',
+                'value': str(o)
+            }
+        return super().default(o)
+
+
+class XdartDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+    
+    def object_hook(self, obj):
+        if '_type' not in obj:
+            return obj
+        if obj['_type'] == 'pfunit':
+            return Unit(obj['value'])
+        return obj
+
+
+class defaultWidget(Qt.QtWidgets.QWidget):
+    def __init__(self, parameters, parent=None):
+        super().__init__(parent)
+        self.parameters = {}
+        self.tree = pg.parametertree.ParameterTree()
+        for param in parameters:
+            self.parameters[param.name()] = param
+            self.tree.addParameters(param)
+        self.layout = Qt.QtWidgets.QGridLayout(self)
+        self.setLayout(self.layout)
+        self.layout.addWidget(self.tree, 0, 0, 1, 3)
+        self.saveButton = Qt.QtWidgets.QPushButton()
+        self.saveButton.clicked.connect(self.save_defaults)
+        self.saveButton.setText("Save")
+        self.layout.addWidget(self.saveButton, 1, 0)
+        self.openButton = Qt.QtWidgets.QPushButton()
+        self.openButton.clicked.connect(self.load_defaults)
+        self.openButton.setText("Open")
+        self.layout.addWidget(self.openButton, 1, 1)
+        self.setButton = Qt.QtWidgets.QPushButton()
+        self.setButton.clicked.connect(self.set_all_defaults)
+        self.setButton.setText('Set all')
+        self.layout.addWidget(self.setButton, 1, 2)
+    
+    def param_to_valdict(self, param):
+        valdict = {}
+        if param.isType('group'):
+            valdict[param.name()] = {}
+            if param.hasChildren():
+                for child in param.children():
+                    valdict[param.name()].update(self.param_to_valdict(child))
+        else:
+            valdict[param.name()] = param.value()
+        return valdict
+
+    def set_defaults(self, param, valdict):
+        if param.isType('group'):
+            if param.hasChildren():
+                for child in param.children():
+                    self.set_defaults(child, valdict[param.name()])
+        elif param.name() in valdict:
+            param.setDefault(valdict[param.name()])
+            param.setValue(valdict[param.name()])
+    
+    def save_defaults(self):
+        jdict = {}
+        for key, param in self.parameters.items():
+            jdict[key] = self.param_to_valdict(param)
+        
+        fname, _ = Qt.QtWidgets.QFileDialog().getSaveFileName(filter="*.json")
+        if fname != "":
+            with open(fname, 'w') as f:
+                json.dump(jdict, f, cls=XdartEncoder)
+    
+    def load_defaults(self):
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(filter="*.json")
+        if fname != "":
+            with open(fname, 'r') as f:
+                valdict = json.load(f, cls=XdartDecoder)
+            for key, param in self.parameters.items():
+                self.set_defaults(param, valdict[key])
+    
+    def set_all_defaults(self):
+        for key, param in self.parameters.items():
+            valdict = self.param_to_valdict(param)
+            self.set_defaults(param, valdict)
+
 
 

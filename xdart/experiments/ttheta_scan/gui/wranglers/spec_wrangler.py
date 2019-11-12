@@ -8,6 +8,7 @@ import os
 from collections import OrderedDict
 import time
 import copy
+import traceback
 
 # Other imports
 import numpy as np
@@ -58,7 +59,7 @@ class specWrangler(wranglerWidget):
 
         self.tree = ParameterTree()
         self.parameters = Parameter.create(
-            name='params', type='group', children=params
+            name='spec_wrangler', type='group', children=params
         )
         self.tree.setParameters(self.parameters, showTop=False)
         self.layout = Qt.QtWidgets.QVBoxLayout(self.ui.paramFrame)
@@ -116,8 +117,8 @@ class specWrangler(wranglerWidget):
         )
         rot_mot = self.parameters.child('Rotation Motors')
         for child in rot_mot:
-            if child.valueIsDefault():
-                pass
+            if child.value() == "":
+                mp_inputs['rotations'][child.name().lower()] = None
             else:
                 mp_inputs['rotations'][child.name().lower()] = child.value()
         
@@ -197,12 +198,10 @@ class specWrangler(wranglerWidget):
                 raw_file = self._get_raw_path(i)
 
                 if self.scan_number in self.specFile['scans'].keys():
-                    print(self.scan_number)
                     image_meta = self.specFile['scans']\
                                         [self.scan_number].loc[i].to_dict()
                 
                 else:
-                    print('not found')
                     image_meta = self.specFile['current_scan'].loc[i].to_dict()
                 self.poniGen.inputs['spec_dict'] = \
                     copy.deepcopy(image_meta)
@@ -212,7 +211,9 @@ class specWrangler(wranglerWidget):
         
                 return 'image', (i, arr, image_meta, poni)
             except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
-                print(e)
+                print(type(e))
+                print(e.args)
+                traceback.print_tb(e.__traceback__)
                 elapsed = time.time() - start
             if elapsed > self.timeout:
                 self.showLabel.emit("Timeout occurred")

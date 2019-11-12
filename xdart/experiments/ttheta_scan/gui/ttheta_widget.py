@@ -25,6 +25,7 @@ from paws.plugins.ewald import EwaldSphere
 
 # This module imports
 from .... import utils as ut
+from ....gui.gui_utils import defaultWidget
 from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
@@ -80,6 +81,8 @@ class tthetaWidget(QWidget):
         self.h5viewer.actionSaveImage.triggered.connect(self.save_image)
         self.h5viewer.actionSaveArray.triggered.connect(self.save_array)
         self.h5viewer.actionSaveData.triggered.connect(self.save_data)
+        self.h5viewer.actionSaveDataAs.triggered.connect(self.save_data_as)
+        self.h5viewer.actionSetDefaults.triggered.connect(self.set_defaults)
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(parent=self.ui.middleFrame)
@@ -202,7 +205,10 @@ class tthetaWidget(QWidget):
                 self.metawidget.update(self.sphere)
             
             else:
-                self.arch = int(q.data(0))
+                try:
+                    self.arch = int(q.data(0))
+                except ValueError:
+                    return
                 self.displayframe.arch = int(q.data(0))
                 self.displayframe.update()
                 self.displayframe.ui.imageIntRaw.setEnabled(True)
@@ -265,7 +271,7 @@ class tthetaWidget(QWidget):
         elif ext.lower() == 'csv':
             ut.write_csv(fname, xdata, ydata)
     
-    def save_data(self):
+    def save_data_as(self):
         """Saves all data to hdf5 file.
         """
         if isinstance(self.sphere, EwaldSphere):
@@ -285,6 +291,21 @@ class tthetaWidget(QWidget):
                         self.sphere.save_to_h5(f, replace=True)
                 except Exception as e:
                     print(e)
+    
+    def save_data(self):
+        """Saves all data to hdf5 file.
+        """
+        if isinstance(self.sphere, EwaldSphere) and isinstance(self.file, h5py.File):
+            self.sphere.save_to_h5(self.file, replace=True)
+            self.h5viewer.update(self.file)
+    
+    def set_defaults(self):
+        parameters = [self.integratorTree.parameters]
+        for i in range(self.ui.wranglerStack.count()):
+            w = self.ui.wranglerStack.widget(i)
+            parameters.append(w.parameters)
+        self.defaultWidget = defaultWidget(parameters)
+        self.defaultWidget.show()
     
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe

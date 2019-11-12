@@ -143,7 +143,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.ui.setupUi(self)
         self.layout = Qt.QtWidgets.QHBoxLayout(self.ui.parameterFrame)
         self.parameters = Parameter.create(
-            name='params', type='group', children=params
+            name='integrator', type='group', children=params
         )
         self.bai_1d_pars = self.parameters.child('Single Image', 'Integrate 1D')
         self.bai_2d_pars = self.parameters.child('Single Image', 'Integrate 2D')
