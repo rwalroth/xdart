@@ -1,5 +1,5 @@
 bl2-1_testConfig:
-  TCP_IP: 192.0.2.2
+  TCP_IP: 134.79.38.68
   TCP_PORT: 2034
   autoalign: null
   description: Description of the beamline, e.g. BL2-1 SPEC Infoserver connection

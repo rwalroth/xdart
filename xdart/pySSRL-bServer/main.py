@@ -41,7 +41,8 @@ async def handleGET_motor_position(request):
     print("Response: '{}'".format(response))
     print("\n\n\nRequest took: {}s\n\n".format(time.time() - t0))
 
-    convertedResults = {'hi': 'there', 'position': response}
+    #convertedResults = {'hi': 'there', 'position': response}
+    convertedResults = {'position': response}
     return web.json_response(convertedResults)
 
 
@@ -168,7 +169,7 @@ asyncio.set_event_loop(loop)
 
 
 #Initialize the connection to SPEC
-temp_bi = BL_Interaction(loop=loop, beamline_name='bl10-2_testConfig')
+temp_bi = BL_Interaction(loop=loop, beamline_name='bl2-1_testConfig')
 
 #Initialize the http web application and register routes
 app = web.Application()
