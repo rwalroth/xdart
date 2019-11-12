@@ -19,8 +19,8 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     sigPause = Qt.QtCore.Signal()
     sigStop = Qt.QtCore.Signal()
     sigContinue = Qt.QtCore.Signal()
-    sigEndScan = Qt.QtCore.Signal(bool)
-    sigNewScan = Qt.QtCore.Signal(bool)
+    sigEndScan = Qt.QtCore.Signal()
+    sigNewScan = Qt.QtCore.Signal(int)
     def __init__(self, parent=None):
         super().__init__(parent)
         self.scan_number = 0 # this attribute must be an int
