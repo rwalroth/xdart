@@ -6,6 +6,7 @@
 
 # Other imports
 import h5py
+from paws.pawstools import catch_h5py_file as catch
 
 # Qt imports
 from PyQt5.QtWidgets import QWidget
@@ -16,8 +17,10 @@ from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
 from .h5viewerUI import *
 
 class H5Viewer(QWidget):
-    def __init__(self, file, fname, parent=None):
+    def __init__(self, file_lock, fname, parent=None):
         super().__init__(parent)
+        self.file_lock = file_lock
+        self.fname = fname
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -70,19 +73,21 @@ class H5Viewer(QWidget):
 
         self.show()
 
-    def update(self, file):
+    def update(self):
         """Takes in file, adds keys to scan list
         """
-        if isinstance(file, h5py.File):
-            self.ui.listScans.clear()
-            for key in file:
-                self.ui.listScans.addItem(key)
+        with self.file_lock:
+            with catch(self.fname, 'r') as file:
+                self.ui.listScans.clear()
+                for key in file:
+                    self.ui.listScans.addItem(key)
     
     def set_data(self, sphere):
         """Takes sphere object and updates list with all arch ids
         """
-        self.ui.listData.clear()
-        self.ui.listData.addItem('Overall')
-        for arch in sphere.arches.sort_index():
-            self.ui.listData.addItem(str(arch.idx))
+        with sphere.sphere_lock:
+            self.ui.listData.clear()
+            self.ui.listData.addItem('Overall')
+            for arch in sphere.arches.sort_index():
+                self.ui.listData.addItem(str(arch.idx))
 

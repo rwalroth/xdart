@@ -181,7 +181,7 @@ class specWrangler(wranglerWidget):
 
         start = time.time()
         limit = np.inf
-        while True:
+        while self.cont:
             if i > limit:
                 return 'TERMINATE', None
             # Looks for relevant data, loops until it is found or a

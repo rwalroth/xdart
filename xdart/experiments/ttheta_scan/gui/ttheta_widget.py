@@ -8,6 +8,7 @@ import os
 from functools import partial
 import time
 from queue import Queue
+import multiprocessing as mp
 
 # Other imports
 import h5py
@@ -22,6 +23,7 @@ from pyqtgraph.parametertree import (
 
 # paws imports
 from paws.plugins.ewald import EwaldSphere
+from paws.pawstools import catch_h5py_file as catch
 
 # This module imports
 from .... import utils as ut
@@ -54,7 +56,7 @@ class tthetaWidget(QWidget):
         super().__init__(parent)
 
         # Data object initialization
-        self.file = None
+        self.file_lock = mp.Condition()
         self.fname = None
         self.sphere = None
         self.arch = None
@@ -62,13 +64,12 @@ class tthetaWidget(QWidget):
         self.timer = Qt.QtCore.QTimer()
         self.timer.timeout.connect(self.clock)
         self.timer.start(42)
-        self.start_next = False
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
         # H5Viewer setup
-        self.h5viewer = H5Viewer(self.file, self.fname, self.ui.hdf5Frame)
+        self.h5viewer = H5Viewer(self.file_lock, self.fname, self.ui.hdf5Frame)
         self.h5viewer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
         self.h5viewer.ui.listData.addItem('No data')
@@ -141,27 +142,19 @@ class tthetaWidget(QWidget):
         """Reads hdf5 file, populates list of scans in h5viewer. 
         Creates persistent h5py file object.
         """
-        fname, _ = QFileDialog().getOpenFileName()
-        if fname == '':
-            return
-        
-        self.fname = fname
-
-        if self.file is None:
+        with self.file_lock:
+            fname, _ = QFileDialog().getOpenFileName()
+            if fname == '' or fname == self.fname:
+                return
+            
             try:
-                self.file = h5py.File(self.fname, 'a')
-            except Exception as e:
-                print(e)
-        else:
-            try:
-                self.file.close()
-                self.file = h5py.File(self.fname, 'a')
+                with catch(fname, 'r') as f:
+                    self.fname = fname
             except Exception as e:
                 print(e)
 
-        self.h5viewer.fname = self.fname
-        self.h5viewer.file = self.file
-        self.h5viewer.update(self.file)
+            self.h5viewer.fname = self.fname
+            self.h5viewer.update()
     
     def load_sphere(self, name):
         """Loads EwaldSphere object into memory
@@ -173,12 +166,14 @@ class tthetaWidget(QWidget):
             with self.sphere.sphere_lock:
                 self.sphere = EwaldSphere(name)
         
-        self.sphere.load_from_h5(self.file)
+        with self.file_lock:
+            with catch(self.fname, 'r') as file:
+                self.sphere.load_from_h5(self.file)
         self.displayframe.sphere = self.sphere
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
         self.h5viewer.set_data(self.sphere)
-        self.h5viewer.ui.listData.setCurrentRow(0)
+        #self.h5viewer.ui.listData.setCurrentRow(0)
         self.integratorTree.update(self.sphere)
         self.metawidget.update(self.sphere)
 
@@ -272,37 +267,25 @@ class tthetaWidget(QWidget):
         elif ext.lower() == 'csv':
             ut.write_csv(fname, xdata, ydata)
     
-    def save_data_as(self):
-        """Saves all data to hdf5 file.
-        """
-        if isinstance(self.sphere, EwaldSphere):
-            fname, _ = QFileDialog.getSaveFileName(
-                filter="HDF5 Files (*.h5 *.hdf5)"
-            )
-            if fname == '':
-                return
-
-            if self.fname == fname:
-                self.sphere.save_to_h5(self.file, replace=True)
-                self.h5viewer.update(self.file)
-            
-            else:
-                self.fname = fname
-                try:
-                    self.file = h5py.File(fname, 'a')
-                    self.sphere.save_to_h5(self.file, replace=True)
-                except Exception as e:
-                    print(e)
-    
     def save_data(self):
         """Saves all data to hdf5 file.
         """
         if isinstance(self.sphere, EwaldSphere):
-            if isinstance(self.file, h5py.File):
-                self.sphere.save_to_h5(self.file, replace=True)
-                self.h5viewer.update(self.file)
+            if self.fname is not None:
+                with self.file_lock:
+                    with catch(self.fname, 'a') as file:
+                        self.sphere.save_to_h5(file, replace=True)
+                        self.h5viewer.update(file)
             else:
                 self.save_data_as()
+    
+    def save_data_as(self):
+        """Saves all data to hdf5 file.
+        """
+        with self.file_lock:
+            if isinstance(self.sphere, EwaldSphere):
+                self.open_file()
+                self.save_data()
     
     def set_defaults(self):
         parameters = [self.integratorTree.parameters]
@@ -372,8 +355,6 @@ class tthetaWidget(QWidget):
     def close(self):
         """Tries a graceful close.
         """
-        if self.file is not None:
-            self.file.close()
         del(self.sphere)
         del(self.displayframe.sphere)
         del(self.arch)

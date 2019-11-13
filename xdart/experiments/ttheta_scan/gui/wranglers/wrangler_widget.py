@@ -27,6 +27,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         self.parameters = Parameter.create(
             name='wrangler_widget', type='int', value=0
         )
+        self.cont = True
     
     def wrangle(self, i):
         """This function will be called to get data from wrangler. Must

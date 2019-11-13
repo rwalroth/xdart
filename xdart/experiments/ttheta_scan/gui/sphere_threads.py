@@ -76,17 +76,21 @@ class batchIntegrator(Qt.QtCore.QThread):
     def run(self):
         i = 0
         pause = False
+        self.wrangler.cont = True
         while True:
             if not self.command_q.empty() or pause:
                 command = self.command_q.get()
                 if command == 'stop':
+                    self.wrangler.cont = False
                     break
                 elif command == 'continue':
                     pause = False
                 elif command == 'pause':
                     pause = True
                     continue
+            
             flag, data = self.wrangler.wrangle(i)
+
             if flag == 'image':
                 idx, map_raw, scan_info, poni = data
                 arch = EwaldArch(
@@ -98,5 +102,6 @@ class batchIntegrator(Qt.QtCore.QThread):
                 )
                 self.update.emit()
                 i += 1
+            
             elif flag == 'TERMINATE' and data is None:
                 break
