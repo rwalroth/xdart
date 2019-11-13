@@ -59,6 +59,7 @@ class liveSpecWrangler(wranglerWidget):
         self.ui.startButton.clicked.connect(self.start_watching)
         self.ui.stopButton.clicked.connect(self.stop_watching)
         self.ui.buttonSend.clicked.connect(self.send_command)
+        self.keep_trying = True
 
         self.tree = ParameterTree()
         self.parameters = Parameter.create(
@@ -82,11 +83,11 @@ class liveSpecWrangler(wranglerWidget):
         self.update()
         self.showLabel.connect(self.ui.specLabel.setText)
         self.watch_command = Queue()
-        self.cahce = None
+        self.cache = None
     
     def send_command(self):
         command = self.ui.specCommandLine.text()
-        specCommand(command, queue=True)
+        specCommand(command, queue=False)
     
     def set_image_dir(self):
         dname = Qt.QtWidgets.QFileDialog.getExistingDirectory(self)
@@ -157,20 +158,25 @@ class liveSpecWrangler(wranglerWidget):
     
     def stop_watching(self):
         self.watch_command.put('stop')
+        self.keep_trying = False
         self.sigStop.emit()
            
     def start_watching(self):
+        self.keep_trying = True
+        pollingPeriod=self.parameters.child('Polling Period').value()
+        if pollingPeriod <= 0:
+            pollingPeriod = 0.1
         self.queues = {fp: Queue() for fp in 
-            self.parameters.child('File Types').value().split(',')
+            self.parameters.child('File Types').value().split()
         }
         self.watcher = Watcher(
             watchPaths=[
                 self.parameters.child('Image Directory').value(),
                 self.parameters.child('PDI Directory').value(),
             ],
-            filetypes=self.parameters.child('File Types').value().split(','),
-            pollingPeriod=self.parameters.child(''),
-            queues=queues,
+            filetypes=self.parameters.child('File Types').value().split(),
+            pollingPeriod=pollingPeriod,
+            queues=self.queues,
             command_q = self.watch_command,
             daemon=True
         )
@@ -179,10 +185,11 @@ class liveSpecWrangler(wranglerWidget):
     
     def parse_file(self, path):
         _, name = os.path.split(path)
+        name = name.split('.')[0]
         args = name.split('_')
-        scan_name = args[2]
+        scan_name = args[-2]
         scan_number = int(scan_name[4:])
-        idx = int(args[3])
+        idx = int(args[-1])
         return scan_number, idx
     
     def read_pdi(self, pdi_file):
@@ -201,7 +208,13 @@ class liveSpecWrangler(wranglerWidget):
             return cache[0], cache[1]
         for key, q in self.queues.items():
             added = q.get()
-            if key == 'pdi':
+            self.showLabel.emit(added)
+            print(type(added))
+            print(added)
+            if added == 'BREAK':
+                print('breaking')
+                return 'TERMINATE', None
+            elif key == 'pdi':
                 pdi_file = added
             elif key == 'raw':
                 raw_file = added
@@ -210,7 +223,7 @@ class liveSpecWrangler(wranglerWidget):
         if scan_number != self.scan_number:
             cache = True
             self.scan_number = scan_number
-        while True:
+        while self.keep_trying:
             # Looks for relevant data, loops until it is found or a
             # timeout occurs
             try:
@@ -234,5 +247,6 @@ class liveSpecWrangler(wranglerWidget):
             except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
                 print(type(e))
                 traceback.print_tb(e.__traceback__)
+        return 'TERMINATE', None
     
 

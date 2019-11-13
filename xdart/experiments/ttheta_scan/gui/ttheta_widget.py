@@ -287,9 +287,10 @@ class tthetaWidget(QWidget):
                 self.h5viewer.update(self.file)
             
             else:
+                self.fname = fname
                 try:
-                    with h5py.File(fname, 'a') as f:
-                        self.sphere.save_to_h5(f, replace=True)
+                    self.file = h5py.File(fname, 'a')
+                    self.sphere.save_to_h5(self.file, replace=True)
                 except Exception as e:
                     print(e)
     

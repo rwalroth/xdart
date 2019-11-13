@@ -4,7 +4,10 @@ import uuid
 import pandas as pd
 import re
 import time
-from .helper_funcs import find_between, find_between_r
+try:
+    from .helper_funcs import find_between, find_between_r
+except ImportError:
+    from helper_funcs import find_between, find_between_r
 
 bServer = "http://127.0.0.1:18085/SIS/"
 
@@ -40,7 +43,7 @@ def is_SpecBusy(debug=False):
     #Read last line from SIS log
     last_line = get_sis_logs(num_entries=1)
     try:
-        if 'reply' in last_line[0]:
+        if ('reply' in last_line[0]) or ('Error' in last_line[0]):
             rv = False
     except:
         pass

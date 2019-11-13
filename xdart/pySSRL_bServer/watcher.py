@@ -37,6 +37,8 @@ class Watcher(Process):
             if not self.command_q.empty():
                 command_q = self.command_q.get()
                 if command_q == 'stop':
+                    for _, q in self.queues.items():
+                        q.put('BREAK')
                     break
                 
             after = dict ( [filetype, dict ([(f, None) for f in filter(os.listdir (path), f'*{filetype}')])]
