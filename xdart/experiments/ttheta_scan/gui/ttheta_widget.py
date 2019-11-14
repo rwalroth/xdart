@@ -123,11 +123,21 @@ class tthetaWidget(QWidget):
         self.ui.wranglerStack.currentChanged.connect(self.set_wrangler)
         self.set_wrangler(self.ui.wranglerStack.currentIndex())
         self.command_queue = Queue()
-        self.batch_integrator = batchIntegrator(self.sphere, None, self.command_queue)
-        self.batch_integrator.update.connect(self.update_all)
-        self.batch_integrator.finished.connect(self.thread_finished)
 
         self.show()
+    
+    def set_wrangler(self, qint):
+        self.wrangler = self.ui.wranglerStack.widget(qint)
+        self.wrangler.command_q = self.command_queue
+        self.wrangler.fname = self.fname
+        self.wrangler.file_lock = self.file_lock
+        self.wrangler.sigStart.connect(self.start_wrangler)
+        self.wrangler.sigPause.connect(self.pause_wrangler)
+        self.wrangler.sigContinue.connect(self.continue_wrangler)
+        self.wrangler.sigStop.connect(self.stop_wrangler)
+        self.wrangler.sigUpdateData.connect(self.update_data)
+        self.wrangler.sigUpdateFile.connect(self.h5viewer.update)
+        self.wrangler.finished.connect(self.thread_finished)
     
     def clock(self):
         if isinstance(self.sphere, EwaldSphere):
@@ -176,7 +186,20 @@ class tthetaWidget(QWidget):
         #self.h5viewer.ui.listData.setCurrentRow(0)
         self.integratorTree.update(self.sphere)
         self.metawidget.update(self.sphere)
-
+        if self.wrangler.scan_name != self.sphere.name:
+            self.enable_integration(True)
+        elif self.wrangler.scan_name == self.sphere.name:
+            self.enable_integration(False)
+    
+    def update_data(self):
+        if self.sphere is None:
+            self.sphere = EwaldSphere(self.wrangler.scan_name)
+        with self.sphere.sphere_lock:
+            if self.sphere.name == self.wrangler.scan_name:
+                with self.file_lock:
+                    with catch(self.fname, 'r') as file:
+                        self.sphere.load_from_h5(file)
+                
     def set_data(self, q):
         """Updates data in displayframe
         """
@@ -493,32 +516,19 @@ class tthetaWidget(QWidget):
         if self.start_next:
             self.start_batch()
     
-    def set_wrangler(self, qint):
-        self.wrangler = self.ui.wranglerStack.widget(qint)
-        self.wrangler.sigStart.connect(self.start_batch)
-        self.wrangler.sigPause.connect(self.pause_batch)
-        self.wrangler.sigContinue.connect(self.continue_batch)
-        self.wrangler.sigStop.connect(self.stop_batch)
-        self.wrangler.sigEndScan.connect(self.save_data)
-        self.wrangler.sigNewScan.connect(self.new_scan)
-    
     def new_scan(self, q):
         self.start_next = True
 
-    def start_batch(self):
-        self.start_next = False
+    def start_wrangler(self):
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
-        self.enable_integration(False)
-        
-        scan_name = 'scan' + str(self.wrangler.scan_number).zfill(2)
-        self.sphere = EwaldSphere(scan_name)
-        self.get_all_args()
-        self.h5viewer.set_data(self.sphere)
-        self.displayframe.sphere = self.sphere
-        self.batch_integrator.sphere = self.sphere
-        self.batch_integrator.wrangler = self.wrangler
-        self.batch_integrator.start()
+        self.wrangler.fname = self.fname
+        args = self.get_all_args()
+        self.wrangler.setup(args)
+        if isinstance(self.sphere, EwaldSphere):
+            if self.sphere.name == self.wrangler.scan_name:
+                self.enable_integration(False)
+        self.wrangler.thread.start()
     
     def unroll_tree(self, changes, param):
         if param.hasChildren():
@@ -538,15 +548,15 @@ class tthetaWidget(QWidget):
         self.parse_param_change(None, changes)
 
 
-    def pause_batch(self):
+    def pause_wrangler(self):
         if self.batch_integrator.isRunning():
             self.command_queue.put('pause')
 
-    def continue_batch(self):
+    def continue_wrangler(self):
         if self.batch_integrator.isRunning():
             self.command_queue.put('continue')
 
-    def stop_batch(self):
+    def stop_wrangler(self):
         if self.batch_integrator.isRunning():
             self.command_queue.put('stop')
 

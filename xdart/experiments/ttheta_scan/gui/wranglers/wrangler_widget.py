@@ -21,13 +21,18 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     sigContinue = Qt.QtCore.Signal()
     sigEndScan = Qt.QtCore.Signal()
     sigNewScan = Qt.QtCore.Signal(int)
+    sigUpdateData = Qt.QtCore.Signal()
+    sigUpdateFile = Qt.QtCore.Signal()
+    finished = Qt.QtCore.Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.scan_number = 0 # this attribute must be an int
         self.parameters = Parameter.create(
             name='wrangler_widget', type='int', value=0
         )
-        self.cont = True
+        self.thread = Qt.QtCore.QThread(self)
+        self.thread.finished.connect(self.finished.emit)
     
     def wrangle(self, i):
         """This function will be called to get data from wrangler. Must
@@ -39,5 +44,11 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     def enabled(self, enable):
         """Use this function to control what is enabled and disabled
         during integration.
+        """
+        pass
+
+    def setup(self, args):
+        """Use this function for initializing the thread. Args passed
+        are for creating a sphere object.
         """
         pass
