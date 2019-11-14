@@ -9,6 +9,7 @@ from functools import partial
 import time
 from queue import Queue
 import multiprocessing as mp
+import copy
 
 # Other imports
 import h5py
@@ -131,16 +132,13 @@ class tthetaWidget(QWidget):
     
     def set_wrangler(self, qint):
         self.wrangler = self.ui.wranglerStack.widget(qint)
-        self.wrangler.command_q = self.command_queue
+        self.wrangler.input_q = self.command_queue
         self.wrangler.fname = self.fname
         self.wrangler.file_lock = self.file_lock
         self.wrangler.sigStart.connect(self.start_wrangler)
-        self.wrangler.sigPause.connect(self.pause_wrangler)
-        self.wrangler.sigContinue.connect(self.continue_wrangler)
-        self.wrangler.sigStop.connect(self.stop_wrangler)
         self.wrangler.sigUpdateData.connect(self.update_data)
         self.wrangler.sigUpdateFile.connect(self.h5viewer.update)
-        self.wrangler.finished.connect(self.thread_finished)
+        self.wrangler.finished.connect(self.wrangler_finished)
     
     def clock(self):
         if isinstance(self.sphere, EwaldSphere):
@@ -167,7 +165,7 @@ class tthetaWidget(QWidget):
                 print(e)
 
             self.h5viewer.fname = self.fname
-            self.h5viewer.update()
+            self.h5viewer.update(self.fname)
     
     def load_sphere(self, name):
         """Loads EwaldSphere object into memory
@@ -310,7 +308,7 @@ class tthetaWidget(QWidget):
                 with self.file_lock:
                     with catch(self.fname, 'a') as file:
                         self.sphere.save_to_h5(file, replace=True)
-                        self.h5viewer.update()
+                        self.h5viewer.update(self.fname)
             else:
                 self.save_data_as()
     
@@ -544,11 +542,19 @@ class tthetaWidget(QWidget):
         self.wrangler.enabled(False)
         self.wrangler.fname = self.fname
         args = self.get_all_args()
-        self.wrangler.setup(args)
+        self.wrangler.sphere_args = copy.deepcopy(args)
+        self.wrangler.setup()
         if isinstance(self.sphere, EwaldSphere):
             if self.sphere.name == self.wrangler.scan_name:
                 self.enable_integration(False)
         self.wrangler.thread.start()
+    
+    def wrangler_finished(self):
+        if self.sphere.name == self.wrangler.scan_name:
+            self.thread_finished()
+        else:
+            self.ui.wranglerBox.setEnabled(True)
+            self.wrangler.enabled(True)
     
     def unroll_tree(self, changes, param):
         if param.hasChildren():

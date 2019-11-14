@@ -13,6 +13,7 @@ import traceback
 # Other imports
 import numpy as np
 from paws.operations.SPEC import LoadSpecFile, MakePONI
+from paws.plugins.ewald import EwaldArch, EwaldSphere
 
 # Qt imports
 import pyqtgraph as pg
@@ -20,7 +21,7 @@ from pyqtgraph import Qt
 from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
-from .wrangler_widget import wranglerWidget
+from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .specUI import *
 from .....gui.gui_utils import NamedActionParameter
 
@@ -53,9 +54,9 @@ class specWrangler(wranglerWidget):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.ui.startButton.clicked.connect(self.sigStart.emit)
-        self.ui.pauseButton.clicked.connect(self.sigPause.emit)
-        self.ui.stopButton.clicked.connect(self.sigStop.emit)
-        self.ui.continueButton.clicked.connect(self.sigContinue.emit)
+        self.ui.pauseButton.clicked.connect(self.pause)
+        self.ui.stopButton.clicked.connect(self.stop)
+        self.ui.continueButton.clicked.connect(self.cont)
 
         self.tree = ParameterTree()
         self.parameters = Parameter.create(
@@ -84,6 +85,18 @@ class specWrangler(wranglerWidget):
         self.parameters.sigTreeStateChanged.connect(self.update)
         self.update()
         self.showLabel.connect(self.ui.specLabel.setText)
+
+    def pause_wrangler(self):
+        if self.thread.isRunning():
+            self.command_queue.put('pause')
+
+    def continue_wrangler(self):
+        if self.thread.isRunning():
+            self.command_queue.put('continue')
+
+    def stop_wrangler(self):
+        if self.thread.isRunning():
+            self.command_queue.put('stop')
     
     def set_spec_file(self):
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
@@ -218,5 +231,49 @@ class specWrangler(wranglerWidget):
             if elapsed > self.timeout:
                 self.showLabel.emit("Timeout occurred")
                 return 'TERMINATE', None
+                
+
+class batchIntegrator(wranglerThread):
+    def __init__(self, sphere, wrangler, command_q, parent=None):
+        super().__init__(parent)
+        self.sphere = sphere
+        self.command_q = command_q
+        self.wrangler = wrangler
+
+    def run(self):
+        i = 0
+        pause = False
+        self.wrangler.cont = True
+        while True:
+            if not self.command_q.empty() or pause:
+                command = self.command_q.get()
+                if command == 'stop':
+                    self.wrangler.cont = False
+                    break
+                elif command == 'continue':
+                    pause = False
+                elif command == 'pause':
+                    pause = True
+                    continue
+            
+            flag, data = self.wrangler.wrangle(i)
+
+            if flag == 'image':
+                idx, map_raw, scan_info, poni = data
+                arch = EwaldArch(
+                    idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
+                )
+                self.sphere.add_arch(
+                    arch=arch.copy(), calculate=True, update=True, get_sd=True, 
+                    set_mg=False
+                )
+                self.update.emit()
+                i += 1
+            
+            elif flag == 'TERMINATE' and data is None:
+                break
+    
+
+
     
 

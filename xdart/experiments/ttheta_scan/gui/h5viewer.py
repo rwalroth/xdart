@@ -74,14 +74,15 @@ class H5Viewer(QWidget):
 
         self.show()
 
-    def update(self):
+    def update(self, fname):
         """Takes in file, adds keys to scan list
         """
         with self.file_lock:
-            with catch(self.fname, 'r') as file:
-                self.ui.listScans.clear()
-                for key in file:
-                    self.ui.listScans.addItem(key)
+            if fname == self.fname:
+                with catch(self.fname, 'r') as file:
+                    self.ui.listScans.clear()
+                    for key in file:
+                        self.ui.listScans.addItem(key)
     
     def set_data(self, sphere):
         """Takes sphere object and updates list with all arch ids
