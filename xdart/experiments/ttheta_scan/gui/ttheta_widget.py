@@ -178,7 +178,7 @@ class tthetaWidget(QWidget):
         
         with self.file_lock:
             with catch(self.fname, 'r') as file:
-                self.sphere.load_from_h5(self.file)
+                self.sphere.load_from_h5(file)
         self.displayframe.sphere = self.sphere
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
@@ -191,14 +191,23 @@ class tthetaWidget(QWidget):
         elif self.wrangler.scan_name == self.sphere.name:
             self.enable_integration(False)
     
-    def update_data(self):
+    def update_data(self, q):
         if self.sphere is None:
             self.sphere = EwaldSphere(self.wrangler.scan_name)
-        with self.sphere.sphere_lock:
-            if self.sphere.name == self.wrangler.scan_name:
+            with self.sphere.sphere_lock:
                 with self.file_lock:
                     with catch(self.fname, 'r') as file:
                         self.sphere.load_from_h5(file)
+        else:
+            with self.sphere.sphere_lock:
+                if self.sphere.name == self.wrangler.scan_name:
+                    with self.file_lock:
+                        with catch(self.fname, 'r') as file:
+                            self.sphere.load_from_h5(
+                                file, replace=False, data_only=True, 
+                                arches=[q.data()], set_mg=False
+                            )
+        self.update_all()
                 
     def set_data(self, q):
         """Updates data in displayframe
@@ -298,7 +307,7 @@ class tthetaWidget(QWidget):
                 with self.file_lock:
                     with catch(self.fname, 'a') as file:
                         self.sphere.save_to_h5(file, replace=True)
-                        self.h5viewer.update(file)
+                        self.h5viewer.update()
             else:
                 self.save_data_as()
     
@@ -385,7 +394,15 @@ class tthetaWidget(QWidget):
         super().close()
     
     @spherelocked
-    def parse_param_change(self, param, changes):
+    def parse_param_change(self, param, changes, args=None):
+        if args is None:
+            bai_1d_args = self.sphere.bai_1d_args
+            bai_2d_args = self.sphere.bai_2d_args
+            mg_args = self.sphere.mg_args
+        else:
+            bai_1d_args = args['bai_1d_args']
+            bai_2d_args = args['bai_2d_args']
+            mg_args = args['mg_args']
         for change in changes:
             SI = False
             smg = False
@@ -403,12 +420,12 @@ class tthetaWidget(QWidget):
                 par = par.parent()
             if SI:
                 if d1:
-                    self.update_args(change, self.sphere.bai_1d_args)
+                    self.update_args(change, bai_1d_args)
                 else:
-                    self.update_args(change, self.sphere.bai_2d_args)
+                    self.update_args(change, bai_2d_args)
             else:
                 if smg:
-                    self.update_args(change, self.sphere.mg_args)
+                    self.update_args(change, mg_args)
                 else:
                     with self.integrator_thread.lock:
                         if d1:
@@ -543,9 +560,16 @@ class tthetaWidget(QWidget):
         return changes
         
     def get_all_args(self):
+        args = {
+            'bai_1d_args': {},
+            'bai_2d_args': {},
+            'mg_args': {}
+        }
         changes = []
         changes = self.unroll_tree(changes, self.integratorTree.parameters)
-        self.parse_param_change(None, changes)
+        self.parse_param_change(None, changes, args)
+        print(args)
+        return args
 
 
     def pause_wrangler(self):

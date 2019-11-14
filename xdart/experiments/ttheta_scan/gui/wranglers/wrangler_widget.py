@@ -4,6 +4,7 @@
 """
 
 # Standard library imports
+import copy
 
 # Other imports
 
@@ -20,8 +21,8 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     sigStop = Qt.QtCore.Signal()
     sigContinue = Qt.QtCore.Signal()
     sigEndScan = Qt.QtCore.Signal()
-    sigNewScan = Qt.QtCore.Signal(int)
-    sigUpdateData = Qt.QtCore.Signal()
+    sigNewScan = Qt.QtCore.Signal()
+    sigUpdateData = Qt.QtCore.Signal(int)
     sigUpdateFile = Qt.QtCore.Signal()
     finished = Qt.QtCore.Signal()
 
@@ -33,6 +34,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         )
         self.thread = Qt.QtCore.QThread(self)
         self.thread.finished.connect(self.finished.emit)
+        self.sphere_args = {}
     
     def wrangle(self, i):
         """This function will be called to get data from wrangler. Must
@@ -51,4 +53,4 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         """Use this function for initializing the thread. Args passed
         are for creating a sphere object.
         """
-        pass
+        self.sphere_args = copy.deepcopy(args)
