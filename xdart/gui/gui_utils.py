@@ -16,7 +16,7 @@ from pyFAI.units import Unit
 import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.Point import Point
-from PyQt5 import QtCore, QtGui, QtWidgets
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.parametertree.ParameterItem import ParameterItem
 from pyqtgraph.parametertree.Parameter import Parameter
 

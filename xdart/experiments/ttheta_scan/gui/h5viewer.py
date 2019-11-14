@@ -9,9 +9,10 @@ import h5py
 from paws.pawstools import catch_h5py_file as catch
 
 # Qt imports
-from PyQt5.QtWidgets import QWidget
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
+from pyqtgraph.Qt import QtWidgets, QtCore
+QTreeWidget = QtWidgets.QTreeWidget
+QTreeWidgetItem = QtWidgets.QTreeWidgetItem
+QWidget = QtWidgets.QWidget
 
 # This module imports
 from .h5viewerUI import *

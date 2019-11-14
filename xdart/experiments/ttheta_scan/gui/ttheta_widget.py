@@ -16,7 +16,10 @@ from matplotlib import pyplot as plt
 
 # Qt imports
 from pyqtgraph import Qt
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QFileDialog
+from pyqtgraph.Qt import QtWidgets
+QWidget = QtWidgets.QWidget
+QSizePolicy = QtWidgets.QSizePolicy
+QFileDialog = QtWidgets.QFileDialog
 from pyqtgraph.parametertree import (
     Parameter, ParameterTree, ParameterItem, registerParameterType
 )

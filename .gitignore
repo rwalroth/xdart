@@ -107,3 +107,4 @@ venv.bak/
 *.hdf5
 /data
 /data/*
+.vscode/settings.json

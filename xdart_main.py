@@ -19,9 +19,8 @@ import h5py
 
 # Qt imports
 from pyqtgraph import Qt
-from pyqtgraph.Qt import QtGui, QtCore
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5 import QtWidgets
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
+QMainWindow = QtWidgets.QMainWindow
 import qdarkstyle
 import pyqtgraph as pg
 
