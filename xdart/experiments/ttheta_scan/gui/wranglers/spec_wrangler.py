@@ -13,6 +13,7 @@ import traceback
 # Other imports
 import numpy as np
 from paws.operations.SPEC import LoadSpecFile, MakePONI
+from paws.containers import PONI
 from paws.plugins.ewald import EwaldArch, EwaldSphere
 
 # Qt imports
