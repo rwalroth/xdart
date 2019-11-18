@@ -36,7 +36,7 @@ from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
-from .sphere_threads import integratorThread, batchIntegrator
+from .sphere_threads import integratorThread
 from .metadata import metadataWidget
 from .wranglers import specWrangler, liveSpecWrangler
 
@@ -61,7 +61,7 @@ class tthetaWidget(QWidget):
 
         # Data object initialization
         self.file_lock = mp.Condition()
-        self.fname = None
+        self.fname = "default.h5"
         self.sphere = None
         self.arch = None
         self.integrator_thread = integratorThread(self.sphere, self.arch)
@@ -125,8 +125,8 @@ class tthetaWidget(QWidget):
             self.ui.wranglerStack.addWidget(w())
             self.ui.wranglerBox.addItem(name)
         self.ui.wranglerStack.currentChanged.connect(self.set_wrangler)
-        self.set_wrangler(self.ui.wranglerStack.currentIndex())
         self.command_queue = Queue()
+        self.set_wrangler(self.ui.wranglerStack.currentIndex())
 
         self.show()
     
@@ -139,15 +139,17 @@ class tthetaWidget(QWidget):
         self.wrangler.sigUpdateData.connect(self.update_data)
         self.wrangler.sigUpdateFile.connect(self.h5viewer.update)
         self.wrangler.finished.connect(self.wrangler_finished)
+        self.wrangler.setup()
     
     def clock(self):
-        if isinstance(self.sphere, EwaldSphere):
-            if self.sphere.sphere_lock._lock._count > 0:
-                self.h5viewer.ui.listScans.setEnabled(False)
-                self.h5viewer.ui.listData.setEnabled(False)
-            else:
-                self.h5viewer.ui.listScans.setEnabled(True)
-                self.h5viewer.ui.listData.setEnabled(True)
+        pass
+        #if isinstance(self.sphere, EwaldSphere):
+        #    if self.sphere.sphere_lock._lock._count > 0:
+        #        self.h5viewer.ui.listScans.setEnabled(False)
+        #        self.h5viewer.ui.listData.setEnabled(False)
+        #    else:
+        #        self.h5viewer.ui.listScans.setEnabled(True)
+        #        self.h5viewer.ui.listData.setEnabled(True)
     
     def open_file(self):
         """Reads hdf5 file, populates list of scans in h5viewer. 
@@ -166,6 +168,8 @@ class tthetaWidget(QWidget):
 
             self.h5viewer.fname = self.fname
             self.h5viewer.update(self.fname)
+            if not self.wrangler.thread.isRunning():
+                self.wrangler.set_fname(self.fname)
     
     def load_sphere(self, name):
         """Loads EwaldSphere object into memory
@@ -176,10 +180,14 @@ class tthetaWidget(QWidget):
         elif self.sphere.name != name:
             with self.sphere.sphere_lock:
                 self.sphere = EwaldSphere(name)
-        
-        with self.file_lock:
-            with catch(self.fname, 'r') as file:
-                self.sphere.load_from_h5(file)
+        while True:
+            try:
+                with self.file_lock:
+                    with h5py.File(self.fname, 'r') as file:
+                        self.sphere.load_from_h5(file)
+                        break
+            except OSError:
+                pass
         self.displayframe.sphere = self.sphere
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
@@ -206,7 +214,7 @@ class tthetaWidget(QWidget):
                         with catch(self.fname, 'r') as file:
                             self.sphere.load_from_h5(
                                 file, replace=False, data_only=True, 
-                                arches=[q.data()], set_mg=False
+                                arches=[q], set_mg=False
                             )
         self.update_all()
                 
@@ -531,8 +539,6 @@ class tthetaWidget(QWidget):
         self.ui.wranglerBox.setEnabled(True)
         self.wrangler.enabled(True)
         self.update()
-        if self.start_next:
-            self.start_batch()
     
     def new_scan(self, q):
         self.start_next = True
@@ -577,7 +583,6 @@ class tthetaWidget(QWidget):
         changes = []
         changes = self.unroll_tree(changes, self.integratorTree.parameters)
         self.parse_param_change(None, changes, args)
-        print(args)
         return args
 
 

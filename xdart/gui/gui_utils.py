@@ -238,7 +238,10 @@ class defaultWidget(Qt.QtWidgets.QWidget):
             with open(fname, 'r') as f:
                 valdict = json.load(f, cls=XdartDecoder)
             for key, param in self.parameters.items():
-                self.set_defaults(param, valdict[key])
+                try:
+                    self.set_defaults(param, valdict[key])
+                except KeyError:
+                    print(key)
     
     def set_all_defaults(self):
         for key, param in self.parameters.items():

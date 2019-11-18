@@ -9,6 +9,7 @@ from queue import Queue
 import multiprocessing as mp
 
 # Other imports
+from paws.plugins.ewald import EwaldSphere
 
 # Qt imports
 import pyqtgraph as pg
@@ -31,11 +32,13 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         )
         self.sphere_args = {}
         self.input_q = Queue() # thread queue
+        self.file_lock = mp.Condition()
+        self.fname = "default.h5"
 
         self.command_queue = Queue()
-        self.thread = wranglerThread(self.command_queue, self.sphere_args, self)
+        self.thread = wranglerThread(self.command_queue, self.sphere_args, self.fname, self.file_lock, self)
         self.thread.finished.connect(self.finished.emit)
-        self.thread.update.connect(self.sigUpdateData.emit)
+        self.thread.sigUpdate.connect(self.sigUpdateData.emit)
     
     def enabled(self, enable):
         """Use this function to control what is enabled and disabled
@@ -44,40 +47,53 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         pass
 
     def setup(self):
-        self.thread = wranglerThread(self.command_queue, self.sphere_args, self)
+        self.thread = wranglerThread(self.command_queue, self.sphere_args, self.fname, self.file_lock, self)
+    
+    def set_fname(self, fname):
+        self.fname = fname
+        self.thread.fname = fname
 
 
 class wranglerThread(Qt.QtCore.QThread):
-    update = Qt.QtCore.Signal(int)
-    def __init__(self, command_queue, sphere_args, parent=None):
+    sigUpdate = Qt.QtCore.Signal(int)
+    sigUpdateFile = Qt.QtCore.Signal(str)
+    def __init__(self, command_queue, sphere_args, fname, file_lock, parent=None):
         super().__init__(parent)
         self.input_q = command_queue # thread queue
         self.sphere_args = sphere_args
+        self.fname = fname
+        self.file_lock = file_lock
         self.signal_q = mp.Queue()
         self.command_q = mp.Queue()
-        self.process = wranglerProcess(
-            self.command_q, self.signal_q, self.sphere_args
-        )
     
     def run(self):
-        self.process.start()
+        process = wranglerProcess(
+            self.command_q, 
+            self.signal_q, 
+            self.sphere_args,
+            self.fname,
+            self.file_lock
+        )
+        process.start()
         while True:
             if not self.input_q.empty():
                 command = self.input_q.get()
                 if command == 'stop':
                     self.command_q.put('stop')
                     break
-        self.process.join()
+        process.join()
 
 class wranglerProcess(mp.Process):
-    def __init__(self, command_q, signal_q, sphere_args, fname, *args, **kwargs):
+    def __init__(self, command_q, signal_q, sphere_args, fname, file_lock, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.command_q = command_q
         self.signal_q = signal_q
         self.sphere_args = sphere_args
         self.fname = fname
+        self.file_lock = file_lock
     
     def run(self):
+        sphere = EwaldSphere(**self.sphere_args)
         while True:
             if not self.command_q.empty():
                 command = self.command_q.get()
