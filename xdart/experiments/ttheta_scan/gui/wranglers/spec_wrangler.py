@@ -232,7 +232,7 @@ class specThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
-                    self.sigUpdateFile.emit(self.fname)
+                    self.sigUpdateFile.emit(self.scan_name)
                 elif signal == 'TERMINATE':
                     last = True
             if last:

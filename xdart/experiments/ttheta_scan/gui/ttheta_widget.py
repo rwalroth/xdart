@@ -137,7 +137,7 @@ class tthetaWidget(QWidget):
         self.wrangler.file_lock = self.file_lock
         self.wrangler.sigStart.connect(self.start_wrangler)
         self.wrangler.sigUpdateData.connect(self.update_data)
-        self.wrangler.sigUpdateFile.connect(self.h5viewer.update)
+        self.wrangler.sigUpdateFile.connect(self.new_scan)
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
     
@@ -217,6 +217,7 @@ class tthetaWidget(QWidget):
                                 arches=[q], set_mg=False
                             )
         self.update_all()
+            
                 
     def set_data(self, q):
         """Updates data in displayframe
@@ -548,8 +549,12 @@ class tthetaWidget(QWidget):
         self.wrangler.enabled(True)
         self.update()
     
-    def new_scan(self, q):
-        self.start_next = True
+    def new_scan(self, name):
+        if isinstance(self.sphere, EwaldSphere):
+            if self.sphere.name == name:
+                self.load_sphere(name)
+        else:
+            self.load_sphere(name)
 
     def start_wrangler(self):
         self.ui.wranglerBox.setEnabled(False)
@@ -558,11 +563,6 @@ class tthetaWidget(QWidget):
         args = self.get_all_args()
         self.wrangler.sphere_args = copy.deepcopy(args)
         self.wrangler.setup()
-        if isinstance(self.sphere, EwaldSphere):
-            if self.sphere.name == self.wrangler.scan_name:
-                self.enable_integration(False)
-                self.sphere = EwaldSphere(self.wrangler.scan_name)
-                self.update_all()
         self.wrangler.thread.start()
     
     def wrangler_finished(self):
