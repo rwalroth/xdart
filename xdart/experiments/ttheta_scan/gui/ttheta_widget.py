@@ -339,7 +339,9 @@ class tthetaWidget(QWidget):
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
         """
-        if self.arch == self.sphere.arches.iloc[-1].idx or self.arch is None:
+        if (self.arch == self.sphere.arches.iloc[-1].idx or 
+            self.arch is None or
+            self.h5viewer.ui.listData.currentRow() == self.h5viewer.ui.listData.count() - 1):
             pass
         else:
             self.h5viewer.ui.listData.setCurrentRow(
@@ -352,7 +354,9 @@ class tthetaWidget(QWidget):
     def prev_arch(self):
         """Goes back one arch in data list, updates displayframe
         """
-        if self.arch == self.sphere.arches.iloc[0].idx or self.arch is None:
+        if (self.arch == self.sphere.arches.iloc[0].idx or 
+            self.arch is None or
+            self.h5viewer.ui.listData.currentRow() == 1):
             pass
         else:
             self.h5viewer.ui.listData.setCurrentRow(
@@ -533,6 +537,10 @@ class tthetaWidget(QWidget):
     def update_all(self):
         self.displayframe.update()
         self.h5viewer.set_data(self.sphere)
+        if self.displayframe.auto_last:
+            self.h5viewer.ui.listData.setCurrentRow(
+                self.h5viewer.ui.listData.count() - 1
+            )
     
     def thread_finished(self):
         self.enable_integration(True)
@@ -553,6 +561,8 @@ class tthetaWidget(QWidget):
         if isinstance(self.sphere, EwaldSphere):
             if self.sphere.name == self.wrangler.scan_name:
                 self.enable_integration(False)
+                self.sphere = EwaldSphere(self.wrangler.scan_name)
+                self.update_all()
         self.wrangler.thread.start()
     
     def wrangler_finished(self):

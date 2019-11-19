@@ -17,7 +17,6 @@ from pyqtgraph import Qt
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
-
 class wranglerWidget(Qt.QtWidgets.QWidget):
     sigStart = Qt.QtCore.Signal()
     sigUpdateData = Qt.QtCore.Signal(int)

@@ -237,14 +237,19 @@ class specThread(wranglerThread):
                     last = True
             if last:
                 break
-
+        self._empty_q(self.signal_q)
+        self._empty_q(self.command_q)
         process.join()
+    
+    def _empty_q(self, q):
+        while not q.empty():
+            _ = q.get()
     
 
 class specProcess(wranglerProcess):
     def __init__(self, command_q, signal_q, sphere_args, scan_name, 
-                 scan_number, fname, file_lock, lsf_inputs, mp_inputs, img_dir, timeout):
-        super().__init__(command_q, signal_q, sphere_args, fname, file_lock)
+                 scan_number, fname, file_lock, lsf_inputs, mp_inputs, img_dir, timeout, *args, **kwargs):
+        super().__init__(command_q, signal_q, sphere_args, fname, file_lock, *args, **kwargs)
         self.lsf_inputs = lsf_inputs
         self.mp_inputs = mp_inputs
         self.scan_name = scan_name
@@ -317,6 +322,7 @@ class specProcess(wranglerProcess):
             elif flag == 'TERMINATE' and data is None:
                 self.signal_q.put(('TERMINATE', None))
                 break
+        self.signal_q.put(('TERMINATE', None))
 
 
     def wrangle(self, i, spec_reader, make_poni):

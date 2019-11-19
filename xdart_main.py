@@ -11,8 +11,6 @@ import os
 import gc
 import time
 
-os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
-
 # Other imports
 import numpy as np
 import h5py
