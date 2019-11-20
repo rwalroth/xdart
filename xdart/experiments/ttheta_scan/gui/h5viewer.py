@@ -105,4 +105,9 @@ class H5Viewer(QWidget):
         if idx > self.ui.listData.count() - 1:
             idx = self.ui.listData.count() - 1
         self.ui.listData.setCurrentRow(idx)
-
+    
+    def set_open_enabled(self, enable):
+        self.actionSaveDataAs.setEnabled(enable)
+        self.actionSetDefaults.setEnabled(enable)
+        self.actionOpen.setEnabled(enable)
+        self.actionNewFile.setEnabled(enable)

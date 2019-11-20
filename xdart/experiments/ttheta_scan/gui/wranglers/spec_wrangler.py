@@ -51,8 +51,8 @@ params = [
 
 class specWrangler(wranglerWidget):
     showLabel = Qt.QtCore.Signal(str)
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, fname, file_lock, parent=None):
+        super().__init__(fname, file_lock, parent)
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -78,8 +78,8 @@ class specWrangler(wranglerWidget):
         self.parameters.child('poni_file_browse').sigActivated.connect(
             self.set_poni_file
         )
-        self.scan_number = 0
-        self.timeout = 5
+        self.scan_number = self.parameters.child('Scan Number').value()
+        self.timeout = self.parameters.child('Timeout').value()
         self.parameters.sigTreeStateChanged.connect(self.setup)
         self.thread = specThread(
             self.command_queue, 

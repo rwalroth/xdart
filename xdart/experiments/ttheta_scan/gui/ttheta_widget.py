@@ -40,7 +40,10 @@ from .sphere_threads import integratorThread
 from .metadata import metadataWidget
 from .wranglers import specWrangler, liveSpecWrangler
 
-wranglers = {'SPEC': specWrangler, 'Live Spec': liveSpecWrangler}
+wranglers = {
+    'SPEC': specWrangler, 
+    #'Live Spec': liveSpecWrangler
+}
 
 formats = [
     str(f.data(), encoding='utf-8').lower() for f in
@@ -123,7 +126,12 @@ class tthetaWidget(QWidget):
 
         # Wrangler frame setup
         for name, w in wranglers.items():
-            self.ui.wranglerStack.addWidget(w())
+            self.ui.wranglerStack.addWidget(
+                w(
+                    self.fname,
+                    self.file_lock
+                )
+            )
             self.ui.wranglerBox.addItem(name)
         self.ui.wranglerStack.currentChanged.connect(self.set_wrangler)
         self.command_queue = Queue()
@@ -555,6 +563,7 @@ class tthetaWidget(QWidget):
         self.enable_integration(True)
         self.ui.wranglerBox.setEnabled(True)
         self.wrangler.enabled(True)
+        self.h5viewer.set_open_enabled(True)
         self.update()
     
     def new_scan(self, name):
@@ -571,6 +580,7 @@ class tthetaWidget(QWidget):
         print('got new file')
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
+        self.h5viewer.set_open_enabled(False)
         args = self.get_all_args()
         self.wrangler.sphere_args = copy.deepcopy(args)
         self.wrangler.setup()

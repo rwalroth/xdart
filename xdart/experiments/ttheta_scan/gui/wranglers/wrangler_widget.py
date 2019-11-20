@@ -23,16 +23,15 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     sigUpdateFile = Qt.QtCore.Signal(str)
     finished = Qt.QtCore.Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, fname, file_lock, parent=None):
         super().__init__(parent)
+        self.file_lock = file_lock
+        self.fname = fname
         self.scan_name = 'null'
         self.parameters = Parameter.create(
             name='wrangler_widget', type='int', value=0
         )
         self.sphere_args = {}
-        self.input_q = Queue() # thread queue
-        self.file_lock = None
-        self.fname = "default.h5"
 
         self.command_queue = Queue()
         self.thread = wranglerThread(self.command_queue, self.sphere_args, self.fname, self.file_lock, self)
