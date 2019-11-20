@@ -24,10 +24,17 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 from .wrangler_widget import wranglerWidget
 from .liveSpecUI import *
 from .....gui.gui_utils import NamedActionParameter
+from .....pySSRL_bServer.watcher import Watcher
+from .....pySSRL_bServer.helper_funcs import get_from_pdi
+from .....pySSRL_bServer.bServer_funcs import specCommand
 
 params = [
     {'name': 'Image Directory', 'type': 'str', 'default': ''},
     NamedActionParameter(name='image_dir_browse', title= 'Browse...'),
+    {'name': 'PDI Directory', 'type': 'str', 'default': ''},
+    NamedActionParameter(name='pdi_dir_browse', title= 'Browse...'),
+    {'name': 'File Types', 'type': 'str', 'default': "raw, pdi"},
+    {'name': 'Polling Period', 'type': 'float', 'default': 0.1},
     {'name': 'Calibration PONI File', 'type': 'str', 'default': ''},
     NamedActionParameter(name='poni_file_browse', title= 'Browse...'),
     {'name': 'Rotation Motors', 'type': 'group', 'children': [
@@ -51,6 +58,8 @@ class liveSpecWrangler(wranglerWidget):
         self.ui.setupUi(self)
         self.ui.startButton.clicked.connect(self.start_watching)
         self.ui.stopButton.clicked.connect(self.stop_watching)
+        self.ui.buttonSend.clicked.connect(self.send_command)
+        self.keep_trying = True
 
         self.tree = ParameterTree()
         self.parameters = Parameter.create(
@@ -63,6 +72,9 @@ class liveSpecWrangler(wranglerWidget):
         self.parameters.child('image_dir_browse').sigActivated.connect(
             self.set_image_dir
         )
+        self.parameters.child('pdi_dir_browse').sigActivated.connect(
+            self.set_pdi_dir
+        )
         self.parameters.child('poni_file_browse').sigActivated.connect(
             self.set_poni_file
         )
@@ -70,12 +82,22 @@ class liveSpecWrangler(wranglerWidget):
         self.parameters.sigTreeStateChanged.connect(self.update)
         self.update()
         self.showLabel.connect(self.ui.specLabel.setText)
-        self.watch_queue = Queue()
+        self.watch_command = Queue()
+        self.cache = None
+    
+    def send_command(self):
+        command = self.ui.specCommandLine.text()
+        specCommand(command, queue=False)
     
     def set_image_dir(self):
         dname = Qt.QtWidgets.QFileDialog.getExistingDirectory(self)
         if dname != '':
             self.parameters.child('Image Directory').setValue(dname)
+    
+    def set_pdi_dir(self):
+        dname = Qt.QtWidgets.QFileDialog.getExistingDirectory(self)
+        if dname != '':
+            self.parameters.child('PDI Directory').setValue(dname)
     
     def set_poni_file(self):
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
@@ -135,54 +157,96 @@ class liveSpecWrangler(wranglerWidget):
         self.ui.startButton.setEnabled(enable)
     
     def stop_watching(self):
-        self.watch = False
+        self.watch_command.put('stop')
+        self.keep_trying = False
         self.sigStop.emit()
            
     def start_watching(self):
-        while not self.watch_queue.empty():
-            self.watch_queue.get()
-        self.watch = True
+        self.keep_trying = True
+        pollingPeriod=self.parameters.child('Polling Period').value()
+        if pollingPeriod <= 0:
+            pollingPeriod = 0.1
+        self.queues = {fp: Queue() for fp in 
+            self.parameters.child('File Types').value().split()
+        }
+        self.watcher = Watcher(
+            watchPaths=[
+                self.parameters.child('Image Directory').value(),
+                self.parameters.child('PDI Directory').value(),
+            ],
+            filetypes=self.parameters.child('File Types').value().split(),
+            pollingPeriod=pollingPeriod,
+            queues=self.queues,
+            command_q = self.watch_command,
+            daemon=True
+        )
+        self.watcher.start()
         self.sigStart.emit()
+    
+    def parse_file(self, path):
+        _, name = os.path.split(path)
+        name = name.split('.')[0]
+        args = name.split('_')
+        scan_name = args[-2]
+        scan_number = int(scan_name[4:])
+        idx = int(args[-1])
+        return scan_number, idx
+    
+    def read_pdi(self, pdi_file):
+        counters, motors = get_from_pdi(pdi_file)
+        image_meta = {}
+        image_meta.update(counters)
+        image_meta.update(motors)
+        return image_meta
 
     def wrangle(self, i):
         # image file names formed as predictable pattern
-        while True:
-            if not self.watch:
+        cache = False
+        if self.cache is not None:
+            cache = copy.deepcopy(self.cache)
+            self.cache = None
+            return cache[0], cache[1]
+        for key, q in self.queues.items():
+            added = q.get()
+            self.showLabel.emit(added)
+            print(type(added))
+            print(added)
+            if added == 'BREAK':
+                print('breaking')
                 return 'TERMINATE', None
+            elif key == 'pdi':
+                pdi_file = added
+            elif key == 'raw':
+                raw_file = added
+        
+        scan_number, i = self.parse_file(raw_file)
+        if scan_number != self.scan_number:
+            cache = True
+            self.scan_number = scan_number
+        while self.keep_trying:
             # Looks for relevant data, loops until it is found or a
             # timeout occurs
-            added = self.watch_queue.get()
             try:
-                # reads in spec data file
-                self.specFile = self.specFileReader.run()
-
-                if self.user is None:
-                    self.user = self.specFile['header']['meta']['User']
-                if self.spec_name is None:
-                    self.spec_name = self.specFile['header']['meta']['File'][0]
-
-                raw_file = self._get_raw_path(i)
-
-                if self.scan_number in self.specFile['scans'].keys():
-                    image_meta = self.specFile['scans']\
-                                        [self.scan_number].loc[i].to_dict()
-                
-                else:
-                    image_meta = self.specFile['current_scan'].loc[i].to_dict()
-                self.poniGen.inputs['spec_dict'] = \
-                    copy.deepcopy(image_meta)
-                poni = copy.deepcopy(self.poniGen.run())
                 arr = self.read_raw(raw_file)
-                self.showLabel.emit(f'Image {i} wrangled')
-        
-                return 'image', (i, arr, image_meta, poni)
+
+                image_meta = self.read_pdi(pdi_file)
+
+                self.poniGen.inputs['spec_dict'] = copy.deepcopy(image_meta)
+
+                poni = copy.deepcopy(self.poniGen.run())
+
+                if cache:
+                    self.cache = 'image', (i, arr, image_meta, poni)
+                    self.sigEndScan.emit()
+                    self.sigNewScan.emit(scan_number)
+                    time.sleep(0.1)
+                    return 'TERMINATE', None
+                else:
+                    return 'image', (i, arr, image_meta, poni)
+
             except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
                 print(type(e))
-                print(e.args)
                 traceback.print_tb(e.__traceback__)
-                elapsed = time.time() - start
-            if elapsed > self.timeout:
-                self.showLabel.emit("Timeout occurred")
-                return 'TERMINATE', None
+        return 'TERMINATE', None
     
 

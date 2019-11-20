@@ -16,7 +16,7 @@ from pyFAI.units import Unit
 import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.Point import Point
-from PyQt5 import QtCore, QtGui, QtWidgets
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.parametertree.ParameterItem import ParameterItem
 from pyqtgraph.parametertree.Parameter import Parameter
 
@@ -238,7 +238,10 @@ class defaultWidget(Qt.QtWidgets.QWidget):
             with open(fname, 'r') as f:
                 valdict = json.load(f, cls=XdartDecoder)
             for key, param in self.parameters.items():
-                self.set_defaults(param, valdict[key])
+                try:
+                    self.set_defaults(param, valdict[key])
+                except KeyError:
+                    print(key)
     
     def set_all_defaults(self):
         for key, param in self.parameters.items():

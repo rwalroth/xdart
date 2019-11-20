@@ -1,0 +1,21 @@
+bl2-1_testConfig:
+  TCP_IP: 134.79.38.68
+  TCP_PORT: 2034
+  autoalign: null
+  description: Description of the beamline, e.g. BL2-1 SPEC Infoserver connection
+  detailed_description: Something more if needed. This is not actually read by the
+    user
+  detector_config:
+  - config_function: null
+    data_path_base: /
+    get_function: null
+    mnemonic: mar
+    name: bl15_mar
+    trigger_function: null
+  diagnostic: null
+  interface: SPEC Infoserver
+  map_to_top_level: true
+  mnemonic: b2-1
+  server_base_path_to_logfile: /
+  shutter_close: null
+  shutter_open: null

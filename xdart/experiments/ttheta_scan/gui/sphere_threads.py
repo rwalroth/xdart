@@ -63,40 +63,6 @@ class integratorThread(Qt.QtCore.QThread):
 
     def bai_1d_SI(self):
         self.sphere.arches[self.arch].integrate_1d(**self.sphere.bai_1d_args)
-                
-
-class batchIntegrator(Qt.QtCore.QThread):
-    update = Qt.QtCore.Signal()
-    def __init__(self, sphere, wrangler, command_q, parent=None):
-        super().__init__(parent)
-        self.sphere = sphere
-        self.command_q = command_q
-        self.wrangler = wrangler
-
-    def run(self):
-        i = 0
-        pause = False
-        while True:
-            if not self.command_q.empty() or pause:
-                command = self.command_q.get()
-                if command == 'stop':
-                    break
-                elif command == 'continue':
-                    pause = False
-                elif command == 'pause':
-                    pause = True
-                    continue
-            flag, data = self.wrangler.wrangle(i)
-            if flag == 'image':
-                idx, map_raw, scan_info, poni = data
-                arch = EwaldArch(
-                    idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
-                )
-                self.sphere.add_arch(
-                    arch=arch.copy(), calculate=True, update=True, get_sd=True, 
-                    set_mg=False
-                )
-                self.update.emit()
-                i += 1
-            elif flag == 'TERMINATE' and data is None:
-                break
+    
+    def load(self):
+        self.sphere.load_from_h5()

@@ -2,7 +2,7 @@
 """
 @author: walroth
 """
-__version__ = '0.1.1'
+__version__ = '0.3.2'
 # Top level script for running gui based program
 
 # Standard library imports
@@ -11,17 +11,14 @@ import os
 import gc
 import time
 
-os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
-
 # Other imports
 import numpy as np
 import h5py
 
 # Qt imports
 from pyqtgraph import Qt
-from pyqtgraph.Qt import QtGui, QtCore
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5 import QtWidgets
+from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
+QMainWindow = QtWidgets.QMainWindow
 import qdarkstyle
 import pyqtgraph as pg
 

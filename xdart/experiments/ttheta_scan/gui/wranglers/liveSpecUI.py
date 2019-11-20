@@ -6,7 +6,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -22,10 +22,12 @@ class Ui_Form(object):
         self.paramFrame.setObjectName("paramFrame")
         self.verticalLayout.addWidget(self.paramFrame)
         self.specLabel = QtWidgets.QLabel(Form)
+        self.specLabel.setMaximumSize(QtCore.QSize(16777215, 40))
         self.specLabel.setText("")
         self.specLabel.setObjectName("specLabel")
         self.verticalLayout.addWidget(self.specLabel)
         self.commandFrame = QtWidgets.QFrame(Form)
+        self.commandFrame.setMaximumSize(QtCore.QSize(16777215, 40))
         self.commandFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.commandFrame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.commandFrame.setObjectName("commandFrame")
@@ -39,6 +41,7 @@ class Ui_Form(object):
         self.horizontalLayout_2.addWidget(self.buttonSend)
         self.verticalLayout.addWidget(self.commandFrame)
         self.frame = QtWidgets.QFrame(Form)
+        self.frame.setMaximumSize(QtCore.QSize(16777215, 40))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
