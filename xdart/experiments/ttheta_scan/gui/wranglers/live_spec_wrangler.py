@@ -9,7 +9,7 @@ from collections import OrderedDict
 import time
 import copy
 import traceback
-from multiprocessing import Queue
+import multiprocessing as mp
 
 # Other imports
 import numpy as np
@@ -18,10 +18,11 @@ from paws.operations.SPEC import LoadSpecFile, MakePONI
 # Qt imports
 import pyqtgraph as pg
 from pyqtgraph import Qt
+from pyqtgraph.Qt import QtCore
 from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
-from .wrangler_widget import wranglerWidget
+from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .liveSpecUI import *
 from .....gui.gui_utils import NamedActionParameter
 from .....pySSRL_bServer.watcher import Watcher
@@ -52,13 +53,16 @@ params = [
 
 class liveSpecWrangler(wranglerWidget):
     showLabel = Qt.QtCore.Signal(str)
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, fname, file_lock, parent=None):
+        super().__init__(fname, file_lock, parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.ui.startButton.clicked.connect(self.start_watching)
         self.ui.stopButton.clicked.connect(self.stop_watching)
         self.ui.buttonSend.clicked.connect(self.send_command)
+        self.ui.specCommandLine.keyPressEvent.connect(self.handle_key)
+        self.commands = ['']
+        self.current = -1
         self.keep_trying = True
 
         self.tree = ParameterTree()
@@ -78,16 +82,33 @@ class liveSpecWrangler(wranglerWidget):
         self.parameters.child('poni_file_browse').sigActivated.connect(
             self.set_poni_file
         )
-        self.poniGen = MakePONI()
         self.parameters.sigTreeStateChanged.connect(self.update)
-        self.update()
         self.showLabel.connect(self.ui.specLabel.setText)
-        self.watch_command = Queue()
+        self.watch_command = mp.Queue() # thread
         self.cache = None
+    
+    def setup(self):
+        pass
     
     def send_command(self):
         command = self.ui.specCommandLine.text()
+        self.commands.append(command)
+        self.current = -1
         specCommand(command, queue=False)
+    
+    def handle_key(self, q):
+        key = q.key()
+        if key == QtCore.Qt.Key_Return or key == QtCore.Qt.Key_Enter:
+            self.send_command()
+        elif key == QtCore.Qt.Key_Up:
+            self.current -= 1
+        elif key == QtCore.Qt.Key_Down:
+            self.current += 1
+        if self.current > -1:
+            self.current = -1
+        elif self.current < -len(self.commands):
+            self.current = -len(self.commands)
+        self.ui.specCommandLine.setText(self.commands[self.current])
     
     def set_image_dir(self):
         dname = Qt.QtWidgets.QFileDialog.getExistingDirectory(self)
@@ -149,9 +170,6 @@ class liveSpecWrangler(wranglerWidget):
                     arr[:,i] = -2.0
             return arr.T
 
-    def update(self):
-        self.poniGen.inputs.update(self._get_mp_inputs())
-    
     def enabled(self, enable):
         self.tree.setEnabled(enable)
         self.ui.startButton.setEnabled(enable)
@@ -160,16 +178,17 @@ class liveSpecWrangler(wranglerWidget):
         self.watch_command.put('stop')
         self.keep_trying = False
         self.sigStop.emit()
-           
+
+    # Thread     
     def start_watching(self):
         self.keep_trying = True
         pollingPeriod=self.parameters.child('Polling Period').value()
         if pollingPeriod <= 0:
             pollingPeriod = 0.1
-        self.queues = {fp: Queue() for fp in 
+        self.queues = {fp: mp.Queue() for fp in 
             self.parameters.child('File Types').value().split()
         }
-        self.watcher = Watcher(
+        self.watcher = Watcher( # Process
             watchPaths=[
                 self.parameters.child('Image Directory').value(),
                 self.parameters.child('PDI Directory').value(),
@@ -250,3 +269,6 @@ class liveSpecWrangler(wranglerWidget):
         return 'TERMINATE', None
     
 
+class liveSpecThread(wranglerThread):
+    def __init__(self, command_queue, sphere_args, fname, file_lock, parent=None):
+        super().__init__(command_queue, sphere_args, fname, file_lock, parent)
