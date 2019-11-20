@@ -63,3 +63,6 @@ class integratorThread(Qt.QtCore.QThread):
 
     def bai_1d_SI(self):
         self.sphere.arches[self.arch].integrate_1d(**self.sphere.bai_1d_args)
+    
+    def load(self):
+        self.sphere.load_from_h5()

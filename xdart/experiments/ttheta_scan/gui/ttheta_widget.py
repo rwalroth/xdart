@@ -61,7 +61,7 @@ class tthetaWidget(QWidget):
 
         # Data object initialization
         self.file_lock = mp.Condition()
-        self.fname = "default.h5"
+        self.fname = None
         self.sphere = None
         self.arch = None
         self.integrator_thread = integratorThread(self.sphere, self.arch)
@@ -88,6 +88,7 @@ class tthetaWidget(QWidget):
         self.h5viewer.actionSaveArray.triggered.connect(self.save_array)
         self.h5viewer.actionSaveData.triggered.connect(self.save_data)
         self.h5viewer.actionSaveDataAs.triggered.connect(self.save_data_as)
+        self.h5viewer.actionNewFile.triggered.connect(self.new_file)
         self.h5viewer.actionSetDefaults.triggered.connect(self.set_defaults)
 
         # DisplayFrame setup
@@ -155,13 +156,16 @@ class tthetaWidget(QWidget):
         """Reads hdf5 file, populates list of scans in h5viewer. 
         Creates persistent h5py file object.
         """
+        fname, _ = QFileDialog().getOpenFileName()
+        self.set_file(fname)
+
+    def set_file(self, fname):
         with self.file_lock:
-            fname, _ = QFileDialog().getOpenFileName()
             if fname == '' or fname == self.fname:
                 return
             
             try:
-                with catch(fname, 'r') as f:
+                with catch(fname, 'a') as f:
                     self.fname = fname
             except Exception as e:
                 print(e)
@@ -328,6 +332,10 @@ class tthetaWidget(QWidget):
             if isinstance(self.sphere, EwaldSphere):
                 self.open_file()
                 self.save_data()
+    
+    def new_file(self):
+        fname, _ = QFileDialog.getSaveFileName()
+        self.set_file(fname)
     
     def set_defaults(self):
         parameters = [self.integratorTree.parameters]
@@ -550,6 +558,7 @@ class tthetaWidget(QWidget):
         self.update()
     
     def new_scan(self, name):
+        self.h5viewer.update(self.fname)
         if isinstance(self.sphere, EwaldSphere):
             if self.sphere.name == name:
                 self.load_sphere(name)
@@ -557,9 +566,11 @@ class tthetaWidget(QWidget):
             self.load_sphere(name)
 
     def start_wrangler(self):
+        if self.fname is None:
+            self.new_file()
+        print('got new file')
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
-        self.wrangler.fname = self.fname
         args = self.get_all_args()
         self.wrangler.sphere_args = copy.deepcopy(args)
         self.wrangler.setup()

@@ -40,6 +40,9 @@ class H5Viewer(QWidget):
         self.actionSaveDataAs = QtWidgets.QAction()
         self.actionSaveDataAs.setText('Save Data As')
 
+        self.actionNewFile = QtWidgets.QAction()
+        self.actionNewFile.setText('New File')
+
         self.saveMenu = QtWidgets.QMenu()
         self.saveMenu.setTitle('Save')
 
@@ -60,6 +63,7 @@ class H5Viewer(QWidget):
         self.fileMenu.addMenu(self.saveMenu)
         self.fileMenu.addAction(self.actionSaveDataAs)
         self.fileMenu.addAction(self.actionSetDefaults)
+        self.fileMenu.addAction(self.actionNewFile)
 
         self.fileButton = QtWidgets.QToolButton()
         self.fileButton.setText('File')

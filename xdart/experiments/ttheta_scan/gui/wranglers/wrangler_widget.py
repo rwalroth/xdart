@@ -31,7 +31,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         )
         self.sphere_args = {}
         self.input_q = Queue() # thread queue
-        self.file_lock = mp.Condition()
+        self.file_lock = None
         self.fname = "default.h5"
 
         self.command_queue = Queue()

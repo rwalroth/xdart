@@ -105,6 +105,8 @@ class specWrangler(wranglerWidget):
         self.thread.img_dir = self.parameters.child('Image Directory').value()
         self.timeout = self.parameters.child('Timeout').value()
         self.thread.timeout = self.parameters.child('Timeout').value()
+        self.thread.file_lock = self.file_lock
+        self.thread.sphere_args = self.sphere_args
 
     def pause(self):
         if self.thread.isRunning():
@@ -263,8 +265,11 @@ class specProcess(wranglerProcess):
     def run(self):
         sphere = EwaldSphere(self.scan_name, **self.sphere_args)
         with self.file_lock:
+            print('catching')
             with catch(self.fname, 'a') as file:
+                print('saving')
                 sphere.save_to_h5(file, replace=True)
+                print('saved')
                 self.signal_q.put(('new_scan', None))
         
         # Operation instantiated within process to avoid conflicts with locks
@@ -306,6 +311,8 @@ class specProcess(wranglerProcess):
 
             if flag == 'image':
                 idx, map_raw, scan_info, poni = data
+                print('in process')
+                print(poni)
                 arch = EwaldArch(
                     idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
                 )
