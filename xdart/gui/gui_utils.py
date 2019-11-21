@@ -249,4 +249,32 @@ class defaultWidget(Qt.QtWidgets.QWidget):
             self.set_defaults(param, valdict)
 
 
-
+class commandLine(QtWidgets.QLineEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.current = -1
+        self.commands = ['']
+        
+    def keyPressEvent(self, QKeyEvent):
+        key = QKeyEvent.key()
+        if key == QtCore.Qt.Key_Return or key == QtCore.Qt.Key_Enter:
+            self.send_command()
+        elif key == QtCore.Qt.Key_Up:
+            self.current -= 1
+            if self.current < -len(self.commands):
+                self.current = -len(self.commands)
+            self.setText(self.commands[self.current])
+        elif key == QtCore.Qt.Key_Down:
+            self.current += 1
+            if self.current > -1:
+                self.current = -1
+            self.setText(self.commands[self.current])
+        else:
+            super().keyPressEvent(QKeyEvent)
+    
+    def send_command(self):
+        command = self.text()
+        if not (command.isspace() or command == ''):
+            self.commands.insert(-1, command)
+        self.setText('')
+        self.current = -1

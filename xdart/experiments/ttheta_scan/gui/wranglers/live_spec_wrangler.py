@@ -21,13 +21,13 @@ from paws.pawstools import catch_h5py_file as catch
 # Qt imports
 import pyqtgraph as pg
 from pyqtgraph import Qt
-from pyqtgraph.Qt import QtCore
+from pyqtgraph.Qt import QtCore, QtWidgets
 from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
-from .liveSpecUI import *
-from .....gui.gui_utils import NamedActionParameter
+from .liveSpecUI import Ui_Form
+from .....gui.gui_utils import NamedActionParameter, commandLine
 from .....pySSRL_bServer.watcher import Watcher
 from .....pySSRL_bServer.helper_funcs import get_from_pdi
 from .....pySSRL_bServer.bServer_funcs import specCommand
@@ -62,8 +62,13 @@ class liveSpecWrangler(wranglerWidget):
         self.ui.setupUi(self)
         self.ui.startButton.clicked.connect(self.sigStart.emit)
         self.ui.stopButton.clicked.connect(self.stop_watching)
-        self.ui.buttonSend.clicked.connect(self.send_command)
-        self.ui.specCommandLine.keyPressEvent = self.handle_key
+        self.specCommandLine = commandLine(self)
+        self.specCommandLine.send_command = self.send_command
+        self.ui.commandLayout.addWidget(self.specCommandLine)
+        self.buttonSend = QtWidgets.QPushButton(self)
+        self.buttonSend.setText('Send')
+        self.buttonSend.clicked.connect(self.send_command)
+        self.ui.commandLayout.addWidget(self.buttonSend)
         self.commands = ['']
         self.current = -1
         self.keep_trying = True
@@ -116,27 +121,10 @@ class liveSpecWrangler(wranglerWidget):
         self.thread.pollingperiod = self.parameters.child('Polling Period').value()
     
     def send_command(self):
-        command = self.ui.specCommandLine.text()
+        command = self.specCommandLine.text()
         if not (command.isspace() or command == ''):
-            self.commands.append(command)
-            #specCommand(command, queue=False)
-            print(command)
-        self.ui.specCommandLine.setText('')
-        self.current = -1
-    
-    def handle_key(self, q):
-        key = q.key()
-        if key == QtCore.Qt.Key_Return or key == QtCore.Qt.Key_Enter:
-            self.send_command()
-        elif key == QtCore.Qt.Key_Up:
-            self.current -= 1
-        elif key == QtCore.Qt.Key_Down:
-            self.current += 1
-        if self.current > -1:
-            self.current = -1
-        elif self.current < -len(self.commands):
-            self.current = -len(self.commands)
-        self.ui.specCommandLine.setText(self.commands[self.current])
+            specCommand(command, queue=False)
+        commandLine.send_command(self.specCommandLine)
     
     def set_image_dir(self):
         dname = Qt.QtWidgets.QFileDialog.getExistingDirectory(self)

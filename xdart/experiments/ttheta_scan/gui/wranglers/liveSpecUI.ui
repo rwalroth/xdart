@@ -66,18 +66,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QLineEdit" name="specCommandLine"/>
-      </item>
-      <item>
-       <widget class="QPushButton" name="buttonSend">
-        <property name="text">
-         <string>Send</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <layout class="QHBoxLayout" name="commandLayout"/>
     </widget>
    </item>
    <item>

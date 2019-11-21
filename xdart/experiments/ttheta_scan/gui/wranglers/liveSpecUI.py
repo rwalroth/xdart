@@ -31,14 +31,8 @@ class Ui_Form(object):
         self.commandFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.commandFrame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.commandFrame.setObjectName("commandFrame")
-        self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.commandFrame)
-        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.specCommandLine = QtWidgets.QLineEdit(self.commandFrame)
-        self.specCommandLine.setObjectName("specCommandLine")
-        self.horizontalLayout_2.addWidget(self.specCommandLine)
-        self.buttonSend = QtWidgets.QPushButton(self.commandFrame)
-        self.buttonSend.setObjectName("buttonSend")
-        self.horizontalLayout_2.addWidget(self.buttonSend)
+        self.commandLayout = QtWidgets.QHBoxLayout(self.commandFrame)
+        self.commandLayout.setObjectName("commandLayout")
         self.verticalLayout.addWidget(self.commandFrame)
         self.frame = QtWidgets.QFrame(Form)
         self.frame.setMaximumSize(QtCore.QSize(16777215, 40))
@@ -62,7 +56,6 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.buttonSend.setText(_translate("Form", "Send"))
         self.startButton.setText(_translate("Form", "Start"))
         self.stopButton.setText(_translate("Form", "Stop"))
 
