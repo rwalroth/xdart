@@ -98,6 +98,7 @@ class specWrangler(wranglerWidget):
     def setup(self):
         self.thread.mp_inputs.update(self._get_mp_inputs())
         self.thread.lsf_inputs.update(self._get_lsf_inputs())
+        self.thread.fname = self.fname
         self.scan_number = self.parameters.child('Scan Number').value()
         self.scan_name = 'scan' + str(self.scan_number).zfill(2)
         self.thread.scan_name = self.scan_name

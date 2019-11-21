@@ -42,7 +42,7 @@ from .wranglers import specWrangler, liveSpecWrangler
 
 wranglers = {
     'SPEC': specWrangler, 
-    #'Live Spec': liveSpecWrangler
+    'Live Spec': liveSpecWrangler
 }
 
 formats = [
