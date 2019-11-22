@@ -33,7 +33,24 @@ def is_available(debug=False):
         
     if debug: print(f'{i+1} Tries, {time.time()-t0:0.3f} s')
     return False
-            
+          
+
+def is_busy(debug=False):
+    t0 = time.time()
+    for i in range(5):
+        try:
+            r = requests.get(bServer + "is_busy")
+            rv = r.json()['data']
+            if debug: print(f'{i+1} Tries, {time.time()-t0:.3f} s')
+            return rv
+        except:
+            rv = True
+        
+        time.sleep(0.5)
+        
+    if debug: print(f'{i+1} Tries, {time.time()-t0:0.3f} s')
+    return rv
+
 
 def is_SpecBusy(debug=False):
     t0 = time.time()
@@ -55,6 +72,8 @@ def is_SpecBusy(debug=False):
 def wait_until_SPECfinished(debug=False):
     while is_SpecBusy():
         time.sleep(1)
+        if not is_busy():
+            break
         
     return
       
@@ -77,7 +96,7 @@ def wait_until_SPECfinished_old():
 
 def specCommand(cmd, queue=False, debug=False):
     #if (not is_available()) or (status is 'running'):
-    if (is_SpecBusy()):
+    if (is_SpecBusy()) and (not is_available()):
         if queue:
             print('SPEC busy. Command Queued')
             wait_until_SPECfinished()

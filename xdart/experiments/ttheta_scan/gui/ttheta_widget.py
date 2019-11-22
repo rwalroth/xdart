@@ -221,7 +221,8 @@ class tthetaWidget(QWidget):
                         self.sphere.load_from_h5(file)
         else:
             with self.sphere.sphere_lock:
-                if self.sphere.name == self.wrangler.scan_name:
+                if (q not in self.sphere.arches.index and 
+                        self.sphere.name == self.wrangler.scan_name):
                     with self.file_lock:
                         with catch(self.fname, 'r') as file:
                             self.sphere.load_from_h5(

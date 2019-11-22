@@ -118,12 +118,13 @@ class liveSpecWrangler(wranglerWidget):
         self.thread.img_dir = self.parameters.child('Image Directory').value()
         self.thread.pdi_dir = self.parameters.child('PDI Directory').value()
         self.thread.filetypes = self.parameters.child('File Types').value().split()
+        self.thread.set_queues() 
         self.thread.pollingperiod = self.parameters.child('Polling Period').value()
     
     def send_command(self):
         command = self.specCommandLine.text()
         if not (command.isspace() or command == ''):
-            specCommand(command, queue=False)
+            specCommand(command, queue=True)
         commandLine.send_command(self.specCommandLine)
     
     def set_image_dir(self):
@@ -185,7 +186,6 @@ class liveSpecWrangler(wranglerWidget):
     
     def stop_watching(self):
         self.command_queue.put('stop')
-        self.sigStop.emit()
     
 
 class liveSpecThread(wranglerThread):
@@ -209,6 +209,12 @@ class liveSpecThread(wranglerThread):
         self.filetypes = filetypes
         self.queues = {fp: mp.Queue() for fp in filetypes}
     
+    def set_queues(self):
+        for _, q in self.queues.items():
+            self._empty_q(q)
+        self.queues = {fp: mp.Queue() for fp in self.filetypes}
+        
+    
     def run(self):   
         watcher = Watcher( # Process
             watchPaths=[
@@ -230,6 +236,7 @@ class liveSpecThread(wranglerThread):
             queues=self.queues, 
             mp_inputs=self.mp_inputs
         )
+        last=False
         integrator.start()
         watcher.start()
         while True:
@@ -280,6 +287,7 @@ class liveSpecProcess(wranglerProcess):
         while True:
             for key, q in self.queues.items():
                 added = q.get()
+                print(added)
                 self.signal_q.put(('message', added))
                 if added == 'BREAK':
                     self.signal_q.put(('TERMINATE', None))
@@ -311,23 +319,25 @@ class liveSpecProcess(wranglerProcess):
                     make_poni.inputs['spec_dict'] = copy.deepcopy(image_meta)
 
                     poni = copy.deepcopy(make_poni.run())
+                    break
 
                 except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
                     print(type(e))
                     traceback.print_tb(e.__traceback__)
-                arch = EwaldArch(
-                    i, arr, PONI.from_yamdict(poni), scan_info=image_meta
-                )
-                sphere.add_arch(
-                    arch=arch.copy(), calculate=True, update=True, 
-                    get_sd=True, set_mg=False
-                )
-                with self.file_lock:
-                    with catch(self.fname, 'a') as file:
-                        sphere.save_to_h5(
-                            file, arches=[i], data_only=True, replace=False
-                        )
-                self.signal_q.put(('update', i))
+                    
+            arch = EwaldArch(
+                i, arr, PONI.from_yamdict(poni), scan_info=image_meta
+            )
+            sphere.add_arch(
+                arch=arch.copy(), calculate=True, update=True, 
+                get_sd=True, set_mg=False
+            )
+            with self.file_lock:
+                with catch(self.fname, 'a') as file:
+                    sphere.save_to_h5(
+                        file, arches=[i], data_only=True, replace=False
+                    )
+            self.signal_q.put(('update', i))
     
     def parse_file(self, path):
         _, name = os.path.split(path)
