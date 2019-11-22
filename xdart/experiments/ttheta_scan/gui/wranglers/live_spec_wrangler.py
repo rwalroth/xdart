@@ -123,7 +123,12 @@ class liveSpecWrangler(wranglerWidget):
     def send_command(self):
         command = self.specCommandLine.text()
         if not (command.isspace() or command == ''):
-            specCommand(command, queue=False)
+            try:
+                specCommand(command, queue=False)
+            except Exception as e:
+                print(e)
+                print(f"Command '{command}' not sent")
+
         commandLine.send_command(self.specCommandLine)
     
     def set_image_dir(self):
