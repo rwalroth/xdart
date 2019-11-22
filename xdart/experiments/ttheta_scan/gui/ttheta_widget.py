@@ -588,8 +588,12 @@ class tthetaWidget(QWidget):
         self.wrangler.thread.start()
     
     def wrangler_finished(self):
-        if self.sphere.name == self.wrangler.scan_name:
-            self.thread_finished()
+        if isinstance(self.sphere, EwaldSphere):
+            if self.sphere.name == self.wrangler.scan_name:
+                self.thread_finished()
+            else:
+                self.ui.wranglerBox.setEnabled(True)
+                self.wrangler.enabled(True)
         else:
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)

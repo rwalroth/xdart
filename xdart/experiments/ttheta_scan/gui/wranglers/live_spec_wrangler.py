@@ -296,7 +296,7 @@ class liveSpecProcess(wranglerProcess):
                 self.signal_q.put(('message', added))
                 if added == 'BREAK':
                     self.signal_q.put(('TERMINATE', None))
-                    break
+                    return
                 elif key == 'pdi':
                     pdi_file = added
                 elif key == 'raw':
