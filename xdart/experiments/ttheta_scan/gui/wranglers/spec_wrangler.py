@@ -312,8 +312,6 @@ class specProcess(wranglerProcess):
 
             if flag == 'image':
                 idx, map_raw, scan_info, poni = data
-                print('in process')
-                print(poni)
                 arch = EwaldArch(
                     idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
                 )
