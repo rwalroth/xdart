@@ -27,7 +27,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         super().__init__(parent)
         self.file_lock = file_lock
         self.fname = fname
-        self.scan_name = 'null'
+        self.scan_name = 'null_thread'
         self.parameters = Parameter.create(
             name='wrangler_widget', type='int', value=0
         )

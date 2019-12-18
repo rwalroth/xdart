@@ -66,6 +66,7 @@ class tthetaWidget(QWidget):
         self.file_lock = mp.Condition()
         self.fname = None
         self.sphere = None
+        
         self.arch = None
         self.integrator_thread = integratorThread(self.sphere, self.arch)
         self.timer = Qt.QtCore.QTimer()
@@ -136,6 +137,9 @@ class tthetaWidget(QWidget):
         self.ui.wranglerStack.currentChanged.connect(self.set_wrangler)
         self.command_queue = Queue()
         self.set_wrangler(self.ui.wranglerStack.currentIndex())
+        
+        args = self.get_all_args()
+        self.sphere = EwaldSphere(name='null_main', **args)
 
         self.show()
     
@@ -206,6 +210,10 @@ class tthetaWidget(QWidget):
         self.h5viewer.set_data(self.sphere)
         #self.h5viewer.ui.listData.setCurrentRow(0)
         self.integratorTree.update(self.sphere)
+        args = self.get_all_args()
+        self.sphere.bai_1d_args.update(args['bai_1d_args'])
+        self.sphere.bai_2d_args.update(args['bai_2d_args'])
+        self.sphere.mg_args.update(args['mg_args'])
         self.metawidget.update(self.sphere)
         if self.wrangler.scan_name != self.sphere.name:
             self.enable_integration(True)
@@ -535,7 +543,6 @@ class tthetaWidget(QWidget):
         self.integrator_thread.start()
     
     def mg_2d(self, q):
-        print('mg2d')
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
@@ -570,7 +577,7 @@ class tthetaWidget(QWidget):
     def new_scan(self, name):
         self.h5viewer.update(self.fname)
         if isinstance(self.sphere, EwaldSphere):
-            if self.sphere.name == name:
+            if self.sphere.name == name or self.sphere.name == 'null_main':
                 self.load_sphere(name)
         else:
             self.load_sphere(name)
@@ -578,7 +585,6 @@ class tthetaWidget(QWidget):
     def start_wrangler(self):
         if self.fname is None:
             self.new_file()
-        print('got new file')
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
         self.h5viewer.set_open_enabled(False)

@@ -24,8 +24,8 @@ params = [
             {'name': 'Integrate 1D', 'type': 'group', 'children': [
                 {'name': 'numpoints', 'type': 'int', 'value': 1000},
                 {'name': 'unit', 'type': 'list', 'values': {
-                    "2" + u"\u03B8": units.TTH_DEG, "q (A-1)": units.Q_A
-                    }, 'value': units.TTH_DEG},
+                    "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
+                    }, 'value': '2th_deg'},
                 {'name': 'radial_range', 'type': 'group', 'children': [
                         {'name': 'Low', 'type': 'float', 'value': 0.0},
                         {'name': 'High', 'type': 'float', 'value': 180.0},
@@ -58,8 +58,8 @@ params = [
                 {'name': 'npt_rad', 'type': 'int', 'value': 1000},
                 {'name': 'npt_azim', 'type': 'int', 'value': 1000},
                 {'name': 'unit', 'type': 'list', 'values': {
-                    "2" + u"\u03B8": units.TTH_DEG, "q (A-1)": units.Q_A
-                    }, 'value': units.TTH_DEG},
+                    "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
+                    }, 'value': '2th_deg'},
                 {'name': 'radial_range', 'type': 'group', 'children': [
                         {'name': 'Low', 'type': 'float', 'value': 0.0},
                         {'name': 'High', 'type': 'float', 'value': 180.0},
@@ -92,8 +92,8 @@ params = [
     {'name': 'Multi. Geometry', 'type': 'group', 'children': [
             {'name': 'Multi Geometry Setup', 'type': 'group', 'children': [
                 {'name': 'unit', 'type': 'list', 'values': {
-                    "2" + u"\u03B8": units.TTH_DEG, "q (A-1)": units.Q_A
-                    }, 'value': units.TTH_DEG},
+                    "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
+                    }, 'value': '2th_deg'},
                 {'name': 'radial_range', 'type': 'group', 'children': [
                         {'name': 'Low', 'type': 'float', 'value': 0.0},
                         {'name': 'High', 'type': 'float', 'value': 180.0},
