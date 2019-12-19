@@ -298,9 +298,6 @@ class specProcess(wranglerProcess):
             try:
                 flag, data = self.wrangle(i, spec_reader, make_poni)
             except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
-                print(type(e))
-                print(e.args)
-                traceback.print_tb(e.__traceback__)
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
                     self.signal_q.put(('message', "Timeout occurred"))

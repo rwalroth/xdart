@@ -127,22 +127,29 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         with arc.arch_lock:
             int_data = arc.int_2d
         
-        rect = get_rect(
-            self.get_xdata(self.ui.imageUnit, int_data), 
-            int_data.chi
-        )
-        
         if self.ui.imageIntRaw.currentIndex() == 0:
-            data = self.read_NRP(self.ui.imageNRP, int_data)
+            data, corners = self.read_NRP(self.ui.imageNRP, int_data)
+        
+            rect = get_rect(
+                self.get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
+                int_data.chi[corners[0]:corners[1]]
+            )
         
         elif self.ui.imageIntRaw.currentIndex() == 1:
             with arc.arch_lock:
                 if self.ui.imageNRP.currentIndex() == 0:
-                    data = arc.map_norm.copy()
+                    if arc.map_norm is None or arc.map_norm == 0:
+                        data = arc.map_raw.copy()
+                    else:
+                        data = arc.map_raw.copy()/arc.map_norm
                 else:
                     data = arc.map_raw.copy()
                 if self.ui.imageMask.isChecked():
-                    data *= np.where(arc.mask==1, 0, np.ones_like(arc.mask))
+                    data[arc.mask] = 0
+            rect = get_rect(
+                np.arange(data.shape[0]), 
+                np.arange(data.shape[1]),
+            )
         
         return data, rect
 
@@ -158,12 +165,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             elif self.ui.imageMethod.currentIndex() == 1:
                 int_data = sphere.bai_2d
         
-        rect = get_rect(
-            self.get_xdata(self.ui.imageUnit, int_data), 
-            int_data.chi
-        )
+        data, corners = self.read_NRP(self.ui.imageNRP, int_data)
         
-        data = self.read_NRP(self.ui.imageNRP, int_data)
+        rect = get_rect(
+            self.get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
+            int_data.chi[corners[0]:corners[1]]
+        )
         
         return data, rect
     
@@ -186,41 +193,44 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 elif self.ui.plotMethod.currentIndex() == 1:
                     sphere_int_data = sphere.bai_1d
             
-            s_ydata = self.read_NRP(self.ui.plotNRP, sphere_int_data)
-            s_xdata = self.get_xdata(self.ui.plotUnit, sphere_int_data)
+            s_ydata, corners = self.read_NRP(self.ui.plotNRP, sphere_int_data)
+            s_xdata = self.get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
             if arch is not None:
                 with sphere.arches[arch].arch_lock:
                     arc_int_data = sphere.arches[arch].int_1d
 
                 if self.ui.plotOverlay.isChecked():
-                    self.curve1.setData(*return_no_zero(s_xdata, s_ydata))
+                    self.curve1.setData(s_xdata, s_ydata)
                 else:
                     self.curve1.clear()
                 
-                a_ydata = self.read_NRP(self.ui.plotNRP, arc_int_data)
-                a_xdata = self.get_xdata(self.ui.plotUnit, arc_int_data)
-                self.curve2.setData(*return_no_zero(a_xdata, a_ydata))
+                a_ydata, corners = self.read_NRP(self.ui.plotNRP, arc_int_data)
+                a_xdata = self.get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
+                self.curve2.setData(a_xdata, a_ydata)
 
-                return return_no_zero(a_xdata, a_ydata)
+                return a_xdata, a_ydata
             
             else:
-                self.curve1.setData(*return_no_zero(s_xdata, s_ydata))
+                self.curve1.setData(s_xdata, s_ydata)
                 self.curve2.clear()
 
-                return return_no_zero(s_xdata, s_ydata)
+                return s_xdata, s_ydata
 
     def read_NRP(self, box, int_data):
         """Reads the norm, raw, pcount option box and returns
         appropriate ydata
         """
         if box.currentIndex() == 0:
-            data = int_data.norm[()].T
+            data = int_data.norm.data[()].T
+            corners = int_data.norm.corners
         elif box.currentIndex() == 1:
-            data = int_data.raw[()].T
+            data = int_data.raw.data[()].T
+            corners = int_data.raw.corners
         elif box.currentIndex() == 2:
-            data = int_data.pcount[()].T
-        return data
+            data = int_data.pcount.data[()].T
+            corners = int_data.pcount.corners
+        return data, corners
 
     def get_xdata(self, box, int_data):
         """Reads the unit box and returns appropriate xdata
