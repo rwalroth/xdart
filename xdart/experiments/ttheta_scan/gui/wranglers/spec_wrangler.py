@@ -266,11 +266,8 @@ class specProcess(wranglerProcess):
     def run(self):
         sphere = EwaldSphere(self.scan_name, **self.sphere_args)
         with self.file_lock:
-            print('catching')
             with catch(self.fname, 'a') as file:
-                print('saving')
                 sphere.save_to_h5(file, replace=True)
-                print('saved')
                 self.signal_q.put(('new_scan', None))
         
         # Operation instantiated within process to avoid conflicts with locks
@@ -316,6 +313,7 @@ class specProcess(wranglerProcess):
                     arch=arch.copy(), calculate=True, update=True, get_sd=True, 
                     set_mg=False
                 )
+                print(sphere.arches[idx].int_2d.norm.data.size/sphere.arches[idx].int_2d.norm.full().size)
                 with self.file_lock:
                     with catch(self.fname, 'a') as file:
                         sphere.save_to_h5(file, arches=[idx], data_only=True, replace=False)
