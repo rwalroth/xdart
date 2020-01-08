@@ -129,7 +129,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         
         if self.ui.imageIntRaw.currentIndex() == 0:
             data, corners = self.read_NRP(self.ui.imageNRP, int_data)
-        
+            
             rect = get_rect(
                 self.get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
                 int_data.chi[corners[0]:corners[1]]
@@ -222,14 +222,21 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         appropriate ydata
         """
         if box.currentIndex() == 0:
-            data = int_data.norm.data[()].T
-            corners = int_data.norm.corners
+            nzarr = int_data.norm
         elif box.currentIndex() == 1:
-            data = int_data.raw.data[()].T
-            corners = int_data.raw.corners
+            nzarr = int_data.raw
         elif box.currentIndex() == 2:
-            data = int_data.pcount.data[()].T
-            corners = int_data.pcount.corners
+            nzarr = int_data.pcount
+        data = nzarr.data[()].T
+        corners = nzarr.corners
+        
+        if data.size == 0:
+            if len(corners) == 2:
+                data = np.zeros(100)
+                corners = [0, -1]
+            elif len(corners) == 4:
+                data = np.zeros((100,100))
+                corners = [0,-1,0,-1]
         return data, corners
 
     def get_xdata(self, box, int_data):
