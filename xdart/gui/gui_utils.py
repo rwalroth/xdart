@@ -23,7 +23,7 @@ from pyqtgraph.parametertree.Parameter import Parameter
 # paws imports
 
 # This module imports
-
+from .range_widget import rangeWidget
 
 def return_no_zero(x, y):
     return x[y > 0], y[y > 0]
