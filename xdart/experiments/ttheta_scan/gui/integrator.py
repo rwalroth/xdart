@@ -20,7 +20,7 @@ from pyqtgraph.parametertree import (
 from .integratorUI import *
 
 params = [
-    {'name': 'Single Image', 'type': 'group', 'children': [
+    {'name': 'Default', 'type': 'group', 'children': [
             {'name': 'Integrate 1D', 'type': 'group', 'children': [
                 {'name': 'numpoints', 'type': 'int', 'value': 1000},
                 {'name': 'unit', 'type': 'list', 'values': {
@@ -145,8 +145,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.parameters = Parameter.create(
             name='integrator', type='group', children=params
         )
-        self.bai_1d_pars = self.parameters.child('Single Image', 'Integrate 1D')
-        self.bai_2d_pars = self.parameters.child('Single Image', 'Integrate 2D')
+        self.bai_1d_pars = self.parameters.child('Default', 'Integrate 1D')
+        self.bai_2d_pars = self.parameters.child('Default', 'Integrate 2D')
         self.mg_pars = self.parameters.child('Multi. Geometry', 'Multi Geometry Setup')
         self.mg_1d_pars = self.parameters.child('Multi. Geometry', 'Integrate 1D')
         self.mg_2d_pars = self.parameters.child('Multi. Geometry', 'Integrate 2D')
@@ -155,9 +155,9 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.layout.addWidget(self.tree)
     
     def update(self, sphere):
-        self._update_args(sphere.bai_1d_args, self.bai_1d_pars)
-        self._update_args(sphere.bai_2d_args, self.bai_2d_pars)
-        self._update_args(sphere.mg_args, self.mg_pars)
+        self._args_to_params(sphere.bai_1d_args, self.bai_1d_pars)
+        self._args_to_params(sphere.bai_2d_args, self.bai_2d_pars)
+        self._args_to_params(sphere.mg_args, self.mg_pars)
 
         
         with self.bai_2d_pars.treeChangeBlocker():
@@ -173,7 +173,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 else:
                     child.setValue(val)
 
-    def _update_args(self, args, tree):
+    def _args_to_params(self, args, tree):
         with tree.treeChangeBlocker():
             for key, val in args.items():
                 try:
@@ -191,4 +191,22 @@ class integratorTree(Qt.QtWidgets.QWidget):
                             child.child('Auto').setValue(False)
                     else:
                         child.setValue(val)
+    
+    def _params_to_args(self, args, tree):
+        with tree.treeChangeBlocker():
+            for key in args.keys():
+                try:
+                    child = tree.child(key)
+                except:
+                    # pg does not throw specific exception for child not being found
+                    child = None
+                if child is not None:
+                    if 'range' in key:
+                        if child.child('Auto').value():
+                            args[key] = None
+                        else:
+                            args[key] = [child.child('Low').value(),
+                                         child.child('High').value()]
+                    else:
+                        args[key] = child.value()
 
