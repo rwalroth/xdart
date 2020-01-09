@@ -230,6 +230,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         elif box.currentIndex() == 2:
             data = int_data.pcount.data[()].T
             corners = int_data.pcount.corners
+        if all([c == 0 for c in corners]):
+            data = np.zeros(int_data.norm.shape)
+            if len(corners) == 2:
+                corners = [0,int_data.norm.shape[0]]
+            if len(corners) == 4:
+                corners = [0,int_data.norm.shape[0],0,int_data.norm.shape[1]]
         return data, corners
 
     def get_xdata(self, box, int_data):
