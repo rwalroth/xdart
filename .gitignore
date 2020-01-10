@@ -109,3 +109,5 @@ venv.bak/
 /data
 /data/*
 .vscode/settings.json
+.vscode
+.vscode/*
