@@ -111,3 +111,4 @@ venv.bak/
 .vscode/settings.json
 .vscode
 .vscode/*
+xdart/pySSRL_bServer/bServer.lnk
