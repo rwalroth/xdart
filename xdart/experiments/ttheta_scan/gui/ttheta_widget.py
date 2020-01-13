@@ -107,17 +107,12 @@ class tthetaWidget(QWidget):
 
         # IntegratorFrame setup
         self.integratorTree = integratorTree()
-        self.ui.integratorFrame.setLayout(self.integratorTree.ui.layout)
+        self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
 
         # Integrator signal connections
         self.integratorTree.parameters.sigTreeStateChanged.connect(
             self.parse_param_change
         )
-        self.integratorTree.ui.integrateBAI1D.clicked.connect(self.bai_1d)
-        self.integratorTree.ui.integrateBAI2D.clicked.connect(self.bai_2d)
-        self.integratorTree.ui.setupMG.clicked.connect(self.mg_setup)
-        self.integratorTree.ui.integrateMG1D.clicked.connect(self.mg_1d)
-        self.integratorTree.ui.integrateMG2D.clicked.connect(self.mg_2d)
         self.integrator_thread.update.connect(self.displayframe.update)
         self.integrator_thread.finished.connect(self.thread_finished)
 
@@ -258,8 +253,8 @@ class tthetaWidget(QWidget):
                 self.displayframe.ui.imageMethod.setEnabled(True)
                 self.displayframe.ui.imageMask.setEnabled(False)
 
-                self.integratorTree.ui.integrateBAIAll.setChecked(True)
-                self.integratorTree.ui.integrateBAIAll.setEnabled(False)
+                #self.integratorTree.ui.integrateBAIAll.setChecked(True)
+                #self.integratorTree.ui.integrateBAIAll.setEnabled(False)
                 
                 self.metawidget.update(self.sphere)
             
@@ -274,7 +269,7 @@ class tthetaWidget(QWidget):
                 self.displayframe.ui.imageMethod.setEnabled(False)
                 self.displayframe.ui.imageMask.setEnabled(True)
 
-                self.integratorTree.ui.integrateBAIAll.setEnabled(True)
+                #self.integratorTree.ui.integrateBAIAll.setEnabled(True)
                 
                 self.metawidget.update(self.sphere, self.arch)
 
@@ -508,10 +503,10 @@ class tthetaWidget(QWidget):
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
-            if self.integratorTree.ui.integrateBAIAll.isChecked():
-                self.integrator_thread.method = 'bai_1d_all'
-            else:
-                self.integrator_thread.method = 'bai_1d_SI'
+            #if self.integratorTree.ui.integrateBAIAll.isChecked():
+            #    self.integrator_thread.method = 'bai_1d_all'
+            #else:
+            #    self.integrator_thread.method = 'bai_1d_SI'
         self.enable_integration(False)
         self.integrator_thread.start()
 
@@ -519,10 +514,10 @@ class tthetaWidget(QWidget):
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
-            if self.integratorTree.ui.integrateBAIAll.isChecked():
-                self.integrator_thread.method = 'bai_2d_all'
-            else:
-                self.integrator_thread.method = 'bai_2d_SI'
+            #if self.integratorTree.ui.integrateBAIAll.isChecked():
+            #    self.integrator_thread.method = 'bai_2d_all'
+            #else:
+            #    self.integrator_thread.method = 'bai_2d_SI'
         self.enable_integration(False)
         self.integrator_thread.start()
 
@@ -551,13 +546,9 @@ class tthetaWidget(QWidget):
         self.integrator_thread.start()
     
     def enable_integration(self, enable=True):
-        self.integratorTree.tree.setEnabled(enable)
-        
-        self.integratorTree.ui.integrateBAI1D.setEnabled(enable)
-        self.integratorTree.ui.integrateBAI2D.setEnabled(enable)
-        self.integratorTree.ui.setupMG.setEnabled(enable)
-        self.integratorTree.ui.integrateMG1D.setEnabled(enable)
-        self.integratorTree.ui.integrateMG2D.setEnabled(enable)
+        # TODO: create this function in integrator
+        #self.integrator.enabled(True)
+        pass
 
     def update_all(self):
         self.displayframe.update()

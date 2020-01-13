@@ -18,6 +18,7 @@ from pyqtgraph.parametertree import (
 
 # This module imports
 from .integratorUI import *
+from ....gui.gui_utils import rangeWidget
 
 params = [
     {'name': 'Default', 'type': 'group', 'children': [
@@ -141,18 +142,34 @@ class integratorTree(Qt.QtWidgets.QWidget):
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        self.layout = Qt.QtWidgets.QHBoxLayout(self.ui.parameterFrame)
         self.parameters = Parameter.create(
             name='integrator', type='group', children=params
         )
         self.bai_1d_pars = self.parameters.child('Default', 'Integrate 1D')
         self.bai_2d_pars = self.parameters.child('Default', 'Integrate 2D')
-        self.mg_pars = self.parameters.child('Multi. Geometry', 'Multi Geometry Setup')
-        self.mg_1d_pars = self.parameters.child('Multi. Geometry', 'Integrate 1D')
-        self.mg_2d_pars = self.parameters.child('Multi. Geometry', 'Integrate 2D')
-        self.tree = ParameterTree()
-        self.tree.setParameters(self.parameters, showTop=False)
-        self.layout.addWidget(self.tree)
+        self.mg_pars = self.parameters.child('Multi. Geometry', 
+                                             'Multi Geometry Setup')
+        self.mg_1d_pars = self.parameters.child('Multi. Geometry', 
+                                                'Integrate 1D')
+        self.mg_2d_pars = self.parameters.child('Multi. Geometry', 
+                                                'Integrate 2D')
+        self.azimuthalRange = rangeWidget("Azimuthal", 
+                                          unit="(deg.)", 
+                                          range_high=180, 
+                                          points_high=1e9, 
+                                          parent=self,
+                                          range_low=-180, 
+                                          defaults=[-180,180,1000])
+        self.radialRange = rangeWidget("Radial", 
+                                       unit=["2" + u"\u03B8" + " (deg.)", 
+                                             "q (A-1)"], 
+                                       range_high=180, 
+                                       points_high=1e9, 
+                                       parent=self,
+                                       range_low=0, 
+                                       defaults=[0,180,1000])
+        self.ui.verticalLayout.insertWidget(0, self.azimuthalRange)
+        self.ui.verticalLayout.insertWidget(0, self.radialRange)
     
     def update(self, sphere):
         self._args_to_params(sphere.bai_1d_args, self.bai_1d_pars)
