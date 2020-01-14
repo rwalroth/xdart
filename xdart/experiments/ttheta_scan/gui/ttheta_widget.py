@@ -110,9 +110,7 @@ class tthetaWidget(QWidget):
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
 
         # Integrator signal connections
-        self.integratorTree.parameters.sigTreeStateChanged.connect(
-            self.parse_param_change
-        )
+        self.integratorTree.sigUpdateArgs.connect(self.get_args)
         self.integrator_thread.update.connect(self.displayframe.update)
         self.integrator_thread.finished.connect(self.thread_finished)
 
@@ -426,6 +424,13 @@ class tthetaWidget(QWidget):
         del(self.arch)
         del(self.displayframe.arch)
         super().close()
+    
+    def get_args(self, key):
+        print(self.sphere.bai_1d_args)
+        print(self.sphere.bai_2d_args)
+        self.integratorTree.get_args(self.sphere, key)
+        print(self.sphere.bai_1d_args)
+        print(self.sphere.bai_2d_args)
     
     @spherelocked
     def parse_param_change(self, param, changes, args=None):
