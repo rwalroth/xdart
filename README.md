@@ -31,5 +31,4 @@ pyqtgraph (conda-forge)
 qdarkstyle (conda-forge)
 
 
-After installing the above, clone the git repository at https://github.com/rwalroth/paws.git, checkout branch ewald, and use pip to install.
 After that, the program can be run by calling the xdart_main.py script. 

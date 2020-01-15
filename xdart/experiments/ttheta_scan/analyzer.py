@@ -3,9 +3,9 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from time import time
 
-from paws.plugins.ewald import EwaldSphere, EwaldArch
-from paws.containers import PONI
-from paws.pawstools import catch_h5py_file
+from ...classes.ewald import EwaldSphere, EwaldArch
+from ...containers import PONI
+from ...utils import catch_h5py_file
 
 class Analyzer(object):
     """Process that takes in data for use in pyFAI integrators, using

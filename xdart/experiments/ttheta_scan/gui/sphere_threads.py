@@ -7,9 +7,9 @@
 from threading import Condition
 
 # Other imports
-from paws.containers import int_1d_data, int_2d_data
-from paws.plugins.ewald import EwaldArch, EwaldSphere
-from paws.containers import PONI
+from ....containers import int_1d_data, int_2d_data
+from ....classes.ewald import EwaldArch, EwaldSphere
+from ....containers import PONI
 
 # Qt imports
 import pyqtgraph as pg

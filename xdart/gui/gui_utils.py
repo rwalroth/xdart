@@ -20,8 +20,6 @@ from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 from pyqtgraph.parametertree.ParameterItem import ParameterItem
 from pyqtgraph.parametertree.Parameter import Parameter
 
-# paws imports
-
 # This module imports
 
 
