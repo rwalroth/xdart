@@ -25,11 +25,9 @@ from pyqtgraph.parametertree import (
     Parameter, ParameterTree, ParameterItem, registerParameterType
 )
 
-# paws imports
-from paws.plugins.ewald import EwaldSphere
-from paws.pawstools import catch_h5py_file as catch
-
-# This module imports
+## This module imports
+from ....classes.ewald import EwaldSphere
+from ....utils import catch_h5py_file as catch
 from .... import utils as ut
 from ....gui.gui_utils import defaultWidget
 from .tthetaUI import Ui_Form

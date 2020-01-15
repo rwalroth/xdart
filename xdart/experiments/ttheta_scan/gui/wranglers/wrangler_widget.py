@@ -9,7 +9,7 @@ from queue import Queue
 import multiprocessing as mp
 
 # Other imports
-from paws.plugins.ewald import EwaldSphere
+from .....classes.ewald import EwaldSphere
 
 # Qt imports
 import pyqtgraph as pg

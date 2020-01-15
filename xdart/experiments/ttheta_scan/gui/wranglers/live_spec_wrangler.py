@@ -13,10 +13,10 @@ import multiprocessing as mp
 
 # Other imports
 import numpy as np
-from paws.operations.SPEC import LoadSpecFile, MakePONI
-from paws.containers import PONI
-from paws.plugins.ewald import EwaldSphere, EwaldArch
-from paws.pawstools import catch_h5py_file as catch
+from .....classes.spec import LoadSpecFile, MakePONI
+from .....containers import PONI
+from .....classes.ewald import EwaldArch, EwaldSphere
+from .....utils import catch_h5py_file as catch
 
 # Qt imports
 import pyqtgraph as pg
