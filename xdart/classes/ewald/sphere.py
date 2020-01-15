@@ -4,13 +4,12 @@ import pandas as pd
 import numpy as np
 from pyFAI.multi_geometry import MultiGeometry
 
-from ..PawsPlugin import PawsPlugin
 from .arch import EwaldArch, parse_unit
 from ...containers import int_1d_data, int_2d_data
-from ... import pawstools
+from ... import utils
 
 
-class EwaldSphere(PawsPlugin):
+class EwaldSphere():
     """Class for storing multiple arch objects, and stores a MultiGeometry
     integrator from pyFAI.
 
@@ -291,7 +290,7 @@ class EwaldSphere(PawsPlugin):
                     "data_file", "scan_data", "mg_args", "bai_1d_args",
                     "bai_2d_args"
                 ]
-            pawstools.attributes_to_h5(self, grp, lst_attr,
+            utils.attributes_to_h5(self, grp, lst_attr,
                                        compression=compression)
             for key in ('bai_1d', 'bai_2d', 'mgi_1d', 'mgi_2d'):
                 if key not in grp:
@@ -338,13 +337,13 @@ class EwaldSphere(PawsPlugin):
                             lst_attr = [
                                 "data_file", "scan_data", 
                             ]
-                            pawstools.h5_to_attributes(self, grp, lst_attr)
+                            utils.h5_to_attributes(self, grp, lst_attr)
                         else:
                             lst_attr = [
                                 "data_file", "scan_data", "mg_args", "bai_1d_args",
                                 "bai_2d_args"
                             ]
-                            pawstools.h5_to_attributes(self, grp, lst_attr)
+                            utils.h5_to_attributes(self, grp, lst_attr)
                             self._set_args(self.bai_1d_args)
                             self._set_args(self.bai_2d_args)
                             self._set_args(self.mg_args)

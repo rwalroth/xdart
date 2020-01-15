@@ -1,9 +1,9 @@
 import os
 import copy
 import numpy as np
-from paws.operations.SPEC import LoadSpecFile, MakePONI
+from ....classes.spec import LoadSpecFile, MakePONI
 import time
-from paws.containers import PONI
+from ....containers import PONI
 
 class SpecPreProcessor(object):
     """Process which watches for new image files and changes to spec

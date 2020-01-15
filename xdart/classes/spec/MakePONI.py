@@ -3,7 +3,7 @@ from pyFAI.detectors import Detector
 import numpy as np
 
 from ...containers import PONI
-from ..Operation import Operation
+from ..operation import Operation
 
 inputs = OrderedDict(
     rotations = {

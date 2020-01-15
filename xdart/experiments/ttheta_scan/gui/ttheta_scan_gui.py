@@ -7,9 +7,6 @@ import h5py
 from pyqtgraph.Qt import QtGui, QtCore
 import pyqtgraph as pg
 
-from paws.plugins.ewald import EwaldArch, EwaldSphere
-from paws.pawstools import catch_h5py_file
-
 if __name__ == '__main__':
     from visualizer import *
 else:

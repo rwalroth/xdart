@@ -7,7 +7,7 @@ from pyFAI import units
 import h5py
 
 from .nzarrays import nzarray1d, nzarray2d
-from .. import pawstools
+from .. import utils
 
 
 class NoZeroArray():
@@ -95,13 +95,13 @@ class int_1d_data:
         self.pcount.to_hdf5(pcount, compression)
         norm = grp.create_group('norm')
         self.norm.to_hdf5(norm, compression)
-        pawstools.attributes_to_h5(self, grp, ['ttheta', 'q'], compression=compression)
+        utils.attributes_to_h5(self, grp, ['ttheta', 'q'], compression=compression)
     
     def from_hdf5(self, grp):
         self.raw.from_hdf5(grp['raw'])
         self.pcount.from_hdf5(grp['pcount'])
         self.norm.from_hdf5(grp['norm'])
-        pawstools.h5_to_attributes(self, grp, ['ttheta', 'q'])
+        utils.h5_to_attributes(self, grp, ['ttheta', 'q'])
     
     def __setattr__(self, name, value):
         if name in ['raw', 'norm', 'pcount']:
@@ -134,11 +134,11 @@ class int_2d_data(int_1d_data):
     
     def from_hdf5(self, grp):
         super().from_hdf5(grp)
-        pawstools.h5_to_attributes(self, grp, ['chi'])
+        utils.h5_to_attributes(self, grp, ['chi'])
     
     def to_hdf5(self, grp, compression=None):
         super().to_hdf5(grp, compression)
-        pawstools.attributes_to_h5(self, grp, ['chi'], compression=compression)
+        utils.attributes_to_h5(self, grp, ['chi'], compression=compression)
     
     def __setattr__(self, name, value):
         if name in ['raw', 'norm', 'pcount']:

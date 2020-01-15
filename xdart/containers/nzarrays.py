@@ -6,7 +6,7 @@ import numpy as np
 from pyFAI import units
 import h5py
 
-from .. import pawstools
+from .. import utils
 
 
 class nzarray1d():
@@ -70,13 +70,13 @@ class nzarray1d():
         return out, other_data
     
     def to_hdf5(self, grp, compression=None):
-        pawstools.attributes_to_h5(
+        utils.attributes_to_h5(
             self, grp, lst_attr=['data', 'shape', 'corners'], 
             compression=compression
         )
     
     def from_hdf5(self, grp):
-        pawstools.h5_to_attributes(
+        utils.h5_to_attributes(
             self, grp, lst_attr=['data', 'shape', 'corners']
         )
         
@@ -198,7 +198,7 @@ class nzarray1d():
             out.data *= temp
             if other.data.size > 0 and self.data.size > 0:
                 out, temp = self.intersect(other)
-                out.data = pawstools.div0(out.data, temp)
+                out.data = utils.div0(out.data, temp)
             elif other.data.size > 0:
                 out = self.__class__(self)
             else:
@@ -208,9 +208,9 @@ class nzarray1d():
                 out = self.__class__(np.zeros(self.shape))
             else:
                 out = self.__class__(self)
-                out.data = pawstools.div0(out.data, other)
+                out.data = utils.div0(out.data, other)
         elif type(other) == np.ndarray:
-            out = self.__class__(pawstools.div0(self.full(), other))
+            out = self.__class__(utils.div0(self.full(), other))
         return out
     
     def __floordiv__(self, other):
@@ -220,7 +220,7 @@ class nzarray1d():
             out.data *= temp
             if other.data.size > 0 and self.data.size > 0:
                 out, temp = self.intersect(other)
-                out.data = pawstools.div0(out.data, temp).astype(int)
+                out.data = utils.div0(out.data, temp).astype(int)
             elif other.data.size > 0:
                 out = self.__class__(self)
             else:
@@ -230,9 +230,9 @@ class nzarray1d():
                 out = self.__class__(np.zeros(self.shape))
             else:
                 out = self.__class__(self)
-                out.data = pawstools.div0(out.data, other).astype(int)
+                out.data = utils.div0(out.data, other).astype(int)
         elif type(other) == np.ndarray:
-            out = self.__class__(pawstools.div0(self.full(), other).astype(int))
+            out = self.__class__(utils.div0(self.full(), other).astype(int))
         return out
 
 
