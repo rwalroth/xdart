@@ -166,10 +166,13 @@ class EwaldSphere():
                 self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
                 self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
                 self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
-            self.bai_2d += arch.int_2d
-            self.bai_2d.ttheta = arch.int_2d.ttheta
-            self.bai_2d.q = arch.int_2d.q
-            self.bai_2d.chi = arch.int_2d.chi
+            try:
+                self.bai_2d += arch.int_2d
+                self.bai_2d.ttheta = arch.int_2d.ttheta
+                self.bai_2d.q = arch.int_2d.q
+                self.bai_2d.chi = arch.int_2d.chi
+            except AttributeError:
+                pass
 
     def set_multi_geo(self, **args):
         """Sets the MultiGeometry instance stored in the arch.
@@ -227,11 +230,11 @@ class EwaldSphere():
             result: result from MultiGeometry.integrate1d
         """
         with self.sphere_lock:
-            lst_mask = [a.get_mask for a in self.arches]
+            lst_mask = [a.get_mask() for a in self.arches]
             if monitor is None:
                 try:
                     result = self.multi_geo.integrate2d(
-                        [a.map_norm for a in self.arches], lst_mask=lst_mask,
+                        [a.map_raw/a.map_norm for a in self.arches], lst_mask=lst_mask,
                         **kwargs
                     )
                 except Exception as e:
