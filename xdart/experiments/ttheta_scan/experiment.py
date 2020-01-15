@@ -13,8 +13,7 @@ import h5py
 import numpy as np
 from pyqtgraph.Qt import QtGui, QtCore
 
-# paws
-from paws.operations.SPEC.LoadSpecFile import LoadSpecFile
+from ...classes.spec import LoadSpecFile
 
 # TODO: when deployed as plugin these should be deleted
 if __name__ == '__main__':

@@ -93,6 +93,7 @@ venv.bak/
 # Spyder project settings
 .spyderproject
 .spyproject
+*.pylint*
 
 # Rope project settings
 .ropeproject
@@ -111,4 +112,5 @@ venv.bak/
 .vscode/settings.json
 .vscode
 .vscode/*
+*desktop.ini
 xdart/pySSRL_bServer/bServer.lnk
