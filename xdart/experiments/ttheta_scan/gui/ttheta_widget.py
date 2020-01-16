@@ -424,11 +424,7 @@ class tthetaWidget(QWidget):
         super().close()
     
     def get_args(self, key):
-        print(self.sphere.bai_1d_args)
-        print(self.sphere.bai_2d_args)
         self.integratorTree.get_args(self.sphere, key)
-        print(self.sphere.bai_1d_args)
-        print(self.sphere.bai_2d_args)
     
     @spherelocked
     def parse_param_change(self, param, changes, args=None):

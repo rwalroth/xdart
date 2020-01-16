@@ -18,7 +18,7 @@ from pyqtgraph.parametertree import (
 
 # This module imports
 from .integratorUI import *
-from ....gui.gui_utils import rangeWidget
+from ....gui.gui_utils import rangeWidget, defaultWidget
 
 params = [
     {'name': 'Default', 'type': 'group', 'children': [
@@ -154,14 +154,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
                                                 'Integrate 1D')
         self.mg_2d_pars = self.parameters.child('Multi. Geometry', 
                                                 'Integrate 2D')
-        self.azimuthalRange = rangeWidget("Azimuthal", 
-                                          unit="(deg.)", 
-                                          range_high=180, 
-                                          points_high=1e9, 
-                                          parent=self,
-                                          range_low=-180, 
-                                          defaults=[-180,180,1000])
-        self.radialRange = rangeWidget("Radial", 
+        self.radialRange1D = rangeWidget("Radial", 
                                        unit=["2" + u"\u03B8" + " (deg.)", 
                                              "q (A-1)"], 
                                        range_high=180, 
@@ -169,26 +162,72 @@ class integratorTree(Qt.QtWidgets.QWidget):
                                        parent=self,
                                        range_low=0, 
                                        defaults=[0,180,1000])
-        self.ui.verticalLayout.insertWidget(0, self.azimuthalRange)
-        self.ui.verticalLayout.insertWidget(0, self.radialRange)
+        self.azimuthalRange2D = rangeWidget("Azimuthal", 
+                                          unit="(deg.)", 
+                                          range_high=180, 
+                                          points_high=1e9, 
+                                          parent=self,
+                                          range_low=-180, 
+                                          defaults=[-180,180,1000])
+        self.radialRange2D = rangeWidget("Radial", 
+                                       unit=["2" + u"\u03B8" + " (deg.)", 
+                                             "q (A-1)"], 
+                                       range_high=180, 
+                                       points_high=1e9, 
+                                       parent=self,
+                                       range_low=0, 
+                                       defaults=[0,180,1000])
+        self.ui.layout1D.insertWidget(1, self.radialRange1D)
+        self.ui.layout2D.insertWidget(1, self.azimuthalRange2D)
+        self.ui.layout2D.insertWidget(1, self.radialRange2D)
         
-        self.radialRange.sigRangeChanged.connect(self._set_radial_range)
-        self.radialRange.sigUnitChanged.connect(self._set_radial_unit)
-        self.radialRange.sigPointsChanged.connect(self._set_radial_points)
+        self.radialRange1D.sigRangeChanged.connect(self._set_radial_range1D)
+        self.radialRange1D.sigUnitChanged.connect(self._set_radial_unit1D)
+        self.radialRange1D.sigPointsChanged.connect(self._set_radial_points1D)
         
-        self.azimuthalRange.sigRangeChanged.connect(self._set_azimuthal_range)
-        self.azimuthalRange.sigPointsChanged.connect(self._set_azimuthal_points)
+        self.radialRange2D.sigRangeChanged.connect(self._set_radial_range2D)
+        self.radialRange2D.sigUnitChanged.connect(self._set_radial_unit2D)
+        self.radialRange2D.sigPointsChanged.connect(self._set_radial_points2D)
+        
+        self.azimuthalRange2D.sigRangeChanged.connect(self._set_azimuthal_range2D)
+        self.azimuthalRange2D.sigPointsChanged.connect(self._set_azimuthal_points2D)
+        
+        self.ui.advanced1D.clicked.connect(self._advanced1d)
+        self.ui.advanced2D.clicked.connect(self._advanced2d)
     
     def update(self, sphere):
-        self._update_ranges(sphere)
+        self._sync_ranges(sphere)
         self._update_params(sphere)
     
-    def _update_ranges(self, sphere):
-        # block all signals here
-        # update radial range, points
-        # update azimuthal range, points
-        # unblock all signals here
-        pass
+    def _sync_ranges(self, sphere):
+        self.radialRange1D.blockSignals(True)
+        self.radialRange2D.blockSignals(True)
+        self.azimuthalRange2D.blockSignals(True)
+        try:
+            self._sync_range(
+                sphere.bai_1d_args, 'radial_range', self.radialRange1D
+            )
+            self._sync_range(
+                sphere.bai_2d_args, 'radial_range', self.radialRange2D
+            )
+            self._sync_range(
+                sphere.bai_2d_args, 'azimuth_range', self.azimuthalRange2D
+            )
+        finally:
+            self.radialRange1D.blockSignals(False)
+            self.radialRange2D.blockSignals(False)
+            self.azimuthalRange2D.blockSignals(False)
+
+    def _sync_range(self, args, key, rwidget):
+        if key in args:
+            if args[key] is None:
+                args[key] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
+            else:
+                rwidget.ui.low.setValue(args[key][0])
+                rwidget.ui.high.setValue(args[key][0])
+        else:
+            args[key] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
+            
     
     def _update_params(self, sphere):
         self._args_to_params(sphere.bai_1d_args, self.bai_1d_pars)
@@ -211,6 +250,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 else:
                     _range.child("Low").setValue(val[0])
                     _range.child("High").setValue(val[1])
+                    _range.child("Auto").setValue(False)
             elif key == 'polarization_factor':
                 if val is None:
                     tree.child('Apply polarization factor').setValue(True)
@@ -227,77 +267,81 @@ class integratorTree(Qt.QtWidgets.QWidget):
                     child.setValue(val)
     
     def _params_to_args(self, args, tree):
-        if change[2] == 'None':
-            upval = None
-        else:
-            upval = change[2]
-        if 'range' in change[0].parent().name():
-            _range = change[0].parent()
-            if _range.child('Auto').value():
-                args[_range.name()] = None
+        for child in tree.children():
+            if 'range' in child.name():
+                if child.child("Auto").value():
+                    args[child.name()] = None
+                else:
+                    args[child.name()] = [child.child("Low").value(),
+                                          child.child("High").value()]
+            elif child.name() == 'polarization_factor':
+                pass
+            elif child.name() == 'Apply polarization factor':
+                if child.value():
+                    args['polarization_factor'] = \
+                        tree.child('polarization_factor').value()
+                else:
+                    args['polarization_factor'] = None
             else:
-                args[_range.name()] = [
-                    _range.child('Low').value(),
-                    _range.child('High').value(),
-                ]
-        elif change[0].name() == 'polarization_factor':
-            if change[0].parent().child('Apply polarization factor').value():
-                args['polarization_factor'] = upval
-
-        elif change[0].name() == 'Apply polarization factor':
-            if upval:
-                args['polarization_factor'] = \
-                    self.integratorTree.bai_1d_pars.child('polarization_factor').value()
-            else:
-                args['polarization_factor'] = None
-        else:
-            args.update(
-                [(change[0].name(), upval)]
-            )
-        with tree.treeChangeBlocker():
-            for key in args.keys():
-                try:
-                    child = tree.child(key)
-                except:
-                    # pg does not throw specific exception for child not being found
-                    child = None
-                if child is not None:
-                    if 'range' in key:
-                        if child.child('Auto').value():
-                            args[key] = None
-                        else:
-                            args[key] = [child.child('Low').value(),
-                                         child.child('High').value()]
-                    else:
-                        args[key] = child.value()
+                args[child.name()] = child.value()
     
-    def _set_radial_range(self, low, high):
+    def _set_radial_range1D(self, low, high):
         self.bai_1d_pars.child("radial_range", "Low").setValue(low)
         self.bai_1d_pars.child("radial_range", "High").setValue(high)
+        self.sigUpdateArgs.emit('bai_1d')
+        
+    def _set_radial_unit1D(self, val):
+        self.bai_1d_pars.child("unit").setIndex(val)
+        self.sigUpdateArgs.emit('bai_1d')
+
+    def _set_radial_points1D(self, val):
+        self.bai_1d_pars.child("numpoints").setValue(val)
+        self.sigUpdateArgs.emit("bai_1d")
+    
+    def _set_radial_range2D(self, low, high):
         self.bai_2d_pars.child("radial_range", "Low").setValue(low)
         self.bai_2d_pars.child("radial_range", "High").setValue(high)
-        self.sigUpdateArgs.emit('bai_1d')
         self.sigUpdateArgs.emit('bai_2d')
         
-    def _set_radial_unit(self, val):
-        self.bai_1d_pars.child("unit").setIndex(val)
+    def _set_radial_unit2D(self, val):
         self.bai_2d_pars.child("unit").setIndex(val)
-        self.sigUpdateArgs.emit('bai_1d')
         self.sigUpdateArgs.emit('bai_2d')
 
-    def _set_radial_points(self, val):
-        self.bai_1d_pars.child("numpoints").setValue(val)
+    def _set_radial_points2D(self, val):
         self.bai_2d_pars.child("npt_rad").setValue(val)
-        self.sigUpdateArgs.emit("bai_1d")
         self.sigUpdateArgs.emit("bai_2d")
 
-    def _set_azimuthal_range(self, low, high):
+    def _set_azimuthal_range2D(self, low, high):
         self.bai_2d_pars.child("azimuthal_range", "Low").setValue(low)
         self.bai_2d_pars.child("azimuthal_range", "High").setValue(high)
         self.sigUpdateArgs.emit('bai_2d')
     
-    def _set_azimuthal_points(self, val):
+    def _set_azimuthal_points2D(self, val):
         self.bai_2d_pars.child("npt_azim").setValue(val)
         self.sigUpdateArgs.emit("bai_2d")
     
+    def _advanced1d(self):
+        self.advancedWidget = advancedParameters(self.bai_1d_pars, 'bai_1d')
+        self.advancedWidget.sigClosed.connect(self.sigUpdateArgs.emit)
+        self.advancedWidget.show()
+    
+    def _advanced2d(self):
+        self.advancedWidget = advancedParameters(self.bai_2d_pars, 'bai_2d')
+        self.advancedWidget.sigClosed.connect(self.sigUpdateArgs.emit)
+        self.advancedWidget.show()
 
+
+class advancedParameters(Qt.QtWidgets.QWidget):
+    sigClosed = Qt.QtCore.Signal(str)
+    def __init__(self, parameter, name, parent=None):
+        super().__init__(parent)
+        self.name = name
+        self.tree = pg.parametertree.ParameterTree()
+        self.tree.addParameters(parameter)
+        self.layout = Qt.QtWidgets.QVBoxLayout(self)
+        self.setLayout(self.layout)
+        self.layout.addWidget(self.tree)
+
+    def closeEvent(self, event):
+        self.sigClosed.emit(self.name)
+        super().closeEvent(event)
