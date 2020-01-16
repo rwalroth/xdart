@@ -2,7 +2,7 @@
 """
 @author: walroth
 """
-__version__ = '0.3.2'
+__version__ = '0.4.0'
 # Top level script for running gui based program
 
 # Standard library imports
