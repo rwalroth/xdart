@@ -30,7 +30,8 @@ params = [
                 {'name': 'radial_range', 'type': 'group', 'children': [
                         {'name': 'Low', 'type': 'float', 'value': 0.0},
                         {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': False},
+                        {'name': 'Auto', 'type': 'bool', 'value': False,
+                         'visible': False},
                     ]
                 },
                 {'name': 'azimuth_range', 'type': 'group', 'children': [
@@ -64,13 +65,15 @@ params = [
                 {'name': 'radial_range', 'type': 'group', 'children': [
                         {'name': 'Low', 'type': 'float', 'value': 0.0},
                         {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': False},
+                        {'name': 'Auto', 'type': 'bool', 'value': False, 
+                        'visible': False},
                     ]
                 },
                 {'name': 'azimuth_range', 'type': 'group', 'children': [
                         {'name': 'Low', 'type': 'float', 'value': -180.0},
                         {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': False},
+                        {'name': 'Auto', 'type': 'bool', 'value': False, 
+                        'visible': False},
                     ]
                 },
                 {'name': 'monitor', 'type': 'str', 'value': 'None'},
@@ -192,18 +195,32 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.azimuthalRange2D.sigRangeChanged.connect(self._set_azimuthal_range2D)
         self.azimuthalRange2D.sigPointsChanged.connect(self._set_azimuthal_points2D)
         
-        self.ui.advanced1D.clicked.connect(self._advanced1d)
-        self.ui.advanced2D.clicked.connect(self._advanced2d)
+        self.advancedWidget1D = advancedParameters(self.bai_1d_pars, 'bai_1d')
+        self.advancedWidget1D.sigUpdateArgs.connect(self.sigUpdateArgs.emit)
+        self.advancedWidget2D = advancedParameters(self.bai_2d_pars, 'bai_2d')
+        self.advancedWidget2D.sigUpdateArgs.connect(self.sigUpdateArgs.emit)
+        
+        self.ui.advanced1D.clicked.connect(self.advancedWidget1D.show)
+        self.ui.advanced2D.clicked.connect(self.advancedWidget2D.show)
     
     def update(self, sphere):
         self._sync_ranges(sphere)
         self._update_params(sphere)
     
+    def setEnabled(self, enable):
+        self.advancedWidget1D.setEnabled(enable)
+        self.advancedWidget2D.setEnabled(enable)
+        self.radialRange1D.setEnabled(enable)
+        self.radialRange2D.setEnabled(enable)
+        self.azimuthalRange2D.setEnabled(enable)
+        self.ui.integrate1D.setEnabled(enable)
+        self.ui.integrate2D.setEnabled(enable)
+        self.ui.advanced1D.setEnabled(enable)
+        self.ui.advanced2D.setEnabled(enable)
+        
+    
     def _sync_ranges(self, sphere):
-        self.radialRange1D.blockSignals(True)
-        self.radialRange2D.blockSignals(True)
-        self.azimuthalRange2D.blockSignals(True)
-        try:
+        with sphere.sphere_lock:
             self._sync_range(
                 sphere.bai_1d_args, 'radial_range', self.radialRange1D
             )
@@ -213,32 +230,42 @@ class integratorTree(Qt.QtWidgets.QWidget):
             self._sync_range(
                 sphere.bai_2d_args, 'azimuth_range', self.azimuthalRange2D
             )
-        finally:
-            self.radialRange1D.blockSignals(False)
-            self.radialRange2D.blockSignals(False)
-            self.azimuthalRange2D.blockSignals(False)
 
     def _sync_range(self, args, key, rwidget):
-        if key in args:
-            if args[key] is None:
-                args[key] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
+        rwidget.blockSignals(True)
+        try:
+            if key in args:
+                if args[key] is None:
+                    args[key] = [rwidget.ui.low.value(),
+                                 rwidget.ui.high.value()]
+                else:
+                    rwidget.ui.low.setValue(args[key][0])
+                    rwidget.ui.high.setValue(args[key][1])
             else:
-                rwidget.ui.low.setValue(args[key][0])
-                rwidget.ui.high.setValue(args[key][0])
-        else:
-            args[key] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
+                args[key] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
+        finally:
+            print(args[key])
+            rwidget.blockSignals(False)
             
     
     def _update_params(self, sphere):
-        self._args_to_params(sphere.bai_1d_args, self.bai_1d_pars)
-        self._args_to_params(sphere.bai_2d_args, self.bai_2d_pars)
-        self._args_to_params(sphere.mg_args, self.mg_pars)
+        with sphere.sphere_lock:
+            self._args_to_params(sphere.bai_1d_args, self.bai_1d_pars)
+            self._args_to_params(sphere.bai_2d_args, self.bai_2d_pars)
+            self._args_to_params(sphere.mg_args, self.mg_pars)
         
     def get_args(self, sphere, key):
-        if key == 'bai_1d':
-            self._params_to_args(sphere.bai_1d_args, self.bai_1d_pars)
-        elif key == 'bai_2d':
-            self._params_to_args(sphere.bai_2d_args, self.bai_2d_pars)
+        with sphere.sphere_lock:
+            if key == 'bai_1d':
+                self._params_to_args(sphere.bai_1d_args, self.bai_1d_pars)
+                self._sync_range(sphere.bai_1d_args, 'radial_range',
+                                self.radialRange1D)
+            elif key == 'bai_2d':
+                self._params_to_args(sphere.bai_2d_args, self.bai_2d_pars)
+                self._sync_range(sphere.bai_2d_args, 'radial_range',
+                                self.radialRange2D)
+                self._sync_range(sphere.bai_2d_args, 'azimuth_range',
+                                self.azimuthalRange2D)
             
 
     def _args_to_params(self, args, tree):
@@ -264,7 +291,10 @@ class integratorTree(Qt.QtWidgets.QWidget):
                     # No specific error thrown for missing child
                     child = None
                 if child is not None:
-                    child.setValue(val)
+                    if val is None:
+                        child.setValue('None')
+                    else:
+                        child.setValue(val)
     
     def _params_to_args(self, args, tree):
         for child in tree.children():
@@ -283,7 +313,11 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 else:
                     args['polarization_factor'] = None
             else:
-                args[child.name()] = child.value()
+                val = child.value()
+                if val == 'None':   
+                    args[child.name()] = None
+                else:
+                    args[child.name()] = val
     
     def _set_radial_range1D(self, low, high):
         self.bai_1d_pars.child("radial_range", "Low").setValue(low)
@@ -319,29 +353,21 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def _set_azimuthal_points2D(self, val):
         self.bai_2d_pars.child("npt_azim").setValue(val)
         self.sigUpdateArgs.emit("bai_2d")
-    
-    def _advanced1d(self):
-        self.advancedWidget = advancedParameters(self.bai_1d_pars, 'bai_1d')
-        self.advancedWidget.sigClosed.connect(self.sigUpdateArgs.emit)
-        self.advancedWidget.show()
-    
-    def _advanced2d(self):
-        self.advancedWidget = advancedParameters(self.bai_2d_pars, 'bai_2d')
-        self.advancedWidget.sigClosed.connect(self.sigUpdateArgs.emit)
-        self.advancedWidget.show()
 
 
 class advancedParameters(Qt.QtWidgets.QWidget):
-    sigClosed = Qt.QtCore.Signal(str)
+    sigUpdateArgs = Qt.QtCore.Signal(str)
+    
     def __init__(self, parameter, name, parent=None):
         super().__init__(parent)
         self.name = name
+        self.parameter = parameter
         self.tree = pg.parametertree.ParameterTree()
         self.tree.addParameters(parameter)
+        self.parameter.sigTreeStateChanged.connect(self.process_change)
         self.layout = Qt.QtWidgets.QVBoxLayout(self)
         self.setLayout(self.layout)
         self.layout.addWidget(self.tree)
-
-    def closeEvent(self, event):
-        self.sigClosed.emit(self.name)
-        super().closeEvent(event)
+    
+    def process_change(self, tree, changes):
+        self.sigUpdateArgs.emit(self.name)

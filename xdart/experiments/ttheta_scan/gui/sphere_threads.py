@@ -31,7 +31,10 @@ class integratorThread(Qt.QtCore.QThread):
     def run(self):
         with self.lock:
             method = getattr(self, self.method)
-            method()
+            try:
+                method()
+            except KeyError:
+                pass
 
     def mg_2d(self):
         self.sphere.multigeometry_integrate_2d(**self.mg_2d_args)

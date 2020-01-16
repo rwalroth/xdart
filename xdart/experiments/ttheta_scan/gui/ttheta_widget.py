@@ -63,7 +63,7 @@ class tthetaWidget(QWidget):
         # Data object initialization
         self.file_lock = mp.Condition()
         self.fname = None
-        self.sphere = None
+        self.sphere = EwaldSphere('null_main')
         
         self.arch = None
         self.integrator_thread = integratorThread(self.sphere, self.arch)
@@ -106,9 +106,12 @@ class tthetaWidget(QWidget):
         # IntegratorFrame setup
         self.integratorTree = integratorTree()
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
+        self.integratorTree.update(self.sphere)
 
         # Integrator signal connections
         self.integratorTree.sigUpdateArgs.connect(self.get_args)
+        self.integratorTree.ui.integrate1D.clicked.connect(self.bai_1d)
+        self.integratorTree.ui.integrate2D.clicked.connect(self.bai_2d)
         self.integrator_thread.update.connect(self.displayframe.update)
         self.integrator_thread.finished.connect(self.thread_finished)
 
@@ -129,8 +132,8 @@ class tthetaWidget(QWidget):
         self.command_queue = Queue()
         self.set_wrangler(self.ui.wranglerStack.currentIndex())
         
-        args = self.get_all_args()
-        self.sphere = EwaldSphere(name='null_main', **args)
+        self.get_args('bai_1d')
+        self.get_args('bai_2d')
 
         self.show()
     
@@ -201,10 +204,8 @@ class tthetaWidget(QWidget):
         self.h5viewer.set_data(self.sphere)
         #self.h5viewer.ui.listData.setCurrentRow(0)
         self.integratorTree.update(self.sphere)
-        args = self.get_all_args()
-        self.sphere.bai_1d_args.update(args['bai_1d_args'])
-        self.sphere.bai_2d_args.update(args['bai_2d_args'])
-        self.sphere.mg_args.update(args['mg_args'])
+        self.get_args('bai_1d')
+        self.get_args('bai_2d')
         self.metawidget.update(self.sphere)
         if self.wrangler.scan_name != self.sphere.name:
             self.enable_integration(True)
@@ -249,8 +250,10 @@ class tthetaWidget(QWidget):
                 self.displayframe.ui.imageMethod.setEnabled(True)
                 self.displayframe.ui.imageMask.setEnabled(False)
 
-                #self.integratorTree.ui.integrateBAIAll.setChecked(True)
-                #self.integratorTree.ui.integrateBAIAll.setEnabled(False)
+                self.integratorTree.ui.all1D.setChecked(True)
+                self.integratorTree.ui.all1D.setEnabled(False)
+                self.integratorTree.ui.all2D.setChecked(True)
+                self.integratorTree.ui.all2D.setEnabled(False)
                 
                 self.metawidget.update(self.sphere)
             
@@ -265,7 +268,8 @@ class tthetaWidget(QWidget):
                 self.displayframe.ui.imageMethod.setEnabled(False)
                 self.displayframe.ui.imageMask.setEnabled(True)
 
-                #self.integratorTree.ui.integrateBAIAll.setEnabled(True)
+                self.integratorTree.ui.all1D.setEnabled(True)
+                self.integratorTree.ui.all2D.setEnabled(True)
                 
                 self.metawidget.update(self.sphere, self.arch)
 
@@ -426,86 +430,14 @@ class tthetaWidget(QWidget):
     def get_args(self, key):
         self.integratorTree.get_args(self.sphere, key)
     
-    @spherelocked
-    def parse_param_change(self, param, changes, args=None):
-        if args is None:
-            bai_1d_args = self.sphere.bai_1d_args
-            bai_2d_args = self.sphere.bai_2d_args
-            mg_args = self.sphere.mg_args
-        else:
-            bai_1d_args = args['bai_1d_args']
-            bai_2d_args = args['bai_2d_args']
-            mg_args = args['mg_args']
-        for change in changes:
-            SI = False
-            smg = False
-            d1 = False
-            par = change[0]
-            while par.parent() is not None:
-                if par.name() == 'Integrate 1D':
-                    d1 = True
-                elif par.name() == 'Multi Geometry Setup':
-                    smg = True
-                    break
-                elif par.name() == 'Single Image':
-                    SI = True
-                    break
-                par = par.parent()
-            if SI:
-                if d1:
-                    self.update_args(change, bai_1d_args)
-                else:
-                    self.update_args(change, bai_2d_args)
-            else:
-                if smg:
-                    self.update_args(change, mg_args)
-                else:
-                    with self.integrator_thread.lock:
-                        if d1:
-                            self.update_args(
-                                change, self.integrator_thread.mg_1d_args)
-                        else:
-                            self.update_args(
-                                change, self.integrator_thread.mg_2d_args)
-    
-
-    def update_args(self, change, args):
-        if change[2] == 'None':
-            upval = None
-        else:
-            upval = change[2]
-        if 'range' in change[0].parent().name():
-            _range = change[0].parent()
-            if _range.child('Auto').value():
-                args[_range.name()] = None
-            else:
-                args[_range.name()] = [
-                    _range.child('Low').value(),
-                    _range.child('High').value(),
-                ]
-        elif change[0].name() == 'polarization_factor':
-            if change[0].parent().child('Apply polarization factor').value():
-                args['polarization_factor'] = upval
-
-        elif change[0].name() == 'Apply polarization factor':
-            if upval:
-                args['polarization_factor'] = \
-                    self.integratorTree.bai_1d_pars.child('polarization_factor').value()
-            else:
-                args['polarization_factor'] = None
-        else:
-            args.update(
-                [(change[0].name(), upval)]
-            )
-    
     def bai_1d(self, q):
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
-            #if self.integratorTree.ui.integrateBAIAll.isChecked():
-            #    self.integrator_thread.method = 'bai_1d_all'
-            #else:
-            #    self.integrator_thread.method = 'bai_1d_SI'
+            if self.integratorTree.ui.all1D.isChecked():
+                self.integrator_thread.method = 'bai_1d_all'
+            else:
+                self.integrator_thread.method = 'bai_1d_SI'
         self.enable_integration(False)
         self.integrator_thread.start()
 
@@ -513,10 +445,10 @@ class tthetaWidget(QWidget):
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
-            #if self.integratorTree.ui.integrateBAIAll.isChecked():
-            #    self.integrator_thread.method = 'bai_2d_all'
-            #else:
-            #    self.integrator_thread.method = 'bai_2d_SI'
+            if self.integratorTree.ui.all2D.isChecked():
+                self.integrator_thread.method = 'bai_2d_all'
+            else:
+                self.integrator_thread.method = 'bai_2d_SI'
         self.enable_integration(False)
         self.integrator_thread.start()
 
@@ -545,9 +477,7 @@ class tthetaWidget(QWidget):
         self.integrator_thread.start()
     
     def enable_integration(self, enable=True):
-        # TODO: create this function in integrator
-        #self.integrator.enabled(True)
-        pass
+        self.integratorTree.setEnabled(enable)
 
     def update_all(self):
         self.displayframe.update()
@@ -593,30 +523,6 @@ class tthetaWidget(QWidget):
         else:
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
-    
-    def unroll_tree(self, changes, param):
-        if param.hasChildren():
-            for child in param.children():
-                if child.isType('group'):
-                    changes = self.unroll_tree(changes, child)
-                else:
-                    changes.append((child, None, child.value()))
-        elif not param.isType('group'):
-            changes.append((param, None, param.value()))
-        
-        return changes
-        
-    def get_all_args(self):
-        args = {
-            'bai_1d_args': {},
-            'bai_2d_args': {},
-            'mg_args': {}
-        }
-        changes = []
-        changes = self.unroll_tree(changes, self.integratorTree.parameters)
-        self.parse_param_change(None, changes, args)
-        return args
-
 
     def pause_wrangler(self):
         if self.batch_integrator.isRunning():
