@@ -1,6 +1,8 @@
-import os, glob, fnmatch, re
+import sys, os, glob, fnmatch, re
 import numpy as np
 import matplotlib.pyplot as plt
+
+sys.path.append('~/Research/RDA/repos/xdart')
 
 from collections import OrderedDict
 
@@ -16,7 +18,7 @@ from lmfit_models import PlaneModel, LorentzianSquared2DModel, Gaussian2DModel, 
 from joblib import Parallel, delayed
 import multiprocessing as mp
 
-from xdart.pySSRL_bServer.helper_funcs import get_from_pdi, read_image_file, get_motor_val, smooth_img
+from xdart.utils import get_from_pdi, read_image_file, get_motor_val, smooth_img
 
 
 def get_fit(im):
@@ -68,7 +70,8 @@ def fit_images_2D(fname, tth, kernel_size=3, window_size=3, order=0, verbose=Fal
     return
 
 
-if __name__ == "main":
+if __name__ == "__main__":
+    print('running..')
     path = '/Users/v/SSRL_Data/RDA/calibration_test_data/2019_12_09'
     img_path = os.path.join(path, 'images')
     pdi_path = os.path.join(path, 'images')
