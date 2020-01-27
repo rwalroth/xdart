@@ -7,9 +7,9 @@
 from threading import Condition
 
 # Other imports
-from paws.containers import int_1d_data, int_2d_data
-from paws.plugins.ewald import EwaldArch, EwaldSphere
-from paws.containers import PONI
+from ....containers import int_1d_data, int_2d_data
+from ....classes.ewald import EwaldArch, EwaldSphere
+from ....containers import PONI
 
 # Qt imports
 import pyqtgraph as pg
@@ -31,7 +31,10 @@ class integratorThread(Qt.QtCore.QThread):
     def run(self):
         with self.lock:
             method = getattr(self, self.method)
-            method()
+            try:
+                method()
+            except KeyError:
+                pass
 
     def mg_2d(self):
         self.sphere.multigeometry_integrate_2d(**self.mg_2d_args)

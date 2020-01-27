@@ -231,12 +231,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         corners = nzarr.corners
         
         if data.size == 0:
+            data = np.zeros(int_data.norm.shape)
             if len(corners) == 2:
-                data = np.zeros(100)
-                corners = [0, -1]
-            elif len(corners) == 4:
-                data = np.zeros((100,100))
-                corners = [0,-1,0,-1]
+                corners = [0,int_data.norm.shape[0]]
+            if len(corners) == 4:
+                corners = [0,int_data.norm.shape[0],0,int_data.norm.shape[1]]
         return data, corners
 
     def get_xdata(self, box, int_data):
