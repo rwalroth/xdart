@@ -299,9 +299,6 @@ class EwaldSphere():
                 if key not in grp:
                     grp.create_group(key)
             self.bai_1d.to_hdf5(grp['bai_1d'], compression)
-            print('trying bai_2d')
-            for key in grp['bai_2d']:
-                print(key)
             self.bai_2d.to_hdf5(grp['bai_2d'], compression)
             self.mgi_1d.to_hdf5(grp['mgi_1d'], compression)
             self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
