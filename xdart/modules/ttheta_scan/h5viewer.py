@@ -96,7 +96,6 @@ class H5Viewer(QWidget):
         """Takes sphere object and updates list with all arch ids
         """
         idx = self.ui.listData.currentRow()
-        print(idx)
         with sphere.sphere_lock:
             self.ui.listData.clear()
             self.ui.listData.addItem('Overall')

@@ -282,7 +282,10 @@ class tthetaWidget(QWidget):
             Qt.QtGui.QApplication.processEvents()
 
             self.load_sphere(q.data(0))
-            self.set_data(q)
+            try:
+                self.set_data(q)
+            except TypeError:
+                print("TypeError in load_and_set, set_data")
     
     def save_image(self):
         """Saves currently displayed image. Formats are automatically
@@ -505,10 +508,13 @@ class tthetaWidget(QWidget):
     def start_wrangler(self):
         if self.fname is None:
             self.new_file()
+        if self.fname is None:
+            return
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
         self.h5viewer.set_open_enabled(False)
-        args = self.get_all_args()
+        args = {'bai_1d_args': self.sphere.bai_1d_args,
+                'bai_2d_args': self.sphere.bai_2d_args}
         self.wrangler.sphere_args = copy.deepcopy(args)
         self.wrangler.setup()
         self.wrangler.thread.start()

@@ -99,8 +99,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.arch = self.sphere.arches.iloc[-1].idx
             # TODO This is breaking link to parent arch, need to revisit
         
-        self.update_image(self.sphere, self.arch)
-        self.update_plot(self.sphere, self.arch)
+        try:
+            self.update_image(self.sphere, self.arch)
+        except Exception as e:
+            print(f"{e} in update_image")
+        try:
+            self.update_plot(self.sphere, self.arch)
+        except Exception as e:
+            print(f"{e} in update_image")
     
     def update_image(self, sphere, arch):
         """Updates image plotted in image frame

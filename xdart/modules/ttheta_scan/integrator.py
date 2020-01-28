@@ -244,7 +244,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
             else:
                 args[key] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
         finally:
-            print(args[key])
             rwidget.blockSignals(False)
             
     
