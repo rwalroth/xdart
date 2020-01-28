@@ -263,7 +263,7 @@ class specProcess(wranglerProcess):
         self.spec_name = None
         self.timeout = timeout
     
-    def run(self):
+    def _main(self):
         sphere = EwaldSphere(self.scan_name, **self.sphere_args)
         with self.file_lock:
             with catch(self.fname, 'a') as file:
@@ -313,10 +313,10 @@ class specProcess(wranglerProcess):
                     arch=arch.copy(), calculate=True, update=True, get_sd=True, 
                     set_mg=False
                 )
-                print(sphere.arches[idx].int_2d.norm.data.size/sphere.arches[idx].int_2d.norm.full().size)
                 with self.file_lock:
                     with catch(self.fname, 'a') as file:
                         sphere.save_to_h5(file, arches=[idx], data_only=True, replace=False)
+                self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
                 i += 1
             

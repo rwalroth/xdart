@@ -7,6 +7,7 @@
 import copy
 from queue import Queue
 import multiprocessing as mp
+import traceback
 
 # Other imports
 from .....classes.ewald import EwaldSphere
@@ -89,8 +90,14 @@ class wranglerProcess(mp.Process):
         self.sphere_args = sphere_args
         self.fname = fname
         self.file_lock = file_lock
-    
     def run(self):
+        try:
+            self._main()
+        except:
+            print("-"*60)
+            traceback.print_exc()
+            print("-"*60)
+    def _main(self):
         sphere = EwaldSphere(**self.sphere_args)
         while True:
             if not self.command_q.empty():
