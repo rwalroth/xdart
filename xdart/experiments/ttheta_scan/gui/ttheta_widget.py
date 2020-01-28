@@ -508,6 +508,8 @@ class tthetaWidget(QWidget):
     def start_wrangler(self):
         if self.fname is None:
             self.new_file()
+        if self.fname is None:
+            return
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
         self.h5viewer.set_open_enabled(False)
