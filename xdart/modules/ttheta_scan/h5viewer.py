@@ -6,7 +6,7 @@
 
 # Other imports
 import h5py
-from ....utils import catch_h5py_file as catch
+from xdart.utils import catch_h5py_file as catch
 
 # Qt imports
 from pyqtgraph.Qt import QtWidgets, QtCore

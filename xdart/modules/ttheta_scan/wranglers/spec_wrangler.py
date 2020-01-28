@@ -12,10 +12,10 @@ import traceback
 
 # Other imports
 import numpy as np
-from .....classes.spec import LoadSpecFile, MakePONI
-from .....containers import PONI
-from .....classes.ewald import EwaldArch, EwaldSphere
-from .....utils import catch_h5py_file as catch
+from xdart.classes.spec import LoadSpecFile, MakePONI
+from xdart.containers import PONI
+from xdart.classes.ewald import EwaldArch, EwaldSphere
+from xdart.utils import catch_h5py_file as catch
 
 # Qt imports
 import pyqtgraph as pg
@@ -25,7 +25,7 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 # This module imports
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .specUI import *
-from .....gui.gui_utils import NamedActionParameter
+from xdart.gui.gui_utils import NamedActionParameter
 
 params = [
     {'name': 'Scan Number', 'type': 'int', 'value': 0},

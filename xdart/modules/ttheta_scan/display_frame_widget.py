@@ -15,7 +15,7 @@ from pyqtgraph import Qt
 
 # This module imports
 from .displayFrameUI import * 
-from ....gui.gui_utils import *
+from xdart.gui.gui_utils import *
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
     def __init__(self, parent=None, sphere=None):

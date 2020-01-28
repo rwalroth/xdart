@@ -26,10 +26,10 @@ from pyqtgraph.parametertree import (
 )
 
 ## This module imports
-from ....classes.ewald import EwaldSphere
-from ....utils import catch_h5py_file as catch
-from .... import utils as ut
-from ....gui.gui_utils import defaultWidget
+from xdart.classes.ewald import EwaldSphere
+from xdart.utils import catch_h5py_file as catch
+from xdart import utils as ut
+from xdart.gui.gui_utils import defaultWidget
 from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget

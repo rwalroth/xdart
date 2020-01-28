@@ -18,7 +18,7 @@ from pyqtgraph.parametertree import (
 
 # This module imports
 from .integratorUI import *
-from ....gui.gui_utils import rangeWidget, defaultWidget
+from xdart.gui.gui_utils import rangeWidget, defaultWidget
 
 params = [
     {'name': 'Default', 'type': 'group', 'children': [

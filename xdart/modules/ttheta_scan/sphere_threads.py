@@ -7,9 +7,9 @@
 from threading import Condition
 
 # Other imports
-from ....containers import int_1d_data, int_2d_data
-from ....classes.ewald import EwaldArch, EwaldSphere
-from ....containers import PONI
+from xdart.containers import int_1d_data, int_2d_data
+from xdart.classes.ewald import EwaldArch, EwaldSphere
+from xdart.containers import PONI
 
 # Qt imports
 import pyqtgraph as pg

@@ -13,7 +13,7 @@ import pyqtgraph as pg
 from pyqtgraph import Qt
 
 # This module imports
-from ....gui.gui_utils import DFTableModel
+from xdart.gui.gui_utils import DFTableModel
 
 class metadataWidget(Qt.QtWidgets.QWidget):
     def __init__(self, parent=None):

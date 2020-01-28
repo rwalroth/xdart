@@ -1,1 +1,1 @@
-from .ttheta_scan_gui import TThetaGUI
+from .ttheta_widget import tthetaWidget
