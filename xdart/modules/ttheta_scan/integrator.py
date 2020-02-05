@@ -231,9 +231,18 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 sphere.bai_2d_args, 'azimuth_range', self.azimuthalRange2D
             )
 
-    def _sync_range(self, args, key, rwidget):
+    def _sync_range(self, args, key, name):
+        if name == 'r1d':
+            rwidget = self.radialRange1D
+        elif name == 'r2d':
+            rwidget = self.radialRange2D
+        elif name == 'a2d':
+            rwidget = self.azimuthalRange2D
         rwidget.blockSignals(True)
         try:
+            rwidget.ui.points.setValue(
+                self.bai_1d_pars.child("numpoints").value
+            )
             if key in args:
                 if args[key] is None:
                     args[key] = [rwidget.ui.low.value(),
@@ -258,13 +267,19 @@ class integratorTree(Qt.QtWidgets.QWidget):
             if key == 'bai_1d':
                 self._params_to_args(sphere.bai_1d_args, self.bai_1d_pars)
                 self._sync_range(sphere.bai_1d_args, 'radial_range',
-                                self.radialRange1D)
+                                'r1d')
             elif key == 'bai_2d':
                 self._params_to_args(sphere.bai_2d_args, self.bai_2d_pars)
                 self._sync_range(sphere.bai_2d_args, 'radial_range',
-                                self.radialRange2D)
+                                'r2d')
                 self._sync_range(sphere.bai_2d_args, 'azimuth_range',
-                                self.azimuthalRange2D)
+                                'a2d')
+                self.radialRange2D.ui.points.setValue(
+                    self.bai_2d_pars.child("npt_rad").value
+                )
+                self.azimuthalRange2D.ui.points.setValue(
+                    self.bai_2d_pars.child("npt_azim").value
+                )
             
 
     def _args_to_params(self, args, tree):
@@ -345,8 +360,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.sigUpdateArgs.emit("bai_2d")
 
     def _set_azimuthal_range2D(self, low, high):
-        self.bai_2d_pars.child("azimuthal_range", "Low").setValue(low)
-        self.bai_2d_pars.child("azimuthal_range", "High").setValue(high)
+        self.bai_2d_pars.child("azimuth_range", "Low").setValue(low)
+        self.bai_2d_pars.child("azimuth_range", "High").setValue(high)
         self.sigUpdateArgs.emit('bai_2d')
     
     def _set_azimuthal_points2D(self, val):

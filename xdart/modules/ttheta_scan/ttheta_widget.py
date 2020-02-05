@@ -91,7 +91,7 @@ class tthetaWidget(QWidget):
         self.h5viewer.actionSaveData.triggered.connect(self.save_data)
         self.h5viewer.actionSaveDataAs.triggered.connect(self.save_data_as)
         self.h5viewer.actionNewFile.triggered.connect(self.new_file)
-        self.h5viewer.actionSetDefaults.triggered.connect(self.set_defaults)
+        #self.h5viewer.actionSetDefaults.triggered.connect(self.set_defaults)
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(parent=self.ui.middleFrame)
@@ -134,6 +134,13 @@ class tthetaWidget(QWidget):
         
         self.get_args('bai_1d')
         self.get_args('bai_2d')
+        
+        
+        parameters = [self.integratorTree.parameters]
+        for i in range(self.ui.wranglerStack.count()):
+            w = self.ui.wranglerStack.widget(i)
+            parameters.append(w.parameters)
+        self.h5viewer.defaultWidget.set_parameters(parameters)
 
         self.show()
     

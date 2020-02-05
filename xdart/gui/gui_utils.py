@@ -177,13 +177,12 @@ class XdartDecoder(json.JSONDecoder):
 
 
 class defaultWidget(Qt.QtWidgets.QWidget):
-    def __init__(self, parameters, parent=None):
+    def __init__(self, parameters=None, parent=None):
         super().__init__(parent)
         self.parameters = {}
         self.tree = pg.parametertree.ParameterTree()
-        for param in parameters:
-            self.parameters[param.name()] = param
-            self.tree.addParameters(param)
+        if parameters is not None:
+            self.set_parameters(parameters)
         self.layout = Qt.QtWidgets.QGridLayout(self)
         self.setLayout(self.layout)
         self.layout.addWidget(self.tree, 0, 0, 1, 3)
@@ -199,6 +198,13 @@ class defaultWidget(Qt.QtWidgets.QWidget):
         self.setButton.clicked.connect(self.set_all_defaults)
         self.setButton.setText('Set all')
         self.layout.addWidget(self.setButton, 1, 2)
+    
+    def set_parameters(self, parameters):
+        self.parameters = {}
+        self.tree.clear()
+        for param in parameters:
+            self.parameters[param.name()] = param
+            self.tree.addParameters(param)
     
     def param_to_valdict(self, param):
         valdict = {}
