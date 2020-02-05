@@ -8,7 +8,6 @@
 # Other imports
 
 # Qt imports
-import pyqtgraph as pg
 from pyqtgraph import Qt
 
 # This module imports

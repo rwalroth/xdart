@@ -6,19 +6,15 @@
 # Standard library imports
 
 # Other imports
-from pyFAI import units
 
 # Qt imports
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph import Qt
-from pyqtgraph.parametertree import (
-    Parameter, ParameterTree, ParameterItem, registerParameterType
-)
+from pyqtgraph.parametertree import Parameter
 
 # This module imports
 from .integratorUI import *
-from xdart.gui.gui_utils import rangeWidget, defaultWidget
+from xdart.gui.gui_utils import rangeWidget
 
 params = [
     {'name': 'Default', 'type': 'group', 'children': [
@@ -222,38 +218,39 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def _sync_ranges(self, sphere):
         with sphere.sphere_lock:
             self._sync_range(
-                sphere.bai_1d_args, 'radial_range', self.radialRange1D
+                sphere.bai_1d_args, 'radial_range', 'numpoints', self.radialRange1D
             )
             self._sync_range(
-                sphere.bai_2d_args, 'radial_range', self.radialRange2D
+                sphere.bai_2d_args, 'radial_range', 'npt_rad', self.radialRange2D
             )
             self._sync_range(
-                sphere.bai_2d_args, 'azimuth_range', self.azimuthalRange2D
+                sphere.bai_2d_args, 'azimuth_range', 'npt_azim', self.azimuthalRange2D
             )
-
-    def _sync_range(self, args, key, name):
-        if name == 'r1d':
-            rwidget = self.radialRange1D
-        elif name == 'r2d':
-            rwidget = self.radialRange2D
-        elif name == 'a2d':
-            rwidget = self.azimuthalRange2D
+    
+    def _sync_range(self, args, rkey, pkey, rwidget):
         rwidget.blockSignals(True)
         try:
-            rwidget.ui.points.setValue(
-                self.bai_1d_pars.child("numpoints").value
-            )
-            if key in args:
-                if args[key] is None:
-                    args[key] = [rwidget.ui.low.value(),
-                                 rwidget.ui.high.value()]
-                else:
-                    rwidget.ui.low.setValue(args[key][0])
-                    rwidget.ui.high.setValue(args[key][1])
-            else:
-                args[key] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
+            self._sync_range_hilow(args, rkey, rwidget)
+            self._sync_range_points(args, pkey, rwidget)
         finally:
             rwidget.blockSignals(False)
+        
+    def _sync_range_points(self, args, pkey, rwidget):
+        if pkey in args:
+            rwidget.ui.points.setValue(args[pkey])
+        else:
+            args[pkey] = rwidget.ui.points.value()
+
+    def _sync_range_hilow(self, args, rkey, rwidget):
+        if rkey in args:
+            if args[rkey] is None:
+                args[rkey] = [rwidget.ui.low.value(),
+                             rwidget.ui.high.value()]
+            else:
+                rwidget.ui.low.setValue(args[rkey][0])
+                rwidget.ui.high.setValue(args[rkey][1])
+        else:
+            args[rkey] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
             
     
     def _update_params(self, sphere):
@@ -266,20 +263,14 @@ class integratorTree(Qt.QtWidgets.QWidget):
         with sphere.sphere_lock:
             if key == 'bai_1d':
                 self._params_to_args(sphere.bai_1d_args, self.bai_1d_pars)
-                self._sync_range(sphere.bai_1d_args, 'radial_range',
-                                'r1d')
+                self._sync_range(sphere.bai_1d_args, 'radial_range', 'numpoints',
+                                self.radialRange1D)
             elif key == 'bai_2d':
                 self._params_to_args(sphere.bai_2d_args, self.bai_2d_pars)
                 self._sync_range(sphere.bai_2d_args, 'radial_range',
-                                'r2d')
+                                'npt_rad', self.radialRange2D)
                 self._sync_range(sphere.bai_2d_args, 'azimuth_range',
-                                'a2d')
-                self.radialRange2D.ui.points.setValue(
-                    self.bai_2d_pars.child("npt_rad").value
-                )
-                self.azimuthalRange2D.ui.points.setValue(
-                    self.bai_2d_pars.child("npt_azim").value
-                )
+                                'npt_azim', self.radialRange2D)
             
 
     def _args_to_params(self, args, tree):
