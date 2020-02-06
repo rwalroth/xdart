@@ -5,17 +5,16 @@
 # Standard library imorts
 
 # Other imports
-import h5py
 from xdart.utils import catch_h5py_file as catch
 
 # Qt imports
-from pyqtgraph.Qt import QtWidgets, QtCore
+from pyqtgraph.Qt import QtWidgets
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
 QWidget = QtWidgets.QWidget
 
 # This module imports
-from .h5viewerUI import *
+from .h5viewerUI import Ui_Form
 from xdart.gui.gui_utils import defaultWidget
 
 class H5Viewer(QWidget):

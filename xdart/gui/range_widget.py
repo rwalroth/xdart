@@ -11,7 +11,7 @@
 from pyqtgraph import Qt
 
 # This module imports
-from .rangeWidgetUI import *
+from .rangeWidgetUI import Ui_Form
 
 class rangeWidget(Qt.QtWidgets.QWidget):
     sigUnitChanged = Qt.QtCore.Signal(int)

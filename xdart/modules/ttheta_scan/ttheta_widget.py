@@ -4,9 +4,6 @@
 """
 
 # Standard library imports
-import os
-from functools import partial
-import time
 from queue import Queue
 import multiprocessing as mp
 import copy
@@ -21,15 +18,11 @@ from pyqtgraph.Qt import QtWidgets
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
 QFileDialog = QtWidgets.QFileDialog
-from pyqtgraph.parametertree import (
-    Parameter, ParameterTree, ParameterItem, registerParameterType
-)
 
 ## This module imports
 from xdart.classes.ewald import EwaldSphere
 from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
-from xdart.gui.gui_utils import defaultWidget
 from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
@@ -91,7 +84,6 @@ class tthetaWidget(QWidget):
         self.h5viewer.actionSaveData.triggered.connect(self.save_data)
         self.h5viewer.actionSaveDataAs.triggered.connect(self.save_data_as)
         self.h5viewer.actionNewFile.triggered.connect(self.new_file)
-        #self.h5viewer.actionSetDefaults.triggered.connect(self.set_defaults)
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(parent=self.ui.middleFrame)
@@ -174,11 +166,11 @@ class tthetaWidget(QWidget):
 
     def set_file(self, fname):
         with self.file_lock:
-            if fname == '' or fname == self.fname:
+            if fname in ('', self.fname):
                 return
             
             try:
-                with catch(fname, 'a') as f:
+                with catch(fname, 'a') as _:
                     self.fname = fname
             except Exception as e:
                 print(e)
@@ -249,7 +241,7 @@ class tthetaWidget(QWidget):
             if not isinstance(self.sphere, EwaldSphere):
                 return
             
-            elif q.data(0) == 'Overall' or 'scan' in q.data(0):
+            if q.data(0) == 'Overall' or 'scan' in q.data(0):
                 self.arch = None
                 self.displayframe.arch = None
                 self.displayframe.update()
@@ -298,17 +290,17 @@ class tthetaWidget(QWidget):
         """Saves currently displayed image. Formats are automatically
         grabbed from Qt. Also implements tiff saving.
         """
-        filter = "Images ("
+        ext_filter = "Images ("
         for f in formats:
-            filter += "*." + f + " "
+            ext_filter += "*." + f + " "
 
-        filter += "*.tiff)"
+        ext_filter += "*.tiff)"
 
-        fname, _ = QFileDialog.getSaveFileName(filter=filter)
+        fname, _ = QFileDialog.getSaveFileName(filter=ext_filter)
         if fname == '':
             return
 
-        name, ext = fname.split('.')
+        _, ext = fname.split('.')
         if ext.lower() in formats:
             self.displayframe.image.save(fname)
         
@@ -328,7 +320,7 @@ class tthetaWidget(QWidget):
 
         xdata, ydata = self.displayframe.update_plot(self.sphere, self.arch)
 
-        name, ext = fname.split('.')
+        _, ext = fname.split('.')
         if ext.lower() == 'xye':
             ut.write_xye(fname, xdata, ydata)
         
@@ -358,14 +350,6 @@ class tthetaWidget(QWidget):
     def new_file(self):
         fname, _ = QFileDialog.getSaveFileName()
         self.set_file(fname)
-    
-    def set_defaults(self):
-        parameters = [self.integratorTree.parameters]
-        for i in range(self.ui.wranglerStack.count()):
-            w = self.ui.wranglerStack.widget(i)
-            parameters.append(w.parameters)
-        self.defaultWidget = defaultWidget(parameters)
-        self.defaultWidget.show()
     
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe

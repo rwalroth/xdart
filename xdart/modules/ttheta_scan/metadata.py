@@ -9,7 +9,6 @@
 import pandas as pd
 
 # Qt imports
-import pyqtgraph as pg
 from pyqtgraph import Qt
 
 # This module imports

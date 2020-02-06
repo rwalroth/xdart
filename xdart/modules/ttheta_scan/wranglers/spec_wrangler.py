@@ -24,7 +24,7 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
-from .specUI import *
+from .specUI import Ui_Form
 from xdart.gui.gui_utils import NamedActionParameter
 
 params = [

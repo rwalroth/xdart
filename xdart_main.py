@@ -7,23 +7,16 @@ __version__ = '0.4.2'
 
 # Standard library imports
 import sys
-import os
 import gc
-import time
 
 # Other imports
-import numpy as np
-import h5py
 
 # Qt imports
-from pyqtgraph import Qt
-from pyqtgraph.Qt import QtGui, QtCore, QtWidgets
+from pyqtgraph.Qt import QtGui, QtWidgets
 QMainWindow = QtWidgets.QMainWindow
 import qdarkstyle
-import pyqtgraph as pg
 
 # This module imports
-import xdart
 from xdart.gui.mainWindow import Ui_MainWindow
 from xdart import modules
 

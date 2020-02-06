@@ -4,7 +4,6 @@
 """
 
 # Standard library imports
-import os
 
 # Other imports
 import numpy as np
@@ -14,12 +13,12 @@ import pyqtgraph as pg
 from pyqtgraph import Qt
 
 # This module imports
-from .displayFrameUI import * 
-from xdart.gui.gui_utils import *
+from .displayFrameUI import Ui_Form
+from xdart.gui.gui_utils import RectViewBox, get_rect
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
     def __init__(self, parent=None, sphere=None):
-        _translate = QtCore.QCoreApplication.translate
+        _translate = Qt.QtCore.QCoreApplication.translate
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -27,7 +26,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.plotUnit.setItemText(0, _translate("Form", "2" + u"\u03B8"))
 
         # Data object initialization
-        self.sphere = None
+        self.sphere = sphere
         self.arch = None
 
         # State variable initialization
@@ -134,10 +133,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             int_data = arc.int_2d
         
         if self.ui.imageIntRaw.currentIndex() == 0:
-            data, corners = self.read_NRP(self.ui.imageNRP, int_data)
+            data, corners = read_NRP(self.ui.imageNRP, int_data)
             
             rect = get_rect(
-                self.get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
+                get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
                 int_data.chi[corners[0]:corners[1]]
             )
         
@@ -171,10 +170,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             elif self.ui.imageMethod.currentIndex() == 1:
                 int_data = sphere.bai_2d
         
-        data, corners = self.read_NRP(self.ui.imageNRP, int_data)
+        data, corners = read_NRP(self.ui.imageNRP, int_data)
         
         rect = get_rect(
-            self.get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
+            get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
             int_data.chi[corners[0]:corners[1]]
         )
         
@@ -199,8 +198,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 elif self.ui.plotMethod.currentIndex() == 1:
                     sphere_int_data = sphere.bai_1d
             
-            s_ydata, corners = self.read_NRP(self.ui.plotNRP, sphere_int_data)
-            s_xdata = self.get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
+            s_ydata, corners = read_NRP(self.ui.plotNRP, sphere_int_data)
+            s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
             if arch is not None:
                 with sphere.arches[arch].arch_lock:
@@ -211,8 +210,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 else:
                     self.curve1.clear()
                 
-                a_ydata, corners = self.read_NRP(self.ui.plotNRP, arc_int_data)
-                a_xdata = self.get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
+                a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
+                a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
                 self.curve2.setData(a_xdata, a_ydata)
 
                 return a_xdata, a_ydata
@@ -223,34 +222,36 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
                 return s_xdata, s_ydata
 
-    def read_NRP(self, box, int_data):
-        """Reads the norm, raw, pcount option box and returns
-        appropriate ydata
-        """
-        if box.currentIndex() == 0:
-            nzarr = int_data.norm
-        elif box.currentIndex() == 1:
-            nzarr = int_data.raw
-        elif box.currentIndex() == 2:
-            nzarr = int_data.pcount
-        data = nzarr.data[()].T
-        corners = nzarr.corners
-        
-        if data.size == 0:
-            data = np.zeros(int_data.norm.shape)
-            if len(corners) == 2:
-                corners = [0,int_data.norm.shape[0]]
-            if len(corners) == 4:
-                corners = [0,int_data.norm.shape[0],0,int_data.norm.shape[1]]
-        return data, corners
 
-    def get_xdata(self, box, int_data):
-        """Reads the unit box and returns appropriate xdata
-        """
-        if box.currentIndex() == 0:
-            xdata = int_data.ttheta
-        elif box.currentIndex() == 1:
-            xdata = int_data.q
-        return xdata
+def read_NRP(box, int_data):
+    """Reads the norm, raw, pcount option box and returns
+    appropriate ydata
+    """
+    if box.currentIndex() == 0:
+        nzarr = int_data.norm
+    elif box.currentIndex() == 1:
+        nzarr = int_data.raw
+    elif box.currentIndex() == 2:
+        nzarr = int_data.pcount
+    data = nzarr.data[()].T
+    corners = nzarr.corners
+    
+    if data.size == 0:
+        data = np.zeros(int_data.norm.shape)
+        if len(corners) == 2:
+            corners = [0,int_data.norm.shape[0]]
+        if len(corners) == 4:
+            corners = [0,int_data.norm.shape[0],0,int_data.norm.shape[1]]
+    return data, corners
+
+
+def get_xdata(box, int_data):
+    """Reads the unit box and returns appropriate xdata
+    """
+    if box.currentIndex() == 0:
+        xdata = int_data.ttheta
+    elif box.currentIndex() == 1:
+        xdata = int_data.q
+    return xdata
 
 

@@ -13,7 +13,7 @@ from pyqtgraph import Qt
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
-from .integratorUI import *
+from .integratorUI import Ui_Form
 from xdart.gui.gui_utils import rangeWidget
 
 params = [
