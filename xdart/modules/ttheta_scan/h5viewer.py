@@ -26,6 +26,7 @@ class H5Viewer(QWidget):
         self.ui.setupUi(self)
 
         self.layout = self.ui.layout
+        self.defaultWidget = defaultWidget()
 
         # Toolbar setup
         self.toolbar = QtWidgets.QToolBar('Tools')
@@ -60,6 +61,16 @@ class H5Viewer(QWidget):
         self.paramMenu = QtWidgets.QMenu()
         self.paramMenu.setTitle('Config')
         
+        self.actionSaveParams = QtWidgets.QAction()
+        self.actionSaveParams.setText('Save')
+        self.actionSaveParams.triggered.connect(self.defaultWidget.save_defaults)
+        self.paramMenu.addAction(self.actionSaveParams)
+        
+        self.actionLoadParams = QtWidgets.QAction()
+        self.actionLoadParams.setText('Load')
+        self.actionLoadParams.triggered.connect(self.defaultWidget.load_defaults)
+        self.paramMenu.addAction(self.actionLoadParams)
+        
         self.paramMenu.addAction(self.actionSetDefaults)
 
         self.fileMenu = QtWidgets.QMenu()
@@ -85,7 +96,6 @@ class H5Viewer(QWidget):
         # End toolbar setup
 
         self.layout.addWidget(self.toolbar, 0, 0, 1, 2)
-        self.defaultWidget = defaultWidget()
         self.actionSetDefaults.triggered.connect(self.defaultWidget.show)
 
         self.show()
