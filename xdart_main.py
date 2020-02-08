@@ -12,9 +12,9 @@ import gc
 # Other imports
 
 # Qt imports
+import qdarkstyle
 from pyqtgraph.Qt import QtGui, QtWidgets
 QMainWindow = QtWidgets.QMainWindow
-import qdarkstyle
 
 # This module imports
 from xdart.gui.mainWindow import Ui_MainWindow
@@ -49,19 +49,19 @@ class Main(QMainWindow):
             self.tabwidget.currentWidget().open_file()
         except Exception as e:
             print(e)
-        
+
 
     def set_modules(self):
         for e in modules.exp_list:
             self.ui.menuExperiments.addAction(e)
         self.ui.menuExperiments.triggered.connect(self.openExperiment)
-    
+
     def openExperiment(self, q):
         if q.text() == 'ttheta_scan':
             if 'ttheta_scan' not in self.modules:
                 self.modules['ttheta_scan'] = modules.ttheta_scan.tthetaWidget()
                 self.tabwidget.addTab(self.modules['ttheta_scan'], 'ttheta_scan')
-    
+
     def closeExperiment(self, q):
         _to_close = self.tabwidget.widget(q)
         name = self.tabwidget.tabText(q)
