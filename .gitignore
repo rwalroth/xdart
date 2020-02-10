@@ -114,4 +114,4 @@ venv.bak/
 .vscode/*
 *desktop.ini
 xdart/pySSRL_bServer/bServer.lnk
-tests/test_data/*
+/tests/test_data/*
