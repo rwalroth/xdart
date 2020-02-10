@@ -147,13 +147,20 @@ class TestEwaldSphere(unittest.TestCase):
         self.true_2d_chi = np.load("test_data/spec_pd100k/2d_chi.npy")
         
     def test_1d(self):
-        self.assertTrue(np.isclose(self.true_1d_ttheta, self.sphere.bai_1d.ttheta).all())
-        self.assertTrue(np.isclose(self.true_1d_norm, self.sphere.bai_1d.norm.full()).all())
+        self.assertTrue(np.isclose(self.true_1d_ttheta, 
+                                   self.sphere.bai_1d.ttheta).all())
+        self.assertTrue(np.isclose(self.true_1d_norm, 
+                                   self.sphere.bai_1d.norm.full(),
+                                   rtol=1e-3, atol=1e-4).all())
     
     def test_2d(self):
-        self.assertTrue(np.isclose(self.true_2d_ttheta, self.sphere.bai_2d.ttheta).all())
-        self.assertTrue(np.isclose(self.true_2d_norm, self.sphere.bai_2d.norm.full()).all())
-        self.assertTrue(np.isclose(self.true_2d_chi, self.sphere.bai_2d.chi).all())
+        self.assertTrue(np.isclose(self.true_2d_ttheta, 
+                                   self.sphere.bai_2d.ttheta).all())
+        self.assertTrue(np.isclose(self.true_2d_norm, 
+                                   self.sphere.bai_2d.norm.full(),
+                                   rtol=1e-3, atol=1e-4).all())
+        self.assertTrue(np.isclose(self.true_2d_chi, 
+                                   self.sphere.bai_2d.chi).all())
         
 
 
