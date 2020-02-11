@@ -5,7 +5,7 @@ import numpy as np
 from pyFAI.multi_geometry import MultiGeometry
 
 from .arch import EwaldArch, parse_unit
-from ...containers import int_1d_data, int_2d_data
+from ...containers import int_1d_data, int_2d_data, Arches
 from ... import utils
 
 
@@ -42,16 +42,28 @@ class EwaldSphere():
         save_to_h5: saves data to hdf5 file
         load_from_h5: loads data from hdf5 file
     """
-    def __init__(self, name='scan0', arches=[], data_file='scan0',
+    def __init__(self, file, mode='r', force=False, name='scan0', arches=[], data_file='scan0',
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={}):
         # TODO: add docstring for init
         super().__init__()
+        if mode == 'a':
+            if force:
+                self.file = utils.catch_h5py_file(file, mode='a')
+            else:
+                try:
+                    self.file = h5py.File(file, mode='a')
+                except OSError:
+                    self.file = utils.catch_h5py_file(file, mode='r', swmr=True)
+        elif mode == 'r':
+            utils.catch_h5py_file(file, mode='r', swmr=True)
+                        
         self.name = name
         if arches:
             self.arches = pd.Series(arches, index=[a.idx for a in arches])
         else:
             self.arches = pd.Series()
+        
         self.data_file = data_file
         self.scan_data = scan_data
         self.mg_args = mg_args

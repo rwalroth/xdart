@@ -10,11 +10,26 @@ from .. import utils
 
 
 class nzarray1d():
-    def __init__(self, arr=None):
+    def __init__(self, arr=None, grp=None, lazy=False):
         if isinstance(arr, self.__class__):
-            self.data = copy.deepcopy(arr.data)
-            self.shape = copy.deepcopy(arr.shape)
-            self.corners = copy.deepcopy(arr.corners)
+            if arr.data is None:
+                self.data = None
+                self.shape = None
+                self.corners = None
+            else:
+                self.data = np.empty_like(arr.data)
+                self.data[()] = arr.data[()]
+                self.shape = copy.deepcopy(arr.shape)
+                self.corners = copy.deepcopy(arr.corners)
+        elif grp is not None:
+            if lazy:
+                self.shape = grp['shape'][()]
+                self.corners = grp['corners'][()]
+                self.data = grp['data']
+            else:
+                self.shape = grp['shape'][()]
+                self.corners = grp['corners'][()]
+                self.data = grp['data'][()]
         elif arr is None:
             self.data = None
             self.shape = None
@@ -237,7 +252,7 @@ class nzarray1d():
 
 
 class nzarray2d(nzarray1d):
-    def __init__(self, arr=None):
+    def __init__(self, arr=None, file=None, lazy=False):
         super().__init__(arr)
     
     def get_shape(self, arr):
