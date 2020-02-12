@@ -6,6 +6,7 @@ Created on Mon Aug 26 14:21:58 2019
 """
 import copy
 from threading import Condition
+import tempfile
 
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI import units
@@ -85,11 +86,20 @@ class EwaldArch():
     """
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, idx=None, map_raw=None, poni=PONI(), mask=None,
-                 scan_info={}, ai_args={}, file_lock=Condition()):
+    def __init__(self, grp=None, idx=-1, map_raw=None, poni=PONI(), mask=None,
+                 scan_info={}, ai_args={}, file_lock=Condition(),
+                 compression='lzf'):
         # pylint: disable=too-many-arguments
         super(EwaldArch, self).__init__()
         self.idx = idx
+        self.compression = compression
+        if grp is None:
+            self._file = tempfile.TemporaryFile()
+            self._h5py = h5py.File(self._file)
+            self._grp = self._h5py.create_group(str(self.idx))
+        else:
+            self._grp = grp
+        self.setup_grp()
         self.map_raw = map_raw
         self.poni = poni
         if mask is None and map_raw is not None:
@@ -114,6 +124,20 @@ class EwaldArch():
         self.map_norm = 1
         self.int_1d = int_1d_data()
         self.int_2d = int_2d_data()
+    
+    def setup_grp(self):
+        if 'map_raw' not in self._grp:
+            self._grp.create_dataset('map_raw', shape=(10,10),
+                                     maxshape=(None,None), dtype='float64',
+                                     chunks=True, compression=self.compression)
+        if 'mask' not in self._grp:
+            self._grp.create_dataset('mask', shape=(10,),
+                                     maxshape=(None,), dtype=int,
+                                     chunks=True, compression=self.compression)
+        for key in ['poni', 'scan_info', 'ai_args']:
+                    
+                    poni=PONI(), mask=None,
+                 scan_info={}, ai_args={}]
     
     def get_mask(self):
         mask = np.zeros(self.map_raw.size, dtype=int)

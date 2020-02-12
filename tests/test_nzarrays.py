@@ -33,7 +33,7 @@ def paint_circle(shape, center, rad, val=1):
                 arr[r,c] = val
     return arr
 
-@unittest.skip("Not testing these now")
+#@unittest.skip("Not testing these now")
 class Test1D(unittest.TestCase):
     def setUp(self):
         self.arrays = {}
@@ -164,7 +164,7 @@ class Test1D(unittest.TestCase):
             self.assertTrue((nzarr1[arr > 1] == arr[arr > 1]).all(), f"{key} failed")
 
 
-@unittest.skip("Not testing these now")
+#@unittest.skip("Not testing these now")
 class Test2D(unittest.TestCase):
     def setUp(self):
         self.arrays = {}
@@ -357,7 +357,7 @@ class Test1DLazy(unittest.TestCase):
     def tearDown(self):
         self.file.close()
     
-    @unittest.skip("Not testing these now")
+    #@unittest.skip("Not testing these now")
     def test_init(self):
         for key in self.arrays:
             arr, nzarr = self.get_arrs(key)
@@ -458,59 +458,78 @@ class Test1DLazy(unittest.TestCase):
             self.assertTrue((nzarr1[:30] == arr[:30]).all(), f"{key} failed")
             self.assertTrue((nzarr1[arr > 1] == arr[arr > 1]).all(), f"{key} failed")
 
-@unittest.skip("Not testing these now")
+#@unittest.skip("Not testing these now")
 class Test2DLazy(unittest.TestCase):
+    
+    def prep_nzarray(self, arr, key):
+        nzarr1 = nzarray2d(arr=arr)
+        self.file.create_group(key)
+        nzarr1.to_hdf5(self.file[key])
+        self.arrays.append(key)
+    
+    def get_arrs(self, key):
+        arrnz = nzarray2d()
+        arrnz.from_hdf5(self.file[key])
+        arr = arrnz.full()
+        nzarr = nzarray2d(grp=self.file[key], lazy=True)
+        return nzarr, arr
+
     def setUp(self):
-        self.arrays = {}
+        self.arrays = []
+        file_path = os.path.join(xdart_dir, 'tests/test_data/nzarray_tests.hdf5')
+        self.file = h5py.File(file_path, 'w')
         
         arr1 = np.zeros((100,120))
         arr1[20:70,30:80] = 1
-        self.arrays['arr1'] = arr1
+        self.prep_nzarray(arr1, 'arr1')
         
         arr2 = np.zeros((100,120))
         arr2[50:80,20:75] = 1
-        self.arrays['arr2'] = arr2
+        self.prep_nzarray(arr2, 'arr2')
         
         arr3 = np.zeros((100,120))
         arr3[75:95,5:25] = 1
-        self.arrays['arr3'] = arr3
+        self.prep_nzarray(arr3, 'arr3')
         
         arr4 = np.arange(100*120, dtype='float64').reshape((100,120))**2
         arr4[93:, :] = 0
         arr4[:23, :] = 0
         arr4[:, 87:] = 0
         arr4[:, :37] = 0
-        self.arrays['arr4'] = arr4
+        self.prep_nzarray(arr4, 'arr4')
         
-        self.arrays['all_zero'] = np.zeros((100,120))
-        self.arrays['all_ones'] = np.ones((100,120))
+        self.prep_nzarray(np.zeros((100,120)), 'all_zero')
+        self.prep_nzarray(np.ones((100,120)), 'all_one')
         
         arrl = np.zeros((100,120))
         arrl[50:] = 1
-        self.arrays['left_ones'] = arrl
+        self.prep_nzarray(arrl, 'arr_left')
         
         arrr = np.zeros((100,120))
         arrr[:51] = 1
-        self.arrays['right_ones'] = arrr
+        self.prep_nzarray(arrr, 'arr_right')
 
         arrc = np.zeros((100,120))
         arrc[:50,:50] = 1
-        self.arrays['corner'] = arrc
+        self.prep_nzarray(arrc, 'arrc')
         
         arrcircle = paint_circle((100,120), (43,62), 35)
-        self.arrays['circle'] = arrcircle
+        self.prep_nzarray(arrcircle, 'arrcircle')
+    
+    def tearDown(self):
+        self.file.close()
     
     def test_init(self):
-        for key, arr in self.arrays.items():
-            nzarr = nzarray2d(arr)
-            self.assertEqual(nzarr.shape, arr.shape, f"{key} failed")
+        for key in self.arrays:
+            nzarr, arr = self.get_arrs(key)
+            self.assertTrue(all(nzarr.shape == arr.shape), f"{key} failed")
             self.assertTrue((nzarr.full() == arr).all(), f"{key} failed")
     
     def test_sum(self):
-        for key, arr in self.arrays.items():
-            for key2, arr2 in self.arrays.items():
-                nzarr1 = nzarray2d(arr)
-                nzarr2 = nzarray2d(arr2)
+        for key in self.arrays:
+            nzarr1, arr = self.get_arrs(key)
+            for key2 in self.arrays:
+                nzarr2, arr2 = self.get_arrs(key2)
                 sumnp = arr + arr2
                 sumnz = nzarr1 + nzarr2
                 summix = nzarr1 + arr2
@@ -521,10 +540,10 @@ class Test2DLazy(unittest.TestCase):
                         )
         
     def test_mul(self):
-        for key, arr in self.arrays.items():
-            for key2, arr2 in self.arrays.items():
-                nzarr1 = nzarray2d(arr)
-                nzarr2 = nzarray2d(arr2)
+        for key in self.arrays:
+            nzarr1, arr = self.get_arrs(key)
+            for key2 in self.arrays:
+                nzarr2, arr2 = self.get_arrs(key2)
                 sumnp = arr * arr2
                 sumnz = nzarr1 * nzarr2
                 summix = nzarr1 * arr2
@@ -535,10 +554,10 @@ class Test2DLazy(unittest.TestCase):
                         )
     
     def test_div(self):
-        for key, arr in self.arrays.items():
-            for key2, arr2 in self.arrays.items():
-                nzarr1 = nzarray2d(arr)
-                nzarr2 = nzarray2d(arr2)
+        for key in self.arrays:
+            nzarr1, arr = self.get_arrs(key)
+            for key2 in self.arrays:
+                nzarr2, arr2 = self.get_arrs(key2)
                 sumnp = div0(arr, arr2)
                 sumnz = nzarr1 / nzarr2
                 summix = nzarr1 / arr2
@@ -549,10 +568,10 @@ class Test2DLazy(unittest.TestCase):
                         )
     
     def test_sub(self):
-        for key, arr in self.arrays.items():
-            for key2, arr2 in self.arrays.items():
-                nzarr1 = nzarray2d(arr)
-                nzarr2 = nzarray2d(arr2)
+        for key in self.arrays:
+            nzarr1, arr = self.get_arrs(key)
+            for key2 in self.arrays:
+                nzarr2, arr2 = self.get_arrs(key2)
                 sumnp = arr - arr2
                 sumnz = nzarr1 - nzarr2
                 summix = nzarr1 - arr2
@@ -563,10 +582,10 @@ class Test2DLazy(unittest.TestCase):
                         )
     
     def test_floordiv(self):
-        for key, arr in self.arrays.items():
-            for key2, arr2 in self.arrays.items():
-                nzarr1 = nzarray2d(arr)
-                nzarr2 = nzarray2d(arr2)
+        for key in self.arrays:
+            nzarr1, arr = self.get_arrs(key)
+            for key2 in self.arrays:
+                nzarr2, arr2 = self.get_arrs(key2)
                 sumnp = div0(arr, arr2).astype(int)
                 sumnz = nzarr1 // nzarr2
                 summix = nzarr1 // arr2
@@ -578,8 +597,8 @@ class Test2DLazy(unittest.TestCase):
     
     #@unittest.skip("Slicing not implemented yet")
     def test_slice(self):
-        for key, arr in self.arrays.items():
-            nzarr1 = nzarray2d(arr)
+        for key in self.arrays:
+            nzarr1, arr = self.get_arrs(key)
             print(f"key: {key}, corners: {nzarr1.corners}")
             self.assertEqual(nzarr1[0,0], arr[0,0], f"{key} failed")
             self.assertEqual(nzarr1[-1,0], arr[-1,0], f"{key} failed")

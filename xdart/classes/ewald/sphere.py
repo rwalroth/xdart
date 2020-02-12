@@ -2,6 +2,7 @@ from threading import Condition, _PyRLock
 import time
 import pandas as pd
 import numpy as np
+import h5py
 from pyFAI.multi_geometry import MultiGeometry
 
 from .arch import EwaldArch, parse_unit
@@ -54,6 +55,7 @@ class EwaldSphere():
                 try:
                     self.file = h5py.File(file, mode='a')
                 except OSError:
+                    print("File in use, opening in read mode")
                     self.file = utils.catch_h5py_file(file, mode='r', swmr=True)
         elif mode == 'r':
             utils.catch_h5py_file(file, mode='r', swmr=True)
@@ -373,3 +375,8 @@ class EwaldSphere():
             if 'range' in arg:
                 if args[arg] is not None:
                     args[arg] = list(args[arg])
+    
+    def __del__(self):
+        self.save_to_h5(self.file)
+        self.file.close()
+        

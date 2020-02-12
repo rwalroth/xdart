@@ -11,7 +11,7 @@ from threading import Condition
 # Qt imports
 
 # This module imports
-from xdart.classes.ewald import EwaldArch
+#from xdart.classes.ewald import EwaldArch
 
 
 class Arches():

@@ -1,6 +1,7 @@
 from collections import namedtuple
 from dataclasses import dataclass, field
 import copy
+import tempfile
 
 import numpy as np
 from pyFAI import units
@@ -34,13 +35,23 @@ class NoZeroArray():
             self.corners = (r[0], r[-1], c[0], c[-1])
             self.data = value[r[0]:r[-1], c[0]:c[-1]]
 
-class int_1d_data:
-    def __init__(self, raw=None, pcount=None, norm=None, ttheta=0, q=0):
+class int_1d_data():
+    def __init__(self, grp, raw=None, pcount=None, norm=None, ttheta=0, q=0,
+                 compression='lzf'):
+        if grp is None:
+            self._file = tempfile.TemporaryFile()
+            self._h5py = h5py.File(self._file)
+            self._grp = self._h5py.create_group('int_1d')
+        else:
+            self._file = None
+            self._h5py = None
+            self._grp = grp
         self.raw = raw
         self.pcount = pcount
         self.norm = norm
         self.ttheta = ttheta
         self.q = q
+        self.compression = compression
 
     def from_result(self, result, wavelength):
         self.ttheta, self.q = self.parse_unit(
@@ -104,23 +115,56 @@ class int_1d_data:
         utils.h5_to_attributes(self, grp, ['ttheta', 'q'])
     
     def __setattr__(self, name, value):
-        if name in ['raw', 'norm', 'pcount']:
-            self.__dict__[name] = nzarray1d(value)
+        if self._grp is None:
+            super().__setattr__(name, value)
+        elif name in ['raw', 'norm', 'pcount']:
+            self._setnzarray(name, value)
+        elif name in ['ttheta', 'q']:
+            self._setarray(name, value)
         else:
             super().__setattr__(name, value)
     
+    def _setnzarray(self, name, value):
+        if name not in self._grp:
+            grp = self._grp.create_group(name)
+        else:
+            grp = self._grp[name]
+        value.to_hdf5(grp, compression=self.compression)
+        self.__dict__[name] = nzarray1d(grp=grp, lazy=True)
+    
+    def _setarray(self, name, value):
+        if name not in self._grp:
+            self._grp.create_dataset(name, data=value, chunks=True,
+                                     compression=self.compression,
+                                     maxshape=(None,))
+        else:
+            self._grp[name].resize(value.shape)
+            self._grp[name][()] = value[()]
+        self.__dict__[name] = self._grp[name]
+        
+    
     def __add__(self, other):
-        out = self.__class__()
+        out = self.__class__(None)
         out.raw = self.raw + other.raw
         out.pcount = self.pcount + other.pcount
         out.norm = out.raw/out.pcount
         out.ttheta = copy.deepcopy(self.ttheta)
         out.q = copy.deepcopy(self.q)
         return out
+        
+    
+    def __iadd__(self, other):
+        self.raw = self.raw + other.raw
+        self.pcount = self.pcount + other.pcount
+        self.norm = self.raw/self.pcount
+        self.ttheta = copy.deepcopy(self.ttheta)
+        self.q = copy.deepcopy(self.q)
+        return self
 
 class int_2d_data(int_1d_data):
-    def __init__(self,  raw=None, pcount=None, norm=None, ttheta=0, q=0,
+    def __init__(self, grp, raw=None, pcount=None, norm=None, ttheta=0, q=0,
                  chi=0):
+        self._grp = grp
         self.raw = raw
         self.pcount = pcount
         self.norm = norm
