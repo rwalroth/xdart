@@ -10,7 +10,7 @@ numpy
 
 pandas
 
-h5py
+h5py (version 2.10 or higher, conda-forge)
 
 fabio (conda-forge)
 

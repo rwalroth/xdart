@@ -13,9 +13,7 @@ class nzarray1d():
     def __init__(self, arr=None, grp=None, lazy=False):
         if isinstance(arr, self.__class__):
             if arr.data is None:
-                self.data = None
-                self.shape = None
-                self.corners = None
+                self._none_array()
             else:
                 self.data = np.empty_like(arr.data)
                 self.data[()] = arr.data[()]
@@ -93,24 +91,24 @@ class nzarray1d():
         for name in ['shape', 'corners']:
             data = getattr(self, name)
             if name in grp:
-                grp[name][()] = data[()]
+                grp[name][()] = np.array(data)[()]
             else:
                 grp.create_dataset(name, data=data)
         if 'data' in grp:
             grp['data'].resize(self.data.shape)
-            grp['data'] = self.data[()]
+            grp['data'][()] = self.data[()]
         else:
             grp.create_dataset(
                 'data', data=self.data, compression=compression, chunks=True,
                 maxshape=tuple(
                     None for x in self.data.shape
-                )
+                ), dtype='float64'
             )
     
     def from_hdf5(self, grp):
-        utils.h5_to_attributes(
-            self, grp, lst_attr=['data', 'shape', 'corners']
-        )
+        for key in ['data', 'shape', 'corners']:
+            self.__dict__[key] = np.empty_like(grp[key])
+            self.__dict__[key] = grp[key][()]
         
     
     def _shift_index(self, idx, si=0):
