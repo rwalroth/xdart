@@ -4,6 +4,7 @@
 """
 
 # Standard library imports
+import sys
 
 # Other imports
 import numpy as np
@@ -20,6 +21,8 @@ import json
 import h5py
 
 # This module imports
+from lmfit.models import LinearModel, GaussianModel, ParabolicModel
+from lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
 
 
 def write_xye(fname, xdata, ydata):
@@ -107,7 +110,9 @@ def get_motor_val(pdi_file, motor):
     return Motors[motor]
 
 
-def read_image_file(fname, return_float=False, shape_100K=(195, 487), shape_300K=(195,1475), verbose=False):
+def read_image_file(fname, orientation='horizontal', flip=False,
+                    shape_100K=(195, 487), shape_300K=(195,1475),
+                    return_float=False, verbose=False):
     if verbose: print('Reading image data into numpy array..')
     if 'tif' in fname[-5:]:
         img = np.asarray(io.imread(fname))
@@ -116,9 +121,15 @@ def read_image_file(fname, return_float=False, shape_100K=(195, 487), shape_300K
             img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))
         except:
             img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_300K))
-
+            
     if return_float:
         img = np.asarray(img, np.float)
+        
+    if orientation == 'vertical':
+        img = img.T
+        
+    if flip: 
+        img = np.flipud(img)
 
     return img
 
@@ -137,6 +148,66 @@ def smooth_img(img, kernel_size=3, window_size=3, order=0):
         img = ndimage.gaussian_filter(img, sigma=(window_size, window_size), order=order)
 
     return img
+
+
+def get_fit(im, function='gaussian'):
+    # Flatten Arrays
+    ydata = im.flatten()
+    nrows, ncols = im.shape
+    rows, cols = np.meshgrid(np.arange(0,ncols), np.arange(0,nrows))
+    x = [rows.flatten(), cols.flatten()]
+
+    Models = {'gaussian': Gaussian2DModel(),
+              'lorentzian': LorentzianSquared2DModel(),
+              'pvoigt': Pvoigt2DModel()}
+    
+    plane_mod = PlaneModel()
+    curve_mod = Models[function]
+    #curve_mod = Gaussian2DModel()
+
+    # Using the guess function
+    pars = plane_mod.guess(ydata, x)
+    pars += curve_mod.guess(ydata, x)
+
+    Hints = {'sigma_x':   {'value':5, 'min': 1},
+             'sigma_y':   {'value':5, 'min': 1},
+             'amplitude': {'min': 0},
+             'intercept': {'value':0, 'vary':False},
+             'slope_x':   {'value':0, 'vary':False},
+             'slope_y':   {'value':0, 'vary':False},
+            }
+
+    update_param_hints(pars, **Hints)
+    
+    mod_2D = plane_mod + curve_mod
+    mod_2D.missing = 'drop'
+
+    out = mod_2D.fit(ydata, pars, x=x)
+
+    # Fit results
+    I_fit = out.eval(x=[rows.flatten(), cols.flatten()])
+    im_fit = I_fit.reshape(im.shape)
+    
+    return out, pars, im_fit
+
+
+def fit_images_2D(fname, tth, function='gaussian',
+                  kernel_size=3, window_size=3, order=0,
+                  Fit_Results={}, FNames={}, Img_Fits={}, Init_Params={},
+                  verbose=False, **kwargs):
+    if verbose: print(f'Processing {fname}')
+    img = read_image_file(fname, return_float=True, verbose=False, **kwargs)
+    
+    smooth_img(img, kernel_size=kernel_size, window_size=window_size, order=order)
+    fit_result, init_params, img_fit = get_fit(img, function=function)
+    
+    tth = np.round(tth, 3)
+    Fit_Results[tth] = fit_result
+    FNames[tth] = fname
+    Img_Fits[tth] = img_fit
+    Init_Params[tth] = init_params
+    
+    return (tth, fit_result)
 
 
 def data_to_h5(data, grp, key, encoder='yaml', compression='lzf'):
@@ -383,3 +454,36 @@ def catch_h5py_file(filename, *args, **kwargs):
         except OSError:
             pass
     return hdf5_file
+
+
+def query_yes_no(question, default="no"):
+    """Ask a yes/no question via raw_input() and return their answer.
+    
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is one of "yes" or "no".
+    """
+    valid = {"yes":"yes",   "y":"yes",  "ye":"yes",
+             "no":"no",     "n":"no"}
+    if default == None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while 1:
+        sys.stdout.write(question + prompt)
+        choice = input().lower()
+        if default is not None and choice == '':
+            return default
+        elif choice in valid.keys():
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "\
+                             "(or 'y' or 'n').\n")

@@ -69,9 +69,9 @@ def is_SpecBusy(debug=False):
     return rv
 
   
-def wait_until_SPECfinished(debug=False):
+def wait_until_SPECfinished(debug=False, polling_time=1):
     while is_SpecBusy():
-        time.sleep(1)
+        time.sleep(polling_time)
         if not is_busy():
             break
         
