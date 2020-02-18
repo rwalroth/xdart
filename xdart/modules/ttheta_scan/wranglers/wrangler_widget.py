@@ -10,7 +10,7 @@ import multiprocessing as mp
 import traceback
 
 # Other imports
-from .....classes.ewald import EwaldSphere
+from xdart.classes.ewald import EwaldSphere
 
 # Qt imports
 import pyqtgraph as pg

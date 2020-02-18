@@ -5,17 +5,17 @@
 # Standard library imorts
 
 # Other imports
-import h5py
-from ....utils import catch_h5py_file as catch
+from xdart.utils import catch_h5py_file as catch
 
 # Qt imports
-from pyqtgraph.Qt import QtWidgets, QtCore
+from pyqtgraph.Qt import QtWidgets
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
 QWidget = QtWidgets.QWidget
 
 # This module imports
-from .h5viewerUI import *
+from .h5viewerUI import Ui_Form
+from xdart.gui.gui_utils import defaultWidget
 
 class H5Viewer(QWidget):
     def __init__(self, file_lock, fname, parent=None):
@@ -26,6 +26,7 @@ class H5Viewer(QWidget):
         self.ui.setupUi(self)
 
         self.layout = self.ui.layout
+        self.defaultWidget = defaultWidget()
 
         # Toolbar setup
         self.toolbar = QtWidgets.QToolBar('Tools')
@@ -35,46 +36,67 @@ class H5Viewer(QWidget):
         self.actionOpen.setText('Open')
 
         self.actionSetDefaults = QtWidgets.QAction()
-        self.actionSetDefaults.setText('Set Defaults')
+        self.actionSetDefaults.setText('Advanced...')
 
         self.actionSaveDataAs = QtWidgets.QAction()
-        self.actionSaveDataAs.setText('Save Data As')
+        self.actionSaveDataAs.setText('Save As')
 
         self.actionNewFile = QtWidgets.QAction()
-        self.actionNewFile.setText('New File')
+        self.actionNewFile.setText('New')
 
-        self.saveMenu = QtWidgets.QMenu()
-        self.saveMenu.setTitle('Save')
+        self.exportMenu = QtWidgets.QMenu()
+        self.exportMenu.setTitle('Export')
 
         self.actionSaveImage = QtWidgets.QAction()
         self.actionSaveImage.setText('Current Image')
-        self.saveMenu.addAction(self.actionSaveImage)
+        self.exportMenu.addAction(self.actionSaveImage)
 
         self.actionSaveArray = QtWidgets.QAction()
         self.actionSaveArray.setText('Current 1D Array')
-        self.saveMenu.addAction(self.actionSaveArray)
+        self.exportMenu.addAction(self.actionSaveArray)
         
         self.actionSaveData = QtWidgets.QAction()
-        self.actionSaveData.setText('Data')
-        self.saveMenu.addAction(self.actionSaveData)
+        self.actionSaveData.setText('Save')
+        
+        self.paramMenu = QtWidgets.QMenu()
+        self.paramMenu.setTitle('Config')
+        
+        self.actionSaveParams = QtWidgets.QAction()
+        self.actionSaveParams.setText('Save')
+        self.actionSaveParams.triggered.connect(self.defaultWidget.save_defaults)
+        self.paramMenu.addAction(self.actionSaveParams)
+        
+        self.actionLoadParams = QtWidgets.QAction()
+        self.actionLoadParams.setText('Load')
+        self.actionLoadParams.triggered.connect(self.defaultWidget.load_defaults)
+        self.paramMenu.addAction(self.actionLoadParams)
+        
+        self.paramMenu.addAction(self.actionSetDefaults)
 
         self.fileMenu = QtWidgets.QMenu()
         self.fileMenu.addAction(self.actionOpen)
-        self.fileMenu.addMenu(self.saveMenu)
-        self.fileMenu.addAction(self.actionSaveDataAs)
-        self.fileMenu.addAction(self.actionSetDefaults)
         self.fileMenu.addAction(self.actionNewFile)
+        self.fileMenu.addAction(self.actionSaveData)
+        self.fileMenu.addAction(self.actionSaveDataAs)
+        self.fileMenu.addMenu(self.exportMenu)
 
         self.fileButton = QtWidgets.QToolButton()
         self.fileButton.setText('File')
         self.fileButton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
         self.fileButton.setMenu(self.fileMenu)
+        
+        self.paramButton = QtWidgets.QToolButton()
+        self.paramButton.setText('Config')
+        self.paramButton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
+        self.paramButton.setMenu(self.paramMenu)
         # End file menu setup
 
         self.toolbar.addWidget(self.fileButton)
+        self.toolbar.addWidget(self.paramButton)
         # End toolbar setup
 
         self.layout.addWidget(self.toolbar, 0, 0, 1, 2)
+        self.actionSetDefaults.triggered.connect(self.defaultWidget.show)
 
         self.show()
 
