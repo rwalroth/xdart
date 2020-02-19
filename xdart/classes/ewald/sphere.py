@@ -5,6 +5,7 @@ import numpy as np
 from pyFAI.multi_geometry import MultiGeometry
 
 from .arch import EwaldArch, parse_unit
+from .arch_series import ArchSeries
 from ...containers import int_1d_data, int_2d_data
 from ... import utils
 
@@ -47,12 +48,13 @@ class EwaldSphere():
                  bai_1d_args={}, bai_2d_args={}):
         # TODO: add docstring for init
         super().__init__()
+        self.file_lock = Condition()
         self.name = name
-        if arches:
-            self.arches = pd.Series(arches, index=[a.idx for a in arches])
-        else:
-            self.arches = pd.Series()
         self.data_file = data_file
+        if arches:
+            self.arches = ArchSeries(self.data_file, self.file_lock, arches)
+        else:
+            self.arches = ArchSeries(self.data_file, self.file_lock)
         self.scan_data = scan_data
         self.mg_args = mg_args
         self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
@@ -60,7 +62,6 @@ class EwaldSphere():
         self.bai_2d_args = bai_2d_args
         self.mgi_1d = int_1d_data()
         self.mgi_2d = int_2d_data()
-        self.file_lock = Condition()
         self.sphere_lock = Condition(_PyRLock())
         self.bai_1d = int_1d_data()
         self.bai_2d = int_2d_data()
@@ -124,6 +125,7 @@ class EwaldSphere():
             self.bai_1d = int_1d_data()
             for arch in self.arches:
                 arch.integrate_1d(**args)
+                self.arches[arch.idx] = arch
                 self._update_bai_1d(arch)
     
     def by_arch_integrate_2d(self, **args):
@@ -140,6 +142,7 @@ class EwaldSphere():
             self.bai_2d = int_2d_data()
             for arch in self.arches:
                 arch.integrate_2d(**args)
+                self.arches[arch.idx] = arch
                 self._update_bai_2d(arch)
 
     def _update_bai_1d(self, arch):
@@ -258,7 +261,7 @@ class EwaldSphere():
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self._save_to_h5(file, *args, **kwargs)
 
-    def _save_to_h5(self, file, arches=None, data_only=False, replace=False,
+    def _save_to_h5(self, grp, arches=None, data_only=False, replace=False,
                    compression='lzf'):
         """Saves data to hdf5 file.
 
@@ -266,29 +269,9 @@ class EwaldSphere():
             file: h5py file or group object
         """
         with self.sphere_lock:
-            if self.name in file:
-                if replace:
-                    del(file[self.name])
-                    grp = file.create_group(self.name)
-                    grp.create_group('arches')
-                else:
-                    grp = file[self.name]
-                    if 'arches' not in grp:
-                        grp.create_group('arches')
-            else:
-                grp = file.create_group(self.name)
-                grp.create_group('arches')
             
             grp.attrs['type'] = 'EwaldSphere'
-
-            if arches is None:
-                for arch in self.arches:
-                    arch.save_to_h5(grp['arches'], compression)
-            else:
-                for arch in self.arches[list(
-                            set(self.arches.index).intersection(
-                            set(arches)))]:
-                    arch.save_to_h5(grp['arches'], compression)
+            
             if data_only:
                 lst_attr = [
                     "scan_data"
@@ -313,34 +296,18 @@ class EwaldSphere():
             with utils.catch_h5py_file(self.data_file, 'r') as file:
                 self._load_from_h5(file, *args, **kwargs)
 
-    def _load_from_h5(self, file, data_only=False, arches=[], replace=True, set_mg=True):
+    def _load_from_h5(self, grp, data_only=False, replace=True, set_mg=True):
         """Loads data from hdf5 file.
 
         args:
             file: h5py file or group object
         """
         with self.sphere_lock:
-            if self.name not in file:
-                print("No data can be found")
-                return
-            grp = file[self.name]
 
             if 'type' in grp.attrs:
                 if grp.attrs['type'] == 'EwaldSphere':
-
-                    if replace:
-                        self.arches = pd.Series()
-                    
-                    for key in grp['arches'].keys():
-                        if arches:
-                            if int(key) not in arches:
-                                continue
-                        arch = EwaldArch(idx=int(key))
-                        arch.load_from_h5(grp['arches'])
-                        self.add_arch(
-                            arch.copy(), calculate=False, update=False,
-                            get_sd=False, set_mg=False
-                        )
+                    for arch in grp['arches']:
+                        self.arches.index.append(int(arch))
                             
                     if data_only:
                         lst_attr = [

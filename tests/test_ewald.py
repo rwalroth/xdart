@@ -170,6 +170,15 @@ class TestEwaldSphere(unittest.TestCase):
     def test_save(self):
         self.sphere.save_to_h5(arches=[])
         self.sphere.save_to_h5(arches=[1], data_only=True, replace=False)
+    
+    def test_bai(self):
+        self.sphere.by_arch_integrate_1d(numpoints=18000, monitor='i0', radial_range=[0,180], 
+                        unit=units.TTH_DEG, correctSolidAngle=False, 
+                        method='csr')
+        self.assertEqual(self.sphere.bai_1d_args['method'], 'csr')
+        self.assertTrue(np.isclose(self.true_1d_norm, 
+                                   self.sphere.bai_1d.norm.full(),
+                                   rtol=1e-3, atol=1e-4).all())
         
 
 
