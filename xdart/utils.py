@@ -4,6 +4,7 @@
 """
 
 # Standard library imports
+import time
 
 # Other imports
 import numpy as np
@@ -217,7 +218,7 @@ def arr_to_h5(data, grp, key, compression):
                 grp[key].resize(arr.shape)
                 grp[key][()] = arr[()]
                 return
-        del(grp)
+        del(grp[key])
     grp.create_dataset(key, data=arr, compression=compression, chunks=True,
                        maxshape=tuple(None for x in arr.shape))
     grp[key].attrs['encoded'] = 'arr'
@@ -393,11 +394,18 @@ def soft_list_eval(data, scope={}):
     return out
 
 
-def catch_h5py_file(filename, *args, **kwargs):
-    while True:
+def catch_h5py_file(filename, mode='r', tries=100, *args, **kwargs):
+    failed = True
+    for i in range(tries):
+        if i % 10 == 0 and i > 0:
+            print(f"Tried catching {i} times.")
         try:
-            hdf5_file = h5py.File(filename, *args, **kwargs)
+            hdf5_file = h5py.File(filename, mode, *args, **kwargs)
+            failed = False
             break  # Success!
         except OSError:
+            time.sleep(0.05)
             pass
+    if failed:
+        hdf5_file = h5py.File(filename, mode, *args, **kwargs)
     return hdf5_file

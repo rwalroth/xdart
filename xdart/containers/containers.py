@@ -1,10 +1,8 @@
 from collections import namedtuple
 from dataclasses import dataclass, field
 import copy
-import tempfile
 
 import numpy as np
-import pandas as pd
 from pyFAI import units
 import h5py
 
@@ -37,19 +35,3 @@ class NoZeroArray():
             self.data = value[r[0]:r[-1], c[0]:c[-1]]
 
 
-class h5dict():
-    def __init__(self, grp, dict={}):
-        self.keys = set()
-        if grp is None:
-            self._file = tempfile.TemporaryFile()
-            self._hfile = h5py.File(self._file, 'a')
-            self._grp = self._hfile.create_group('null')
-        else:
-            self._grp = grp
-        for key in self._grp:
-            self.keys.add(key)
-        for key, val in dict.items():
-            if key not in self.keys:
-                utils.data_to_h5(val, self._grp, key)
-                self.keys.add(key)
-                

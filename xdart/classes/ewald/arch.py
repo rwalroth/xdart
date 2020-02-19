@@ -6,12 +6,10 @@ Created on Mon Aug 26 14:21:58 2019
 """
 import copy
 from threading import Condition
-import tempfile
 
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI import units
 import numpy as np
-import h5py
 
 from ... import utils
 from ...containers import PONI, int_1d_data, int_2d_data
@@ -87,35 +85,20 @@ class EwaldArch():
     """
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, grp=None, idx=-1, map_raw=None, poni=PONI(), mask=None,
-                 scan_info={}, ai_args={}, file_lock=Condition(),
-                 compression='lzf'):
+    def __init__(self, idx=None, map_raw=None, poni=PONI(), mask=None,
+                 scan_info={}, ai_args={}, file_lock=Condition()):
         # pylint: disable=too-many-arguments
+        super(EwaldArch, self).__init__()
         self.idx = idx
-        self.compression = compression
-        if grp is None:
-            self._file = tempfile.TemporaryFile()
-            self._h5py = h5py.File(self._file, mode='a')
-            self._grp = self._h5py.create_group(str(self.idx))
+        self.map_raw = map_raw
+        self.poni = poni
+        if mask is None and map_raw is not None:
+            self.mask = np.arange(map_raw.size)[map_raw.flatten() < 0]
         else:
-            self._grp = grp
-        if self._grp.attrs.get('encoded', 'not_found') == 'ewald_arch':
-            self.from_h5()
-        else:
-            self.map_raw = map_raw
-            self.poni = poni
-            if mask is None and map_raw is not None:
-                self.mask = np.arange(map_raw.size)[map_raw.flatten() < 0]
-            else:
-                self.mask = mask
-            self.scan_info = scan_info
-            self.ai_args = ai_args
-            self.map_norm = 1
-            int_1d = self._grp.create_group('int_1d')
-            self.int_1d = int_1d_data(grp=int_1d)
-            int_2d = self._grp.create_group('int_2d')
-            self.int_2d = int_2d_data(int_2d)
-            self._grp.attrs['encoded'] = 'ewald_arch'
+            self.mask = mask
+        self.scan_info = scan_info
+        self.ai_args = ai_args
+        self.file_lock = file_lock
         self.integrator = AzimuthalIntegrator(
             dist=self.poni.dist,
             poni1=self.poni.poni1,
@@ -125,67 +108,12 @@ class EwaldArch():
             rot3=self.poni.rot3,
             wavelength=self.poni.wavelength,
             detector=self.poni.detector,
-            **self.ai_args
+            **ai_args
         )
         self.arch_lock = Condition()
-        self.file_lock = file_lock
-    
-    def from_h5(self):
-        for name in ['map_raw', 'mask', 'map_norm']:
-            self.__dict__[name] = self._grp[name]
-        for name in ['ai_args', 'scan_info']:
-            self.__dict__[name] = utils.h5_to_dict(self._grp[name])
-        self.__dict__['poni'] = PONI.from_dict(
-            utils.h5_to_dict(self._grp[name])
-        )
-        self.int_1d = int_1d_data(self._grp['int_1d'])
-        self.int_2d = int_2d_data(self._grp['int_2d'])
-    
-    def __setattr__(self, name, value):
-        if name == 'map_raw':
-            self._setarray(name, value, 2)
-        elif name == 'mask':
-            self._setarray(name, value, 1)
-        elif name == 'map_norm':
-            utils.scalar_to_h5(value, self._grp, name)
-            self.__dict__[name] = self._grp[name]
-        elif name in ['ai_args', 'poni', 'scan_info']:
-            self._setdict(name, value)
-        else:
-            self.__dict__[name] = value
-    
-    def _setarray(self, name, arr, dim):
-        if arr is None:
-            if dim == 1:
-                arrn = np.array([0])
-            elif dim == 2:
-                arrn = np.array([[0],[0]])
-        else:
-            arrn = arr
-        if name not in self._grp:
-            self.__dict__[name] = self._grp.create_dataset(
-                name, data=arrn, chunks=True, compression=self.compression,
-                maxshape=tuple(None for x in range(dim))
-            )
-        else:
-            self._grp[name].resize(arrn.shape)
-            self._grp[name][()] = arrn[()]
-            self.__dict__[name] = self._grp[name]
-    
-    def _setdict(self, name, data):
-        if name == 'poni':
-            data_dict = data.to_dict()
-        else:
-            data_dict = data
-        utils.dict_to_h5(data_dict, self._grp, name,
-                         compression=self.compression)
-        self.__dict__[name] = copy.deepcopy(data)
-    
-    def __getattribute__(self, name):
-        if name in ['map_raw', 'mask', 'map_norm']:
-            return self._grp[name][()]
-        else:
-            return object.__getattribute__(self, name)
+        self.map_norm = 1
+        self.int_1d = int_1d_data()
+        self.int_2d = int_2d_data()
     
     def get_mask(self):
         mask = np.zeros(self.map_raw.size, dtype=int)
@@ -215,8 +143,8 @@ class EwaldArch():
                 self.mask = np.arange(self.map_raw.size)[self.map_raw.flatten() < 0]
 
             result = self.integrator.integrate1d(
-                self.map_raw/self.map_norm, numpoints, unit=unit, 
-                radial_range=list(radial_range), mask=self.get_mask(), **kwargs
+                self.map_raw/self.map_norm, numpoints, unit=unit, radial_range=radial_range,
+                mask=self.get_mask(), **kwargs
             )
 
             self.int_1d.from_result(result, self.poni.wavelength)
@@ -259,8 +187,8 @@ class EwaldArch():
 
             result = self.integrator.integrate2d(
                 self.map_raw/self.map_norm, npt_rad, npt_azim, unit=unit, 
-                mask=self.get_mask(), radial_range=list(radial_range), 
-                azimuth_range=list(azimuth_range), **kwargs
+                mask=self.get_mask(), radial_range=radial_range, 
+                azimuth_range=azimuth_range, **kwargs
             )
 
             self.int_2d.from_result(result, self.poni.wavelength)
@@ -295,22 +223,21 @@ class EwaldArch():
 
     def set_map_raw(self, new_data):
         with self.arch_lock:
-            self._setarray('map_raw', new_data, 2)
+            self.map_raw = new_data
             if self.mask is None:
-                mask = np.arange(new_data.size)[new_data.flatten() < 0]
-                self._setarray('mask', mask, 1)
+                self.mask = np.arange(new_data.size)[new_data.flatten() < 0]
 
     def set_poni(self, new_data):
         with self.arch_lock:
-            self._setdict('poni', new_data)
+            self.poni = new_data
 
     def set_mask(self, new_data):
         with self.arch_lock:
-            self._setarray('mask', new_data, 1)
+            self.mask = new_data
 
     def set_scan_info(self, new_data):
         with self.arch_lock:
-            self._setdict('scan_info', new_data)
+            self.scan_info = new_data
 
     def save_to_h5(self, file, compression='lzf'):
         """Saves data to hdf5 file using h5py as backend.
@@ -336,7 +263,7 @@ class EwaldArch():
             grp.create_group('int_2d')
             self.int_2d.to_hdf5(grp['int_2d'], compression)
             grp.create_group('poni')
-            utils.dict_to_h5(self.poni.to_dict(), grp['poni'], 'poni')
+            utils.dict_to_h5(self.poni.to_dict(), grp, 'poni')
 
     def load_from_h5(self, file):
         """Loads data from hdf5 file and sets attributes.
@@ -379,7 +306,7 @@ class EwaldArch():
 
     def copy(self):
         arch_copy = EwaldArch(
-            None, copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
+            copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
             copy.deepcopy(self.poni), copy.deepcopy(self.mask),
             copy.deepcopy(self.scan_info), copy.deepcopy(self.ai_args),
             self.file_lock
@@ -387,11 +314,7 @@ class EwaldArch():
         arch_copy.integrator = copy.deepcopy(self.integrator)
         arch_copy.arch_lock = Condition()
         arch_copy.map_norm = copy.deepcopy(self.map_norm)
-        del(arch_copy._grp['int_1d'])
-        del(arch_copy._grp['int_2d'])
-        self.int_1d._grp.copy(self.int_1d._grp, arch_copy._grp)
-        arch_copy.int_1d = int_1d_data(arch_copy._grp['int_1d'])
-        self.int_2d._grp.copy(self.int_2d._grp, arch_copy._grp)
-        arch_copy.int_2d = int_2d_data(arch_copy._grp['int_2d'])
+        arch_copy.int_1d = copy.deepcopy(self.int_1d)
+        arch_copy.int_2d = copy.deepcopy(self.int_2d)
 
         return arch_copy

@@ -10,6 +10,7 @@ import traceback
 import numpy as np
 import pyFAI
 from pyFAI import units
+import h5py
 
 # add xdart to path
 import sys
@@ -98,19 +99,11 @@ def make_sphere(calib_path, poni_file, stepsize, user, image_path, spec_path,
     xmin_global = 180.0
     times = {'overall':[], 'creation':[], 'int':[], 'add':[]}
     detector = pyFAI.detectors.Detector(172e-6, 172e-6)
-    bai_1d_args = {
-        'numpoints':18000, 'monitor':'i0', 'radial_range':[0,180], 
-                        'unit':units.TTH_DEG, 'correctSolidAngle':False, 
-                        'method':'csr'
-    }
-    bai_2d_args = {
-        'npt_rad':1000, 'npt_azim':1000, 'monitor':'i0', 'radial_range':[0,30], 'azimuth_range':[70,110], 'method':'csr'
-    }
-    sphere = EwaldSphere(None,
-                         bai_1d_args=bai_1d_args, bai_2d_args=bai_2d_args)
+    sphere = EwaldSphere()
+    with h5py.File("test_data/spec_pd100k/test_save.h5", 'a') as f:
+        sphere.save_to_h5(f, replace=True)
     poni = PONI.from_ponifile(os.path.join(calib_path, poni_file))
     for k in range(1, len(tth)):
-        print(k)
         start = time.time()
         filename = (image_path + user + spec_name + "_scan" + str(scan_number) +
                     "_" + str(k).zfill(4) + ".raw")
@@ -120,24 +113,21 @@ def make_sphere(calib_path, poni_file, stepsize, user, image_path, spec_path,
         rot2 = np.radians(-tth[k])
         poni.rot2 = rot2
         start_c = time.time()
-        sphere.add_arch(set_mg=False, idx=k, map_raw=map_raw, poni=poni, scan_info={'i0':i0[k]})
+        arch = EwaldArch(idx=k, map_raw=map_raw, poni=poni, scan_info={'i0':i0[k]})
         times['creation'].append(time.time() - start_c)
         start_i = time.time()
-        # arch.integrate_1d(numpoints=18000, monitor='i0', radial_range=[0,180], 
-        #                 unit=units.TTH_DEG, correctSolidAngle=False, 
-        #                 method='csr')
-        # arch.integrate_2d(npt_rad=1000, npt_azim=1000, monitor='i0', radial_range=[0,30], azimuth_range=[70,110], method='csr')
+        arch.integrate_1d(numpoints=18000, monitor='i0', radial_range=[0,180], 
+                        unit=units.TTH_DEG, correctSolidAngle=False, 
+                        method='csr')
+        arch.integrate_2d(npt_rad=1000, npt_azim=1000, monitor='i0', radial_range=[0,30], azimuth_range=[70,110], method='csr')
         times['int'].append(time.time() - start_i)
         start_a = time.time()
+        sphere.add_arch(arch.copy(), calculate=False, set_mg=False)
+        with h5py.File("test_data/spec_pd100k/test_save.h5", 'a') as f:
+            sphere.save_to_h5(f, arches=[k], data_only=True, replace=False)
         times['add'].append(time.time() - start_a)
         
         times['overall'].append(time.time() - start)
-    print("-"*72)
-    print(f"Creating: {sum(times['creation'])/len(times['creation'])}")
-    print(f"Integrating: {sum(times['int'])/len(times['int'])}")
-    print(f"Adding: {sum(times['add'])/len(times['add'])}")
-    print(f"Overall: {sum(times['overall'])/len(times['overall'])}")
-    print("-"*72)
     return sphere
 
 
@@ -160,22 +150,30 @@ class TestEwaldSphere(unittest.TestCase):
         self.true_2d_ttheta = np.load("test_data/spec_pd100k/2d_ttheta.npy")
         self.true_2d_norm = np.load("test_data/spec_pd100k/2d_norm.npy")
         self.true_2d_chi = np.load("test_data/spec_pd100k/2d_chi.npy")
-        
+    
+    #@unittest.skip("Known to pass")
     def test_1d(self):
         self.assertTrue(np.isclose(self.true_1d_ttheta, 
-                                    self.sphere.bai_1d.ttheta[()]).all())
+                                   self.sphere.bai_1d.ttheta).all())
         self.assertTrue(np.isclose(self.true_1d_norm, 
                                    self.sphere.bai_1d.norm.full(),
                                    rtol=1e-3, atol=1e-4).all())
     
+    #@unittest.skip("Known to pass")
     def test_2d(self):
         self.assertTrue(np.isclose(self.true_2d_ttheta, 
-                                    self.sphere.bai_2d.ttheta[()]).all())
+                                   self.sphere.bai_2d.ttheta).all())
         self.assertTrue(np.isclose(self.true_2d_norm, 
                                    self.sphere.bai_2d.norm.full(),
                                    rtol=1e-3, atol=1e-4).all())
         self.assertTrue(np.isclose(self.true_2d_chi, 
-                                   self.sphere.bai_2d.chi[()]).all())
+                                   self.sphere.bai_2d.chi).all())
+    
+    def test_save(self):
+        with h5py.File("test_data/spec_pd100k/test_save.h5", "w") as f:
+            self.sphere.save_to_h5(f, arches=[])
+        with h5py.File("test_data/spec_pd100k/test_save.h5", "a") as f:
+            self.sphere.save_to_h5(f, arches=[1], data_only=True, replace=False)
         
 
 
@@ -191,10 +189,4 @@ if __name__ == '__main__':
     #         spec_name = "LaB6_2",
     #         scan_number = 1
     #     )
-    # true_1d_ttheta = np.load("test_data/spec_pd100k/1d_ttheta.npy")
-    # true_1d_norm = np.load("test_data/spec_pd100k/1d_norm.npy")
-    
-    # true_2d_ttheta = np.load("test_data/spec_pd100k/2d_ttheta.npy")
-    # true_2d_norm = np.load("test_data/spec_pd100k/2d_norm.npy")
-    # true_2d_chi = np.load("test_data/spec_pd100k/2d_chi.npy")
 

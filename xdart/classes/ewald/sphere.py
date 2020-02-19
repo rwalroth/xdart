@@ -1,10 +1,7 @@
 from threading import Condition, _PyRLock
 import time
-import os
-import tempfile
 import pandas as pd
 import numpy as np
-import h5py
 from pyFAI.multi_geometry import MultiGeometry
 
 from .arch import EwaldArch, parse_unit
@@ -19,6 +16,7 @@ class EwaldSphere():
     Attributes:
         name: str, name of the sphere
         arches: Series, list of arches indexed by their idx value
+        data_file: str, file to save data to
         scan_data: DataFrame, stores all scan metadata
         mg_args: arguments for MultiGeometry constructor
         multi_geo: MultiGeometry instance
@@ -44,95 +42,30 @@ class EwaldSphere():
         save_to_h5: saves data to hdf5 file
         load_from_h5: loads data from hdf5 file
     """
-    def __init__(self, file, mode='r', force=False, name='scan0', arches=[],
+    def __init__(self, name='scan0', arches=[], data_file='scan0',
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={}):
         # TODO: add docstring for init
         super().__init__()
-        if file is None:
-            self._tfile = tempfile.TemporaryFile()
-            self.file = h5py.File(self._tfile, mode='a')
-        elif mode != 'r':
-            if force:
-                self.file = utils.catch_h5py_file(file, mode=mode)
-            else:
-                try:
-                    self.file = h5py.File(file, mode=mode)
-                except OSError:
-                    print("File in use, opening in read mode")
-                    self.file = utils.catch_h5py_file(file, mode='r', swmr=True)
-        elif mode == 'r':
-            if os.path.exists(file):
-                self.file = utils.catch_h5py_file(file, mode='r', swmr=True)
-            else:
-                self.file = h5py.File(file, mode='r')
-        self.arches = pd.Series()
         self.name = name
+        if arches:
+            self.arches = pd.Series(arches, index=[a.idx for a in arches])
+        else:
+            self.arches = pd.Series()
+        self.data_file = data_file
+        self.scan_data = scan_data
+        self.mg_args = mg_args
+        self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
+        self.bai_1d_args = bai_1d_args
+        self.bai_2d_args = bai_2d_args
+        self.mgi_1d = int_1d_data()
+        self.mgi_2d = int_2d_data()
         self.file_lock = Condition()
         self.sphere_lock = Condition(_PyRLock())
-        if self.file.attrs.get('encoded', 'not_found') == 'ewald_sphere':
-            self.from_h5()
-        elif self.file.mode != 'r':
-            if 'arches' not in self.file:
-                self.file.create_group('arches')
-            if arches:
-                for arch in arches:
-                    self.add_arch(arch)
-            self.scan_data = scan_data
-            self.mg_args = mg_args
-            self.bai_1d_args = bai_1d_args
-            self.bai_2d_args = bai_2d_args
-            mgi_1d = self.file.create_group('mgi_1d')
-            self.mgi_1d = int_1d_data(mgi_1d)
-            mgi_2d = self.file.create_group('mgi_2d')
-            self.mgi_2d = int_2d_data(mgi_2d)
-            bai_1d = self.file.create_group('bai_1d')
-            self.bai_1d = int_1d_data(bai_1d)
-            bai_2d = self.file.create_group('bai_2d')
-            self.bai_2d = int_2d_data(bai_2d)
-            self.file.attrs['encoded'] = 'ewald_sphere'
-        self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
-    
-    def from_h5(self):
-        for arch_key in self.file['arches']:
-            self.add_arch(EwaldArch(self.file['arches'][arch_key]))
-        self.scan_data = utils.h5_to_data(self.file['scan_data'])
-        self.mg_args = utils.h5_to_dict(self.file['mg_args'])
-        self.bai_1d_args = utils.h5_to_dict(self.file['bai_1d_args'])
-        self.bai_2d_args = utils.h5_to_dict(self.file['bai_2d_args'])
-        self.bai_1d = int_1d_data(self.file['bai_1d'])
-        self.bai_2d = int_2d_data(self.file['bai_2d'])
-        self.mgi_1d = int_1d_data(self.file['mgi_1d'])
-        self.mgi_2d = int_2d_data(self.file['mgi_2d'])
-    
-    def sync(self):
-        for key in ['mg_args', 'bai_1d_args', 'bai_2d_args']:
-            if key in self.__dict__:
-                self._setdict(key, self.__dict__[key])
-        self._setdataframe('scan_data', self.scan_data)
-    
-    def __setattr__(self, name, value):
-        if name == 'scan_data':
-            self._setdataframe(name, value)
-        elif 'args' in name:
-            self._setdict(name, value)
-        else:
-            self.__dict__[name] = value
-    
-    def _setdataframe(self, name, value):
-        utils.data_to_h5(value, self.file, name)
-        self.__dict__[name] = value
-            
-    def _setdict(self, name, value):
-        if name not in self.file:
-            grp = self.file.create_group(name)
-        else:
-            grp = self.file[name]
-        utils.dict_to_h5(value, grp, name)
-        self.__dict__[name] = value
-        self._set_args(self.__dict__[name])
+        self.bai_1d = int_1d_data()
+        self.bai_2d = int_2d_data()
 
-    def add_arch(self, arch=None, grp=None, calculate=True, update=True, get_sd=True,
+    def add_arch(self, arch=None, calculate=True, update=True, get_sd=True,
                  set_mg=True, **kwargs):
         """Adds new arch to sphere.
 
@@ -149,25 +82,11 @@ class EwaldSphere():
         returns None
         """
         with self.sphere_lock:
-            if self.file.mode != 'r':
-                if arch is None:
-                    if grp is None:
-                        if str(kwargs['idx']) in self.file['arches']:
-                            del self.file['arches'][str(kwargs['idx'])]
-                        grp = self.file['arches'].create_group(str(kwargs['idx']))
-                        arch = EwaldArch(grp, **kwargs)
-                    else:
-                        arch = EwaldArch(grp)
-                else:
-                    if str(arch.idx) in self.file['arches']:
-                        del self.file['arches'][str(arch.idx)]
-                    arch._grp.copy(arch._grp, self.file['arches'])
-                    arch = EwaldArch(self.file['arches'][str(arch.idx)])
-                if calculate:
-                    arch.integrate_1d(**self.bai_1d_args)
-                    arch.integrate_2d(**self.bai_2d_args)
-            else:
-                arch = EwaldArch(grp)
+            if arch is None:
+                arch = EwaldArch(**kwargs)
+            if calculate:
+                arch.integrate_1d(**self.bai_1d_args)
+                arch.integrate_2d(**self.bai_2d_args)
             arch.file_lock = self.file_lock
             self.arches = self.arches.append(pd.Series(arch, index=[arch.idx]))
             self.arches.sort_index(inplace=True)
@@ -178,12 +97,12 @@ class EwaldSphere():
                         self.scan_data.loc[arch.idx] = ser
                     except ValueError:
                         print('Mismatched columns')
-                elif self.file.mode != 'r':
+                else:
                     self.scan_data = pd.DataFrame(
                         arch.scan_info, index=[arch.idx], dtype='float64'
                     )
-                self.scan_data.sort_index(inplace=True)
-            if update and self.file.mode != 'r':
+            self.scan_data.sort_index(inplace=True)
+            if update:
                 self._update_bai_1d(arch)
                 self._update_bai_2d(arch)
             if set_mg:
@@ -234,24 +153,24 @@ class EwaldSphere():
                 self.bai_1d.pcount = np.zeros(arch.int_1d.pcount.shape)
                 self.bai_1d.norm = np.zeros(arch.int_1d.norm.shape)
                 self.bai_1d += arch.int_1d
-                self.bai_1d.ttheta = arch.int_1d.ttheta
-                self.bai_1d.q = arch.int_1d.q
+            self.bai_1d.ttheta = arch.int_1d.ttheta
+            self.bai_1d.q = arch.int_1d.q
     
     def _update_bai_2d(self, arch):
         """helper function to update overall bai variables.
         """
         with self.sphere_lock:
             try:
-                assert all(self.bai_2d.raw.shape == arch.int_2d.raw.shape)
+                assert self.bai_2d.raw.shape == arch.int_2d.raw.shape
             except (AssertionError, AttributeError):
                 self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
                 self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
                 self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
+            try:
+                self.bai_2d += arch.int_2d
                 self.bai_2d.ttheta = arch.int_2d.ttheta
                 self.bai_2d.q = arch.int_2d.q
                 self.bai_2d.chi = arch.int_2d.chi
-            try:
-                self.bai_2d += arch.int_2d
             except AttributeError:
                 pass
 
@@ -371,7 +290,7 @@ class EwaldSphere():
                 ]
             else:
                 lst_attr = [
-                    "scan_data", "mg_args", "bai_1d_args",
+                    "data_file", "scan_data", "mg_args", "bai_1d_args",
                     "bai_2d_args"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
@@ -415,11 +334,13 @@ class EwaldSphere():
                             )
                                 
                         if data_only:
-                            lst_attr = ["scan_data"]
+                            lst_attr = [
+                                "data_file", "scan_data", 
+                            ]
                             utils.h5_to_attributes(self, grp, lst_attr)
                         else:
                             lst_attr = [
-                                "scan_data", "mg_args", "bai_1d_args",
+                                "data_file", "scan_data", "mg_args", "bai_1d_args",
                                 "bai_2d_args"
                             ]
                             utils.h5_to_attributes(self, grp, lst_attr)
@@ -440,8 +361,3 @@ class EwaldSphere():
             if 'range' in arg:
                 if args[arg] is not None:
                     args[arg] = list(args[arg])
-    
-    def __del__(self):
-        self.sync()
-        self.file.close()
-        

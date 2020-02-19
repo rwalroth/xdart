@@ -4,6 +4,7 @@
 """
 
 # Standard library imports
+import traceback
 
 # Other imports
 import numpy as np
@@ -49,6 +50,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Image pane signal connections
         self.ui.imageIntRaw.activated.connect(self.update)
         self.ui.imageMethod.activated.connect(self.update)
+        self.ui.imageMethod.setCurrentIndex(1)
+        self.ui.imageMethod.setEnabled(False)
         self.ui.imageUnit.activated.connect(self.update)
         self.ui.imageNRP.activated.connect(self.update)
         self.ui.imageMask.stateChanged.connect(self.update)
@@ -69,6 +72,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         )
 
         self.ui.plotMethod.activated.connect(self.update)
+        self.ui.plotMethod.setCurrentIndex(1)
+        self.ui.plotMethod.setEnabled(False)
         self.ui.plotUnit.activated.connect(self.update)
         self.ui.plotNRP.activated.connect(self.update)
         self.ui.plotOverlay.stateChanged.connect(self.update)
@@ -101,11 +106,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         try:
             self.update_image(self.sphere, self.arch)
         except Exception as e:
-            print(f"{e} in update_image")
+            print(traceback.print_exc())
         try:
             self.update_plot(self.sphere, self.arch)
         except Exception as e:
-            print(f"{e} in update_image")
+            print(traceback.print_exc())
     
     def update_image(self, sphere, arch):
         """Updates image plotted in image frame

@@ -246,7 +246,6 @@ class tthetaWidget(QWidget):
                 self.displayframe.arch = None
                 self.displayframe.update()
                 self.displayframe.ui.imageIntRaw.setEnabled(False)
-                self.displayframe.ui.imageMethod.setEnabled(True)
                 self.displayframe.ui.imageMask.setEnabled(False)
 
                 self.integratorTree.ui.all1D.setChecked(True)
@@ -264,7 +263,6 @@ class tthetaWidget(QWidget):
                 self.displayframe.arch = int(q.data(0))
                 self.displayframe.update()
                 self.displayframe.ui.imageIntRaw.setEnabled(True)
-                self.displayframe.ui.imageMethod.setEnabled(False)
                 self.displayframe.ui.imageMask.setEnabled(True)
 
                 self.integratorTree.ui.all1D.setEnabled(True)
