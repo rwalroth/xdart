@@ -4,7 +4,7 @@
 """
 
 # Standard library imports
-import sys, os, glob, imp, fnmatch, re, time
+import sys, os, glob, fnmatch, re, time
 
 # Other Imports
 import matplotlib.pyplot as plt
@@ -27,24 +27,93 @@ import pyFAI
 from pyFAI.multi_geometry import MultiGeometry
 from silx.io.specfile import SpecFile
 
-sys.path.append('/Users/v/Research/RDA/repos/xdart/')
-from xdart.utils import get_from_pdi, query_yes_no, read_image_file, smooth_img, get_fit, fit_images_2D
+sys.path.append('C:\\Users\\Public\\repos\\xdart')
+from xdart.utils import get_from_pdi, get_motor_val, query, query_yes_no
+from xdart.utils import read_image_file, smooth_img, get_fit, fit_images_2D
 from xdart.pySSRL_bServer.bServer_funcs import specCommand, wait_until_SPECfinished
 
+
+def check_recalibrate():
+    # Check if user wants to recalibrate
+
+    calibScan = query('\nEnter scan name to recalibrate with existing scan. Else press enter for new calibration: ')
+    return calibScan
+    
 
 def check_ready():
     # Check if detector is ready for direct beam scan
 
-    ready = query_yes_no('Are filters in? Can detector take direct beam?')
+    ready = query_yes_no('\nAre filters in? Can detector take direct beam?')
 
     if ready != 'yes':
         print('Cannot proceed with direct beam scan..')
         sys.exit()
     
-    
+
+def get_detector_name():
+    detectors_dict = {'1': 'Pilatus100K',
+                      '2': 'Pilatus300K',
+                      '3': 'Eiger1M'}
+
+    while 1:
+        det_number = query('Choose detector (1-3) [1] Pilatus100K (2) Pilatus300K (3) Eiger1M: ')
+        try:
+            detector = detectors_dict[det_number]
+            print(f'Selected {detector}\n')
+            return detector
+        except:
+            print('Choice must be a number from (1 - 3)')
+
+
+def get_detector_orientation():
+    orientations = {'v': 'vertical',
+                    'h': 'horizontal',
+                    '' : 'vertical'}
+
+    while 1:
+        orientation = query('\nDetector orientation ( Vertical [default] / Horizontal) [v/h]: ').lower()
+        if orientation in ['h', 'v', '']:
+            orientation = orientations[orientation]
+            print(f'Selected orientation {orientation}\n')
+            return orientation
+        else:
+            print('Please choose (v/h) or hit enter for default [v]: ')
+
+
+def get_initial_distance(default=0.7):
+    while 1:
+        init_dist = query(f'Enter rough detector sample distance in meters [default {default}]:')
+        if len(init_dist) == 0:
+            print(f'Using default value: {default}\n')
+            return default
+        try:
+            init_dist = float(init_dist)
+            return init_dist
+        except:
+            print('Please enter a numeric value')
+
+def create_remote_paths(spec_path, img_path):
+    # Create data folder on SPEC machine if it doesn't exist
+    command = f'u mkdir {spec_path}'
+    try:
+        specCommand(command, queue=True)
+    except Exception as e:
+        print(e)
+        print(f"Command '{command}' not sent")
+        sys.exit()    
+
+    # Create images folder on SPEC machine if it doesn't exist
+    command = f'u mkdir {img_path}'
+    try:
+        specCommand(command, queue=True)
+    except Exception as e:
+        print(e)
+        print(f"Command '{command}' not sent")
+        sys.exit()    
+
+
 def create_SPEC_file(path):
     # Create new calibration spec file with date time stamp
-
     timestr = time.strftime("%Y%m%d-%H%M%S")
     calibScan = f'calib_{timestr}'
 
@@ -72,11 +141,21 @@ def set_PD_savepath(img_path):
         print(f"Command '{command}' not sent")
         sys.exit()
         
-        
-def run_direct_beam_scan():
+
+def get_tth_scan_range(init_dist=0.7, pixel_sz=0.000172, ccd_shape=(195,487), orientation='vertical'):
+    if orientation == 'vertical':
+        ccd_shape = (487, 195)
+
+    tth = np.round(np.rad2deg( np.arctan(pixel_sz*ccd_shape[0]/2 / init_dist) ) + 0.2, 1)
+    steps = len(np.arange(-tth, tth, 0.02))
+
+    return tth, steps
+
+
+def run_direct_beam_scan(tth, steps):
     # Run Direct Beam Scan
 
-    command = f'ascan  tth -4 4  400 1'
+    command = f'ascan  tth -{tth} {tth} {steps} 1'
     print(f'Running direct beam scan [{command}]')
     try:
         specCommand(command, queue=True)
@@ -86,21 +165,20 @@ def run_direct_beam_scan():
         sys.exit()
         
     # Wait till Scan is finished to continue
+    print('Waiting for scan to finish..')
     wait_until_SPECfinished(polling_time=5)
     time.sleep(5)
+    print('Done', '\n')
 
 
-def read_SPEC_file(spec_path):
-    spec_file = SpecFile( os.path.join(spec_path, {calibScan}) )
+def read_SPEC_file(spec_path, calibScan):
+    spec_file = SpecFile( os.path.join(spec_path, f'{calibScan}') )
     
     return spec_file
 
 
-def get_img_fnames(img_path, calibScan):
+def get_img_fnames(img_path, pdi_path, calibScan):
     # Read Spec File and get Image and PDI File Names
-
-    img_path = os.path.join(path, 'images')
-    pdi_path = img_path
 
     img_fnames = sorted(fnmatch.filter(os.listdir(img_path), f'*{calibScan}*.raw'))
     pdi_fnames = [f'{img_fname}.pdi' for img_fname in img_fnames
@@ -112,7 +190,6 @@ def get_img_fnames(img_path, calibScan):
     return img_fnames, pdi_fnames
         
            
-
 def get_TTh_w_direct_beam(img_path, img_fnames, pdi_path, pdi_fnames):
     # Get Range of TTh Values that see Direct Beam
     img_mean_vals = [ np.mean(read_image_file( os.path.join(img_path, img_fname),
@@ -144,7 +221,12 @@ def get_TTh_w_direct_beam(img_path, img_fnames, pdi_path, pdi_fnames):
     n0 = len(tths)//2
     keys = keys[:20] + keys[n0-20 : n0+20] + keys[-20:]
     TThs = OrderedDict({k:TThs[k] for k in keys})
-    return TThs
+
+    img_fnames = list(TThs.keys())
+    pdi_fnames = [f'{img_fname}.pdi' for img_fname in img_fnames]
+    tths = np.asarray([tth for k, tth in TThs.items()])
+
+    return img_fnames, pdi_fnames, tths
 
   
 def fit_all_images(img_path, img_fnames, tths, n_cores=None):
@@ -179,13 +261,11 @@ def get_db_pixel(tths, xs, ys):
     params_xs = mod_xs.guess(xs, x=tths)
     fit_xs = mod_xs.fit(xs, params=params_xs, x=tths)
     fit_xs = mod_xs.fit(xs, params=fit_xs.params, x=tths)
-    xs_fit_val = fit_xs.eval(params=fit_xs.params, xdata=tths)
 
     mod_ys = LinearModel()
     params_ys = mod_ys.guess(ys, x=tths)
     fit_ys = mod_ys.fit(ys, params=params_ys, x=tths)
     fit_ys = mod_ys.fit(ys, params=fit_ys.params, x=tths)
-    ys_fit_val = fit_ys.eval(params=fit_ys.params, xdata=tths)
     
     x0 = fit_xs.eval(params=fit_xs.params, x=0.0)
     y0 = fit_ys.eval(params=fit_ys.params, x=0.0)
@@ -264,73 +344,96 @@ def make_poni(poni_file, spec_file, params, detector="Pilatus100k"):
     ai.save(os.path.join(poni_path, f'{calibScan}.poni'))
     print(ai)
     
-          
-if __name__ == '__main__':
-    detector = 'Pilatus100K'
-    pixel_sz = 0.000172
-    
-    # Paths
-    remote_path = '~/data/calibration'
-    local_path = 'P:\\Data'
-    poni_path = 'P:'
-    
-    # Remote (SPEC) Computer Paths
-    path = remote_path
-    
-    spec_path = path
-    img_path = os.path.join(path, 'images')
-    pdi_path = img_path
 
-    # Initialize and set paths
-    check_ready()
-    calibScan = create_calib_file(local_path)
-    set_PD_savepath(local_path)
-    
-    # Run direct beam scan
-    run_direct_beam_scan()
+def run_calibration(remote_path, local_path, poni_path, 
+                    detector, pixel_sz, ccd_shape, orientation,
+                    init_dist, calibScan=None):
+
+    if calibScan is None:
+        # Check if filters are in place to allow direct beam scan
+        check_ready()
+        
+        # ******************* SPEC Computer Commands ********************************
+
+        # Remote (SPEC) Computer Paths
+        spec_path = remote_path
+        img_path = f'{spec_path}/images'
+
+        # Create remote_paths on SPEC computer if it doesn't exist
+        create_remote_paths(spec_path, img_path)
+
+        # Create SPEC file and set PD savepath
+        calibScan = create_SPEC_file(spec_path)
+        set_PD_savepath(img_path)
+        
+        # Get direct beam scan range and steps
+        tth, steps = get_tth_scan_range(init_dist=init_dist, pixel_sz=pixel_sz,
+            ccd_shape=ccd_shape, orientation=orientation)
+
+        # Run direct beam scan
+        run_direct_beam_scan(tth, steps)
     
     # ********************** Now moving to local computer ***************************
     
     # Set local paths
-    path = local_path
-
-    spec_path = path
-    img_path = os.path.join(path, 'images')
+    spec_path = local_path
+    img_path = os.path.join(spec_path, 'images')
     pdi_path = img_path
 
     # Read SPEC File and Images from Remote (Windows) Path
-    spec_file = read_SPEC_file(spec_path)
-    img_fnames, pdi_fnames = get_img_fnames(img_path, calibScan)
+    spec_file = read_SPEC_file(spec_path, calibScan)
+    img_fnames, pdi_fnames = get_img_fnames(img_path, pdi_path, calibScan)
     
     # Get Range of TTh Values that see Direct Beam
-    print('Getting all images that see direct beam')
-    TThs = get_TTh_w_direct_beam(img_path, img_fnames, pdi_path, pdi_fnames)
+    print('\nGetting all images that see direct beam')
+    img_fnames, pdi_fnames, tths = get_TTh_w_direct_beam(img_path, img_fnames, pdi_path, pdi_fnames)
+    print(f'TTh range for direct beam: [{tths[0]}, {tths[-1]}]')
 
-    # Restrict Image Names to above
-    img_fnames = list(TThs.keys())
-    pdi_fnames = [f'{img_fname}.pdi' for img_fname in img_fnames]
-    tths = np.asarray([tth for k, tth in TThs.items()])
-    print(f'TTh range for direct beam: [{tths[0]}, {tths[-1]}]\n')
-
-    # Fit all Images
-    print('Fitting 2D PVoigt to all images..')
+    # Fit all Images to get direct beam position at all TTH values
+    print('\nFitting 2D PVoigt to all images..')
     tths, xs, ys =  fit_all_images(img_path, img_fnames, tths)
-    print('Done \n')
+    print('Done')
 
-    # Get Direct Beam Pixel
+    # Get Direct Beam Pixel at TTh = 0
     print('Obtaining direct beam pixel at TTh=0')
     x0, y0 = get_db_pixel(tths, xs, ys)
     print(f'Direct beam pixel at TTh=0: [{x0:.2f}, {y0:.2f}]\n')
     
     # Obtain Poni Parameters
-    print('Calculating PONI File parameters (dist, rot2, rot3, poni1, poni2)')
+    print('\nCalculating PONI File parameters (dist, rot2, rot3, poni1, poni2)')
     poni_params = get_poni_params(tths, xs, ys, x0, y0, pixel_sz=pixel_sz)
     
     # Create and save PONI file
     poni_file = os.path.join(poni_path, f'{calibScan}.poni')
-    print(f'Making and saving {poni_file}')
+    print(f'\nMaking and saving {poni_file}')
     make_poni(poni_file, spec_file, poni_params, detector=detector)
-    
-    
-    
-    
+
+
+if __name__ == '__main__':
+    # Paths
+    remote_path = '~/data/calibration'
+    local_path = 'P:\\bl2-1\\calibration'
+    poni_path = 'P:\\bl2-1\\poni_files'
+
+    detector_name = get_detector_name()
+    detector = pyFAI.detector_factory(detector_name)
+
+    pixel_sz = detector.pixel1
+    ccd_shape = detector.max_shape
+
+    orientation = get_detector_orientation()
+    init_dist = get_initial_distance()
+
+    # Check if user wants to recalibrate with existing scan
+    #calibScan = None if len(sys.argv) == 1 else sys.argv[1]
+    calibScan = check_recalibrate()
+    if calibScan:
+        if calibScan in os.listdir(local_path):
+            print(f'\nRalibrating using {calibScan}')
+        else:
+            print(f'Calibration file {calibScan} does not exist..')
+            sys.exit()
+
+    run_calibration(remote_path, local_path, poni_path,
+                    detector_name, pixel_sz, ccd_shape, orientation,
+                    init_dist, calibScan=calibScan)

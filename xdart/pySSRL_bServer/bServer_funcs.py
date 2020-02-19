@@ -113,6 +113,7 @@ def specCommand(cmd, queue=False, debug=False):
         g = r.json()
         print(r, g['data'])
     
+    print('Executed', '\n')
     #r = requests.get(bServer + "release_remote_control")
     return
     

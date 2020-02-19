@@ -58,24 +58,14 @@ def find_between_r( s, first, last ):
         return ""
 
 
-def get_from_pdi(pdi_file):
+def query(question):
+    """Ask a question with allowed options via input()
+    and return their answer.
+    """
+    sys.stdout.write(question)
+    return input()
 
-    with open(pdi_file, 'r') as f:
-        pdi_data = f.read()
-
-    pdi_data = pdi_data.replace('\n', ';')
-
-    counters = re.search('All Counters;(.*);;# All Motors', pdi_data).group(1)
-    cts = re.split(';|=', counters)
-    Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-
-    motors = find_between(pdi_data, 'All Motors;', ';#')
-    cts = re.split(';|=', motors)
-    Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-
-    return Counters, Motors
-
-
+    
 def get_from_pdi(pdi_file):
 
     with open(pdi_file, 'r') as f:
@@ -105,7 +95,7 @@ def get_from_pdi(pdi_file):
 
 
 def get_motor_val(pdi_file, motor):
-    Counters, Motors = get_from_pdi(pdi_file)
+    _, Motors = get_from_pdi(pdi_file)
 
     return Motors[motor]
 
