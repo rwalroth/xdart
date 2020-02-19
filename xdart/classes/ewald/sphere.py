@@ -252,15 +252,20 @@ class EwaldSphere():
 
             self.mgi_2d.from_result(result, self.multi_geo.wavelength)
         return result
+    
+    def save_to_h5(self, *args, **kwargs):
+        with self.file_lock:
+            with utils.catch_h5py_file(self.data_file, 'a') as file:
+                self._save_to_h5(file, *args, **kwargs)
 
-    def save_to_h5(self, file, arches=None, data_only=False, replace=False,
+    def _save_to_h5(self, file, arches=None, data_only=False, replace=False,
                    compression='lzf'):
         """Saves data to hdf5 file.
 
         args:
             file: h5py file or group object
         """
-        with self.file_lock:
+        with self.sphere_lock:
             if self.name in file:
                 if replace:
                     del(file[self.name])
@@ -302,57 +307,61 @@ class EwaldSphere():
             self.bai_2d.to_hdf5(grp['bai_2d'], compression)
             self.mgi_1d.to_hdf5(grp['mgi_1d'], compression)
             self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
+    
+    def load_from_h5(self, *args, **kwargs):
+        with self.file_lock:
+            with utils.catch_h5py_file(self.data_file, 'r') as file:
+                self._load_from_h5(file, *args, **kwargs)
 
-    def load_from_h5(self, file, data_only=False, arches=[], replace=True, set_mg=True):
+    def _load_from_h5(self, file, data_only=False, arches=[], replace=True, set_mg=True):
         """Loads data from hdf5 file.
 
         args:
             file: h5py file or group object
         """
-        with self.file_lock:
-            with self.sphere_lock:
-                if self.name not in file:
-                    print("No data can be found")
-                    return
-                grp = file[self.name]
+        with self.sphere_lock:
+            if self.name not in file:
+                print("No data can be found")
+                return
+            grp = file[self.name]
 
-                if 'type' in grp.attrs:
-                    if grp.attrs['type'] == 'EwaldSphere':
+            if 'type' in grp.attrs:
+                if grp.attrs['type'] == 'EwaldSphere':
 
-                        if replace:
-                            self.arches = pd.Series()
-                        
-                        for key in grp['arches'].keys():
-                            if arches:
-                                if int(key) not in arches:
-                                    continue
-                            arch = EwaldArch(idx=int(key))
-                            arch.load_from_h5(grp['arches'])
-                            self.add_arch(
-                                arch.copy(), calculate=False, update=False,
-                                get_sd=False, set_mg=False
-                            )
-                                
-                        if data_only:
-                            lst_attr = [
-                                "data_file", "scan_data", 
-                            ]
-                            utils.h5_to_attributes(self, grp, lst_attr)
-                        else:
-                            lst_attr = [
-                                "data_file", "scan_data", "mg_args", "bai_1d_args",
-                                "bai_2d_args"
-                            ]
-                            utils.h5_to_attributes(self, grp, lst_attr)
-                            self._set_args(self.bai_1d_args)
-                            self._set_args(self.bai_2d_args)
-                            self._set_args(self.mg_args)
-                        self.bai_1d.from_hdf5(grp['bai_1d'])
-                        self.bai_2d.from_hdf5(grp['bai_2d'])
-                        self.mgi_1d.from_hdf5(grp['mgi_1d'])
-                        self.mgi_2d.from_hdf5(grp['mgi_2d'])
-                        if set_mg:
-                            self.set_multi_geo(**self.mg_args)
+                    if replace:
+                        self.arches = pd.Series()
+                    
+                    for key in grp['arches'].keys():
+                        if arches:
+                            if int(key) not in arches:
+                                continue
+                        arch = EwaldArch(idx=int(key))
+                        arch.load_from_h5(grp['arches'])
+                        self.add_arch(
+                            arch.copy(), calculate=False, update=False,
+                            get_sd=False, set_mg=False
+                        )
+                            
+                    if data_only:
+                        lst_attr = [
+                            "data_file", "scan_data", 
+                        ]
+                        utils.h5_to_attributes(self, grp, lst_attr)
+                    else:
+                        lst_attr = [
+                            "data_file", "scan_data", "mg_args", "bai_1d_args",
+                            "bai_2d_args"
+                        ]
+                        utils.h5_to_attributes(self, grp, lst_attr)
+                        self._set_args(self.bai_1d_args)
+                        self._set_args(self.bai_2d_args)
+                        self._set_args(self.mg_args)
+                    self.bai_1d.from_hdf5(grp['bai_1d'])
+                    self.bai_2d.from_hdf5(grp['bai_2d'])
+                    self.mgi_1d.from_hdf5(grp['mgi_1d'])
+                    self.mgi_2d.from_hdf5(grp['mgi_2d'])
+                    if set_mg:
+                        self.set_multi_geo(**self.mg_args)
 
     def _set_args(self, args):
         """Ensures any range args are lists.

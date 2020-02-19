@@ -172,6 +172,7 @@ class tthetaWidget(QWidget):
             try:
                 with catch(fname, 'a') as _:
                     self.fname = fname
+                    self.sphere.data_file = fname
             except Exception as e:
                 print(e)
 
@@ -184,19 +185,13 @@ class tthetaWidget(QWidget):
         """Loads EwaldSphere object into memory
         """
         if not isinstance(self.sphere, EwaldSphere):
-            self.sphere = EwaldSphere(name)
+            self.sphere = EwaldSphere(name, data_file=self.fname)
         
         elif self.sphere.name != name:
             with self.sphere.sphere_lock:
-                self.sphere = EwaldSphere(name)
-        while True:
-            try:
-                with self.file_lock:
-                    with h5py.File(self.fname, 'r') as file:
-                        self.sphere.load_from_h5(file)
-                        break
-            except OSError:
-                pass
+                self.sphere = EwaldSphere(name, data_file=self.fname)
+        with self.file_lock:
+            self.sphere.load_from_h5()
         self.displayframe.sphere = self.sphere
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
@@ -213,21 +208,19 @@ class tthetaWidget(QWidget):
     
     def update_data(self, q):
         if self.sphere is None:
-            self.sphere = EwaldSphere(self.wrangler.scan_name)
+            self.sphere = EwaldSphere(self.wrangler.scan_name, data_file=self.fname)
             with self.sphere.sphere_lock:
                 with self.file_lock:
-                    with catch(self.fname, 'r') as file:
-                        self.sphere.load_from_h5(file)
+                    self.sphere.load_from_h5()
         else:
             with self.sphere.sphere_lock:
                 if (q not in self.sphere.arches.index and 
                         self.sphere.name == self.wrangler.scan_name):
                     with self.file_lock:
-                        with catch(self.fname, 'r') as file:
-                            self.sphere.load_from_h5(
-                                file, replace=False, data_only=True, 
-                                arches=[q], set_mg=False
-                            )
+                        self.sphere.load_from_h5(
+                            replace=False, data_only=True, 
+                            arches=[q], set_mg=False
+                        )
         self.update_all()
             
                 
@@ -331,9 +324,8 @@ class tthetaWidget(QWidget):
         if isinstance(self.sphere, EwaldSphere):
             if self.fname is not None:
                 with self.file_lock:
-                    with catch(self.fname, 'a') as file:
-                        self.sphere.save_to_h5(file, replace=True)
-                        self.h5viewer.update(self.fname)
+                    self.sphere.save_to_h5(replace=True)
+                    self.h5viewer.update(self.fname)
             else:
                 self.save_data_as()
     

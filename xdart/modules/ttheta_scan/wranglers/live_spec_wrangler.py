@@ -307,11 +307,11 @@ class liveSpecProcess(wranglerProcess):
                 self.scan_number = scan_number
                 sphere = EwaldSphere(
                     name='scan' + str(self.scan_number).zfill(2),
+                    data_file = self.fname,
                     **self.sphere_args
                 )
                 with self.file_lock:
-                    with catch(self.fname, 'a') as file:
-                        sphere.save_to_h5(file)
+                    sphere.save_to_h5()
                 self.signal_q.put(('new_scan', sphere.name))
             while True:
                 # Looks for relevant data, loops until it is found or a
@@ -338,10 +338,9 @@ class liveSpecProcess(wranglerProcess):
                 get_sd=True, set_mg=False
             )
             with self.file_lock:
-                with catch(self.fname, 'a') as file:
-                    sphere.save_to_h5(
-                        file, arches=[i], data_only=True, replace=False
-                    )
+                sphere.save_to_h5(
+                    arches=[i], data_only=True, replace=False
+                )
             self.signal_q.put(('update', i))
     
     def parse_file(self, path):

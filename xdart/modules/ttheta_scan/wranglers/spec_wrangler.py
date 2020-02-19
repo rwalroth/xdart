@@ -264,11 +264,10 @@ class specProcess(wranglerProcess):
         self.timeout = timeout
     
     def _main(self):
-        sphere = EwaldSphere(self.scan_name, **self.sphere_args)
+        sphere = EwaldSphere(self.scan_name, data_file=self.fname, **self.sphere_args)
         with self.file_lock:
-            with catch(self.fname, 'a') as file:
-                sphere.save_to_h5(file, replace=True)
-                self.signal_q.put(('new_scan', None))
+            sphere.save_to_h5(replace=True)
+            self.signal_q.put(('new_scan', None))
         
         # Operation instantiated within process to avoid conflicts with locks
         make_poni = MakePONI()
@@ -314,8 +313,7 @@ class specProcess(wranglerProcess):
                     set_mg=False
                 )
                 with self.file_lock:
-                    with catch(self.fname, 'a') as file:
-                        sphere.save_to_h5(file, arches=[idx], data_only=True, replace=False)
+                    sphere.save_to_h5(arches=[idx], data_only=True, replace=False)
                 self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
                 i += 1

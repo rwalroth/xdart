@@ -98,7 +98,7 @@ class wranglerProcess(mp.Process):
             traceback.print_exc()
             print("-"*60)
     def _main(self):
-        sphere = EwaldSphere(**self.sphere_args)
+        sphere = EwaldSphere(data_file=self.fname, **self.sphere_args)
         while True:
             if not self.command_q.empty():
                 command = self.command_q.get()

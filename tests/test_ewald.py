@@ -99,9 +99,8 @@ def make_sphere(calib_path, poni_file, stepsize, user, image_path, spec_path,
     xmin_global = 180.0
     times = {'overall':[], 'creation':[], 'int':[], 'add':[]}
     detector = pyFAI.detectors.Detector(172e-6, 172e-6)
-    sphere = EwaldSphere()
-    with h5py.File("test_data/spec_pd100k/test_save.h5", 'a') as f:
-        sphere.save_to_h5(f, replace=True)
+    sphere = EwaldSphere(data_file="test_data/spec_pd100k/test_save.h5")
+    sphere.save_to_h5(replace=True)
     poni = PONI.from_ponifile(os.path.join(calib_path, poni_file))
     for k in range(1, len(tth)):
         start = time.time()
@@ -123,8 +122,7 @@ def make_sphere(calib_path, poni_file, stepsize, user, image_path, spec_path,
         times['int'].append(time.time() - start_i)
         start_a = time.time()
         sphere.add_arch(arch.copy(), calculate=False, set_mg=False)
-        with h5py.File("test_data/spec_pd100k/test_save.h5", 'a') as f:
-            sphere.save_to_h5(f, arches=[k], data_only=True, replace=False)
+        sphere.save_to_h5(arches=[k], data_only=True, replace=False)
         times['add'].append(time.time() - start_a)
         
         times['overall'].append(time.time() - start)
@@ -170,10 +168,8 @@ class TestEwaldSphere(unittest.TestCase):
                                    self.sphere.bai_2d.chi).all())
     
     def test_save(self):
-        with h5py.File("test_data/spec_pd100k/test_save.h5", "w") as f:
-            self.sphere.save_to_h5(f, arches=[])
-        with h5py.File("test_data/spec_pd100k/test_save.h5", "a") as f:
-            self.sphere.save_to_h5(f, arches=[1], data_only=True, replace=False)
+        self.sphere.save_to_h5(arches=[])
+        self.sphere.save_to_h5(arches=[1], data_only=True, replace=False)
         
 
 
