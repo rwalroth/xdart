@@ -1,5 +1,6 @@
 from threading import Condition, _PyRLock
 import time
+import os
 import pandas as pd
 import numpy as np
 from pyFAI.multi_geometry import MultiGeometry
@@ -43,14 +44,20 @@ class EwaldSphere():
         save_to_h5: saves data to hdf5 file
         load_from_h5: loads data from hdf5 file
     """
-    def __init__(self, name='scan0', arches=[], data_file='scan0',
+    def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={}):
         # TODO: add docstring for init
         super().__init__()
         self.file_lock = Condition()
-        self.name = name
-        self.data_file = data_file
+        if name is None:
+            self.name = os.path.split(data_file)[-1].split('.')[0]
+        else:
+            self.name = name
+        if data_file is None:
+            self.data_file = name + ".hdf5"
+        else:
+            self.data_file = data_file
         if arches:
             self.arches = ArchSeries(self.data_file, self.file_lock, arches)
         else:
@@ -307,7 +314,8 @@ class EwaldSphere():
             if 'type' in grp.attrs:
                 if grp.attrs['type'] == 'EwaldSphere':
                     for arch in grp['arches']:
-                        self.arches.index.append(int(arch))
+                        if int(arch) not in self.arches.index:
+                            self.arches.index.append(int(arch))
                             
                     if data_only:
                         lst_attr = [

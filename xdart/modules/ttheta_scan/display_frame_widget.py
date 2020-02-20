@@ -100,7 +100,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.ui.plotUnit.setEnabled(True)
         
         if self.auto_last and self.sphere is not None:
-            self.arch = self.sphere.arches.iloc[-1].idx
+            self.arch = self.sphere.arches.iloc(-1).idx
             # TODO This is breaking link to parent arch, need to revisit
         
         try:

@@ -3,6 +3,7 @@
 @author: walroth
 """
 # Standard library imorts
+import os
 
 # Other imports
 from xdart.utils import catch_h5py_file as catch
@@ -33,7 +34,7 @@ class H5Viewer(QWidget):
 
         # File menu setup (part of toolbar)
         self.actionOpen = QtWidgets.QAction()
-        self.actionOpen.setText('Open')
+        self.actionOpen.setText('Open Folder')
 
         self.actionSetDefaults = QtWidgets.QAction()
         self.actionSetDefaults.setText('Advanced...')
@@ -103,16 +104,13 @@ class H5Viewer(QWidget):
     def update(self, fname):
         """Takes in file, adds keys to scan list
         """
-        idx = self.ui.listScans.currentRow()
-        with self.file_lock:
-            if fname == self.fname:
-                with catch(self.fname, 'r') as file:
-                    self.ui.listScans.clear()
-                    for key in file:
-                        self.ui.listScans.addItem(key)
-        if idx > self.ui.listScans.count() - 1:
-            idx = self.ui.listScans.count() - 1
-        self.ui.listScans.setCurrentRow(idx)
+        self.ui.listScans.clear()
+        for name in os.listdir(fname):
+            abspath = os.path.join(fname, name)
+            if os.path.isdir(abspath):
+                self.ui.listScans.addItem(name + '/')
+            elif name.split('.')[-1] in ('h5', 'hdf5'):
+                self.ui.listScans.addItem(name)
     
     def set_data(self, sphere):
         """Takes sphere object and updates list with all arch ids

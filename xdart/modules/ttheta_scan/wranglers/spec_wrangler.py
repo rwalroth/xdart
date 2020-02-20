@@ -235,7 +235,7 @@ class specThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
-                    self.sigUpdateFile.emit(self.scan_name)
+                    self.sigUpdateFile.emit(self.scan_name, self.fname)
                 elif signal == 'TERMINATE':
                     last = True
             if last:
@@ -293,7 +293,7 @@ class specProcess(wranglerProcess):
                     continue
             try:
                 flag, data = self.wrangle(i, spec_reader, make_poni)
-            except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
+            except (KeyError, FileNotFoundError, AttributeError, ValueError):
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
                     self.signal_q.put(('message', "Timeout occurred"))
@@ -308,11 +308,11 @@ class specProcess(wranglerProcess):
                 arch = EwaldArch(
                     idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
                 )
-                sphere.add_arch(
-                    arch=arch.copy(), calculate=True, update=True, get_sd=True, 
-                    set_mg=False
-                )
                 with self.file_lock:
+                    sphere.add_arch(
+                        arch=arch.copy(), calculate=True, update=True, get_sd=True, 
+                        set_mg=False
+                    )
                     sphere.save_to_h5(arches=[idx], data_only=True, replace=False)
                 self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))

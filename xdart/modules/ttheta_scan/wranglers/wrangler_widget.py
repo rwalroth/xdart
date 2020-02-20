@@ -21,7 +21,7 @@ from pyqtgraph.parametertree import Parameter
 class wranglerWidget(Qt.QtWidgets.QWidget):
     sigStart = Qt.QtCore.Signal()
     sigUpdateData = Qt.QtCore.Signal(int)
-    sigUpdateFile = Qt.QtCore.Signal(str)
+    sigUpdateFile = Qt.QtCore.Signal(str, str)
     finished = Qt.QtCore.Signal()
 
     def __init__(self, fname, file_lock, parent=None):
@@ -55,7 +55,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
 
 class wranglerThread(Qt.QtCore.QThread):
     sigUpdate = Qt.QtCore.Signal(int)
-    sigUpdateFile = Qt.QtCore.Signal(str)
+    sigUpdateFile = Qt.QtCore.Signal(str, str)
     def __init__(self, command_queue, sphere_args, fname, file_lock, parent=None):
         super().__init__(parent)
         self.input_q = command_queue # thread queue

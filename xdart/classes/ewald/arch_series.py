@@ -25,6 +25,11 @@ class ArchSeries():
             for a in arches:
                 self.__setitem__(a.idx, a)
         self._i = 0
+        with self.file_lock:
+            with catch(self.data_file, 'a') as f:
+                if 'arches' not in f:
+                    f.create_group('arches')
+                
     
     def __getitem__(self, idx):
         if idx in self.index:
