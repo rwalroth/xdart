@@ -47,6 +47,7 @@ class integratorThread(Qt.QtCore.QThread):
             self.sphere.bai_2d = int_2d_data()
         for arch in self.sphere.arches:
             arch.integrate_2d(**self.sphere.bai_2d_args)
+            self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_2d(arch)
             self.update.emit()
 
@@ -58,6 +59,7 @@ class integratorThread(Qt.QtCore.QThread):
             self.sphere.bai_1d = int_1d_data()
         for arch in self.sphere.arches:
             arch.integrate_1d(**self.sphere.bai_1d_args)
+            self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_1d(arch)
             self.update.emit()
 

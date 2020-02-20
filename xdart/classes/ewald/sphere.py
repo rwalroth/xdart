@@ -165,6 +165,7 @@ class EwaldSphere():
                 self.bai_1d += arch.int_1d
             self.bai_1d.ttheta = arch.int_1d.ttheta
             self.bai_1d.q = arch.int_1d.q
+            self.save_bai_1d()
     
     def _update_bai_2d(self, arch):
         """helper function to update overall bai variables.
@@ -183,6 +184,7 @@ class EwaldSphere():
                 self.bai_2d.chi = arch.int_2d.chi
             except AttributeError:
                 pass
+            self.save_bai_2d()
 
     def set_multi_geo(self, **args):
         """Sets the MultiGeometry instance stored in the arch.
@@ -337,6 +339,16 @@ class EwaldSphere():
                     self.mgi_2d.from_hdf5(grp['mgi_2d'])
                     if set_mg:
                         self.set_multi_geo(**self.mg_args)
+    
+    def save_bai_1d(self, compression='lzf'):
+        with self.file_lock:
+            with utils.catch_h5py_file(self.data_file, 'a') as file:
+                self.bai_1d.to_hdf5(file['bai_1d'], compression=compression)
+    
+    def save_bai_2d(self, compression='lzf'):
+        with self.file_lock:
+            with utils.catch_h5py_file(self.data_file, 'a') as file:
+                self.bai_2d.to_hdf5(file['bai_2d'], compression=compression)
 
     def _set_args(self, args):
         """Ensures any range args are lists.

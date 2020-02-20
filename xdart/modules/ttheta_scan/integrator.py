@@ -270,7 +270,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 self._sync_range(sphere.bai_2d_args, 'radial_range',
                                 'npt_rad', self.radialRange2D)
                 self._sync_range(sphere.bai_2d_args, 'azimuth_range',
-                                'npt_azim', self.radialRange2D)
+                                'npt_azim', self.azimuthalRange2D)
             
 
     def _args_to_params(self, args, tree):
