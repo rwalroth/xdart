@@ -35,6 +35,19 @@ from xdart.utils import read_image_file, smooth_img, get_fit, fit_images_2D
 from xdart.pySSRL_bServer.bServer_funcs import specCommand, wait_until_SPECfinished, get_console_output
 
 
+def get_detector_config():
+    detector_name = get_detector_name()
+    detector = pyFAI.detector_factory(detector_name)
+
+    pixel_sz = detector.pixel1
+    ccd_shape = detector.max_shape
+
+    orientation = get_detector_orientation()
+    init_dist = get_initial_distance()
+    
+    return detector_name, pixel_sz, ccd_shape, orientation, init_dist
+
+
 def check_recalibrate():
     # Check if user wants to recalibrate
 
@@ -234,13 +247,15 @@ def get_TTh_w_direct_beam(img_path, img_fnames, pdi_path, pdi_fnames):
         img = read_image_file( os.path.join(img_path, img_fname), return_float=True )
         if np.mean(img) > median_mean_vals/2.:
             break
-    img_fnames = img_fnames[idx:-idx]
+    if idx > 0:
+        img_fnames = img_fnames[idx:-idx]
     
     for (idx, img_fname) in enumerate(img_fnames[::-1]):
         img = read_image_file( os.path.join(img_path, img_fname), return_float=True )
         if np.mean(img) > median_mean_vals/2.:
             break
-    img_fnames = img_fnames[idx:-idx]
+    if idx > 0:
+        img_fnames = img_fnames[idx:-idx]
     
     n0 = len(img_fnames)//2
     img_fnames = img_fnames[:20] + img_fnames[n0-20 : n0+21] + img_fnames[-20:]
@@ -308,8 +323,6 @@ def get_poni_params(tths, xs, ys, x0, y0, pixel_sz=0.000172):
         idx1, idx2 = ii, -ii-1
         tth1, tth2 = tths[idx1], tths[idx2]
         
-        print(tth1, tth2)
-        
         if abs(tth1) < 2.8:
             break
 
@@ -369,24 +382,32 @@ def make_poni(poni_file, spec_file, params, detector="Pilatus100k"):
     print(ai)
     
 
-def run_calibration(remote_path, local_path, poni_path, 
-                    detector, pixel_sz, ccd_shape,
-                    orientation, init_dist):
+def run_calibration(remote_path, local_path, poni_path, public_poni_path):
+                    #detector, pixel_sz, ccd_shape,
+                    #orientation, init_dist):
 
     # Remote (SPEC) Computer Paths
     remote_scan_path = f'{remote_path}/scans'
     remote_img_path  = f'{remote_path}/images'
 
     # Local (Windows) paths
-    local_scan_path = os.path.join(local_path, 'scans')
-    local_img_path  = os.path.join(local_path, 'images')
-    local_pdi_path  = local_img_path
+    scan_path = os.path.join(local_path, 'scans')
+    img_path  = os.path.join(local_path, 'images')
+    pdi_path  = img_path
 
+    # Make Directories if they don't exist
+    print("Creating folders if they don't exist")
+    os.makedirs(scan_path, exist_ok=True)
+    os.makedirs(img_path, exist_ok=True)
+    os.makedirs(poni_path, exist_ok=True)
+    
+    # Set initial detector configuration
+    detector, pixel_sz, ccd_shape, orientation, init_dist = get_detector_config()
+    
     # Check if user wants to recalibrate with existing scan
     calibScan = check_recalibrate()
-    #calibScan = 'calib_20200219-175800'
     if calibScan:
-        if calibScan in os.listdir(local_scan_path):
+        if calibScan in os.listdir(scan_path):
             print(f'\nRalibrating using {calibScan}')
         else:
             print(f'Calibration file {calibScan} does not exist..')
@@ -402,7 +423,7 @@ def run_calibration(remote_path, local_path, poni_path,
         saved_state = get_current_state()
 
         # Create remote_paths on SPEC computer if it doesn't exist
-        create_remote_paths(remote_scan_path, remote_img_path)
+        #create_remote_paths(remote_scan_path, remote_img_path)
 
         # Create SPEC file and set PD savepath
         calibScan = create_SPEC_file(remote_scan_path)
@@ -421,18 +442,18 @@ def run_calibration(remote_path, local_path, poni_path,
     # ********************** Now moving to local computer ***************************
     
     # Read SPEC File and Images from Remote (Windows) Path
-    spec_file = read_SPEC_file(local_scan_path, calibScan)
-    img_fnames, pdi_fnames = get_img_fnames(local_img_path, local_pdi_path, calibScan)
+    spec_file = read_SPEC_file(scan_path, calibScan)
+    img_fnames, pdi_fnames = get_img_fnames(img_path, pdi_path, calibScan)
     
     # Get Range of TTh Values that see Direct Beam
     print('\nGetting all images that see direct beam')
-    img_fnames, pdi_fnames, tths = get_TTh_w_direct_beam(local_img_path, img_fnames, 
-                                                         local_pdi_path, pdi_fnames)
+    img_fnames, pdi_fnames, tths = get_TTh_w_direct_beam(img_path, img_fnames, 
+                                                         pdi_path, pdi_fnames)
     print(f'TTh range for direct beam: [{tths[0]}, {tths[-1]}]')
 
     # Fit all Images to get direct beam position at all TTH values
     print('\nFitting 2D PVoigt to all images..')
-    tths, xs, ys =  fit_all_images(local_img_path, img_fnames, tths)
+    tths, xs, ys =  fit_all_images(img_path, img_fnames, tths)
     print(len(tths), len(xs))
     print('Done')
 
@@ -450,24 +471,28 @@ def run_calibration(remote_path, local_path, poni_path,
     print(f'\nMaking and saving {poni_file}')
     make_poni(poni_file, spec_file, poni_params, detector=detector)
 
+    # Create and save PONI file for Public
+    poni_file = os.path.join(public_poni_path, f'{calibScan}.poni')
+    print(f'\nMaking and saving {poni_file} to Public Folder')
+    make_poni(poni_file, spec_file, poni_params, detector=detector)
+
 
 if __name__ == '__main__':
     # Paths
     remote_path = '~/data/calibration'
     local_path  = 'P:\\bl2-1\\calibration'
     poni_path   = os.path.join(local_path, 'poni_files')
+    public_poni_path  = os.path.join('C:\\Users\\Public', 'poni_files')
     
-    os.makedirs(poni_path, exist_ok=True)
+    #detector_name = get_detector_name()
+    #detector = pyFAI.detector_factory(detector_name)
 
-    detector_name = get_detector_name()
-    detector = pyFAI.detector_factory(detector_name)
+    #pixel_sz = detector.pixel1
+    #ccd_shape = detector.max_shape
 
-    pixel_sz = detector.pixel1
-    ccd_shape = detector.max_shape
+    #orientation = get_detector_orientation()
+    #init_dist = get_initial_distance()
 
-    orientation = get_detector_orientation()
-    init_dist = get_initial_distance()
-
-    run_calibration(remote_path, local_path, poni_path,
-                    detector_name, pixel_sz, ccd_shape,
-                    orientation, init_dist)
+    run_calibration(remote_path, local_path, poni_path, public_poni_path)
+                    #detector_name, pixel_sz, ccd_shape,
+                    #orientation, init_dist)
