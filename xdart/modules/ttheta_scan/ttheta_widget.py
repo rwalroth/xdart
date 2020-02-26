@@ -56,7 +56,7 @@ class tthetaWidget(QWidget):
 
         # Data object initialization
         self.file_lock = mp.Condition()
-        self.dirname = os.getcwd().split('xdart')[0]
+        self.dirname = os.path.expanduser('~')
         self.fname = None
         self.sphere = EwaldSphere('null_main', data_file=self.fname)
         
@@ -75,7 +75,6 @@ class tthetaWidget(QWidget):
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
         self.h5viewer.ui.listData.addItem('No data')
         self.h5viewer.ui.listData.setCurrentRow(0)
-        self.h5viewer.ui.listScans.addItem('No scans')
 
         # H5Viewer signal connections
         self.h5viewer.ui.listScans.itemDoubleClicked.connect(self.load_and_set)
@@ -135,6 +134,7 @@ class tthetaWidget(QWidget):
             w = self.ui.wranglerStack.widget(i)
             parameters.append(w.parameters)
         self.h5viewer.defaultWidget.set_parameters(parameters)
+        self.h5viewer.update(self.dirname)
 
         self.show()
     
@@ -263,7 +263,17 @@ class tthetaWidget(QWidget):
         """Combination of load and setting functions
         """
         if q.data(0) != 'No scans':
-            if '/' in q.data(0):
+            if q.data(0) == '..':
+                if self.dirname[-1] in ['/', '\\']:
+                    up = os.path.dirname(self.dirname[:-1])
+                else:
+                    up = os.path.dirname(self.dirname)
+                
+                if (os.path.isdir(up) and
+                    os.path.splitdrive(up)[1] != ''):
+                    self.dirname = up
+                    self.h5viewer.update(self.dirname)
+            elif '/' in q.data(0):
                 self.dirname = os.path.join(self.dirname, q.data(0))
                 self.h5viewer.update(self.dirname)
             else:

@@ -3,19 +3,20 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - scipy
-  - pandas
-  - h5py >=2.10
-  - fabio
-  - pillow
-  - pyyaml
+  - h5py[version='>=2.10']
   - scikit-learn
-  - matplotlib
   - silx
-  - pyfai
-  - pyqtgraph
   - qdarkstyle
   - requests
   - qtpy
-prefix: C:\Users\walroth\.conda\envs\xdart_clean
-
+  - scipy
+  - matplotlib
+  - pyqtgraph
+  - pandas
+  - pyyaml
+  - fabio
+  - pyfai
+  - pillow
+  - scikit-image
+  - lmfit
+prefix: C:\Users\walroth\.conda\envs\xdart_env

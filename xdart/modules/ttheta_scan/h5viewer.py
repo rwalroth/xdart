@@ -105,6 +105,7 @@ class H5Viewer(QWidget):
         """Takes in file, adds keys to scan list
         """
         self.ui.listScans.clear()
+        self.ui.listScans.addItem('..')
         for name in os.listdir(fname):
             abspath = os.path.join(fname, name)
             if os.path.isdir(abspath):
