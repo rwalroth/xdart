@@ -199,7 +199,6 @@ class tthetaWidget(QWidget):
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
         self.h5viewer.set_data(self.sphere)
-        #self.h5viewer.ui.listData.setCurrentRow(0)
         self.integratorTree.update(self.sphere)
         self.get_args('bai_1d')
         self.get_args('bai_2d')

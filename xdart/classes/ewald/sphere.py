@@ -287,7 +287,7 @@ class EwaldSphere():
                 ]
             else:
                 lst_attr = [
-                    "data_file", "scan_data", "mg_args", "bai_1d_args",
+                    "scan_data", "mg_args", "bai_1d_args",
                     "bai_2d_args"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
@@ -321,12 +321,12 @@ class EwaldSphere():
                             
                     if data_only:
                         lst_attr = [
-                            "data_file", "scan_data", 
+                            "scan_data", 
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                     else:
                         lst_attr = [
-                            "data_file", "scan_data", "mg_args", "bai_1d_args",
+                            "scan_data", "mg_args", "bai_1d_args",
                             "bai_2d_args"
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)

@@ -242,6 +242,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
             args[pkey] = rwidget.ui.points.value()
 
     def _sync_range_hilow(self, args, rkey, rwidget):
+        print(args)
         if rkey in args:
             if args[rkey] is None:
                 args[rkey] = [rwidget.ui.low.value(),
@@ -251,6 +252,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 rwidget.ui.high.setValue(args[rkey][1])
         else:
             args[rkey] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
+        print(args)
             
     
     def _update_params(self, sphere):

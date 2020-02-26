@@ -5,6 +5,7 @@
 
 # Standard library imports
 from threading import Condition
+import traceback
 
 # Other imports
 from xdart.containers import int_1d_data, int_2d_data
@@ -31,7 +32,7 @@ class integratorThread(Qt.QtCore.QThread):
             try:
                 method()
             except KeyError:
-                pass
+                traceback.print_exc()
 
     def mg_2d(self):
         self.sphere.multigeometry_integrate_2d(**self.mg_2d_args)
