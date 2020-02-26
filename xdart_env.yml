@@ -1,0 +1,21 @@
+name: xdart_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - scipy
+  - pandas
+  - h5py >=2.10
+  - fabio
+  - pillow
+  - pyyaml
+  - scikit-learn
+  - matplotlib
+  - silx
+  - pyfai
+  - pyqtgraph
+  - qdarkstyle
+  - requests
+  - qtpy
+prefix: C:\Users\walroth\.conda\envs\xdart_clean
+

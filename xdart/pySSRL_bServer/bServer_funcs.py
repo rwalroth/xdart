@@ -69,9 +69,9 @@ def is_SpecBusy(debug=False):
     return rv
 
   
-def wait_until_SPECfinished(debug=False):
+def wait_until_SPECfinished(debug=False, polling_time=1):
     while is_SpecBusy():
-        time.sleep(1)
+        time.sleep(polling_time)
         if not is_busy():
             break
         
@@ -94,7 +94,7 @@ def wait_until_SPECfinished_old():
     return time.time() - t0
 
 
-def specCommand(cmd, queue=False, debug=False):
+def specCommand(cmd, queue=False, debug=False, print_console=True):
     #if (not is_available()) or (status is 'running'):
     if (is_SpecBusy()) and (not is_available()):
         if queue:
@@ -106,13 +106,16 @@ def specCommand(cmd, queue=False, debug=False):
     
     r = requests.get(bServer + "get_remote_control")
     if debug: print(r.json())
-    
-    payload = {'spec_cmd': f"print '{cmd}';{cmd}"} #{UUID}'}
+        
+    payload = {'spec_cmd': f"{cmd}"}
+    if print_console:
+        payload = {'spec_cmd': f"print '{cmd}';{cmd}"}
     r = requests.get(bServer + "execute_command", params=payload)
     if debug: 
         g = r.json()
         print(r, g['data'])
     
+    print('Executed', '\n')
     #r = requests.get(bServer + "release_remote_control")
     return
     
@@ -293,3 +296,27 @@ def get_plot_points(num_pts=None, debug=False, columns=None):
     if debug: print(time.time() - t0)
     
     return data
+
+
+def get_spec_result(debug=False):
+    t0 = time.time()
+    
+    #Get log from SIS log
+    payload = {}
+    r = requests.get(bServer + "retrieve_result", params=payload)
+    log = r.json()['data']
+    
+    if debug: print(time.time() - t0)
+    return log
+
+
+def get_console_output(idx=1, debug=False):
+    t0 = time.time()
+    
+    #Get log from SIS log
+    payload = {'N': idx}
+    r = requests.get(bServer + "get_console_output_buffer", params=payload)
+    log = r.json()['data']
+    
+    if debug: print(time.time() - t0)
+    return log
