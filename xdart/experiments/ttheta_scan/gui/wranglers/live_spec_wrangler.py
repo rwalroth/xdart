@@ -212,7 +212,10 @@ class liveSpecThread(wranglerThread):
         self.img_dir = img_dir
         self.pdi_dir = pdi_dir
         self.filetypes = filetypes
+        self.pollingperiod = pollingperiod
         self.queues = {fp: mp.Queue() for fp in filetypes}
+        
+        print(self.pollingperiod)
     
     def set_queues(self):
         for _, q in self.queues.items():
@@ -239,7 +242,8 @@ class liveSpecThread(wranglerThread):
             fname=self.fname, 
             file_lock=self.file_lock, 
             queues=self.queues, 
-            mp_inputs=self.mp_inputs
+            mp_inputs=self.mp_inputs,
+            pdi_dir=self.pdi_dir
         )
         last=False
         integrator.start()
@@ -278,11 +282,12 @@ class liveSpecThread(wranglerThread):
 
 class liveSpecProcess(wranglerProcess):
     def __init__(self, command_q, signal_q, sphere_args, fname, file_lock, 
-                 queues, mp_inputs):
+                 queues, mp_inputs, pdi_dir):
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock)
         self.queues = queues
         self.mp_inputs = mp_inputs
         self.scan_number = None
+        self.pdi_dir = pdi_dir
     
     def run(self):
         self.scan_number = None
@@ -292,7 +297,6 @@ class liveSpecProcess(wranglerProcess):
         while True:
             for key, q in self.queues.items():
                 added = q.get()
-                print(added)
                 self.signal_q.put(('message', added))
                 if added == 'BREAK':
                     self.signal_q.put(('TERMINATE', None))
@@ -301,7 +305,8 @@ class liveSpecProcess(wranglerProcess):
                     pdi_file = added
                 elif key == 'raw':
                     raw_file = added
-            
+                    print(added)
+         
             scan_number, i = self.parse_file(raw_file)
             if scan_number != self.scan_number:
                 self.scan_number = scan_number
@@ -318,6 +323,12 @@ class liveSpecProcess(wranglerProcess):
                 # timeout occurs
                 try:
                     arr = self.read_raw(raw_file)
+                    
+                    raw_fname = os.path.basename(raw_file)
+                    #pdi_path = os.path.dirname(pdi_file)
+                    pdi_file = os.path.join(self.pdi_dir, f'{raw_fname}.pdi') 
+                    
+                    print(pdi_file)
 
                     image_meta = self.read_pdi(pdi_file)
 
