@@ -4,6 +4,7 @@
 """
 
 # Standard library imports
+import time
 import sys
 
 # Other imports
@@ -40,6 +41,13 @@ def write_csv(fname, xdata, ydata):
     with open(fname, 'w') as file:
         for i in range(0, len(xdata)):
             file.write(str(xdata[i]) + ', ' + str(ydata[i]) + '\n')
+
+
+def check_encoded(grp, name):
+    """Checks grp attributes for encoded, checks resulting attribute
+    against name. If encoded not an attribute, returns False.
+    """
+    return grp.attrs.get("encoded", "not_found") == name
 
 
 def find_between( s, first, last ):
@@ -203,70 +211,56 @@ def fit_images_2D(fname, tth, function='gaussian',
 
 def data_to_h5(data, grp, key, encoder='yaml', compression='lzf'):
     if data is None:
-        grp.create_dataset(key, data=h5py.Empty("f"))
-        grp[key].attrs['encoded'] = 'None'
+        none_to_h5(grp, key)
 
     elif type(data) == dict:
-        new_grp = grp.create_group(key)
-        new_grp.attrs['encoded'] = 'dict'
-        dict_to_h5(data, new_grp, compression=compression)
-
+        dict_to_h5(data, grp, key, compression=compression)
+    
     elif type(data) == str:
-        grp.create_dataset(key, data=np.string_(data))
-        grp[key].attrs['encoded'] = 'str'
-
+        str_to_h5(data, grp, key)
+    
     elif type(data) == pd.core.series.Series:
-        new_grp = grp.create_group(key)
-        new_grp.attrs['encoded'] = 'Series'
-        new_grp.create_dataset('data', data=np.array(data), compression=compression)
-        index_to_h5(data.index, 'index', new_grp, compression)
-        new_grp.create_dataset('name', data=np.string_(data.name))
-
+        series_to_h5(data, grp, key, compression)
+    
     elif type(data) == pd.core.frame.DataFrame:
-        new_grp = grp.create_group(key)
-        new_grp.attrs['encoded'] = 'DataFrame'
-        index_to_h5(data.index, 'index', new_grp, compression)
-        index_to_h5(data.columns, 'columns', new_grp, compression)
-        new_grp.create_dataset('data', data=np.array(data), compression=compression)
-
+        dataframe_to_h5(data, grp, key, compression)
+    
     else:
         try:
             if np.array(data).shape == ():
-                grp.create_dataset(key, data=data)
-                grp[key].attrs['encoded'] = 'data'
+                scalar_to_h5(data, grp, key)
             else:
-                grp.create_dataset(key, data=data, compression=compression)
-                grp[key].attrs['encoded'] = 'data'
+                arr_to_h5(data, grp, key, compression)
 
         except TypeError:
             print(f"TypeError, encoding {key} using {encoder}")
             try:
-                if encoder == 'yaml':
-                    string = np.string_(yaml.dump(data))
-                elif encoder == 'json':
-                    string = np.string_(json.dumps(data))
-                grp.create_dataset(key, data=np.string_(string))
-                grp[key].attrs['encoded'] = encoder
+                encoded_h5(data, grp, key, encoder)
             except Exception as e:
                 print(e)
                 try:
-                    grp.create_dataset(key, data=np.string_(data))
+                    if key in grp:
+                        if check_encoded(grp[key], 'unknown'):
+                            grp[key][()] = np.string_(data)
+                            return
+                        else:
+                            del(grp[key])
+                    grp.create_dataset(key, data=np.string_(data),
+                                    dtype=h5py.string_dtype())
                     grp[key].attrs['encoded'] = 'unknown'
                 except Exception as e:
                     print(e)
                     print(f"Unable to dump {key}")
 
 
-def index_to_h5(index, key, grp, compression):
-    if index.dtype == 'object':
-        grp.create_dataset(
-            key, data=np.array([np.string_(str(x)) for x in index])
-        )
-    else:
-        grp.create_dataset(key, data=np.array(index), compression=compression)
+def none_to_h5(grp, key):
+    if key in grp:
+        del(grp[key])
+    grp.create_dataset(key, data=h5py.Empty("f"))
+    grp[key].attrs['encoded'] = 'None'
 
 
-def dict_to_h5(data, grp, **kwargs):
+def dict_to_h5(data, grp, key, **kwargs):
     """Adds dictionary data to hdf5 group with same keys as dictionary.
     See data_to_h5 for how datatypes are handled.
 
@@ -277,10 +271,143 @@ def dict_to_h5(data, grp, **kwargs):
     returns:
         None
     """
-    for key in data:
-        s_key = str(key)
-        sub_data = data[key]
-        data_to_h5(sub_data, grp, s_key, **kwargs)
+    if key in grp:
+        if not check_encoded(grp[key], "dict"):
+            del(grp[key])
+            new_grp = grp.create_group(key)
+            new_grp.attrs["encoded"] = "dict"
+        else:
+            new_grp = grp[key]
+    else:
+        new_grp = grp.create_group(key)
+    
+    for jey in data:
+        s_key = str(jey)
+        sub_data = data[jey]
+        data_to_h5(sub_data, new_grp, s_key, **kwargs)
+
+
+def str_to_h5(data, grp, key):
+    if key in grp:
+        if check_encoded(grp[key], "str"):
+            grp[key][()] = data
+        else:
+            del(grp[key])
+            grp.create_dataset(key, data=data, dtype=h5py.string_dtype())
+    else:
+            grp.create_dataset(key, data=data, dtype=h5py.string_dtype())
+
+
+def series_to_h5(data, grp, key, compression):
+    if key in grp:
+        if check_encoded(grp[key], "Series"):
+            new_grp = grp[key]
+            new_grp['data'][()] = np.array(data)
+            index_to_h5(data.index, 'index', new_grp, compression)
+            new_grp.attrs['name'] = data.name
+            return
+        else:
+            del(grp[key])
+    
+    new_grp = grp.create_group(key)
+    new_grp.attrs['encoded'] = 'Series'
+    new_grp.create_dataset('data', data=np.array(data), compression=compression,
+                           chunks=True)
+    index_to_h5(data.index, 'index', new_grp, compression)
+    new_grp.attrs['name'] = data.name
+
+
+def dataframe_to_h5(data, grp, key, compression):
+    if key in grp:
+        if check_encoded(grp[key], "DataFrame"):
+            new_grp = grp[key]
+        else:
+            del(grp[key])
+            new_grp = grp.create_group(key)
+            new_grp.attrs['encoded'] = 'DataFrame'
+    else:
+        new_grp = grp.create_group(key)
+        new_grp.attrs['encoded'] = 'DataFrame'
+    index_to_h5(data.index, 'index', new_grp, compression)
+    index_to_h5(data.columns, 'columns', new_grp, compression)
+    if 'data' in new_grp:
+        new_grp['data'].resize(np.array(data).shape)
+        new_grp['data'][()] = np.array(data)[()]
+    else:
+        new_grp.create_dataset('data', data=np.array(data), compression=compression,
+                                chunks=True, maxshape=(None,None))
+
+
+def index_to_h5(index, key, grp, compression):
+    if key in grp:
+        if grp[key].shape == (0,):
+            del(grp[key])
+        
+    if index.dtype == 'object':
+        if len(index) > 0:
+            strindex = np.array([np.string_(str(x)) for x in index])
+            if key in grp:
+                grp[key].resize(strindex.shape)
+                grp[key][()] = strindex[()]
+            else:
+                grp.create_dataset(
+                    key, data=strindex, dtype=h5py.string_dtype(),
+                    chunks=True, maxshape=(None,)
+                )
+        else:
+            if key in grp:
+                del(grp[key])
+            grp.create_dataset(key, data=np.array([]))
+    else:
+        arrindex = np.array(index)
+        if key in grp:
+            grp[key].resize(arrindex.shape)
+            grp[key][()] = arrindex[()]
+        else:
+            grp.create_dataset(
+                key, data=np.array(index), compression=compression,
+                chunks=True, maxshape=(None,)
+            )
+
+
+def scalar_to_h5(data, grp, key):
+    if key in grp:
+        if check_encoded(grp[key], 'scalar'):
+            if grp[key].dtype == np.array(data).dtype:
+                grp[key][()] = data
+                return
+        del(grp[key])
+    grp.create_dataset(key, data=data)
+    grp[key].attrs['encoded'] = 'scalar'
+
+
+def arr_to_h5(data, grp, key, compression):
+    arr = np.array(data)
+    if key in grp:
+        if check_encoded(grp[key], 'arr'):
+            if grp[key].dtype == arr.dtype:
+                grp[key].resize(arr.shape)
+                grp[key][()] = arr[()]
+                return
+        del(grp[key])
+    grp.create_dataset(key, data=arr, compression=compression, chunks=True,
+                       maxshape=tuple(None for x in arr.shape))
+    grp[key].attrs['encoded'] = 'arr'
+
+
+def encoded_h5(data, grp, key, encoder):
+    if encoder == 'yaml':
+        string = np.string_(yaml.dump(data))
+    elif encoder == 'json':
+        string = np.string_(json.dumps(data))
+    if key in grp:
+        if check_encoded(grp[key], encoder):
+            grp[key][()] = string
+            return
+        else:
+            del(grp[key])
+    grp.create_dataset(key, data=string, dtype=h5py.string_dtype())
+    grp[key].attrs['encoded'] = encoder
 
 
 def attributes_to_h5(obj, grp, lst_attr=None, priv=False, dpriv=False,
@@ -297,8 +424,6 @@ def attributes_to_h5(obj, grp, lst_attr=None, priv=False, dpriv=False,
         else:
             lst_attr = [x for x in obj.__dict__.keys() if '_' not in x]
     for attr in lst_attr:
-        if attr in grp.keys():
-            del(grp[attr])
         data = getattr(obj, attr)
         data_to_h5(data, grp, attr, **kwargs)
 
@@ -313,13 +438,16 @@ def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
             data = h5_to_dict(grp, encoder=encoder, Loader=Loader)
 
         elif encoded == 'str':
-            data = grp[...].item().decode()
-
+            try:
+                data = grp[...].item().decode()
+            except AttributeError:
+                data = grp[()]
+        
         elif encoded == 'Series':
             data = pd.Series(
                 data = grp['data'][()],
                 index = h5_to_index(grp['index']),
-                name = grp['name'][...].item().decode()
+                name = grp.attrs['name']
             )
 
         elif encoded == 'DataFrame':
@@ -329,11 +457,8 @@ def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
                 columns = h5_to_index(grp['columns']),
             )
 
-        elif encoded == 'data':
-            if grp.shape == ():
-                data = grp[...].item()
-            else:
-                data = grp[()]
+        elif encoded in ['data', 'arr', 'scalar']:
+            data = grp[()]
 
         elif encoded == 'yaml':
             data = yaml.load(grp[...].item(), Loader=Loader)
@@ -345,7 +470,10 @@ def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
             try:
                 data = eval(grp[...].item())
             except:
-                data = grp[...].item().decode()
+                try:
+                    data = grp[...].item().decode()
+                except AttributeError:
+                    data = grp[...].item()
     else:
         if type(grp) == h5py._hl.group.Group:
             data = h5_to_dict(grp, encoder=encoder, Loader=Loader)
@@ -414,7 +542,7 @@ def div0( a, b ):
     return c
 
 
-def soft_list_eval(data):
+def soft_list_eval(data, scope={}):
     """Tries to create list of evaluated items in data. If exception
     is thrown by eval, it just adds the element as is to the list.
 
@@ -427,7 +555,7 @@ def soft_list_eval(data):
     out = []
     for x in data:
         try:
-            out.append(eval(x, {}))
+            out.append(eval(x, scope))
         except:
             try:
                 out.append(x.decode())
@@ -437,13 +565,20 @@ def soft_list_eval(data):
     return out
 
 
-def catch_h5py_file(filename, *args, **kwargs):
-    while True:
+def catch_h5py_file(filename, mode='r', tries=100, *args, **kwargs):
+    failed = True
+    for i in range(tries):
+        if i % 10 == 0 and i > 0:
+            print(f"Tried catching {i} times.")
         try:
-            hdf5_file = h5py.File(filename, *args, **kwargs)
+            hdf5_file = h5py.File(filename, mode, *args, **kwargs)
+            failed = False
             break  # Success!
         except OSError:
+            time.sleep(0.05)
             pass
+    if failed:
+        hdf5_file = h5py.File(filename, mode, *args, **kwargs)
     return hdf5_file
 
 

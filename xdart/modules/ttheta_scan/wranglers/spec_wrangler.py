@@ -12,10 +12,10 @@ import traceback
 
 # Other imports
 import numpy as np
-from .....classes.spec import LoadSpecFile, MakePONI
-from .....containers import PONI
-from .....classes.ewald import EwaldArch, EwaldSphere
-from .....utils import catch_h5py_file as catch
+from xdart.classes.spec import LoadSpecFile, MakePONI
+from xdart.containers import PONI
+from xdart.classes.ewald import EwaldArch, EwaldSphere
+from xdart.utils import catch_h5py_file as catch
 
 # Qt imports
 import pyqtgraph as pg
@@ -24,8 +24,8 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
-from .specUI import *
-from .....gui.gui_utils import NamedActionParameter
+from .specUI import Ui_Form
+from xdart.gui.gui_utils import NamedActionParameter
 
 params = [
     {'name': 'Scan Number', 'type': 'int', 'value': 0},
@@ -235,7 +235,7 @@ class specThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
-                    self.sigUpdateFile.emit(self.scan_name)
+                    self.sigUpdateFile.emit(self.scan_name, self.fname)
                 elif signal == 'TERMINATE':
                     last = True
             if last:
@@ -264,11 +264,10 @@ class specProcess(wranglerProcess):
         self.timeout = timeout
     
     def _main(self):
-        sphere = EwaldSphere(self.scan_name, **self.sphere_args)
+        sphere = EwaldSphere(self.scan_name, data_file=self.fname, **self.sphere_args)
         with self.file_lock:
-            with catch(self.fname, 'a') as file:
-                sphere.save_to_h5(file, replace=True)
-                self.signal_q.put(('new_scan', None))
+            sphere.save_to_h5(replace=True)
+            self.signal_q.put(('new_scan', None))
         
         # Operation instantiated within process to avoid conflicts with locks
         make_poni = MakePONI()
@@ -294,7 +293,7 @@ class specProcess(wranglerProcess):
                     continue
             try:
                 flag, data = self.wrangle(i, spec_reader, make_poni)
-            except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
+            except (KeyError, FileNotFoundError, AttributeError, ValueError):
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
                     self.signal_q.put(('message', "Timeout occurred"))
@@ -309,13 +308,12 @@ class specProcess(wranglerProcess):
                 arch = EwaldArch(
                     idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
                 )
-                sphere.add_arch(
-                    arch=arch.copy(), calculate=True, update=True, get_sd=True, 
-                    set_mg=False
-                )
                 with self.file_lock:
-                    with catch(self.fname, 'a') as file:
-                        sphere.save_to_h5(file, arches=[idx], data_only=True, replace=False)
+                    sphere.add_arch(
+                        arch=arch.copy(), calculate=True, update=True, get_sd=True, 
+                        set_mg=False
+                    )
+                    sphere.save_to_h5(arches=[idx], data_only=True, replace=False)
                 self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
                 i += 1

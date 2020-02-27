@@ -13,10 +13,10 @@ import multiprocessing as mp
 
 # Other imports
 import numpy as np
-from .....classes.spec import LoadSpecFile, MakePONI
-from .....containers import PONI
-from .....classes.ewald import EwaldArch, EwaldSphere
-from .....utils import catch_h5py_file as catch
+from xdart.classes.spec import LoadSpecFile, MakePONI
+from xdart.containers import PONI
+from xdart.classes.ewald import EwaldArch, EwaldSphere
+from xdart.utils import catch_h5py_file as catch
 
 # Qt imports
 import pyqtgraph as pg
@@ -27,10 +27,10 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 # This module imports
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .liveSpecUI import Ui_Form
-from .....gui.gui_utils import NamedActionParameter, commandLine
-from .....pySSRL_bServer.watcher import Watcher
-from .....pySSRL_bServer.helper_funcs import get_from_pdi
-from .....pySSRL_bServer.bServer_funcs import specCommand
+from xdart.gui.gui_utils import NamedActionParameter, commandLine
+from xdart.pySSRL_bServer.watcher import Watcher
+from xdart.pySSRL_bServer.helper_funcs import get_from_pdi
+from xdart.pySSRL_bServer.bServer_funcs import specCommand
 
 params = [
     {'name': 'Image Directory', 'type': 'str', 'default': ''},
@@ -312,11 +312,11 @@ class liveSpecProcess(wranglerProcess):
                 self.scan_number = scan_number
                 sphere = EwaldSphere(
                     name='scan' + str(self.scan_number).zfill(2),
+                    data_file = self.fname,
                     **self.sphere_args
                 )
                 with self.file_lock:
-                    with catch(self.fname, 'a') as file:
-                        sphere.save_to_h5(file)
+                    sphere.save_to_h5()
                 self.signal_q.put(('new_scan', sphere.name))
             while True:
                 # Looks for relevant data, loops until it is found or a
@@ -349,10 +349,9 @@ class liveSpecProcess(wranglerProcess):
                 get_sd=True, set_mg=False
             )
             with self.file_lock:
-                with catch(self.fname, 'a') as file:
-                    sphere.save_to_h5(
-                        file, arches=[i], data_only=True, replace=False
-                    )
+                sphere.save_to_h5(
+                    arches=[i], data_only=True, replace=False
+                )
             self.signal_q.put(('update', i))
     
     def parse_file(self, path):

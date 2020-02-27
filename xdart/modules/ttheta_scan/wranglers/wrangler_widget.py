@@ -10,7 +10,7 @@ import multiprocessing as mp
 import traceback
 
 # Other imports
-from .....classes.ewald import EwaldSphere
+from xdart.classes.ewald import EwaldSphere
 
 # Qt imports
 import pyqtgraph as pg
@@ -21,7 +21,7 @@ from pyqtgraph.parametertree import Parameter
 class wranglerWidget(Qt.QtWidgets.QWidget):
     sigStart = Qt.QtCore.Signal()
     sigUpdateData = Qt.QtCore.Signal(int)
-    sigUpdateFile = Qt.QtCore.Signal(str)
+    sigUpdateFile = Qt.QtCore.Signal(str, str)
     finished = Qt.QtCore.Signal()
 
     def __init__(self, fname, file_lock, parent=None):
@@ -55,7 +55,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
 
 class wranglerThread(Qt.QtCore.QThread):
     sigUpdate = Qt.QtCore.Signal(int)
-    sigUpdateFile = Qt.QtCore.Signal(str)
+    sigUpdateFile = Qt.QtCore.Signal(str, str)
     def __init__(self, command_queue, sphere_args, fname, file_lock, parent=None):
         super().__init__(parent)
         self.input_q = command_queue # thread queue
@@ -98,7 +98,7 @@ class wranglerProcess(mp.Process):
             traceback.print_exc()
             print("-"*60)
     def _main(self):
-        sphere = EwaldSphere(**self.sphere_args)
+        sphere = EwaldSphere(data_file=self.fname, **self.sphere_args)
         while True:
             if not self.command_q.empty():
                 command = self.command_q.get()

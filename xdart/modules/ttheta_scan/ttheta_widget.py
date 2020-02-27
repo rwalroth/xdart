@@ -4,12 +4,11 @@
 """
 
 # Standard library imports
-import os
-from functools import partial
-import time
 from queue import Queue
 import multiprocessing as mp
 import copy
+import os
+import traceback
 
 # Other imports
 import h5py
@@ -21,15 +20,11 @@ from pyqtgraph.Qt import QtWidgets
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
 QFileDialog = QtWidgets.QFileDialog
-from pyqtgraph.parametertree import (
-    Parameter, ParameterTree, ParameterItem, registerParameterType
-)
 
 ## This module imports
-from ....classes.ewald import EwaldSphere
-from ....utils import catch_h5py_file as catch
-from .... import utils as ut
-from ....gui.gui_utils import defaultWidget
+from xdart.classes.ewald import EwaldSphere
+from xdart.utils import catch_h5py_file as catch
+from xdart import utils as ut
 from .tthetaUI import Ui_Form
 from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
@@ -62,8 +57,9 @@ class tthetaWidget(QWidget):
 
         # Data object initialization
         self.file_lock = mp.Condition()
+        self.dirname = os.path.expanduser('~')
         self.fname = None
-        self.sphere = EwaldSphere('null_main')
+        self.sphere = EwaldSphere('null_main', data_file=self.fname)
         
         self.arch = None
         self.integrator_thread = integratorThread(self.sphere, self.arch)
@@ -80,7 +76,6 @@ class tthetaWidget(QWidget):
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
         self.h5viewer.ui.listData.addItem('No data')
         self.h5viewer.ui.listData.setCurrentRow(0)
-        self.h5viewer.ui.listScans.addItem('No scans')
 
         # H5Viewer signal connections
         self.h5viewer.ui.listScans.itemDoubleClicked.connect(self.load_and_set)
@@ -88,10 +83,8 @@ class tthetaWidget(QWidget):
         self.h5viewer.actionOpen.triggered.connect(self.open_file)
         self.h5viewer.actionSaveImage.triggered.connect(self.save_image)
         self.h5viewer.actionSaveArray.triggered.connect(self.save_array)
-        self.h5viewer.actionSaveData.triggered.connect(self.save_data)
         self.h5viewer.actionSaveDataAs.triggered.connect(self.save_data_as)
         self.h5viewer.actionNewFile.triggered.connect(self.new_file)
-        self.h5viewer.actionSetDefaults.triggered.connect(self.set_defaults)
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(parent=self.ui.middleFrame)
@@ -134,6 +127,14 @@ class tthetaWidget(QWidget):
         
         self.get_args('bai_1d')
         self.get_args('bai_2d')
+        
+        
+        parameters = [self.integratorTree.parameters]
+        for i in range(self.ui.wranglerStack.count()):
+            w = self.ui.wranglerStack.widget(i)
+            parameters.append(w.parameters)
+        self.h5viewer.defaultWidget.set_parameters(parameters)
+        self.h5viewer.update(self.dirname)
 
         self.show()
     
@@ -162,22 +163,23 @@ class tthetaWidget(QWidget):
         """Reads hdf5 file, populates list of scans in h5viewer. 
         Creates persistent h5py file object.
         """
-        fname, _ = QFileDialog().getOpenFileName()
-        self.set_file(fname)
+        dirname = QFileDialog().getExistingDirectory()
+        self.h5viewer.update(dirname)
+        self.dirname = dirname
 
     def set_file(self, fname):
         with self.file_lock:
-            if fname == '' or fname == self.fname:
+            if fname in ('', self.fname):
                 return
             
             try:
-                with catch(fname, 'a') as f:
+                with catch(fname, 'a') as _:
                     self.fname = fname
+                    self.sphere.data_file = fname
             except Exception as e:
-                print(e)
+                traceback.print_exc()
 
             self.h5viewer.fname = self.fname
-            self.h5viewer.update(self.fname)
             if not self.wrangler.thread.isRunning():
                 self.wrangler.set_fname(self.fname)
     
@@ -185,24 +187,17 @@ class tthetaWidget(QWidget):
         """Loads EwaldSphere object into memory
         """
         if not isinstance(self.sphere, EwaldSphere):
-            self.sphere = EwaldSphere(name)
+            self.sphere = EwaldSphere(name, data_file=self.fname)
         
         elif self.sphere.name != name:
             with self.sphere.sphere_lock:
-                self.sphere = EwaldSphere(name)
-        while True:
-            try:
-                with self.file_lock:
-                    with h5py.File(self.fname, 'r') as file:
-                        self.sphere.load_from_h5(file)
-                        break
-            except OSError:
-                pass
+                self.sphere = EwaldSphere(name, data_file=self.fname)
+        with self.file_lock:
+            self.sphere.load_from_h5()
         self.displayframe.sphere = self.sphere
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
         self.h5viewer.set_data(self.sphere)
-        #self.h5viewer.ui.listData.setCurrentRow(0)
         self.integratorTree.update(self.sphere)
         self.get_args('bai_1d')
         self.get_args('bai_2d')
@@ -213,23 +208,14 @@ class tthetaWidget(QWidget):
             self.enable_integration(False)
     
     def update_data(self, q):
-        if self.sphere is None:
-            self.sphere = EwaldSphere(self.wrangler.scan_name)
-            with self.sphere.sphere_lock:
+        with self.sphere.sphere_lock:
+            if self.sphere.name == self.wrangler.scan_name:
                 with self.file_lock:
-                    with catch(self.fname, 'r') as file:
-                        self.sphere.load_from_h5(file)
-        else:
-            with self.sphere.sphere_lock:
-                if (q not in self.sphere.arches.index and 
-                        self.sphere.name == self.wrangler.scan_name):
-                    with self.file_lock:
-                        with catch(self.fname, 'r') as file:
-                            self.sphere.load_from_h5(
-                                file, replace=False, data_only=True, 
-                                arches=[q], set_mg=False
-                            )
-        self.update_all()
+                    self.sphere.load_from_h5(
+                        replace=False, data_only=True, 
+                        set_mg=False
+                    )
+                self.update_all()
             
                 
     def set_data(self, q):
@@ -242,12 +228,11 @@ class tthetaWidget(QWidget):
             if not isinstance(self.sphere, EwaldSphere):
                 return
             
-            elif q.data(0) == 'Overall' or 'scan' in q.data(0):
+            if q.data(0) == 'Overall' or 'scan' in q.data(0):
                 self.arch = None
                 self.displayframe.arch = None
                 self.displayframe.update()
                 self.displayframe.ui.imageIntRaw.setEnabled(False)
-                self.displayframe.ui.imageMethod.setEnabled(True)
                 self.displayframe.ui.imageMask.setEnabled(False)
 
                 self.integratorTree.ui.all1D.setChecked(True)
@@ -265,7 +250,6 @@ class tthetaWidget(QWidget):
                 self.displayframe.arch = int(q.data(0))
                 self.displayframe.update()
                 self.displayframe.ui.imageIntRaw.setEnabled(True)
-                self.displayframe.ui.imageMethod.setEnabled(False)
                 self.displayframe.ui.imageMask.setEnabled(True)
 
                 self.integratorTree.ui.all1D.setEnabled(True)
@@ -277,31 +261,46 @@ class tthetaWidget(QWidget):
         """Combination of load and setting functions
         """
         if q.data(0) != 'No scans':
-            self.h5viewer.ui.listData.clear()
-            self.h5viewer.ui.listData.addItem('Loading...')
-            Qt.QtGui.QApplication.processEvents()
-
-            self.load_sphere(q.data(0))
-            try:
-                self.set_data(q)
-            except TypeError:
-                print("TypeError in load_and_set, set_data")
+            if q.data(0) == '..':
+                if self.dirname[-1] in ['/', '\\']:
+                    up = os.path.dirname(self.dirname[:-1])
+                else:
+                    up = os.path.dirname(self.dirname)
+                
+                if (os.path.isdir(up) and
+                    os.path.splitdrive(up)[1] != ''):
+                    self.dirname = up
+                    self.h5viewer.update(self.dirname)
+            elif '/' in q.data(0):
+                self.dirname = os.path.join(self.dirname, q.data(0))
+                self.h5viewer.update(self.dirname)
+            else:
+                self.h5viewer.ui.listData.clear()
+                self.h5viewer.ui.listData.addItem('Loading...')
+                Qt.QtGui.QApplication.processEvents()
+                
+                self.set_file(os.path.join(self.dirname, q.data(0)))
+                self.load_sphere(q.data(0))
+                try:
+                    self.set_data(q)
+                except TypeError:
+                    traceback.print_exc()
     
     def save_image(self):
         """Saves currently displayed image. Formats are automatically
         grabbed from Qt. Also implements tiff saving.
         """
-        filter = "Images ("
+        ext_filter = "Images ("
         for f in formats:
-            filter += "*." + f + " "
+            ext_filter += "*." + f + " "
 
-        filter += "*.tiff)"
+        ext_filter += "*.tiff)"
 
-        fname, _ = QFileDialog.getSaveFileName(filter=filter)
+        fname, _ = QFileDialog.getSaveFileName(filter=ext_filter)
         if fname == '':
             return
 
-        name, ext = fname.split('.')
+        _, ext = fname.split('.')
         if ext.lower() in formats:
             self.displayframe.image.save(fname)
         
@@ -321,49 +320,34 @@ class tthetaWidget(QWidget):
 
         xdata, ydata = self.displayframe.update_plot(self.sphere, self.arch)
 
-        name, ext = fname.split('.')
+        _, ext = fname.split('.')
         if ext.lower() == 'xye':
             ut.write_xye(fname, xdata, ydata)
         
         elif ext.lower() == 'csv':
             ut.write_csv(fname, xdata, ydata)
     
-    def save_data(self):
-        """Saves all data to hdf5 file.
-        """
-        if isinstance(self.sphere, EwaldSphere):
-            if self.fname is not None:
-                with self.file_lock:
-                    with catch(self.fname, 'a') as file:
-                        self.sphere.save_to_h5(file, replace=True)
-                        self.h5viewer.update(self.fname)
-            else:
-                self.save_data_as()
-    
     def save_data_as(self):
         """Saves all data to hdf5 file.
         """
+        fname, _ = QFileDialog.getSaveFileName()
         with self.file_lock:
-            if isinstance(self.sphere, EwaldSphere):
-                self.open_file()
-                self.save_data()
+            with catch(self.fname, 'r') as f1:
+                with catch(fname, 'w') as f2:
+                    for key in f1:
+                        f1.copy(f1[key], f2)
+                    for attr in f1.attrs:
+                        f2.attrs[attr] = f1.attrs[attr]
+        self.set_file(fname)
     
     def new_file(self):
         fname, _ = QFileDialog.getSaveFileName()
         self.set_file(fname)
     
-    def set_defaults(self):
-        parameters = [self.integratorTree.parameters]
-        for i in range(self.ui.wranglerStack.count()):
-            w = self.ui.wranglerStack.widget(i)
-            parameters.append(w.parameters)
-        self.defaultWidget = defaultWidget(parameters)
-        self.defaultWidget.show()
-    
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
         """
-        if (self.arch == self.sphere.arches.iloc[-1].idx or 
+        if (self.arch == self.sphere.arches.iloc(-1).idx or 
             self.arch is None or
             self.h5viewer.ui.listData.currentRow() == self.h5viewer.ui.listData.count() - 1):
             pass
@@ -378,7 +362,7 @@ class tthetaWidget(QWidget):
     def prev_arch(self):
         """Goes back one arch in data list, updates displayframe
         """
-        if (self.arch == self.sphere.arches.iloc[0].idx or 
+        if (self.arch == self.sphere.arches.iloc(0).idx or 
             self.arch is None or
             self.h5viewer.ui.listData.currentRow() == 1):
             pass
@@ -398,7 +382,7 @@ class tthetaWidget(QWidget):
             pass
 
         else: 
-            if self.arch == self.sphere.arches.iloc[-1].idx:
+            if self.arch == self.sphere.arches.iloc(-1).idx:
                 pass
 
             else:
@@ -413,7 +397,7 @@ class tthetaWidget(QWidget):
     def first_arch(self):
         """Goes to first arch in data list, updates displayframe
         """
-        if self.arch == self.sphere.arches.iloc[0].idx or self.arch is None:
+        if self.arch == self.sphere.arches.iloc(0).idx or self.arch is None:
             pass
         else:
             self.h5viewer.ui.listData.setCurrentRow(1)
@@ -442,6 +426,9 @@ class tthetaWidget(QWidget):
             else:
                 self.integrator_thread.method = 'bai_1d_SI'
         self.enable_integration(False)
+        with self.file_lock:
+            with catch(self.sphere.data_file, 'a') as file:
+                ut.dict_to_h5(self.sphere.bai_1d_args, file, 'bai_1d_args')
         self.integrator_thread.start()
 
     def bai_2d(self, q):
@@ -453,6 +440,9 @@ class tthetaWidget(QWidget):
             else:
                 self.integrator_thread.method = 'bai_2d_SI'
         self.enable_integration(False)
+        with self.file_lock:
+            with catch(self.sphere.data_file, 'a') as file:
+                ut.dict_to_h5(self.sphere.bai_2d_args, file, 'bai_2d_args')
         self.integrator_thread.start()
 
     def mg_setup(self, q):
@@ -497,10 +487,11 @@ class tthetaWidget(QWidget):
         self.h5viewer.set_open_enabled(True)
         self.update()
     
-    def new_scan(self, name):
-        self.h5viewer.update(self.fname)
+    def new_scan(self, name, fname):
+        self.h5viewer.update(self.dirname)
         if isinstance(self.sphere, EwaldSphere):
             if self.sphere.name == name or self.sphere.name == 'null_main':
+                self.set_file(fname)
                 self.load_sphere(name)
         else:
             self.load_sphere(name)

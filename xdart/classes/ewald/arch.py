@@ -250,20 +250,24 @@ class EwaldArch():
         """
         with self.file_lock:
             if str(self.idx) in file:
-                del(file[str(self.idx)])
-            grp = file.create_group(str(self.idx))
+                grp = file[str(self.idx)]
+            else:
+                grp = file.create_group(str(self.idx))
             grp.attrs['type'] = 'EwaldArch'
             lst_attr = [
                 "map_raw", "mask", "map_norm", "scan_info", "ai_args"
             ]
             utils.attributes_to_h5(self, grp, lst_attr, 
                                        compression=compression)
-            grp.create_group('int_1d')
+            if 'int_1d' not in grp:
+                grp.create_group('int_1d')
             self.int_1d.to_hdf5(grp['int_1d'], compression)
-            grp.create_group('int_2d')
+            if 'int_2d' not in grp:
+                grp.create_group('int_2d')
             self.int_2d.to_hdf5(grp['int_2d'], compression)
-            grp.create_group('poni')
-            utils.dict_to_h5(self.poni.to_dict(), grp['poni'])
+            if 'poni' not in grp:
+                grp.create_group('poni')
+            utils.dict_to_h5(self.poni.to_dict(), grp, 'poni')
 
     def load_from_h5(self, file):
         """Loads data from hdf5 file and sets attributes.

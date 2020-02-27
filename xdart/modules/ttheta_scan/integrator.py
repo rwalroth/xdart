@@ -6,19 +6,15 @@
 # Standard library imports
 
 # Other imports
-from pyFAI import units
 
 # Qt imports
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtCore, QtGui
 from pyqtgraph import Qt
-from pyqtgraph.parametertree import (
-    Parameter, ParameterTree, ParameterItem, registerParameterType
-)
+from pyqtgraph.parametertree import Parameter
 
 # This module imports
-from .integratorUI import *
-from ....gui.gui_utils import rangeWidget, defaultWidget
+from .integratorUI import Ui_Form
+from xdart.gui.gui_utils import rangeWidget
 
 params = [
     {'name': 'Default', 'type': 'group', 'children': [
@@ -222,29 +218,39 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def _sync_ranges(self, sphere):
         with sphere.sphere_lock:
             self._sync_range(
-                sphere.bai_1d_args, 'radial_range', self.radialRange1D
+                sphere.bai_1d_args, 'radial_range', 'numpoints', self.radialRange1D
             )
             self._sync_range(
-                sphere.bai_2d_args, 'radial_range', self.radialRange2D
+                sphere.bai_2d_args, 'radial_range', 'npt_rad', self.radialRange2D
             )
             self._sync_range(
-                sphere.bai_2d_args, 'azimuth_range', self.azimuthalRange2D
+                sphere.bai_2d_args, 'azimuth_range', 'npt_azim', self.azimuthalRange2D
             )
-
-    def _sync_range(self, args, key, rwidget):
+    
+    def _sync_range(self, args, rkey, pkey, rwidget):
         rwidget.blockSignals(True)
         try:
-            if key in args:
-                if args[key] is None:
-                    args[key] = [rwidget.ui.low.value(),
-                                 rwidget.ui.high.value()]
-                else:
-                    rwidget.ui.low.setValue(args[key][0])
-                    rwidget.ui.high.setValue(args[key][1])
-            else:
-                args[key] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
+            self._sync_range_hilow(args, rkey, rwidget)
+            self._sync_range_points(args, pkey, rwidget)
         finally:
             rwidget.blockSignals(False)
+        
+    def _sync_range_points(self, args, pkey, rwidget):
+        if pkey in args:
+            rwidget.ui.points.setValue(args[pkey])
+        else:
+            args[pkey] = rwidget.ui.points.value()
+
+    def _sync_range_hilow(self, args, rkey, rwidget):
+        if rkey in args:
+            if args[rkey] is None:
+                args[rkey] = [rwidget.ui.low.value(),
+                             rwidget.ui.high.value()]
+            else:
+                rwidget.ui.low.setValue(args[rkey][0])
+                rwidget.ui.high.setValue(args[rkey][1])
+        else:
+            args[rkey] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
             
     
     def _update_params(self, sphere):
@@ -257,43 +263,44 @@ class integratorTree(Qt.QtWidgets.QWidget):
         with sphere.sphere_lock:
             if key == 'bai_1d':
                 self._params_to_args(sphere.bai_1d_args, self.bai_1d_pars)
-                self._sync_range(sphere.bai_1d_args, 'radial_range',
+                self._sync_range(sphere.bai_1d_args, 'radial_range', 'numpoints',
                                 self.radialRange1D)
             elif key == 'bai_2d':
                 self._params_to_args(sphere.bai_2d_args, self.bai_2d_pars)
                 self._sync_range(sphere.bai_2d_args, 'radial_range',
-                                self.radialRange2D)
+                                'npt_rad', self.radialRange2D)
                 self._sync_range(sphere.bai_2d_args, 'azimuth_range',
-                                self.azimuthalRange2D)
+                                'npt_azim', self.azimuthalRange2D)
             
 
     def _args_to_params(self, args, tree):
-        for key, val in args.items():
-            if 'range' in key:
-                _range = tree.child(key)
-                if val is None:
-                    _range.child("Auto").setValue(True)
-                else:
-                    _range.child("Low").setValue(val[0])
-                    _range.child("High").setValue(val[1])
-                    _range.child("Auto").setValue(False)
-            elif key == 'polarization_factor':
-                if val is None:
-                    tree.child('Apply polarization factor').setValue(True)
-                else:
-                    tree.child('Apply polarization factor').setValue(True)
-                    tree.child(key).setValue(val)
-            else:
-                try:
-                    child = tree.child(key)
-                except:
-                    # No specific error thrown for missing child
-                    child = None
-                if child is not None:
+        with tree.treeChangeBlocker():
+            for key, val in args.items():
+                if 'range' in key:
+                    _range = tree.child(key)
                     if val is None:
-                        child.setValue('None')
+                        _range.child("Auto").setValue(True)
                     else:
-                        child.setValue(val)
+                        _range.child("Low").setValue(val[0])
+                        _range.child("High").setValue(val[1])
+                        _range.child("Auto").setValue(False)
+                elif key == 'polarization_factor':
+                    if val is None:
+                        tree.child('Apply polarization factor').setValue(True)
+                    else:
+                        tree.child('Apply polarization factor').setValue(True)
+                        tree.child(key).setValue(val)
+                else:
+                    try:
+                        child = tree.child(key)
+                    except:
+                        # No specific error thrown for missing child
+                        child = None
+                    if child is not None:
+                        if val is None:
+                            child.setValue('None')
+                        else:
+                            child.setValue(val)
     
     def _params_to_args(self, args, tree):
         for child in tree.children():
@@ -345,8 +352,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.sigUpdateArgs.emit("bai_2d")
 
     def _set_azimuthal_range2D(self, low, high):
-        self.bai_2d_pars.child("azimuthal_range", "Low").setValue(low)
-        self.bai_2d_pars.child("azimuthal_range", "High").setValue(high)
+        self.bai_2d_pars.child("azimuth_range", "Low").setValue(low)
+        self.bai_2d_pars.child("azimuth_range", "High").setValue(high)
         self.sigUpdateArgs.emit('bai_2d')
     
     def _set_azimuthal_points2D(self, val):

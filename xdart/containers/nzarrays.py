@@ -10,19 +10,36 @@ from .. import utils
 
 
 class nzarray1d():
-    def __init__(self, arr=None):
+    def __init__(self, arr=None, grp=None, lazy=False):
         if isinstance(arr, self.__class__):
-            self.data = copy.deepcopy(arr.data)
-            self.shape = copy.deepcopy(arr.shape)
-            self.corners = copy.deepcopy(arr.corners)
+            if arr.data is None:
+                self._none_array()
+            else:
+                self.data = np.empty_like(arr.data)
+                self.data[()] = arr.data[()]
+                self.shape = copy.deepcopy(arr.shape)
+                self.corners = copy.deepcopy(arr.corners)
+        elif grp is not None:
+            if lazy:
+                self.shape = grp['shape'][()]
+                self.corners = grp['corners'][()]
+                self.data = grp['data']
+            else:
+                self.shape = grp['shape'][()]
+                self.corners = grp['corners'][()]
+                self.data = grp['data'][()]
         elif arr is None:
-            self.data = None
-            self.shape = None
-            self.corners = None
+            self._none_array()
         else:
             self.shape = self.get_shape(arr)
             self.corners = self.get_corners(arr)
             self.data = self.get_data(arr)
+    
+    def _none_array(self):
+        arrn = np.array([0])
+        self.shape = self.get_shape(arrn)
+        self.corners = self.get_corners(arrn)
+        self.data = self.get_data(arrn)
     
     def get_shape(self, arr):
         assert len(arr.shape) == 1, "Must be 1d array."
@@ -70,15 +87,28 @@ class nzarray1d():
         return out, other_data
     
     def to_hdf5(self, grp, compression=None):
-        utils.attributes_to_h5(
-            self, grp, lst_attr=['data', 'shape', 'corners'], 
-            compression=compression
-        )
+        grp.attrs['encoded'] = 'nzarray'
+        for name in ['shape', 'corners']:
+            data = getattr(self, name)
+            if name in grp:
+                grp[name][()] = np.array(data)[()]
+            else:
+                grp.create_dataset(name, data=data)
+        if 'data' in grp:
+            grp['data'].resize(self.data.shape)
+            grp['data'][()] = self.data[()]
+        else:
+            grp.create_dataset(
+                'data', data=self.data, compression=compression, chunks=True,
+                maxshape=tuple(
+                    None for x in self.data.shape
+                ), dtype='float64'
+            )
     
     def from_hdf5(self, grp):
-        utils.h5_to_attributes(
-            self, grp, lst_attr=['data', 'shape', 'corners']
-        )
+        for key in ['data', 'shape', 'corners']:
+            self.__dict__[key] = np.empty_like(grp[key])
+            self.__dict__[key] = grp[key][()]
         
     
     def _shift_index(self, idx, si=0):
@@ -128,9 +158,7 @@ class nzarray1d():
             self.shape = arr.shape
             self.corners = arr.corners
         elif arr is None:
-            self.data = None
-            self.shape = None
-            self.corners = None
+            self._none_array()
         else:
             self.shape = self.get_shape(arr)
             self.corners = self.get_corners(arr)
@@ -138,7 +166,7 @@ class nzarray1d():
     
     def __add__(self, other):
         if isinstance(other, self.__class__):
-            assert self.shape == other.shape, "Cannot add arrays of different shape"
+            assert list(self.shape) == list(other.shape), "Cannot add arrays of different shape"
             if other.data.size > 0 and self.data.size > 0:
                 out, temp = self.intersect(other)
                 out.data += temp
@@ -154,7 +182,7 @@ class nzarray1d():
     
     def __sub__(self, other):
         if isinstance(other, self.__class__):
-            assert self.shape == other.shape, "Cannot subtract arrays of different shape"
+            assert list(self.shape) == list(other.shape), "Cannot subtract arrays of different shape"
             if other.data.size > 0 and self.data.size > 0:
                 out, temp = self.intersect(other)
                 out.data -= temp
@@ -168,7 +196,7 @@ class nzarray1d():
     
     def __mul__(self, other):
         if isinstance(other, self.__class__):
-            assert self.shape == other.shape, "Cannot multiply arrays of different shape"
+            assert list(self.shape) == list(other.shape), "Cannot multiply arrays of different shape"
             out, temp = self.intersect(other)
             out.data *= temp
             if other.data.size > 0 and self.data.size > 0:
@@ -193,7 +221,7 @@ class nzarray1d():
     
     def __truediv__(self, other):
         if isinstance(other, self.__class__):
-            assert self.shape == other.shape, "Cannot divide arrays of different shape"
+            assert list(self.shape) == list(other.shape), "Cannot divide arrays of different shape"
             out, temp = self.intersect(other)
             out.data *= temp
             if other.data.size > 0 and self.data.size > 0:
@@ -215,7 +243,7 @@ class nzarray1d():
     
     def __floordiv__(self, other):
         if isinstance(other, self.__class__):
-            assert self.shape == other.shape, "Cannot divide arrays of different shape"
+            assert list(self.shape) == list(other.shape), "Cannot divide arrays of different shape"
             out, temp = self.intersect(other)
             out.data *= temp
             if other.data.size > 0 and self.data.size > 0:
@@ -237,8 +265,14 @@ class nzarray1d():
 
 
 class nzarray2d(nzarray1d):
-    def __init__(self, arr=None):
-        super().__init__(arr)
+    def __init__(self, arr=None, grp=None, lazy=False):
+        super().__init__(arr, grp, lazy)
+    
+    def _none_array(self):
+        arrn = np.array([[0],[0]])
+        self.shape = self.get_shape(arrn)
+        self.corners = self.get_corners(arrn)
+        self.data = self.get_data(arrn)
     
     def get_shape(self, arr):
         assert len(arr.shape) == 2, 'Must be 2D array.'
@@ -270,10 +304,7 @@ class nzarray2d(nzarray1d):
         return arr
     
     def intersect(self, other):
-        if np.isscalar(other):
-            out = nzarray2d(self.full())
-            other_data = other
-        assert self.shape == other.shape, "Can't divide nzarray of different shape"
+        assert list(self.shape) == list(other.shape), "Can't cast nzarray of different shape"
         out = nzarray2d()
         
         out.shape = self.shape[:]

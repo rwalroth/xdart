@@ -5,14 +5,12 @@
 
 # Standard library imports
 from threading import Condition
+import traceback
 
 # Other imports
-from ....containers import int_1d_data, int_2d_data
-from ....classes.ewald import EwaldArch, EwaldSphere
-from ....containers import PONI
+from xdart.containers import int_1d_data, int_2d_data
 
 # Qt imports
-import pyqtgraph as pg
 from pyqtgraph import Qt
 
 # This module imports
@@ -34,7 +32,7 @@ class integratorThread(Qt.QtCore.QThread):
             try:
                 method()
             except KeyError:
-                pass
+                traceback.print_exc()
 
     def mg_2d(self):
         self.sphere.multigeometry_integrate_2d(**self.mg_2d_args)
@@ -50,6 +48,7 @@ class integratorThread(Qt.QtCore.QThread):
             self.sphere.bai_2d = int_2d_data()
         for arch in self.sphere.arches:
             arch.integrate_2d(**self.sphere.bai_2d_args)
+            self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_2d(arch)
             self.update.emit()
 
@@ -61,6 +60,7 @@ class integratorThread(Qt.QtCore.QThread):
             self.sphere.bai_1d = int_1d_data()
         for arch in self.sphere.arches:
             arch.integrate_1d(**self.sphere.bai_1d_args)
+            self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_1d(arch)
             self.update.emit()
 

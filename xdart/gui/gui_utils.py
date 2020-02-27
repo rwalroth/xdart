@@ -177,16 +177,15 @@ class XdartDecoder(json.JSONDecoder):
 
 
 class defaultWidget(Qt.QtWidgets.QWidget):
-    def __init__(self, parameters, parent=None):
+    def __init__(self, parameters=None, parent=None):
         super().__init__(parent)
         self.parameters = {}
         self.tree = pg.parametertree.ParameterTree()
-        for param in parameters:
-            self.parameters[param.name()] = param
-            self.tree.addParameters(param)
+        if parameters is not None:
+            self.set_parameters(parameters)
         self.layout = Qt.QtWidgets.QGridLayout(self)
         self.setLayout(self.layout)
-        self.layout.addWidget(self.tree, 0, 0, 1, 3)
+        self.layout.addWidget(self.tree, 0, 0, 1, 2)
         self.saveButton = Qt.QtWidgets.QPushButton()
         self.saveButton.clicked.connect(self.save_defaults)
         self.saveButton.setText("Save")
@@ -195,10 +194,13 @@ class defaultWidget(Qt.QtWidgets.QWidget):
         self.openButton.clicked.connect(self.load_defaults)
         self.openButton.setText("Open")
         self.layout.addWidget(self.openButton, 1, 1)
-        self.setButton = Qt.QtWidgets.QPushButton()
-        self.setButton.clicked.connect(self.set_all_defaults)
-        self.setButton.setText('Set all')
-        self.layout.addWidget(self.setButton, 1, 2)
+    
+    def set_parameters(self, parameters):
+        self.parameters = {}
+        self.tree.clear()
+        for param in parameters:
+            self.parameters[param.name()] = param
+            self.tree.addParameters(param)
     
     def param_to_valdict(self, param):
         valdict = {}
@@ -221,6 +223,7 @@ class defaultWidget(Qt.QtWidgets.QWidget):
             param.setValue(valdict[param.name()])
     
     def save_defaults(self):
+        self.set_all_defaults()
         jdict = {}
         for key, param in self.parameters.items():
             jdict[key] = self.param_to_valdict(param)
@@ -239,7 +242,7 @@ class defaultWidget(Qt.QtWidgets.QWidget):
                 try:
                     self.set_defaults(param, valdict[key])
                 except KeyError:
-                    print(key)
+                    print(f"Key Error in load_default, key: {key}")
     
     def set_all_defaults(self):
         for key, param in self.parameters.items():
