@@ -242,7 +242,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
             args[pkey] = rwidget.ui.points.value()
 
     def _sync_range_hilow(self, args, rkey, rwidget):
-        print(args)
         if rkey in args:
             if args[rkey] is None:
                 args[rkey] = [rwidget.ui.low.value(),
@@ -252,7 +251,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 rwidget.ui.high.setValue(args[rkey][1])
         else:
             args[rkey] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
-        print(args)
             
     
     def _update_params(self, sphere):
@@ -276,32 +274,33 @@ class integratorTree(Qt.QtWidgets.QWidget):
             
 
     def _args_to_params(self, args, tree):
-        for key, val in args.items():
-            if 'range' in key:
-                _range = tree.child(key)
-                if val is None:
-                    _range.child("Auto").setValue(True)
-                else:
-                    _range.child("Low").setValue(val[0])
-                    _range.child("High").setValue(val[1])
-                    _range.child("Auto").setValue(False)
-            elif key == 'polarization_factor':
-                if val is None:
-                    tree.child('Apply polarization factor').setValue(True)
-                else:
-                    tree.child('Apply polarization factor').setValue(True)
-                    tree.child(key).setValue(val)
-            else:
-                try:
-                    child = tree.child(key)
-                except:
-                    # No specific error thrown for missing child
-                    child = None
-                if child is not None:
+        with tree.treeChangeBlocker():
+            for key, val in args.items():
+                if 'range' in key:
+                    _range = tree.child(key)
                     if val is None:
-                        child.setValue('None')
+                        _range.child("Auto").setValue(True)
                     else:
-                        child.setValue(val)
+                        _range.child("Low").setValue(val[0])
+                        _range.child("High").setValue(val[1])
+                        _range.child("Auto").setValue(False)
+                elif key == 'polarization_factor':
+                    if val is None:
+                        tree.child('Apply polarization factor').setValue(True)
+                    else:
+                        tree.child('Apply polarization factor').setValue(True)
+                        tree.child(key).setValue(val)
+                else:
+                    try:
+                        child = tree.child(key)
+                    except:
+                        # No specific error thrown for missing child
+                        child = None
+                    if child is not None:
+                        if val is None:
+                            child.setValue('None')
+                        else:
+                            child.setValue(val)
     
     def _params_to_args(self, args, tree):
         for child in tree.children():

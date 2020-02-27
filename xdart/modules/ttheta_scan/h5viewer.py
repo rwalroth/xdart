@@ -56,9 +56,6 @@ class H5Viewer(QWidget):
         self.actionSaveArray.setText('Current 1D Array')
         self.exportMenu.addAction(self.actionSaveArray)
         
-        self.actionSaveData = QtWidgets.QAction()
-        self.actionSaveData.setText('Save')
-        
         self.paramMenu = QtWidgets.QMenu()
         self.paramMenu.setTitle('Config')
         
@@ -77,7 +74,6 @@ class H5Viewer(QWidget):
         self.fileMenu = QtWidgets.QMenu()
         self.fileMenu.addAction(self.actionOpen)
         self.fileMenu.addAction(self.actionNewFile)
-        self.fileMenu.addAction(self.actionSaveData)
         self.fileMenu.addAction(self.actionSaveDataAs)
         self.fileMenu.addMenu(self.exportMenu)
 

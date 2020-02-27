@@ -8,6 +8,7 @@ from queue import Queue
 import multiprocessing as mp
 import copy
 import os
+import traceback
 
 # Other imports
 import h5py
@@ -82,7 +83,6 @@ class tthetaWidget(QWidget):
         self.h5viewer.actionOpen.triggered.connect(self.open_file)
         self.h5viewer.actionSaveImage.triggered.connect(self.save_image)
         self.h5viewer.actionSaveArray.triggered.connect(self.save_array)
-        self.h5viewer.actionSaveData.triggered.connect(self.save_data)
         self.h5viewer.actionSaveDataAs.triggered.connect(self.save_data_as)
         self.h5viewer.actionNewFile.triggered.connect(self.new_file)
 
@@ -168,7 +168,6 @@ class tthetaWidget(QWidget):
         self.dirname = dirname
 
     def set_file(self, fname):
-        print(fname)
         with self.file_lock:
             if fname in ('', self.fname):
                 return
@@ -178,7 +177,7 @@ class tthetaWidget(QWidget):
                     self.fname = fname
                     self.sphere.data_file = fname
             except Exception as e:
-                print(e)
+                traceback.print_exc()
 
             self.h5viewer.fname = self.fname
             if not self.wrangler.thread.isRunning():
@@ -285,7 +284,7 @@ class tthetaWidget(QWidget):
                 try:
                     self.set_data(q)
                 except TypeError:
-                    print("TypeError in load_and_set, set_data")
+                    traceback.print_exc()
     
     def save_image(self):
         """Saves currently displayed image. Formats are automatically
@@ -328,24 +327,18 @@ class tthetaWidget(QWidget):
         elif ext.lower() == 'csv':
             ut.write_csv(fname, xdata, ydata)
     
-    def save_data(self):
-        """Saves all data to hdf5 file.
-        """
-        if isinstance(self.sphere, EwaldSphere):
-            if self.fname is not None:
-                with self.file_lock:
-                    self.sphere.save_to_h5(replace=True)
-                    self.h5viewer.update(self.fname)
-            else:
-                self.save_data_as()
-    
     def save_data_as(self):
         """Saves all data to hdf5 file.
         """
+        fname, _ = QFileDialog.getSaveFileName()
         with self.file_lock:
-            if isinstance(self.sphere, EwaldSphere):
-                self.open_file()
-                self.save_data()
+            with catch(self.fname, 'r') as f1:
+                with catch(fname, 'w') as f2:
+                    for key in f1:
+                        f1.copy(f1[key], f2)
+                    for attr in f1.attrs:
+                        f2.attrs[attr] = f1.attrs[attr]
+        self.set_file(fname)
     
     def new_file(self):
         fname, _ = QFileDialog.getSaveFileName()
@@ -433,6 +426,9 @@ class tthetaWidget(QWidget):
             else:
                 self.integrator_thread.method = 'bai_1d_SI'
         self.enable_integration(False)
+        with self.file_lock:
+            with catch(self.sphere.data_file, 'a') as file:
+                ut.dict_to_h5(self.sphere.bai_1d_args, file, 'bai_1d_args')
         self.integrator_thread.start()
 
     def bai_2d(self, q):
@@ -444,6 +440,9 @@ class tthetaWidget(QWidget):
             else:
                 self.integrator_thread.method = 'bai_2d_SI'
         self.enable_integration(False)
+        with self.file_lock:
+            with catch(self.sphere.data_file, 'a') as file:
+                ut.dict_to_h5(self.sphere.bai_2d_args, file, 'bai_2d_args')
         self.integrator_thread.start()
 
     def mg_setup(self, q):
