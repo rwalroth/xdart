@@ -113,7 +113,7 @@ class EwaldSphere():
                 with self.file_lock:
                     with utils.catch_h5py_file(self.data_file, 'a') as file:
                         utils.dataframe_to_h5(self.scan_data, file,
-                                              'scan_data')
+                                              'scan_data', 'lzf')
             if update:
                 self._update_bai_1d(arch)
                 self._update_bai_2d(arch)
