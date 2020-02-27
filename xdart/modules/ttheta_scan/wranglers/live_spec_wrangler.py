@@ -261,8 +261,8 @@ class liveSpecThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
-                    self.scan_name = data
-                    self.sigUpdateFile.emit(self.scan_name)
+                    self.scan_name = data[0]
+                    self.sigUpdateFile.emit(data[0], data[1])
                 elif signal == 'TERMINATE':
                     last = True
             if last:
@@ -286,11 +286,11 @@ class liveSpecProcess(wranglerProcess):
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock)
         self.queues = queues
         self.mp_inputs = mp_inputs
-        self.scan_number = None
+        self.scan_name = None
         self.pdi_dir = pdi_dir
     
     def run(self):
-        self.scan_number = None
+        self.scan_name = None
         make_poni = MakePONI()
         make_poni.inputs.update(self.mp_inputs)
         # image file names formed as predictable pattern
@@ -307,17 +307,17 @@ class liveSpecProcess(wranglerProcess):
                     raw_file = added
                     print(added)
          
-            scan_number, i = self.parse_file(raw_file)
-            if scan_number != self.scan_number:
-                self.scan_number = scan_number
+            scan_name, i = self.parse_file(raw_file)
+            if scan_name != self.scan_name:
+                self.scan_name = scan_name
                 sphere = EwaldSphere(
-                    name='scan' + str(self.scan_number).zfill(2),
-                    data_file = self.fname,
+                    name=scan_name,
+                    data_file = os.path.join(
+                        os.path.dirname(self.fname), scan_name + ".hdf5"
+                    )
                     **self.sphere_args
                 )
-                with self.file_lock:
-                    sphere.save_to_h5()
-                self.signal_q.put(('new_scan', sphere.name))
+                self.signal_q.put('new_scan', (sphere.name, sphere.data_file))
             while True:
                 # Looks for relevant data, loops until it is found or a
                 # timeout occurs
@@ -340,17 +340,12 @@ class liveSpecProcess(wranglerProcess):
                 except (KeyError, FileNotFoundError, AttributeError, ValueError) as e:
                     print(type(e))
                     traceback.print_tb(e.__traceback__)
-                    
-            arch = EwaldArch(
-                i, arr, PONI.from_yamdict(poni), scan_info=image_meta
-            )
-            sphere.add_arch(
-                arch=arch.copy(), calculate=True, update=True, 
-                get_sd=True, set_mg=False
-            )
-            with self.file_lock:
-                sphere.save_to_h5(
-                    arches=[i], data_only=True, replace=False
+            
+            with self.file_lock:     
+                sphere.add_arch(
+                    calculate=True, update=True, 
+                    get_sd=True, set_mg=False, idx=i, map_raw=arr, 
+                    poni=PONI.from_yamdict(poni), scan_info=image_meta
                 )
             self.signal_q.put(('update', i))
     
@@ -358,10 +353,9 @@ class liveSpecProcess(wranglerProcess):
         _, name = os.path.split(path)
         name = name.split('.')[0]
         args = name.split('_')
-        scan_name = args[-2]
-        scan_number = int(scan_name[4:])
+        scan_name = '_'.join(args[:-1])
         idx = int(args[-1])
-        return scan_number, idx
+        return scan_name, idx
     
     def read_pdi(self, pdi_file):
         counters, motors = get_from_pdi(pdi_file)
