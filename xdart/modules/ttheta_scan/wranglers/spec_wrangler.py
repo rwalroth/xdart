@@ -12,7 +12,7 @@ import traceback
 
 # Other imports
 import numpy as np
-from xdart.classes.spec import LoadSpecFile, MakePONI
+from xdart.classes.spec import MakePONI, get_spec_header, get_spec_scan
 from xdart.containers import PONI
 from xdart.classes.ewald import EwaldArch, EwaldSphere
 from xdart.utils import catch_h5py_file as catch
@@ -97,10 +97,14 @@ class specWrangler(wranglerWidget):
 
     def setup(self):
         self.thread.mp_inputs.update(self._get_mp_inputs())
-        self.thread.lsf_inputs.update(self._get_lsf_inputs())
-        self.thread.fname = self.fname
+        lsf_inputs = self._get_lsf_inputs()
+        self.thread.lsf_inputs.update(lsf_inputs)
         self.scan_number = self.parameters.child('Scan Number').value()
-        self.scan_name = 'scan' + str(self.scan_number).zfill(2)
+        self.scan_name = lsf_inputs['spec_file_name'] + '_scan' + \
+                         str(self.scan_number)
+        self.fname = os.path.join(lsf_inputs['spec_file_path'],
+                                  self.scan_name + '.hdf5')
+        self.thread.fname = self.fname
         self.thread.scan_name = self.scan_name
         self.thread.scan_number = self.scan_number
         self.thread.img_dir = self.parameters.child('Image Directory').value()
@@ -258,7 +262,17 @@ class specProcess(wranglerProcess):
         self.scan_name = scan_name
         self.scan_number = scan_number
         self.img_dir = img_dir
-        self.specFile = {}
+        self.specFile = OrderedDict(
+            header=dict(
+                    meta={},
+                    motors={},
+                    motors_r={},
+                    detectors={},
+                    detectors_r={}
+                    ),
+            scans={},
+            scans_meta={}
+        )
         self.user = None
         self.spec_name = None
         self.timeout = timeout
@@ -274,8 +288,8 @@ class specProcess(wranglerProcess):
         make_poni.inputs.update(self.mp_inputs)
 
         # Operation instantiated within process to avoid conflicts with locks
-        spec_reader = LoadSpecFile()
-        spec_reader.inputs.update(self.lsf_inputs)
+        spec_path = os.path.join(self.lsf_inputs['spec_file_path'],
+                                 self.lsf_inputs['spec_file_name'])
 
         i = 0
         pause = False
@@ -292,7 +306,7 @@ class specProcess(wranglerProcess):
                     pause = True
                     continue
             try:
-                flag, data = self.wrangle(i, spec_reader, make_poni)
+                flag, data = self.wrangle(i, spec_path, make_poni)
             except (KeyError, FileNotFoundError, AttributeError, ValueError):
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
@@ -324,12 +338,17 @@ class specProcess(wranglerProcess):
         self.signal_q.put(('TERMINATE', None))
 
 
-    def wrangle(self, i, spec_reader, make_poni):
+    def wrangle(self, i, spec_path, make_poni):
         self.signal_q.put(('message', f'Checking for {i}'))
 
         # image file names formed as predictable pattern
         # reads in spec data file
-        self.specFile = spec_reader.run()
+        self.specFile['header'] = get_spec_header(spec_path)
+        
+        self.specFile['scans'][self.scan_number], \
+        self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
+            spec_path, self.scan_number, self.specFile['header']
+        )
 
         if self.user is None:
             self.user = self.specFile['header']['meta']['User']
