@@ -217,7 +217,7 @@ class tthetaWidget(QWidget):
                         replace=False, data_only=True, 
                         set_mg=False
                     )
-                self.update_all()
+                    self.update_all()
             
                 
     def set_data(self, q):

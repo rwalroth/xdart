@@ -322,12 +322,14 @@ class specProcess(wranglerProcess):
                 arch = EwaldArch(
                     idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
                 )
+                arch.integrate_1d(**sphere.bai_1d_args)
+                arch.integrate_2d(**sphere.bai_2d_args)
                 with self.file_lock:
                     sphere.add_arch(
-                        arch=arch.copy(), calculate=True, update=True, get_sd=True, 
+                        arch=arch.copy(), calculate=False, update=True, get_sd=True, 
                         set_mg=False
                     )
-                    sphere.save_to_h5(arches=[idx], data_only=True, replace=False)
+                    sphere.save_to_h5(data_only=True, replace=False)
                 self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
                 i += 1
