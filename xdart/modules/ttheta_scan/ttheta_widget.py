@@ -57,8 +57,11 @@ class tthetaWidget(QWidget):
 
         # Data object initialization
         self.file_lock = mp.Condition()
-        self.dirname = os.path.expanduser('~')
-        self.fname = None
+        self.dirname = os.path.join(os.path.dirname(__file__).split('xdart')[0],
+                                    os.path.join('xdart', 'data'))
+        if not os.path.isdir(self.dirname):
+            os.mkdir(self.dirname)
+        self.fname = os.path.join(self.dirname, 'default.hdf5')
         self.sphere = EwaldSphere('null_main', data_file=self.fname)
         
         self.arch = None
@@ -176,7 +179,7 @@ class tthetaWidget(QWidget):
                 with catch(fname, 'a') as _:
                     self.fname = fname
                     self.sphere.data_file = fname
-            except Exception as e:
+            except:
                 traceback.print_exc()
 
             self.h5viewer.fname = self.fname
@@ -190,8 +193,7 @@ class tthetaWidget(QWidget):
             self.sphere = EwaldSphere(name, data_file=self.fname)
         
         elif self.sphere.name != name:
-            with self.sphere.sphere_lock:
-                self.sphere = EwaldSphere(name, data_file=self.fname)
+            self.sphere = EwaldSphere(name, data_file=self.fname)
         with self.file_lock:
             self.sphere.load_from_h5()
         self.displayframe.sphere = self.sphere
@@ -421,7 +423,7 @@ class tthetaWidget(QWidget):
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
-            if self.integratorTree.ui.all1D.isChecked():
+            if self.integratorTree.ui.all1D.isChecked() or type(self.arch) != int:
                 self.integrator_thread.method = 'bai_1d_all'
             else:
                 self.integrator_thread.method = 'bai_1d_SI'
@@ -488,22 +490,20 @@ class tthetaWidget(QWidget):
         self.update()
     
     def new_scan(self, name, fname):
-        self.h5viewer.update(self.dirname)
         if isinstance(self.sphere, EwaldSphere):
             if self.sphere.name == name or self.sphere.name == 'null_main':
+                self.dirname = os.path.dirname(fname)
                 self.set_file(fname)
                 self.load_sphere(name)
         else:
+            self.set_file(fname)
             self.load_sphere(name)
+        self.h5viewer.update(self.dirname)
 
     def start_wrangler(self):
-        if self.fname is None:
-            self.new_file()
-        if self.fname is None:
-            return
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
-        self.h5viewer.set_open_enabled(False)
+        #self.h5viewer.set_open_enabled(False) // why was this here?
         args = {'bai_1d_args': self.sphere.bai_1d_args,
                 'bai_2d_args': self.sphere.bai_2d_args}
         self.wrangler.sphere_args = copy.deepcopy(args)
