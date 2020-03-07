@@ -27,8 +27,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.plotUnit.setItemText(0, _translate("Form", "2" + u"\u03B8"))
 
         # Data object initialization
-        self.sphere = sphere
-        self.arch = None
 
         # State variable initialization
         self.auto_last = False
@@ -48,14 +46,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.histogram.setImageItem(self.image)
 
         # Image pane signal connections
-        self.ui.imageIntRaw.activated.connect(self.update)
-        self.ui.imageMethod.activated.connect(self.update)
         self.ui.imageMethod.setCurrentIndex(1)
         self.ui.imageMethod.setEnabled(False)
-        self.ui.imageUnit.activated.connect(self.update)
-        self.ui.imageNRP.activated.connect(self.update)
-        self.ui.imageMask.stateChanged.connect(self.update)
-        self.ui.shareAxis.stateChanged.connect(self.update)
 
         self.plot_layout = Qt.QtWidgets.QVBoxLayout(self.ui.plotFrame)
         self.plot_layout.setContentsMargins(0, 0, 0, 0)
@@ -71,24 +63,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             symbolSize=4
         )
 
-        self.ui.plotMethod.activated.connect(self.update)
         self.ui.plotMethod.setCurrentIndex(1)
         self.ui.plotMethod.setEnabled(False)
-        self.ui.plotUnit.activated.connect(self.update)
-        self.ui.plotNRP.activated.connect(self.update)
-        self.ui.plotOverlay.stateChanged.connect(self.update)
 
-        self.update()
+        #self.update()
     
-    def update(self):
+    def update(self, sphere, arch=None):
         """Updates image and plot frames based on toolbar options
         """
         # Sets title text
-        if self.sphere is not None:
-            if self.arch is None:
-                self.ui.labelCurrent.setText(self.sphere.name)
+        if sphere is not None:
+            if arch is None:
+                self.ui.labelCurrent.setText(sphere.name)
             else:
-                self.ui.labelCurrent.setText("Image " + str(self.arch))
+                self.ui.labelCurrent.setText("Image " + str(arch))
 
         if self.ui.shareAxis.isChecked():
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
@@ -99,16 +87,16 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.plot.setXLink(None)
             self.ui.plotUnit.setEnabled(True)
         
-        if self.auto_last and self.sphere is not None:
-            self.arch = self.sphere.arches.iloc(-1).idx
+        if self.auto_last and sphere is not None:
+            arch = sphere.arches.iloc(-1).idx
             # TODO This is breaking link to parent arch, need to revisit
         
         try:
-            self.update_image(self.sphere, self.arch)
+            self.update_image(sphere, arch)
         except Exception as e:
             print(traceback.print_exc())
         try:
-            self.update_plot(self.sphere, self.arch)
+            self.update_plot(sphere, arch)
         except Exception as e:
             print(traceback.print_exc())
     
@@ -166,7 +154,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def get_sphere_data_2d(self, sphere):
         """Returns data and QRect for data in sphere
         """
-        with self.sphere.sphere_lock:
+        with sphere.sphere_lock:
             if self.ui.imageMethod.currentIndex() == 0:
                 int_data = sphere.mgi_2d
                 if type(int_data.ttheta) == int:

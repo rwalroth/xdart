@@ -98,6 +98,18 @@ class tthetaWidget(QWidget):
         self.displayframe.ui.pushLeft.clicked.connect(self.prev_arch)
         self.displayframe.ui.pushRightLast.clicked.connect(self.last_arch)
         self.displayframe.ui.pushLeftLast.clicked.connect(self.first_arch)
+        self.displayframe.ui.imageIntRaw.activated.connect(self.update_display_frame)
+        self.displayframe.ui.imageMethod.activated.connect(self.update_display_frame)
+        self.displayframe.ui.imageUnit.activated.connect(self.update_display_frame)
+        self.displayframe.ui.imageNRP.activated.connect(self.update_display_frame)
+        self.displayframe.ui.imageMask.stateChanged.connect(self.update_display_frame)
+        self.displayframe.ui.shareAxis.stateChanged.connect(self.update_display_frame)
+        self.displayframe.ui.plotMethod.activated.connect(self.update_display_frame)
+        self.displayframe.ui.plotUnit.activated.connect(self.update_display_frame)
+        self.displayframe.ui.plotNRP.activated.connect(self.update_display_frame)
+        self.displayframe.ui.plotOverlay.stateChanged.connect(self.update_display_frame)
+        
+        
 
         # IntegratorFrame setup
         self.integratorTree = integratorTree()
@@ -108,7 +120,7 @@ class tthetaWidget(QWidget):
         self.integratorTree.sigUpdateArgs.connect(self.get_args)
         self.integratorTree.ui.integrate1D.clicked.connect(self.bai_1d)
         self.integratorTree.ui.integrate2D.clicked.connect(self.bai_2d)
-        self.integrator_thread.update.connect(self.displayframe.update)
+        self.integrator_thread.update.connect(self.update_display_frame)
         self.integrator_thread.finished.connect(self.thread_finished)
 
         # Metadata setup
@@ -151,6 +163,9 @@ class tthetaWidget(QWidget):
         self.wrangler.sigUpdateFile.connect(self.new_scan)
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
+    
+    def update_display_frame(self):
+        self.displayframe.update(self.sphere, self.arch)
     
     def clock(self):
         pass
@@ -233,7 +248,7 @@ class tthetaWidget(QWidget):
             if q.data(0) == 'Overall' or 'scan' in q.data(0):
                 self.arch = None
                 self.displayframe.arch = None
-                self.displayframe.update()
+                self.displayframe.update(self.sphere, self.arch)
                 self.displayframe.ui.imageIntRaw.setEnabled(False)
                 self.displayframe.ui.imageMask.setEnabled(False)
 
@@ -250,7 +265,7 @@ class tthetaWidget(QWidget):
                 except ValueError:
                     return
                 self.displayframe.arch = int(q.data(0))
-                self.displayframe.update()
+                self.displayframe.update(self.sphere, self.arch)
                 self.displayframe.ui.imageIntRaw.setEnabled(True)
                 self.displayframe.ui.imageMask.setEnabled(True)
 
@@ -475,7 +490,7 @@ class tthetaWidget(QWidget):
         self.integratorTree.setEnabled(enable)
 
     def update_all(self):
-        self.displayframe.update()
+        self.displayframe.update(self.sphere, self.arch)
         self.h5viewer.set_data(self.sphere)
         if self.displayframe.auto_last:
             self.h5viewer.ui.listData.setCurrentRow(
