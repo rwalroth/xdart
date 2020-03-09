@@ -41,6 +41,8 @@ params = [
     {'name': 'Polling Period', 'type': 'float', 'limits': [0.01, 100], 'default': 0.1},
     {'name': 'Calibration PONI File', 'type': 'str', 'default': ''},
     NamedActionParameter(name='poni_file_browse', title= 'Browse...'),
+    {'name': 'Out Directory', 'type': 'str', 'default': ''},
+    NamedActionParameter(name='out_dir_browse', title= 'Browse...'),
     {'name': 'Rotation Motors', 'type': 'group', 'children': [
         {'name': 'Rot1', 'type': 'str', 'default': ''},
         {'name': 'Rot2', 'type': 'str', 'default': ''},
@@ -90,6 +92,9 @@ class liveSpecWrangler(wranglerWidget):
         self.parameters.child('poni_file_browse').sigActivated.connect(
             self.set_poni_file
         )
+        self.parameters.child('out_dir_browse').sigActivated.connect(
+            self.set_out_dir
+        )
         self.parameters.sigTreeStateChanged.connect(self.update)
         self.showLabel.connect(self.ui.specLabel.setText)
         
@@ -101,6 +106,7 @@ class liveSpecWrangler(wranglerWidget):
             mp_inputs=self._get_mp_inputs(),
             img_dir=self.parameters.child('Image Directory').value(),
             pdi_dir=self.parameters.child('PDI Directory').value(),
+            out_dir=self.parameters.child('Out Directory').value(),
             filetypes=self.parameters.child('File Types').value().split(),
             pollingperiod=self.parameters.child('Polling Period').value(),
             parent=self
@@ -117,6 +123,7 @@ class liveSpecWrangler(wranglerWidget):
         self.thread.mp_inputs.update(self._get_mp_inputs())
         self.thread.img_dir = self.parameters.child('Image Directory').value()
         self.thread.pdi_dir = self.parameters.child('PDI Directory').value()
+        self.thread.out_dir = self.parameters.child('Out Directory').value()
         self.thread.filetypes = self.parameters.child('File Types').value().split()
         self.thread.set_queues() 
         self.thread.pollingperiod = self.parameters.child('Polling Period').value()
@@ -141,6 +148,11 @@ class liveSpecWrangler(wranglerWidget):
         dname = Qt.QtWidgets.QFileDialog.getExistingDirectory(self)
         if dname != '':
             self.parameters.child('PDI Directory').setValue(dname)
+    
+    def set_out_dir(self):
+        dname = Qt.QtWidgets.QFileDialog.getExistingDirectory(self)
+        if dname != '':
+            self.parameters.child('Out Directory').setValue(dname)
     
     def set_poni_file(self):
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
@@ -203,6 +215,7 @@ class liveSpecThread(wranglerThread):
             mp_inputs,
             img_dir,
             pdi_dir,
+            out_dir,
             filetypes,
             pollingperiod,
             parent=None):
@@ -211,11 +224,10 @@ class liveSpecThread(wranglerThread):
         self.mp_inputs = mp_inputs
         self.img_dir = img_dir
         self.pdi_dir = pdi_dir
+        self.out_dir = out_dir
         self.filetypes = filetypes
         self.pollingperiod = pollingperiod
         self.queues = {fp: mp.Queue() for fp in filetypes}
-        
-        print(self.pollingperiod)
     
     def set_queues(self):
         for _, q in self.queues.items():
@@ -243,7 +255,8 @@ class liveSpecThread(wranglerThread):
             file_lock=self.file_lock, 
             queues=self.queues, 
             mp_inputs=self.mp_inputs,
-            pdi_dir=self.pdi_dir
+            pdi_dir=self.pdi_dir,
+            out_dir=out_dir
         )
         last=False
         integrator.start()
@@ -283,12 +296,13 @@ class liveSpecThread(wranglerThread):
 
 class liveSpecProcess(wranglerProcess):
     def __init__(self, command_q, signal_q, sphere_args, fname, file_lock, 
-                 queues, mp_inputs, pdi_dir):
+                 queues, mp_inputs, pdi_dir, out_dir):
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock)
         self.queues = queues
         self.mp_inputs = mp_inputs
         self.scan_name = None
         self.pdi_dir = pdi_dir
+        self.out_dir = out_dir
     
     def run(self):
         self.scan_name = None
@@ -314,12 +328,12 @@ class liveSpecProcess(wranglerProcess):
                 sphere = EwaldSphere(
                     name=scan_name,
                     data_file = os.path.join(
-                        os.path.dirname(self.fname), scan_name + ".hdf5"
-                    )
+                        self.out_dir, scan_name + ".hdf5"
+                    ),
                     **self.sphere_args
                 )
                 sphere.save_to_h5(replace=True)
-                self.signal_q.put('new_scan', (sphere.name, sphere.data_file))
+                self.signal_q.put(('new_scan', (sphere.name, sphere.data_file)))
             while True:
                 # Looks for relevant data, loops until it is found or a
                 # timeout occurs
