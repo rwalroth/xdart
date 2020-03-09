@@ -193,9 +193,10 @@ class liveSpecWrangler(wranglerWidget):
 
         return mp_inputs
     
-    def update_file(self, name):
+    def update_file(self, name, fname):
         self.scan_name = name
-        self.sigUpdateFile.emit(name)
+        self.fname = fname
+        self.sigUpdateFile.emit(name, fname)
 
     def enabled(self, enable):
         self.tree.setEnabled(enable)
@@ -270,7 +271,7 @@ class liveSpecThread(wranglerThread):
             if not self.signal_q.empty():
                 signal, data = self.signal_q.get()
                 if signal == 'update':
-                    self.sigUpdate.emit(data[0], data[1])
+                    self.sigUpdate.emit(data)
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
