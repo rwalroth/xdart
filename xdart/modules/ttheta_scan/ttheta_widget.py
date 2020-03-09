@@ -297,7 +297,7 @@ class tthetaWidget(QWidget):
                 Qt.QtGui.QApplication.processEvents()
                 
                 self.set_file(os.path.join(self.dirname, q.data(0)))
-                self.load_sphere(q.data(0))
+                self.load_sphere(q.data(0).split('.')[0])
                 try:
                     self.set_data(q)
                 except TypeError:
