@@ -256,7 +256,7 @@ class liveSpecThread(wranglerThread):
             queues=self.queues, 
             mp_inputs=self.mp_inputs,
             pdi_dir=self.pdi_dir,
-            out_dir=out_dir
+            out_dir=self.out_dir
         )
         last=False
         integrator.start()
