@@ -270,7 +270,7 @@ class liveSpecThread(wranglerThread):
             if not self.signal_q.empty():
                 signal, data = self.signal_q.get()
                 if signal == 'update':
-                    self.sigUpdate.emit(data)
+                    self.sigUpdate.emit(data[0], data[1])
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
