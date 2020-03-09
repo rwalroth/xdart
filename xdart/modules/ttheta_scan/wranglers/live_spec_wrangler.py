@@ -262,6 +262,7 @@ class liveSpecThread(wranglerThread):
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
                     self.scan_name = data[0]
+                    self.fname = data[1]
                     self.sigUpdateFile.emit(data[0], data[1])
                 elif signal == 'TERMINATE':
                     last = True

@@ -269,9 +269,13 @@ class EwaldSphere():
             self.mgi_2d.from_result(result, self.multi_geo.wavelength)
         return result
     
-    def save_to_h5(self, *args, **kwargs):
+    def save_to_h5(self, repalce=False, **kwargs):
+        if replace:
+            mode = 'w'
+        else:
+            mode = 'a'
         with self.file_lock:
-            with utils.catch_h5py_file(self.data_file, 'a') as file:
+            with utils.catch_h5py_file(self.data_file, mode) as file:
                 self._save_to_h5(file, *args, **kwargs)
 
     def _save_to_h5(self, grp, arches=None, data_only=False, replace=False,
