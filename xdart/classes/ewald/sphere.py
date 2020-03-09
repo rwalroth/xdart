@@ -269,7 +269,7 @@ class EwaldSphere():
             self.mgi_2d.from_result(result, self.multi_geo.wavelength)
         return result
     
-    def save_to_h5(self, replace=False, **kwargs):
+    def save_to_h5(self, replace=False, *args, **kwargs):
         if replace:
             mode = 'w'
         else:

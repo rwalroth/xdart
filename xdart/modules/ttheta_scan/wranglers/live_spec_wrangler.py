@@ -318,6 +318,7 @@ class liveSpecProcess(wranglerProcess):
                     )
                     **self.sphere_args
                 )
+                sphere.save_to_h5(replace=True)
                 self.signal_q.put('new_scan', (sphere.name, sphere.data_file))
             while True:
                 # Looks for relevant data, loops until it is found or a
