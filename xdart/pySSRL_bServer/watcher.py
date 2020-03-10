@@ -45,7 +45,10 @@ class Watcher(Process):
                           for (path, filetype) in zip(paths, filetypes) )
     
             for filetype in after.keys():
-                added = sorted([os.path.join(paths_dict[filetype], f) for f in after[filetype] if not f in before[filetype]])
+                added = sorted([os.path.join(paths_dict[filetype], f)
+                                for f in after[filetype] 
+                                if not f in before[filetype]])
+                
                 if added:
                     if self.verbose: print(f"{filetype} - Added: {added}")
                     for f in added:

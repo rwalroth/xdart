@@ -49,7 +49,6 @@ class LoadSpecFile(Operation):
         super(LoadSpecFile, self).__init__(inputs, outputs)
     
     def run(self):
-        last_line = self.outputs['last_line_read']['number']
         full_path = os.path.join(self.inputs['spec_file_path'],
                                  self.inputs['spec_file_name'])
         with open(full_path, 'r') as file:
