@@ -112,6 +112,13 @@ venv.bak/
 .vscode/settings.json
 .vscode
 .vscode/*
+.vs/*
+.vs
+*.pyproj
+*.sln
 *desktop.ini
 xdart/pySSRL_bServer/bServer.lnk
 /tests/test_data/*
+*.srctrlbm
+*.srctrldb
+*.srctrlprj
