@@ -41,7 +41,8 @@ outputs = OrderedDict(
     )
 
 class LoadSpecFile(Operation):
-    """Operation for loading in data from a spec file.
+    """Operation for loading in data from a spec file. Currently
+    unused, will be expanded on later for future analysis toolkit.
     """
     date_format = '%a %b %d %H:%M:%S %Y'
 

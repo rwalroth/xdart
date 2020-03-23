@@ -37,11 +37,21 @@ outputs = {
 }
 
 class MakePONI(Operation):
+    """Operation for creating PONI objects. Uses a calibration poni file
+    and adds in rotation values from motor positions to yield a
+    dictionary with new values for a PONI object.
+    """
     def __init__(self):
         super(MakePONI, self).__init__(inputs, outputs)
         self.base = None
     
     def run(self):
+        """Main method of operation, calculates values for new PONI
+        object.
+        
+        returns:
+            outputs: dict, values to create a PONI object.
+        """
         if self.base is None:
             self._set_base()
         poni = PONI.from_ponifile(self.inputs['poni_file'])
@@ -56,6 +66,9 @@ class MakePONI(Operation):
         return self.outputs
     
     def _set_base(self):
+        """Adjusts base calibration based on where calibration was
+        performed.
+        """
         base = PONI.from_ponifile(self.inputs['poni_file'])
         for key, val in self.inputs['calib_rotations'].items():
             r = getattr(base, key) - val
