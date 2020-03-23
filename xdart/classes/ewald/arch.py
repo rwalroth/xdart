@@ -56,38 +56,50 @@ class EwaldArch():
     X-ray diffraction experiments.
 
     Attributes:
-        idx: integer name of arch
-        map_raw: numpy 2d array of the unprocessed image data
-        poni: poni data for integration
-        mask: map of pixels to be masked out of integration
-        scan_info: information from any relevant motors and sensors
-        ai_args: arguments passed to AzimuthalIntegrator
-        file_lock: lock to ensure only one writer to data file
-        integrator: AzimuthalIntegrator object from pyFAI
-        arch_lock: threading lock used to ensure only one process can
-            access data at a time
-        map_norm: normalized image data
+        ai_args: dict, arguments passed to AzimuthalIntegrator
+        arch_lock: Condition, threading lock used to ensure only one
+            process can access data at a time
+        file_lock: Condition, lock to ensure only one writer to
+            data file
+        idx: int, integer name of arch
         int_1d: int_1d_data object from containers
         int_2d: int_2d_data object from containers
+        integrator: AzimuthalIntegrator object from pyFAI
+        map_raw: numpy 2d array of the unprocessed image data
+        map_norm: float, normalization constant
+        mask: numpy array of indeces to be masked in array.
+        poni: poni data for integration
+        scan_info: dict, information from any relevant motors and
+            sensors
 
     Methods:
-        integrate_1d: integrate the image data to create I, 2theta, q,
-            and normalization arrays
-        integrate_2d: not implemented
+        copy: create copy of arch
+        get_mask: return mask array to feed into integrate1d
+        integrate_1d: integrate the image data, results stored in
+            int_1d_data
+        integrate_2d: integrate the image data, results stored in
+            int_2d_data
+        load_from_h5: load data from hdf5 file
+        save_to_h5: save data to hdf5 file
         set_integrator: set new integrator
         set_map_raw: replace raw data
-        set_poni: replace poni object
         set_mask: replace mask data
+        set_poni: replace poni object
         set_scan_info: replace scan_info
-        save_to_h5: save data to hdf5 file
-        load_from_h5: load data from hdf5 file
-        copy: create copy of arch
     """
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, idx=None, map_raw=None, poni=PONI(), mask=None,
                  scan_info={}, ai_args={}, file_lock=Condition()):
         # pylint: disable=too-many-arguments
+        """idx: int, name of the arch.
+        map_raw: numpy array, raw image data
+        poni: PONI object, calibration data
+        mask: None or numpy array, indeces of pixels to mask
+        scan_info: dict, metadata about scan
+        ai_args: dict, args to be fed to azimuthalIntegrator constructor
+        file_lock: Condition, lock for file access.
+        """
         super(EwaldArch, self).__init__()
         self.idx = idx
         self.map_raw = map_raw
@@ -123,7 +135,7 @@ class EwaldArch():
     def integrate_1d(self, numpoints=10000, radial_range=[0, 180],
                      monitor=None, unit=units.TTH_DEG, **kwargs):
         """Wrapper for integrate1d method of AzimuthalIntegrator from pyFAI.
-        Sets 1d integration variables for object instance.
+        Returns result and also stores the data in the int_1d object.
 
         args:
             numpoints: int, number of points in final array
@@ -154,7 +166,7 @@ class EwaldArch():
                      radial_range=[0,180], azimuth_range=[-180,180], 
                      unit=units.TTH_DEG, **kwargs):
         """Wrapper for integrate2d method of AzimuthalIntegrator from pyFAI.
-        Sets 2d integration variables for object instance.
+        Returns result and also stores the data in the int_2d object.
 
         args:
             npt_rad: int, number of points in radial dimension. If
@@ -170,7 +182,7 @@ class EwaldArch():
             kwargs: other keywords to be passed to integrate2d, see pyFAI docs.
 
         returns:
-            result: integrate1d result from pyFAI.
+            result: integrate2d result from pyFAI.
         """
         with self.arch_lock:
             if monitor is not None:
@@ -196,8 +208,7 @@ class EwaldArch():
             
 
     def set_integrator(self, **args):
-        """Sets AzimuthalIntegrator with new arguments and instances poni
-        attribute.
+        """Sets AzimuthalIntegrator with new arguments.
 
         args:
             args: see pyFAI for acceptable arguments for the integrator
@@ -309,6 +320,8 @@ class EwaldArch():
                             )
 
     def copy(self):
+        """Returns a copy of self.
+        """
         arch_copy = EwaldArch(
             copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
             copy.deepcopy(self.poni), copy.deepcopy(self.mask),

@@ -16,38 +16,57 @@ class EwaldSphere():
     integrator from pyFAI.
 
     Attributes:
-        name: str, name of the sphere
-        arches: Series, list of arches indexed by their idx value
+        arches: ArchSeries, list of arches indexed by their idx value
+        bai_1d: int_1d_data object, stores result of 1d integration
+        bai_1d_args: dict, arguments for invidivual arch integrate1d
+            method
+        bai_2d: int_2d_data object, stores result of 2d integration
+        bai_2d_args: dict, arguments for invidivual arch integrate2d
+            method
         data_file: str, file to save data to
-        scan_data: DataFrame, stores all scan metadata
-        mg_args: arguments for MultiGeometry constructor
-        multi_geo: MultiGeometry instance
-        bai_1d_args: dict, arguments for invidivual arch integrate1d method
-        bai_2d_args: not implemented
-        mgi_1d_I: array, intensity from MultiGeometry based integration
-        mgi_1d_2theta: array, two theta from MultiGeometry based integration
-        mgi_1d_q: array, q data from MultiGeometry based integration
-        mgi_2d_I: not implemented
-        mgi_2d_2theta: not implemented
-        mgi_2d_q: not implemented
         file_lock: lock for ensuring one writer to hdf5 file
+        mg_args: arguments for MultiGeometry constructor
+        mgi_1d: int_1d_data object, stores result from multigeometry
+            integrate1d method
+        mgi_2d: int_2d_data object, stores result from multigeometry
+            integrate2d method
+        multi_geo: MultiGeometry instance
+        name: str, name of the sphere
+        scan_data: DataFrame, stores all scan metadata
         sphere_lock: lock for modifying data in sphere
-        bai_1d: int_1d_data object for by-arch integration
-        bai_2d: not implemented
 
     Methods:
         add_arch: adds new arch and optionally updates other data
-        by_arch_integrate_1d: integrates each arch individually and sums them
-        set_multi_geo: sets the MultiGeometry instance
-        multigeometry_integrate_1d: wrapper for MultiGeometry integrate1d
-            method
-        save_to_h5: saves data to hdf5 file
+        by_arch_integrate_1d: Runs 1 dimensional integration of each
+            arch individually and sums the result, stored in bai_1d
+        by_arch_integrate_2d: Runs 2 dimensional integration of each
+            arch individually and sums the result, stored in bai_2d
         load_from_h5: loads data from hdf5 file
+        set_multi_geo: sets the MultiGeometry instance
+        multigeometry_integrate_1d: wrapper for MultiGeometry
+            integrate1d method, result stored in mgi_1d
+        multigeometry_integrate_2d: wrapper for MultiGeometry
+            integrate2d method, result stored in mgi_2d
+        save_bai_1d: Saves only bai_1d to the data_file
+        save_bai_2d: Saves only bai_2d to the data_file
+        save_to_h5: saves data to hdf5 file
+        set_multi_geo: instatiates the multigeometry object, or
+            overrides it if it already exists.
     """
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={}):
-        # TODO: add docstring for init
+        """name: string, name of sphere object.
+        arches: list of EwaldArch object, data to intialize with
+        data_file: str, path to hdf5 file where data is stored
+        scan_data: DataFrame, scan metadata
+        mg_args: dict, arguments for Multigeometry. Must include at
+            least 'wavelength' attribute in Angstroems
+        bai_1d_args: dict, arguments for the integrate1d method of pyFAI
+            AzimuthalIntegrator
+        bai_2d_args: dict, arguments for the integrate2d method of pyFAI
+            AzimuthalIntegrator
+        """
         super().__init__()
         self.file_lock = Condition()
         if name is None:
@@ -78,14 +97,20 @@ class EwaldSphere():
         """Adds new arch to sphere.
 
         args:
-            arch: EwaldArch instance, arch to be added. Recommended to always
-                pass a copy of an arch with the arch.copy method
-            calculate: whether to run the arch's calculate methods after adding
-            update: bool, if True updates the bai_int attribute
+            arch: EwaldArch instance, arch to be added. Recommended to 
+                always pass a copy of an arch with the arch.copy method
+                or intialize with kwargs
+            calculate: whether to run the arch's calculate methods after
+                adding
+            update: bool, if True updates the bai_1d and bai_2d
+                attributes
             get_sd: bool, if True tries to get scan data from arch
-            set_mg: bool, if True sets the MultiGeometry attribute. Takes a
-                long time, especially with longer lists. Recommended to run
-                set_multi_geo method after all arches are loaded.
+            set_mg: bool, if True sets the MultiGeometry attribute.
+                Takes a long time, especially with longer lists.
+                Recommended to run set_multi_geo method after all arches
+                are loaded.
+            kwargs: If arch is None, used to intialize the EwaldArch,
+                see EwaldArch for arguments.
 
         returns None
         """
@@ -126,7 +151,9 @@ class EwaldSphere():
         """Integrates all arches individually, then sums the results for
         the overall integration result.
 
-        args: see EwaldArch.integrate_1d
+        args: see EwaldArch.integrate_1d. If any args are passed, the
+            bai_1d_args dictionary is also updated with the new args.
+            If no args are passed, uses bai_1d_args attribute.
         """
         if not args:
             args = self.bai_1d_args
@@ -143,7 +170,9 @@ class EwaldSphere():
         """Integrates all arches individually, then sums the results for
         the overall integration result.
 
-        args: see EwaldArch.integrate_2d
+        args: see EwaldArch.integrate_2d. If any args are passed, the
+            bai_2d_args dictionary is also updated with the new args.
+            If no args are passed, uses bai_2d_args attribute.
         """
         if not args:
             args = self.bai_2d_args
@@ -193,7 +222,9 @@ class EwaldSphere():
     def set_multi_geo(self, **args):
         """Sets the MultiGeometry instance stored in the arch.
 
-        args: see pyFAI.multiple_geometry.MultiGeometry
+        args: see pyFAI.multiple_geometry.MultiGeometry. If no args are
+            passed, uses mg_args attribute. Otherwise, updates
+            mg_args and uses passed arguments.
         """
         self.mg_args.update(args)
         with self.sphere_lock:
@@ -270,6 +301,18 @@ class EwaldSphere():
         return result
     
     def save_to_h5(self, replace=False, *args, **kwargs):
+        """Saves data to hdf5 file.
+
+        args:
+            replace: bool, if True file is truncated prior to writing
+                data.
+            arches: list, list of arch ids to save. Deprecated.
+            data_onle: bool, if true only saves the scan_data attribute
+                and does not save mg_args, bai_1d_args, or bai_2d_args.
+            compression: str, what compression algorithm to pass to
+                h5py. See h5py documentation for acceptable compression
+                algorithms.
+        """
         if replace:
             mode = 'w'
         else:
@@ -280,10 +323,8 @@ class EwaldSphere():
 
     def _save_to_h5(self, grp, arches=None, data_only=False, replace=False,
                    compression='lzf'):
-        """Saves data to hdf5 file.
-
-        args:
-            file: h5py file or group object
+        """Actual function for saving data, run with the file open and
+            holding the file_lock.
         """
         with self.sphere_lock:
             
@@ -309,15 +350,21 @@ class EwaldSphere():
             self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
     
     def load_from_h5(self, *args, **kwargs):
+        """Loads data stored in hdf5 file.
+        
+        args:
+            data_only: bool, if True only loads the scan_data attribute
+                and does not load mg_args, bai_1d_args, or bai_2d_args.
+            set_mg: bool, if True instantiates the Multigeometry
+                object.
+        """
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'r') as file:
                 self._load_from_h5(file, *args, **kwargs)
 
     def _load_from_h5(self, grp, data_only=False, replace=True, set_mg=True):
-        """Loads data from hdf5 file.
-
-        args:
-            file: h5py file or group object
+        """Actual function for loading data, run with the file open and
+            holding the file_lock.
         """
         with self.sphere_lock:
 
@@ -349,11 +396,25 @@ class EwaldSphere():
                         self.set_multi_geo(**self.mg_args)
     
     def save_bai_1d(self, compression='lzf'):
+        """Function to save only the bai_1d object.
+        
+        args:
+            compression: str, what compression algorithm to pass to
+                h5py. See h5py documentation for acceptable compression
+                algorithms.
+        """
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_1d.to_hdf5(file['bai_1d'], compression=compression)
     
     def save_bai_2d(self, compression='lzf'):
+        """Function to save only the bai_2d object.
+        
+        args:
+            compression: str, what compression algorithm to pass to
+                h5py. See h5py documentation for acceptable compression
+                algorithms.
+        """
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_2d.to_hdf5(file['bai_2d'], compression=compression)
