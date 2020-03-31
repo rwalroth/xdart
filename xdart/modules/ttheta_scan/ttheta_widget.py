@@ -52,6 +52,53 @@ def spherelocked(func):
     return wrapper
 
 class tthetaWidget(QWidget):
+    """Tab for integrating data collected by a scanning area detector.
+    As of current version, only handles a single angle (2-theta).
+    Displays raw images, stitched Q Chi arrays, and integrated I Q
+    arrays. Also displays metadata and exposes parameters for
+    controlling integration.
+    
+    children:
+        displayframe: widget which handles displaying images and
+            plotting data.
+        h5viewer: Has a file explorer panel for loading scans, and
+            a panel which shows images that are associated with the
+            loaded scan. Has other file saving and loading functions
+            as well as configuration saving and loading functions.
+        integrator_thread: Not visible to user, but a sub-thread which
+            handles integration to free resources for the gui
+        integratorTree: Widget for setting the basic integration
+            parameters. Also has buttons for starting integration.
+        metawidget: Table wiget which displays metadata either for
+            entire scan or individual image.
+        
+    attributes:
+        arch: int, idx of current arch # TODO: this should be an EwaldArch
+        command_queue: Queue, used to send commands to wrangler
+        dirname: str, absolute path of current directory for scan
+        file_lock: mp.Condition, process safe lock
+        fname: str, current data file name
+        sphere: EwaldSphere, current scan data
+        timer: QTimer, currently unused but can be used for periodic
+            functions.
+        ui: Ui_Form, layout from qtdesigner
+    
+    methods:
+        bai_1d: Sends signal to thread to start integrating 1d
+        bai_2d:  Sends signal to thread to start integrating 2d
+        clock: Unimplemented, used for periodic updates
+        close: Handles cleanup prior to closing
+        continue_wrangler, pause_wrangler, stop_wrangler: send commands
+            to wrangler thread. Wired to signals in wrangler
+        enable_integration: Sets enabled status of widgets related to
+            integration
+        first_arch, last_arch, next_arch: Handle moving between
+            different arches in the overall sphere
+        get_args: Calls integrator tree get_args on sphere
+        load_and_set: Combination of load and set methods. Also governs
+            file explorer behavior in h5viewer.
+        load_sphere: 
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -109,8 +156,6 @@ class tthetaWidget(QWidget):
         self.displayframe.ui.plotNRP.activated.connect(self.update_display_frame)
         self.displayframe.ui.plotOverlay.stateChanged.connect(self.update_display_frame)
         
-        
-
         # IntegratorFrame setup
         self.integratorTree = integratorTree()
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
@@ -143,17 +188,26 @@ class tthetaWidget(QWidget):
         self.get_args('bai_1d')
         self.get_args('bai_2d')
         
-        
+        # Setup defaultWidget in h5viewer with parameters
         parameters = [self.integratorTree.parameters]
         for i in range(self.ui.wranglerStack.count()):
             w = self.ui.wranglerStack.widget(i)
             parameters.append(w.parameters)
         self.h5viewer.defaultWidget.set_parameters(parameters)
+        
+        # Update h5viewer with dirname
+        # TODO: Can this be moved earlier in __init__?
         self.h5viewer.update(self.dirname)
 
         self.show()
     
     def set_wrangler(self, qint):
+        """Sets the wrangler based on the selected item in the dropdown.
+        Syncs the wrangler's attributes and wires signals as needed.
+        
+        args:
+            qint: Qt int, index of the new wrangler
+        """
         self.wrangler = self.ui.wranglerStack.widget(qint)
         self.wrangler.input_q = self.command_queue
         self.wrangler.fname = self.fname
@@ -165,9 +219,15 @@ class tthetaWidget(QWidget):
         self.wrangler.setup()
     
     def update_display_frame(self):
+        """Calls displayframe update. Used to pass on self.sphere and
+        arch to displayframe.
+        """
+        # TODO: See if sphere can be held as a shared memory object.
         self.displayframe.update(self.sphere, self.arch)
     
     def clock(self):
+        """Called whenever the QTimer counts down.
+        """
         pass
         #if isinstance(self.sphere, EwaldSphere):
         #    if self.sphere.sphere_lock._lock._count > 0:
@@ -178,14 +238,20 @@ class tthetaWidget(QWidget):
         #        self.h5viewer.ui.listData.setEnabled(True)
     
     def open_file(self):
-        """Reads hdf5 file, populates list of scans in h5viewer. 
-        Creates persistent h5py file object.
+        """Changes the directory being displayed in the file explorer.
         """
+        # TODO: Change name to what it is supposed to be
         dirname = QFileDialog().getExistingDirectory()
         self.h5viewer.update(dirname)
         self.dirname = dirname
 
     def set_file(self, fname):
+        """Changes the data file. Ensures children with same file name
+        are properly synced.
+        
+        args:
+            fname: str, absolute path for data file
+        """
         with self.file_lock:
             if fname in ('', self.fname):
                 return
@@ -202,8 +268,12 @@ class tthetaWidget(QWidget):
                 self.wrangler.set_fname(self.fname)
     
     def load_sphere(self, name):
-        """Loads EwaldSphere object into memory
+        """Loads EwaldSphere object into memory.
+        
+        args:
+            name: str, name of the scan
         """
+        # TODO: Don't initialize sphere, find way to reset sphere
         if not isinstance(self.sphere, EwaldSphere):
             self.sphere = EwaldSphere(name, data_file=self.fname)
         
@@ -225,6 +295,10 @@ class tthetaWidget(QWidget):
             self.enable_integration(False)
     
     def update_data(self, q):
+        """Called by signal from wrangler. If the current scan name
+        is the same as the wrangler scan name, updates the data in
+        memory.
+        """
         with self.sphere.sphere_lock:
             if self.sphere.name == self.wrangler.scan_name:
                 with self.file_lock:
@@ -236,7 +310,11 @@ class tthetaWidget(QWidget):
             
                 
     def set_data(self, q):
-        """Updates data in displayframe
+        """Connected to h5viewer, sets the data in displayframe based
+        on the selected image or overall data.
+        
+        args:
+            q: QListItem, the item selected in the h5viewer.
         """
         if q.data(0) != 'No data':
             self.displayframe.auto_last = False
@@ -275,7 +353,10 @@ class tthetaWidget(QWidget):
                 self.metawidget.update(self.sphere, self.arch)
 
     def load_and_set(self, q):
-        """Combination of load and setting functions
+        """Combination of load and setting functions. Connected to
+        h5viewer.
+        
+        q: QListItem, item selected in h5viewer.
         """
         if q.data(0) != 'No scans':
             if q.data(0) == '..':
@@ -345,7 +426,8 @@ class tthetaWidget(QWidget):
             ut.write_csv(fname, xdata, ydata)
     
     def save_data_as(self):
-        """Saves all data to hdf5 file.
+        """Saves all data to hdf5 file. Also sets fname to be the
+        selected file.
         """
         fname, _ = QFileDialog.getSaveFileName()
         with self.file_lock:
@@ -358,6 +440,8 @@ class tthetaWidget(QWidget):
         self.set_file(fname)
     
     def new_file(self):
+        """Calls file dialog and sets the file name.
+        """
         fname, _ = QFileDialog.getSaveFileName()
         self.set_file(fname)
     
@@ -432,9 +516,13 @@ class tthetaWidget(QWidget):
         super().close()
     
     def get_args(self, key):
+        """Calls integratorTree get_args function.
+        """
         self.integratorTree.get_args(self.sphere, key)
     
     def bai_1d(self, q):
+        """Uses the integrator_thread attribute to call bai_1d
+        """
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
@@ -449,6 +537,8 @@ class tthetaWidget(QWidget):
         self.integrator_thread.start()
 
     def bai_2d(self, q):
+        """Uses the integrator_thread attribute to call bai_2d
+        """
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
@@ -463,6 +553,8 @@ class tthetaWidget(QWidget):
         self.integrator_thread.start()
 
     def mg_setup(self, q):
+        """Uses the integrator_thread attribute to call mg_setup
+        """
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
@@ -471,6 +563,8 @@ class tthetaWidget(QWidget):
         self.integrator_thread.start()
 
     def mg_1d(self, q):
+        """Uses the integrator_thread attribute to call mg_1d
+        """
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
@@ -479,6 +573,8 @@ class tthetaWidget(QWidget):
         self.integrator_thread.start()
     
     def mg_2d(self, q):
+        """Uses the integrator_thread attribute to call mg_2d
+        """
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
@@ -487,9 +583,14 @@ class tthetaWidget(QWidget):
         self.integrator_thread.start()
     
     def enable_integration(self, enable=True):
+        """Calls the integratorTree setEnabled function.
+        """
         self.integratorTree.setEnabled(enable)
 
     def update_all(self):
+        """Updates all data in displays TODO: Currently taking the most
+        time for the main gui thread
+        """
         self.displayframe.update(self.sphere, self.arch)
         self.h5viewer.set_data(self.sphere)
         if self.displayframe.auto_last:
@@ -498,6 +599,9 @@ class tthetaWidget(QWidget):
             )
     
     def thread_finished(self):
+        """Function connected to threadFinished signals for
+        integratorThread
+        """
         self.enable_integration(True)
         self.ui.wranglerBox.setEnabled(True)
         self.wrangler.enabled(True)
@@ -505,6 +609,13 @@ class tthetaWidget(QWidget):
         self.update()
     
     def new_scan(self, name, fname):
+        """Connected to sigUpdateFile from wrangler. Called when a new
+        scan is started. 
+        
+        args:
+            name: str, scan name
+            fname: str, path to data file for scan
+        """
         if isinstance(self.sphere, EwaldSphere):
             if self.sphere.name == name or self.sphere.name == 'null_main':
                 self.dirname = os.path.dirname(fname)
@@ -516,6 +627,9 @@ class tthetaWidget(QWidget):
         self.h5viewer.update(self.dirname)
 
     def start_wrangler(self):
+        """Sets up wrangler, ensures properly synced args, and starts
+        the wrangler.thread main method.
+        """
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
         #self.h5viewer.set_open_enabled(False) // why was this here?
@@ -526,6 +640,9 @@ class tthetaWidget(QWidget):
         self.wrangler.thread.start()
     
     def wrangler_finished(self):
+        """Called by the wrangler finished signal. If current scan
+        matches the wrangler scan, allows for integration.
+        """
         if isinstance(self.sphere, EwaldSphere):
             if self.sphere.name == self.wrangler.scan_name:
                 self.thread_finished()
@@ -537,6 +654,9 @@ class tthetaWidget(QWidget):
             self.wrangler.enabled(True)
 
     def pause_wrangler(self):
+        """Passes pause signal to wrangler TODO: Do these three need
+        to be in the main widget??
+        """
         if self.batch_integrator.isRunning():
             self.command_queue.put('pause')
 
