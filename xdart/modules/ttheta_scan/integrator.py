@@ -137,6 +137,34 @@ params = [
 ]
 
 class integratorTree(Qt.QtWidgets.QWidget):
+    """Widget for controlling integration of loaded data. Presents basic
+    parameters to the user in easy to control widgets, and also
+    launches menus for more advanced options.
+    
+    attributes:
+        advancedWidget1D, advancedWidget2D: advancedParameters, pop up
+            windows with advanced parameters
+        azimuthalRange2D, radialRange1D, radialRange2D: rangeWidget,
+            widgets which control the integration ranges for 1D and 2D
+            integration
+        bai_1d_pars, bai_2d_pars: pyqtgraph parameters, children of
+            main parameters attribute that hold parameters related to
+            1D and 2D integration
+        mg_1d_pars, mg_2d_pars: unused, hold paramters for multigeometry
+            integration
+        mg_pars: unused, holds parameters for setting up multigeometry
+        ui: Ui_Form from qtdesigner
+    
+    methods:
+        get_args: Gets requested parameters and converts them to args
+            in EwaldSphere object.
+        setEnabled: Enables integration and parameter modification.
+        update: Grabs args from EwaldSphere object and sets all params
+            to match.
+    
+    signals:
+        sigUpdateArgs: str, sends out args to be updated.
+    """
     sigUpdateArgs = Qt.QtCore.Signal(str)
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -200,10 +228,23 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.ui.advanced2D.clicked.connect(self.advancedWidget2D.show)
     
     def update(self, sphere):
+        """Grabs args from sphere and uses _sync_ranges and
+        _update_params private methods to update.
+        
+        args:
+            sphere: EwaldSphere, object to get args from.
+        """
         self._sync_ranges(sphere)
         self._update_params(sphere)
     
     def setEnabled(self, enable):
+        """Overrides parent class method. Ensures appropriate child
+        widgets are enabled.
+        
+        args:
+            enable: bool, If True widgets are enabled. If False
+                they are disabled.
+        """
         self.advancedWidget1D.setEnabled(enable)
         self.advancedWidget2D.setEnabled(enable)
         self.radialRange1D.setEnabled(enable)
@@ -216,6 +257,13 @@ class integratorTree(Qt.QtWidgets.QWidget):
         
     
     def _sync_ranges(self, sphere):
+        """Syncs the range widgets. If sphere has set range arguments,
+        applies those to rangeWidgets. Otherwise, adds current values to
+        sphere.
+        
+        args:
+            sphere: EwaldSphere, object to get args from.
+        """
         with sphere.sphere_lock:
             self._sync_range(
                 sphere.bai_1d_args, 'radial_range', 'numpoints', self.radialRange1D
@@ -228,6 +276,16 @@ class integratorTree(Qt.QtWidgets.QWidget):
             )
     
     def _sync_range(self, args, rkey, pkey, rwidget):
+        """Generic function for syncing a rangeWidget. Blocks signals
+        so that internal functions don't activate while ranges are being
+        updated.
+        
+        args:
+            args: dict, arguments to check for values
+            rkey: str, key for range hi and low values
+            pkey: str, key for points
+            rwidget: rangeWidget, widget to sync based on args
+        """
         rwidget.blockSignals(True)
         try:
             self._sync_range_hilow(args, rkey, rwidget)
@@ -236,12 +294,26 @@ class integratorTree(Qt.QtWidgets.QWidget):
             rwidget.blockSignals(False)
         
     def _sync_range_points(self, args, pkey, rwidget):
+        """Syncs number of points between rwidget and args.
+        
+        args:
+            args: dict, arguments to sync
+            pkey: str, key for points value in args
+            rwidget: rangeWidget, widget to sync
+        """
         if pkey in args:
             rwidget.ui.points.setValue(args[pkey])
         else:
             args[pkey] = rwidget.ui.points.value()
 
     def _sync_range_hilow(self, args, rkey, rwidget):
+        """Syncs range hi and low between rwidget and args.
+        
+        args:
+            args: dict, arguments to sync
+            rkey: str, key for hi and low list value in args
+            rwidget: rangeWidget, widget to sync
+        """
         if rkey in args:
             if args[rkey] is None:
                 args[rkey] = [rwidget.ui.low.value(),
@@ -254,12 +326,23 @@ class integratorTree(Qt.QtWidgets.QWidget):
             
     
     def _update_params(self, sphere):
+        """Grabs args from sphere and syncs parameters with them.
+        
+        args:
+            sphere: EwaldSphere, object to get args from.
+        """
         with sphere.sphere_lock:
             self._args_to_params(sphere.bai_1d_args, self.bai_1d_pars)
             self._args_to_params(sphere.bai_2d_args, self.bai_2d_pars)
             self._args_to_params(sphere.mg_args, self.mg_pars)
         
     def get_args(self, sphere, key):
+        """Updates sphere with all parameters held in integrator.
+        
+        args:
+            sphere: EwaldSphere, object to update
+            key: str, which args to update.
+        """
         with sphere.sphere_lock:
             if key == 'bai_1d':
                 self._params_to_args(sphere.bai_1d_args, self.bai_1d_pars)
@@ -274,6 +357,13 @@ class integratorTree(Qt.QtWidgets.QWidget):
             
 
     def _args_to_params(self, args, tree):
+        """Takes in args dictionary and sets all parameters in tree
+        to match the args.
+        
+        args:
+            args: dict, values to use for updating tree
+            tree: pyqtgraph Parameter, parameters to update
+        """
         with tree.treeChangeBlocker():
             for key, val in args.items():
                 if 'range' in key:
@@ -303,6 +393,12 @@ class integratorTree(Qt.QtWidgets.QWidget):
                             child.setValue(val)
     
     def _params_to_args(self, args, tree):
+        """Sets all values in args to match tree.
+        
+        args:
+            args: dict, values to be updates
+            tree: pyqtgraph Parameter, parameters used to update args
+        """
         for child in tree.children():
             if 'range' in child.name():
                 if child.child("Auto").value():
@@ -362,6 +458,20 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
 
 class advancedParameters(Qt.QtWidgets.QWidget):
+    """Pop up window for setting more advanced integration parameters.
+    
+    attributes: 
+        name: str, name of the window
+        parameter: pyqtgraph Parameter, parameters displayed
+        tree: pyqtgraph ParameterTree, tree to hold parameter
+        layout: QVBoxLayout, holds tree
+    
+    methods:
+        process_change: Handles sigTreeStateChanged signal from tree
+    
+    signals:
+        sigUpdateArgs: str, sends own name for updating args.
+    """
     sigUpdateArgs = Qt.QtCore.Signal(str)
     
     def __init__(self, parameter, name, parent=None):

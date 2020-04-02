@@ -19,6 +19,29 @@ from .h5viewerUI import Ui_Form
 from xdart.gui.gui_utils import defaultWidget
 
 class H5Viewer(QWidget):
+    """Widget for displaying the contents of an EwaldSphere object and
+    a basic file explorer. Also holds menus for more general tasks like
+    setting defaults.
+    
+    attributes:
+        (QAction attributes not shown, associated menus are)
+        exportMenu: Sub-menu for exporting images and 1d data
+        file_lock: Condition, lock governing file access
+        fileMenu: Menu for saving files and exporting data
+        fname: Current data file name
+        layout: ui layout TODO: this can stay with ui
+        paramMenu: Menu for saving and loading defaults
+        toolbar: QToolBar, holds the menus
+        ui: Ui_Form from qtdesigner
+
+    methods:
+        set_data: Sets the data in the dataList
+        set_open_enabled: Sets the ability to open scans to enabled or
+            disables
+        update: Updates files in scansList
+        TODO: Rename the methods and attributes based on what they
+            actually do
+    """
     def __init__(self, file_lock, fname, parent=None):
         super().__init__(parent)
         self.file_lock = file_lock
@@ -97,20 +120,26 @@ class H5Viewer(QWidget):
 
         self.show()
 
-    def update(self, fname):
-        """Takes in file, adds keys to scan list
+    def update(self, dirname):
+        """Takes in directory path and adds files in path to listScans
+        
+        args:
+            dirname: path to directory to display
         """
         self.ui.listScans.clear()
         self.ui.listScans.addItem('..')
-        for name in os.listdir(fname):
-            abspath = os.path.join(fname, name)
+        for name in os.listdir(dirname):
+            abspath = os.path.join(dirname, name)
             if os.path.isdir(abspath):
                 self.ui.listScans.addItem(name + '/')
             elif name.split('.')[-1] in ('h5', 'hdf5'):
                 self.ui.listScans.addItem(name)
     
     def set_data(self, sphere):
-        """Takes sphere object and updates list with all arch ids
+        """Takes sphere object and updates list with all arch ids.
+        
+        args:
+            sphere: EwaldSphere, sphere data to update list with
         """
         idx = self.ui.listData.currentRow()
         with sphere.sphere_lock:
@@ -123,6 +152,11 @@ class H5Viewer(QWidget):
         self.ui.listData.setCurrentRow(idx)
     
     def set_open_enabled(self, enable):
+        """Sets the save and open actions to enable
+        
+        args:
+            enable: bool, if True actions are enabled
+        """
         self.actionSaveDataAs.setEnabled(enable)
         self.actionSetDefaults.setEnabled(enable)
         self.actionOpen.setEnabled(enable)
