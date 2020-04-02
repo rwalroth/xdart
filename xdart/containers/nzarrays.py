@@ -10,7 +10,31 @@ from .. import utils
 
 
 class nzarray1d():
+    """Sparse matrix like object which stores minimal box to contain
+    non-zero data. Only for 1D arrays.
+    
+    attributes:
+        corners: tuple, edges of the region containing non-zero data
+        data: numpy array, region with non-zero data. May also contain zeros.
+        shape: tuple, shape of the full dataset
+    
+    methods:
+        Reimplements all arithmetic functions (+, -, *, /, //)
+        from_hdf5: Loads data from an hdf5 file
+        full: returns the full dataset
+        get_corners: Finds the edges of the non-zero region
+        get_data: Cuts out the non-zero region
+        get_shape: Gets the shape of the full dataset
+        intersect: Finds the interesection between two nzarray1d
+            objects
+        to_hdf5: Saves the data to an hdf5 file
+    """
     def __init__(self, arr=None, grp=None, lazy=False):
+        """arr: numpy array, full dataset
+        grp: h5py File or Group object, if used will load in data
+        lazy: bool, if True the data attribute is a view of the
+            h5py dataset called 'data' in grp
+        """
         if isinstance(arr, self.__class__):
             if arr.data is None:
                 self._none_array()
@@ -42,10 +66,26 @@ class nzarray1d():
         self.data = self.get_data(arrn)
     
     def get_shape(self, arr):
+        """Finds the shape of arr, enforces 1D arrays only. 
+        
+        args:
+            arr: numpy array
+        
+        returns:
+            shape: tuple, shape of the array
+        """
         assert len(arr.shape) == 1, "Must be 1d array."
         return arr.shape
     
     def get_corners(self, arr):
+        """Finds edges of non-zero region.
+        
+        args:
+            arr: numpy array
+        
+        returns:
+            corners: tuple, edges of the non-zero region
+        """
         if (arr == 0).all():
             return [0,0]
         else:
@@ -53,12 +93,25 @@ class nzarray1d():
             return (c[0], c[-1] + 1)
     
     def get_data(self, arr):
+        """Gets non-zero region of dataset.
+        
+        args:
+            arr: numpy array
+        
+        returns:
+            data: numpy array, non-zero region
+        """
         data = arr[
             self.corners[0]:self.corners[1]
         ]
         return data
     
     def full(self):
+        """Returns the full dataset.
+        
+        returns:
+            full: numpy array, dataset with shape self.shape
+        """
         if self.data is None:
             return None
         full = np.zeros(self.shape, dtype=self.data.dtype)
@@ -66,6 +119,16 @@ class nzarray1d():
         return full
 
     def intersect(self, other):
+        """Finds the intersection between two nzarrays. Returns a
+        nzarray1d object with data region of a minimal size to include
+        the full non-zero region from self and other.
+        
+        args:
+            other: nzarray1d, object to compare against
+        
+        returns:
+            out: nzarray1d, interection array
+        """
         assert \
             self.shape == other.shape, \
             "Can't cast nzarray of different shape"
@@ -87,6 +150,13 @@ class nzarray1d():
         return out, other_data
     
     def to_hdf5(self, grp, compression=None):
+        """Saves data to an hdf5 file.
+        
+        args:
+            grp: h5py File or Group, where data will be saved
+            compression: str, compression algorithm to use. See h5py
+                docs.
+        """
         grp.attrs['encoded'] = 'nzarray'
         for name in ['shape', 'corners']:
             data = getattr(self, name)
@@ -106,12 +176,27 @@ class nzarray1d():
             )
     
     def from_hdf5(self, grp):
+        """Loads in data from hdf5 file.
+        
+        args:
+            grp: h5py File or Group, where to load data from.
+        """
         for key in ['data', 'shape', 'corners']:
             self.__dict__[key] = np.empty_like(grp[key])
             self.__dict__[key] = grp[key][()]
         
     
     def _shift_index(self, idx, si=0):
+        """Shifts index values for full dataset to query data from
+        self.
+        
+        args:
+            idx: iterable, indexes to shift
+            si: int, starting index
+        
+        returns:
+            out: list, new set of shifted indeces
+        """
         out = []
         for i, val in enumerate(idx):
             j = i - i % 2 + si
@@ -120,6 +205,13 @@ class nzarray1d():
         return out
     
     def _get_idx(self, x, i=0):
+        """Handles negative indexing.
+        
+        args:
+            x: int, index value
+            i: int, which value in shape to use to handle negative
+                indexes
+        """
         if x >= 0:
             idx = x
         else:
@@ -127,6 +219,18 @@ class nzarray1d():
         return idx
     
     def _shift_slice(self, key, i=0):
+        """Shifts a slice object to allow data access without needing
+        to call the full dataset.
+        
+        args:
+            key: slice, desired slice of data
+            i: int, dimension in shape to use
+        
+        returns:
+            slice, bool: Either the original slice or shifted slice,
+                depending on whether the slice is entirely contained in
+                the dataset or not.
+        """
         if key.start is None or key.stop is None:
             return key, True
         elif (self._get_idx(key.start, i) >= self.corners[0] and 
@@ -265,7 +369,31 @@ class nzarray1d():
 
 
 class nzarray2d(nzarray1d):
+    """Sparse matrix like object which stores minimal box to contain
+    non-zero data. Only for 2D arrays.
+    
+    attributes:
+        corners: tuple, edges of the region containing non-zero data
+        data: numpy array, region with non-zero data. May also contain zeros.
+        shape: tuple, shape of the full dataset
+    
+    methods:
+        Reimplements all arithmetic functions (+, -, *, /, //)
+        from_hdf5: Loads data from an hdf5 file
+        full: returns the full dataset
+        get_corners: Finds the edges of the non-zero region
+        get_data: Cuts out the non-zero region
+        get_shape: Gets the shape of the full dataset
+        intersect: Finds the interesection between two nzarray1d
+            objects
+        to_hdf5: Saves the data to an hdf5 file
+    """
     def __init__(self, arr=None, grp=None, lazy=False):
+        """arr: numpy array, full dataset
+        grp: h5py File or Group object, if used will load in data
+        lazy: bool, if True the data attribute is a view of the
+            h5py dataset called 'data' in grp
+        """
         super().__init__(arr, grp, lazy)
     
     def _none_array(self):
@@ -275,10 +403,26 @@ class nzarray2d(nzarray1d):
         self.data = self.get_data(arrn)
     
     def get_shape(self, arr):
+        """Finds the shape of arr, enforces 2D arrays only. 
+        
+        args:
+            arr: numpy array
+        
+        returns:
+            shape: tuple, shape of the array
+        """
         assert len(arr.shape) == 2, 'Must be 2D array.'
         return arr.shape[:]
     
     def get_corners(self, arr):
+        """Finds edges of non-zero region.
+        
+        args:
+            arr: numpy array
+        
+        returns:
+            corners: tuple, edges of the non-zero region
+        """
         if (arr == 0).all():
             return [0,0,0,0]
         else:
@@ -287,6 +431,14 @@ class nzarray2d(nzarray1d):
             return (min(r), max(r) + 1, min(c), max(c) + 1)
     
     def get_data(self, arr):
+        """Gets non-zero region of dataset.
+        
+        args:
+            arr: numpy array
+        
+        returns:
+            data: numpy array, non-zero region
+        """
         data = arr[
             self.corners[0]:self.corners[1], 
             self.corners[2]:self.corners[3]
@@ -294,6 +446,11 @@ class nzarray2d(nzarray1d):
         return data
     
     def full(self):
+        """Returns the full dataset.
+        
+        returns:
+            full: numpy array, dataset with shape self.shape
+        """
         if self.data is None:
             return None
         arr = np.zeros(self.shape, dtype=self.data.dtype)
@@ -304,6 +461,16 @@ class nzarray2d(nzarray1d):
         return arr
     
     def intersect(self, other):
+        """Finds the intersection between two nzarrays. Returns a
+        nzarray2d object with data region of a minimal size to include
+        the full non-zero region from self and other.
+        
+        args:
+            other: nzarray2d, object to compare against
+        
+        returns:
+            out: nzarray2d, interection array
+        """
         assert list(self.shape) == list(other.shape), "Can't cast nzarray of different shape"
         out = nzarray2d()
         

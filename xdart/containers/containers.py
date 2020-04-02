@@ -11,6 +11,8 @@ from .. import utils
 
 
 class NoZeroArray():
+    """Deprecated, do not use!
+    """
     def __get__(self, instance, owner):
         if self.data is None:
             return None

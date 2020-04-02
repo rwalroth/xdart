@@ -3,6 +3,20 @@ from pyFAI import detector_factory
 import yaml
 
 class PONI(object):
+    """Container for values needed in AzimuthalIntegrator of pyFAI.
+    Also provides some utility functions for reading and writing data
+    
+    attributes:
+        detector: pyFAI Detector, detector object
+        dist: float, distance to detector, meters
+        poni1: float, location of point of nearest incidence 1, meters
+        poni2: float, location of point of nearest incidence 2, meters
+        rot1: float, angle of rotation 1, radians
+        rot2: float, angle of rotation 2, radians
+        rot3: float, angle of rotation 3, radians
+        wavelength: float, wavelength of energy, used for
+            collecting data, meters
+    """
     _poni_keys = {
         'Distance': 'dist',
         'Poni1': 'poni1',
@@ -14,6 +28,17 @@ class PONI(object):
     }
     def __init__(self, dist=0, poni1=0, poni2=0, rot1=0, rot2=0, rot3=0, 
                  wavelength=1e-10, detector=Detector(100e-6, 100e-6)):
+        """
+        dist: float, distance to detector, meters
+        poni1: float, location of point of nearest incidence 1, meters
+        poni2: float, location of point of nearest incidence 2, meters
+        rot1: float, angle of rotation 1, radians
+        rot2: float, angle of rotation 2, radians
+        rot3: float, angle of rotation 3, radians
+        wavelength: float, wavelength of energy, used for
+            collecting data, meters
+        detector: pyFAI Detector, detector object
+        """
         self.dist = dist
         self.poni1 = poni1 
         self.poni2 = poni2 
@@ -25,6 +50,8 @@ class PONI(object):
 
     
     def to_dict(self):
+        """Converts all attributes to dictionary with pyFAI names
+        """
         return {
             'Distance': self.dist,
             'Poni1': self.poni1,
@@ -43,6 +70,8 @@ class PONI(object):
 
     @classmethod
     def from_dict(cls, input):
+        """Creates PONI object from a dictionary.
+        """
         out = cls()
         for key in input:
             setattr(out, key, input[key])
@@ -50,6 +79,9 @@ class PONI(object):
     
     @classmethod
     def from_yamdict(cls, input):
+        """Creates a PONI object from the yaml dictionary returned
+        from reading a .poni file
+        """
         out = cls()
         for key in input:
             if key == 'Detector':
@@ -85,11 +117,15 @@ class PONI(object):
     
     @classmethod
     def from_yaml(cls, stream):
+        """Creates a PONI object from a yaml stream.
+        """
         input = yaml.safe_load(stream)
         return cls.from_yamdict(input)
     
     @classmethod
     def from_ponifile(cls, file):
+        """Creates a PONI object from a .poni file.
+        """
         if type(file) == str:
             with open(file, 'r') as f:
                 out = cls.from_yaml(f)
