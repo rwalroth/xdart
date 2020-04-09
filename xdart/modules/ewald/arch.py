@@ -11,8 +11,8 @@ from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI import units
 import numpy as np
 
-from ... import utils
-from ...containers import PONI, int_1d_data, int_2d_data
+from xdart import utils
+from xdart.utils.containers import PONI, int_1d_data, int_2d_data
 
 
 def parse_unit(result, wavelength):

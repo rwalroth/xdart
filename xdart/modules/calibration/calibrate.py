@@ -32,7 +32,7 @@ if __name__ == '__main__':
     
 from xdart.utils import get_from_pdi, get_motor_val, query, query_yes_no
 from xdart.utils import read_image_file, smooth_img, get_fit, fit_images_2D
-from xdart.pySSRL_bServer.bServer_funcs import specCommand, wait_until_SPECfinished, get_console_output
+from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand, wait_until_SPECfinished, get_console_output
 
 
 def get_detector_config():

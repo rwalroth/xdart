@@ -7,8 +7,8 @@ from pyFAI.multi_geometry import MultiGeometry
 
 from .arch import EwaldArch, parse_unit
 from .arch_series import ArchSeries
-from ...containers import int_1d_data, int_2d_data
-from ... import utils
+from xdart.utils.containers import int_1d_data, int_2d_data
+from xdart import utils
 
 
 class EwaldSphere():
