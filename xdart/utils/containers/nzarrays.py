@@ -6,7 +6,7 @@ import numpy as np
 from pyFAI import units
 import h5py
 
-from .. import utils
+from .. import _utils as utils
 
 
 class nzarray1d():
