@@ -22,7 +22,7 @@ QSizePolicy = QtWidgets.QSizePolicy
 QFileDialog = QtWidgets.QFileDialog
 
 ## This module imports
-from xdart.classes.ewald import EwaldSphere
+from xdart.modules.ewald import EwaldSphere
 from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
 from .tthetaUI import Ui_Form

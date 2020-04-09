@@ -15,7 +15,7 @@ from pyqtgraph import Qt
 
 # This module imports
 from .displayFrameUI import Ui_Form
-from xdart.gui.gui_utils import RectViewBox, get_rect
+from ...gui_utils import RectViewBox, get_rect
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
     """Widget for displaying 2D image data and 1D plots from EwaldSphere

@@ -12,7 +12,7 @@ import pandas as pd
 from pyqtgraph import Qt
 
 # This module imports
-from xdart.gui.gui_utils import DFTableModel
+from ...gui_utils import DFTableModel
 
 class metadataWidget(Qt.QtWidgets.QWidget):
     """Widget for displaying metadata.

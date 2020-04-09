@@ -21,7 +21,7 @@ from pyqtgraph.parametertree.ParameterItem import ParameterItem
 from pyqtgraph.parametertree.Parameter import Parameter
 
 # This module imports
-from .range_widget import rangeWidget
+from .widgets.range_widget import rangeWidget
 
 def return_no_zero(x, y):
     """Returns only values greater than 0 for plotting.

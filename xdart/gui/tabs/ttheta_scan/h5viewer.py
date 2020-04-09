@@ -16,7 +16,7 @@ QWidget = QtWidgets.QWidget
 
 # This module imports
 from .h5viewerUI import Ui_Form
-from xdart.gui.gui_utils import defaultWidget
+from ...widgets import defaultWidget
 
 class H5Viewer(QWidget):
     """Widget for displaying the contents of an EwaldSphere object and

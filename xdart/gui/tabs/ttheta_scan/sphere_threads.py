@@ -8,7 +8,7 @@ from threading import Condition
 import traceback
 
 # Other imports
-from xdart.containers import int_1d_data, int_2d_data
+from xdart.utils.containers import int_1d_data, int_2d_data
 
 # Qt imports
 from pyqtgraph import Qt

@@ -10,7 +10,6 @@ import multiprocessing as mp
 import traceback
 
 # Other imports
-from xdart.classes.ewald import EwaldSphere
 
 # Qt imports
 import pyqtgraph as pg
@@ -18,6 +17,9 @@ from pyqtgraph import Qt
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
+from xdart.modules.ewald import EwaldSphere
+
+
 class wranglerWidget(Qt.QtWidgets.QWidget):
     """Base class for wranglers. Extending this ensures all methods,
     signals, and attributes expected by ttheta_widget are present.

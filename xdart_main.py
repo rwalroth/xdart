@@ -18,12 +18,12 @@ QMainWindow = QtWidgets.QMainWindow
 
 # This module imports
 from xdart.gui.mainWindow import Ui_MainWindow
-from xdart import modules
+from xdart.gui import tabs
 
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.modules = {}
+        self.tabs = {}
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.actionOpen.triggered.connect(self.openFile)
@@ -33,7 +33,7 @@ class Main(QMainWindow):
         self.tabwidget.setTabsClosable(True)
         self.tabwidget.tabCloseRequested.connect(self.closeExperiment)
         self.setCentralWidget(self.tabwidget)
-        self.set_modules()
+        self.set_tabs()
         #
         self.show()
 
@@ -51,23 +51,23 @@ class Main(QMainWindow):
             print(e)
 
 
-    def set_modules(self):
-        for e in modules.exp_list:
+    def set_tabs(self):
+        for e in tabs.exp_list:
             self.ui.menuExperiments.addAction(e)
         self.ui.menuExperiments.triggered.connect(self.openExperiment)
 
     def openExperiment(self, q):
         if q.text() == 'ttheta_scan':
-            if 'ttheta_scan' not in self.modules:
-                self.modules['ttheta_scan'] = modules.ttheta_scan.tthetaWidget()
-                self.tabwidget.addTab(self.modules['ttheta_scan'], 'ttheta_scan')
+            if 'ttheta_scan' not in self.tabs:
+                self.tabs['ttheta_scan'] = tabs.ttheta_scan.tthetaWidget()
+                self.tabwidget.addTab(self.tabs['ttheta_scan'], 'ttheta_scan')
 
     def closeExperiment(self, q):
         _to_close = self.tabwidget.widget(q)
         name = self.tabwidget.tabText(q)
         _to_close.close()
         self.tabwidget.removeTab(q)
-        del self.modules[name]
+        del self.tabs[name]
         gc.collect()
 
 if __name__ == '__main__':
