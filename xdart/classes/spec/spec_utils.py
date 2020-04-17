@@ -14,6 +14,15 @@ import pandas as pd
 from xdart.utils import soft_list_eval
 
 def get_spec_header(file_path):
+    """Gets the header information of a spec data file.
+    
+    args:
+        file_path: str, path to spec data file.
+    
+    returns:
+        header: dict, header information including metadata and motor
+            and detector names.
+    """
     cont = True
     header = {
         'meta': {},
@@ -64,6 +73,18 @@ def get_spec_header(file_path):
 
 
 def get_spec_scan(file_path, scan_number, header):
+    """Reads a spec data file and returns a specified scan as a
+    pandas DataFrame.
+    
+    args:
+        file_path: str, path to spec data file.
+        scan_number: int, scan to look for.
+        header: dict, header information returned from get_header.
+    
+    returns:
+        df: pandas DataFrame, the data from the scan.
+        meta: dict, metadata associated with scan.
+    """
     cont = True
     
     with open(file_path, 'r') as file:
@@ -82,7 +103,22 @@ def get_spec_scan(file_path, scan_number, header):
                     df, meta = _parse_scan(line, header, df, meta)
     return df, meta
                     
-def _parse_scan(line, header, df=None, meta={}):
+def _parse_scan(line, header, df=None, meta=None):
+    """Helper function to parse information from spec file into scan
+    data.
+    
+    args:
+        header: dict, header information returned from get_header.
+        df: pandas DataFrame, scan data read to this point in scan.
+        meta: dict, metadata associated with the scan.
+    
+    returns:
+        df: pandas DataFrame, the data from the scan.
+        meta: dict, metadata associated with scan.
+    """
+    if meta is None:
+        meta = {}
+        
     flag = line[0]
     if '#' in flag:
         if 'S' in flag:

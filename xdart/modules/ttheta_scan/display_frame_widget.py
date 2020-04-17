@@ -18,6 +18,35 @@ from .displayFrameUI import Ui_Form
 from xdart.gui.gui_utils import RectViewBox, get_rect
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
+    """Widget for displaying 2D image data and 1D plots from EwaldSphere
+    objects. 
+    
+    attributes:
+        auto_last: bool, whether to automatically select latest arch
+        curve1: pyqtgraph pen, overall data line
+        curve2: pyqtgraph pen, individual arch data line
+        histogram: pyqtgraph HistogramLUTWidget, used for adjusting min
+            and max level for image
+        image: pyqtgraph ImageItem, displays the 2D data
+        image_plot: pyqtgraph plot, for 2D data
+        image_win: pyqtgraph GraphicsLayoutWidget, layout for the 2D
+            data
+        imageViewBox: RectViewBox, used to set behavior of the image
+            plot
+        plot: pyqtgraph plot, for 1D data
+        plot_layout: QVBoxLayout, for holding the 1D plotting widgets
+        plot_win: pyqtgraph GraphicsLayoutWidget, layout for the 1D
+            data
+        sphere: EwaldSphere, unused.
+        ui: Ui_Form from qtdeisgner
+    
+    methods:
+        get_arch_data_2d: Gets 2D data from an arch object
+        get_sphere_data_2d: Gets overall 2D data for the sphere
+        update: Updates the displayed image and plot
+        update_image: Updates image data based on selections
+        update_plot: Updates plot data based on selections
+    """
     def __init__(self, parent=None, sphere=None):
         _translate = Qt.QtCore.QCoreApplication.translate
         super().__init__(parent)
@@ -218,7 +247,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
 def read_NRP(box, int_data):
     """Reads the norm, raw, pcount option box and returns
-    appropriate ydata
+    appropriate ydata.
+    
+    args:
+        box: QComboBox, list of choices for picking data to return
+        int_data: int_nd_data object, data to parse
+    
+    returns:
+        data: numpy array, non-zero region from nzarray based on
+            choices in box
+        corners: tuple, the bounds of the non-zero region of the
+            dataset
     """
     if box.currentIndex() == 0:
         nzarr = int_data.norm
@@ -240,6 +279,13 @@ def read_NRP(box, int_data):
 
 def get_xdata(box, int_data):
     """Reads the unit box and returns appropriate xdata
+    
+    args:
+        box: QComboBox, list of options
+        int_data: int_nd_data object, data to parse
+    
+    returns:
+        xdata: numpy array, x axis data for plot.
     """
     if box.currentIndex() == 0:
         xdata = int_data.ttheta

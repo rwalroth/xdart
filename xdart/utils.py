@@ -28,6 +28,14 @@ from xdart.calibration.lmfit_models import PlaneModel, Gaussian2DModel, Lorentzi
 
 
 def write_xye(fname, xdata, ydata):
+    """Saves data to an xye file. Variance is the square root of the
+    signal.
+    
+    args:
+        fname: str, path to file
+        xdata: angle or q data
+        ydata: intensity
+    """
     with open(fname, "w") as file:
         for i in range(0, len(xdata)):
             file.write(
@@ -38,6 +46,13 @@ def write_xye(fname, xdata, ydata):
 
 
 def write_csv(fname, xdata, ydata):
+    """Saves data to a csv file.
+    
+    args:
+        fname: str, path to file
+        xdata: angle or q data
+        ydata: intensity
+    """
     with open(fname, 'w') as file:
         for i in range(0, len(xdata)):
             file.write(str(xdata[i]) + ', ' + str(ydata[i]) + '\n')
@@ -210,6 +225,20 @@ def fit_images_2D(fname, tth, function='gaussian',
 
 
 def data_to_h5(data, grp, key, encoder='yaml', compression='lzf'):
+    """Saves data to hdf5 file. Global function, calls other functions
+    based on data type. If data type can't be determined, tries to
+    save as a dataset, and ultimately defaults to a string
+    representation.
+    
+    args:
+        data: object to be saved
+        grp: h5py File or Group, where data will be saved. Creates new
+            Group or Dataset in grp.
+        key: str, name of new Group or Dataset
+        encoder: str, 'yaml' or 'json', how to encode stubborn data
+            types.
+        compression: str, compression algorithm to use. See h5py docs.
+    """
     if data is None:
         none_to_h5(grp, key)
 
@@ -265,11 +294,10 @@ def dict_to_h5(data, grp, key, **kwargs):
     See data_to_h5 for how datatypes are handled.
 
     args:
-        data: dictionary to add to hdf5
-        grp: h5py group object to add the data to
-
-    returns:
-        None
+        data: dict, dictionary to add to hdf5
+        grp: h5py Group or File, where to add the data to
+        key: str, name of new group
+        **kwargs: passed on to data_to_h5.
     """
     if key in grp:
         if not check_encoded(grp[key], "dict"):
@@ -288,6 +316,15 @@ def dict_to_h5(data, grp, key, **kwargs):
 
 
 def str_to_h5(data, grp, key):
+    """Saves string to hdf5 file. Saved as h5py.string_dtype, if
+    key exists will overwrite.
+    
+    args:
+        data: str, object to be saved
+        grp: h5py File or Group, where data will be saved. Creates new
+            Group or Dataset in grp.
+        key: str, name of new Group or Dataset
+    """
     if key in grp:
         if check_encoded(grp[key], "str"):
             grp[key][()] = data
@@ -299,6 +336,15 @@ def str_to_h5(data, grp, key):
 
 
 def series_to_h5(data, grp, key, compression):
+    """Saves pandas Series to hdf5 file.
+    
+    args:
+        data: Series, object to be saved
+        grp: h5py File or Group, where data will be saved. Creates new
+            Group or Dataset in grp.
+        key: str, name of new Group or Dataset
+        compression: str, compression algorithm to use. See h5py docs.
+    """
     if key in grp:
         if check_encoded(grp[key], "Series"):
             new_grp = grp[key]
@@ -318,6 +364,15 @@ def series_to_h5(data, grp, key, compression):
 
 
 def dataframe_to_h5(data, grp, key, compression):
+    """Saves pandas DataFrame to hdf5 file.
+    
+    args:
+        data: DataFrame, object to be saved
+        grp: h5py File or Group, where data will be saved. Creates new
+            Group or Dataset in grp.
+        key: str, name of new Group or Dataset
+        compression: str, compression algorithm to use. See h5py docs.
+    """
     if key in grp:
         if check_encoded(grp[key], "DataFrame"):
             new_grp = grp[key]
@@ -339,6 +394,16 @@ def dataframe_to_h5(data, grp, key, compression):
 
 
 def index_to_h5(index, key, grp, compression):
+    """Saves index from Series or DataFrame to hdf5 file. If not a
+    scalar index, saves data as strings.
+    
+    args:
+        index: object to be saved
+        key: str, name of new Group or Dataset
+        grp: h5py File or Group, where data will be saved. Creates new
+            Group or Dataset in grp.
+        compression: str, compression algorithm to use. See h5py docs.
+    """
     if key in grp:
         if grp[key].shape == (0,):
             del(grp[key])
@@ -371,6 +436,14 @@ def index_to_h5(index, key, grp, compression):
 
 
 def scalar_to_h5(data, grp, key):
+    """Saves scalar to hdf5 file.
+    
+    args:
+        data: scalar, object to be saved
+        grp: h5py File or Group, where data will be saved. Creates new
+            Group or Dataset in grp.
+        key: str, name of new Group or Dataset
+    """
     if key in grp:
         if check_encoded(grp[key], 'scalar'):
             if grp[key].dtype == np.array(data).dtype:
@@ -382,6 +455,16 @@ def scalar_to_h5(data, grp, key):
 
 
 def arr_to_h5(data, grp, key, compression):
+    """Saves numpy array or list to hdf5 file. Ensures resizability, and
+    overwrites data present without deleting data.
+    
+    args:
+        data: numpy array or list, object to be saved
+        grp: h5py File or Group, where data will be saved. Creates new
+            Group or Dataset in grp.
+        key: str, name of new Group or Dataset
+        compression: str, compression algorithm to use. See h5py docs.
+    """
     arr = np.array(data)
     if key in grp:
         if check_encoded(grp[key], 'arr'):
@@ -396,6 +479,16 @@ def arr_to_h5(data, grp, key, compression):
 
 
 def encoded_h5(data, grp, key, encoder):
+    """Saves data of unparsed type to hdf5 file. Uses the encoder to
+    represent the data as a string.
+    
+    args:
+        data: data to be saved, unknown type.
+        grp: h5py File or Group, where data will be saved.
+        key: str, name of new Dataset
+        encoder: str, 'yaml' or 'json', how to encode stubborn data
+            types.
+    """
     if encoder == 'yaml':
         string = np.string_(yaml.dump(data))
     elif encoder == 'json':
@@ -415,6 +508,18 @@ def attributes_to_h5(obj, grp, lst_attr=None, priv=False, dpriv=False,
     """Function which takes a list of class attributes and stores them
     in a provided h5py group. See data_to_h5 for how datatypes are
     handled.
+    
+    args:
+        obj: object to store
+        grp: h5py File or Group, where data will be saved. Creates new
+            Group or Dataset in grp.
+        lst_attr: list or None, if list only the listed attributes are
+            stored.
+        priv: bool, if True and lst_attr is None, stores functions
+            beginning with single _
+        drpiv: bool, if True and lst_attr is None, stores attributes
+            beginning with double _
+        kwargs: passed to data_to_h5
     """
     if lst_attr is None:
         if dpriv:
@@ -429,6 +534,17 @@ def attributes_to_h5(obj, grp, lst_attr=None, priv=False, dpriv=False,
 
 
 def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
+    """Reads data from hdf5 file and returns appropriate datatype.
+    
+    args:
+        grp: h5py File or Group, where the data is stored
+        encoder: bool, if True checks the 'encoded' attribute to know
+            the type
+        Loader: yaml Loader, passed to yaml if encoded with yaml.
+    
+    returns:
+        data: unknown type, the data in grp.
+    """
     if encoder and 'encoded' in grp.attrs:
         encoded = grp.attrs['encoded']
         if encoded == 'None':
@@ -497,6 +613,15 @@ def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
 
 
 def h5_to_index(grp):
+    """Gets index from grp for Series or DataFrame. Uses soft_list_eval
+    to handle object index types.
+    
+    args:
+        grp: h5py File or Group, where the data is stored
+        
+    returns:
+        list or array to be used as index
+    """
     if np.issubdtype(grp.dtype, np.number):
         return grp[()]
     else:
@@ -526,6 +651,16 @@ def h5_to_dict(grp, **kwargs):
 
 
 def h5_to_attributes(obj, grp, lst_attr=None, **kwargs):
+    """Sets attributes of obj using data in an hdf5 file. See h5_to_data
+    for how data types are handled.
+    
+    args:
+        obj: object to set attributes to
+        grp: h5py File or Group, where the data is stored
+        lst_attr: list of attributes to set. If not provided, sets
+            all keys in grp
+        kwargs: Passed to h5_to_data
+    """
     if lst_attr is None:
         lst_attr = grp.keys()
     for attr in lst_attr:
@@ -548,6 +683,8 @@ def soft_list_eval(data, scope={}):
 
     args:
         data: list or array-like, input data to be evaluated
+        scope: dict, scope of functions passed to eval. See eval
+            documentation
 
     returns:
         out: list of values in data with eval applied if possible
@@ -566,6 +703,15 @@ def soft_list_eval(data, scope={}):
 
 
 def catch_h5py_file(filename, mode='r', tries=100, *args, **kwargs):
+    """Forces an h5py object to be opened. Catches OSErrors which can
+    be thrown. Will try a set number of times before giving up.
+    
+    args:
+        filename: str, path to file
+        mode: str, mode to open file. See h5py docs
+        tries: int, how many times to try opening the file
+        args, kwargs: passed to h5py.File
+    """
     failed = True
     for i in range(tries):
         if i % 10 == 0 and i > 0:

@@ -15,6 +15,15 @@ from pyqtgraph import Qt
 from xdart.gui.gui_utils import DFTableModel
 
 class metadataWidget(Qt.QtWidgets.QWidget):
+    """Widget for displaying metadata.
+    
+    attributes:
+        layout: QVBoxLayout, widget layout
+        tableview: QTableView, viewer for table model
+    
+    methods:
+        update: Updates the data displayed
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.layout = Qt.QtWidgets.QVBoxLayout()
@@ -25,6 +34,12 @@ class metadataWidget(Qt.QtWidgets.QWidget):
         self.layout.addWidget(self.tableview)
     
     def update(self, sphere, arch=None):
+        """Updates the table with new data.
+        
+        args:
+            sphere: EwaldSphere, sphere to get data from.
+            arch: int, idx of EwaldArch to update table with.
+        """
         #self.tableview.reset()
         if arch is None:
             self.tableview.setModel(DFTableModel(sphere.scan_data.transpose()))
