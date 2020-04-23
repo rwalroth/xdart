@@ -92,6 +92,19 @@ class EwaldSphere():
         self.bai_1d = int_1d_data()
         self.bai_2d = int_2d_data()
 
+    def reset(self):
+        """Resets all held data objects to blank state, called when all
+        new data is going to be loaded or when a sphere needs to be
+        purged of old data.
+        """
+        with self.sphere_lock:
+            self.scan_data = pd.DataFrame()
+            self.bai_1d = int_1d_data()
+            self.bai_2d = int_2d_data()
+            self.mgi_1d = int_1d_data()
+            self.mgi_2d = int_2d_data()
+            self.arches = ArchSeries(self.data_file, self.file_lock)
+    
     def add_arch(self, arch=None, calculate=True, update=True, get_sd=True,
                  set_mg=True, **kwargs):
         """Adds new arch to sphere.
@@ -321,8 +334,8 @@ class EwaldSphere():
             with utils.catch_h5py_file(self.data_file, mode) as file:
                 self._save_to_h5(file, *args, **kwargs)
 
-    def _save_to_h5(self, grp, arches=None, data_only=False, replace=False,
-                   compression='lzf'):
+    def _save_to_h5(self, grp, arches=None, data_only=False, 
+                    compression='lzf'):
         """Actual function for saving data, run with the file open and
             holding the file_lock.
         """
@@ -349,7 +362,7 @@ class EwaldSphere():
             self.mgi_1d.to_hdf5(grp['mgi_1d'], compression)
             self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
     
-    def load_from_h5(self, *args, **kwargs):
+    def load_from_h5(self, replace=True, *args, **kwargs):
         """Loads data stored in hdf5 file.
         
         args:
@@ -359,20 +372,23 @@ class EwaldSphere():
                 object.
         """
         with self.file_lock:
+            if replace:
+                self.reset()
             with utils.catch_h5py_file(self.data_file, 'r') as file:
                 self._load_from_h5(file, *args, **kwargs)
 
-    def _load_from_h5(self, grp, data_only=False, replace=True, set_mg=True):
+    def _load_from_h5(self, grp, data_only=False, set_mg=True):
         """Actual function for loading data, run with the file open and
             holding the file_lock.
         """
         with self.sphere_lock:
-
             if 'type' in grp.attrs:
                 if grp.attrs['type'] == 'EwaldSphere':
                     for arch in grp['arches']:
                         if int(arch) not in self.arches.index:
                             self.arches.index.append(int(arch))
+                    
+                    self.arches.sort_index(inplace=True)
                             
                     if data_only:
                         lst_attr = [
@@ -394,6 +410,38 @@ class EwaldSphere():
                     self.mgi_2d.from_hdf5(grp['mgi_2d'])
                     if set_mg:
                         self.set_multi_geo(**self.mg_args)
+    
+    def set_datafile(self, fname, name=None, keep_current_data=False,
+                     save_args={}, load_args={}):
+        """Sets the data_file. If file exists and has data, loads in the
+        data. Otherwise, creates new file and resets self.
+        
+        args:
+            fname: str, new data file
+            name: str or None, new name. If None, name is obtained from
+                fname.
+            keep_current_data: bool, if True overwrites any existing
+                data in the file. Otherwise, current data is either
+                overwritten by data in file or deleted if no data
+                exists, except any args dicts which are untouched.
+            save_args: dict, arguments to be passed to save_to_h5
+            load_args: dict, arguments to be passed to load_from_h5
+        """
+        with self.sphere_lock:
+            self.data_file = fname
+            if name is None:
+                self.name = os.path.split(fname)[-1].split('.')[0]
+            else:
+                self.name = name
+            if keep_current_data:
+                self.save_to_h5(replace=True, **save_args)
+            else:
+                if os.path.exists(fname):
+                    self.load_from_h5(replace=True, **load_args)
+                else:
+                    self.reset()
+                    self.save_to_h5(replace=True, **save_args)
+            
     
     def save_bai_1d(self, compression='lzf'):
         """Function to save only the bai_1d object.

@@ -89,7 +89,7 @@ class EwaldArch():
     """
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, idx=None, map_raw=None, poni=PONI(), mask=None,
+    def __init__(self, idx=None, map_raw=None, poni=None, mask=None,
                  scan_info={}, ai_args={}, file_lock=Condition()):
         # pylint: disable=too-many-arguments
         """idx: int, name of the arch.
@@ -103,7 +103,10 @@ class EwaldArch():
         super(EwaldArch, self).__init__()
         self.idx = idx
         self.map_raw = map_raw
-        self.poni = poni
+        if poni is None:
+            self.poni = PONI()
+        else:
+            self.poni = poni
         if mask is None and map_raw is not None:
             self.mask = np.arange(map_raw.size)[map_raw.flatten() < 0]
         else:
@@ -123,6 +126,29 @@ class EwaldArch():
             **ai_args
         )
         self.arch_lock = Condition()
+        self.map_norm = 1
+        self.int_1d = int_1d_data()
+        self.int_2d = int_2d_data()
+    
+    def reset(self):
+        """Clears all data, resets to a default EwaldArch.
+        """
+        self.idx = None
+        self.map_raw = None
+        self.poni = PONI()
+        self.mask = None
+        self.scan_info = {}
+        self.integrator = AzimuthalIntegrator(
+            dist=self.poni.dist,
+            poni1=self.poni.poni1,
+            poni2=self.poni.poni2,
+            rot1=self.poni.rot1,
+            rot2=self.poni.rot2,
+            rot3=self.poni.rot3,
+            wavelength=self.poni.wavelength,
+            detector=self.poni.detector,
+            **self.ai_args
+        )
         self.map_norm = 1
         self.int_1d = int_1d_data()
         self.int_2d = int_2d_data()
@@ -285,9 +311,6 @@ class EwaldArch():
 
         args:
             file: h5py file or group object
-
-        returns:
-            None
         """
         with self.file_lock:
             with self.arch_lock:
