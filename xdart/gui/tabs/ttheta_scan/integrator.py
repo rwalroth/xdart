@@ -161,15 +161,13 @@ class integratorTree(Qt.QtWidgets.QWidget):
         setEnabled: Enables integration and parameter modification.
         update: Grabs args from EwaldSphere object and sets all params
             to match.
-    
-    signals:
-        sigUpdateArgs: str, sends out args to be updated.
     """
-    sigUpdateArgs = Qt.QtCore.Signal(str)
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self, sphere, arch, parent=None):
+        super().__init__(parent) 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+        self.sphere = sphere
+        self.arch = arch
         self.parameters = Parameter.create(
             name='integrator', type='group', children=params
         )
@@ -220,22 +218,22 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.azimuthalRange2D.sigPointsChanged.connect(self._set_azimuthal_points2D)
         
         self.advancedWidget1D = advancedParameters(self.bai_1d_pars, 'bai_1d')
-        self.advancedWidget1D.sigUpdateArgs.connect(self.sigUpdateArgs.emit)
+        self.advancedWidget1D.sigUpdateArgs.connect(self.get_args)
         self.advancedWidget2D = advancedParameters(self.bai_2d_pars, 'bai_2d')
-        self.advancedWidget2D.sigUpdateArgs.connect(self.sigUpdateArgs.emit)
+        self.advancedWidget2D.sigUpdateArgs.connect(self.get_args)
         
         self.ui.advanced1D.clicked.connect(self.advancedWidget1D.show)
         self.ui.advanced2D.clicked.connect(self.advancedWidget2D.show)
     
-    def update(self, sphere):
+    def update(self):
         """Grabs args from sphere and uses _sync_ranges and
         _update_params private methods to update.
         
         args:
             sphere: EwaldSphere, object to get args from.
         """
-        self._sync_ranges(sphere)
-        self._update_params(sphere)
+        self._sync_ranges()
+        self._update_params()
     
     def setEnabled(self, enable):
         """Overrides parent class method. Ensures appropriate child
@@ -256,7 +254,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.ui.advanced2D.setEnabled(enable)
         
     
-    def _sync_ranges(self, sphere):
+    def _sync_ranges(self):
         """Syncs the range widgets. If sphere has set range arguments,
         applies those to rangeWidgets. Otherwise, adds current values to
         sphere.
@@ -264,15 +262,18 @@ class integratorTree(Qt.QtWidgets.QWidget):
         args:
             sphere: EwaldSphere, object to get args from.
         """
-        with sphere.sphere_lock:
+        with self.sphere.sphere_lock:
             self._sync_range(
-                sphere.bai_1d_args, 'radial_range', 'numpoints', self.radialRange1D
+                self.sphere.bai_1d_args, 'radial_range', 'numpoints',
+                self.radialRange1D
             )
             self._sync_range(
-                sphere.bai_2d_args, 'radial_range', 'npt_rad', self.radialRange2D
+                self.sphere.bai_2d_args, 'radial_range', 'npt_rad',
+                self.radialRange2D
             )
             self._sync_range(
-                sphere.bai_2d_args, 'azimuth_range', 'npt_azim', self.azimuthalRange2D
+                self.sphere.bai_2d_args, 'azimuth_range', 'npt_azim',
+                self.azimuthalRange2D
             )
     
     def _sync_range(self, args, rkey, pkey, rwidget):
@@ -325,35 +326,35 @@ class integratorTree(Qt.QtWidgets.QWidget):
             args[rkey] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
             
     
-    def _update_params(self, sphere):
+    def _update_params(self):
         """Grabs args from sphere and syncs parameters with them.
         
         args:
             sphere: EwaldSphere, object to get args from.
         """
-        with sphere.sphere_lock:
-            self._args_to_params(sphere.bai_1d_args, self.bai_1d_pars)
-            self._args_to_params(sphere.bai_2d_args, self.bai_2d_pars)
-            self._args_to_params(sphere.mg_args, self.mg_pars)
+        with self.sphere.sphere_lock:
+            self._args_to_params(self.sphere.bai_1d_args, self.bai_1d_pars)
+            self._args_to_params(self.sphere.bai_2d_args, self.bai_2d_pars)
+            self._args_to_params(self.sphere.mg_args, self.mg_pars)
         
-    def get_args(self, sphere, key):
+    def get_args(self, key):
         """Updates sphere with all parameters held in integrator.
         
         args:
             sphere: EwaldSphere, object to update
             key: str, which args to update.
         """
-        with sphere.sphere_lock:
+        with self.sphere.sphere_lock:
             if key == 'bai_1d':
-                self._params_to_args(sphere.bai_1d_args, self.bai_1d_pars)
-                self._sync_range(sphere.bai_1d_args, 'radial_range', 'numpoints',
-                                self.radialRange1D)
+                self._params_to_args(self.sphere.bai_1d_args, self.bai_1d_pars)
+                self._sync_range(self.sphere.bai_1d_args, 'radial_range', 
+                                 'numpoints', self.radialRange1D)
             elif key == 'bai_2d':
-                self._params_to_args(sphere.bai_2d_args, self.bai_2d_pars)
-                self._sync_range(sphere.bai_2d_args, 'radial_range',
-                                'npt_rad', self.radialRange2D)
-                self._sync_range(sphere.bai_2d_args, 'azimuth_range',
-                                'npt_azim', self.azimuthalRange2D)
+                self._params_to_args(self.sphere.bai_2d_args, self.bai_2d_pars)
+                self._sync_range(self.sphere.bai_2d_args, 'radial_range',
+                                 'npt_rad', self.radialRange2D)
+                self._sync_range(self.sphere.bai_2d_args, 'azimuth_range',
+                                 'npt_azim', self.azimuthalRange2D)
             
 
     def _args_to_params(self, args, tree):
@@ -424,37 +425,37 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def _set_radial_range1D(self, low, high):
         self.bai_1d_pars.child("radial_range", "Low").setValue(low)
         self.bai_1d_pars.child("radial_range", "High").setValue(high)
-        self.sigUpdateArgs.emit('bai_1d')
+        self.get_args('bai_1d')
         
     def _set_radial_unit1D(self, val):
         self.bai_1d_pars.child("unit").setIndex(val)
-        self.sigUpdateArgs.emit('bai_1d')
+        self.get_args('bai_1d')
 
     def _set_radial_points1D(self, val):
         self.bai_1d_pars.child("numpoints").setValue(val)
-        self.sigUpdateArgs.emit("bai_1d")
+        self.get_args("bai_1d")
     
     def _set_radial_range2D(self, low, high):
         self.bai_2d_pars.child("radial_range", "Low").setValue(low)
         self.bai_2d_pars.child("radial_range", "High").setValue(high)
-        self.sigUpdateArgs.emit('bai_2d')
+        self.get_args('bai_2d')
         
     def _set_radial_unit2D(self, val):
         self.bai_2d_pars.child("unit").setIndex(val)
-        self.sigUpdateArgs.emit('bai_2d')
+        self.get_args('bai_2d')
 
     def _set_radial_points2D(self, val):
         self.bai_2d_pars.child("npt_rad").setValue(val)
-        self.sigUpdateArgs.emit("bai_2d")
+        self.get_args("bai_2d")
 
     def _set_azimuthal_range2D(self, low, high):
         self.bai_2d_pars.child("azimuth_range", "Low").setValue(low)
         self.bai_2d_pars.child("azimuth_range", "High").setValue(high)
-        self.sigUpdateArgs.emit('bai_2d')
+        self.get_args('bai_2d')
     
     def _set_azimuthal_points2D(self, val):
         self.bai_2d_pars.child("npt_azim").setValue(val)
-        self.sigUpdateArgs.emit("bai_2d")
+        self.get_args("bai_2d")
 
 
 class advancedParameters(Qt.QtWidgets.QWidget):

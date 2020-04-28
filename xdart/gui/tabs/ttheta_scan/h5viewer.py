@@ -231,9 +231,6 @@ class H5Viewer(QWidget):
                 with self.file_lock:
                     with catch_h5py_file(self.sphere.data_file, 'r') as file:
                         self.arch.load_from_h5(file['arches'])
-        else:
-            self.sphere.reset()
-            self.sphere.name = "null_main"
         self.sigUpdate.emit()
     
     def open_folder(self):

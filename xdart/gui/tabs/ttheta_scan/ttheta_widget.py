@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 
 # Qt imports
 from pyqtgraph import Qt
-from pyqtgraph.Qt import QtWidgets
+from pyqtgraph.Qt import QtWidgets, QtCore
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
 QFileDialog = QtWidgets.QFileDialog
@@ -68,7 +68,7 @@ class tthetaWidget(QWidget):
             entire scan or individual image.
         
     attributes:
-        arch: int, idx of current arch # TODO: this should be an EwaldArch
+        arch: EwaldArch, currently loaded arch object
         command_queue: Queue, used to send commands to wrangler
         dirname: str, absolute path of current directory for scan
         file_lock: mp.Condition, process safe lock
@@ -83,13 +83,10 @@ class tthetaWidget(QWidget):
         bai_2d:  Sends signal to thread to start integrating 2d
         clock: Unimplemented, used for periodic updates
         close: Handles cleanup prior to closing
-        continue_wrangler, pause_wrangler, stop_wrangler: send commands
-            to wrangler thread. Wired to signals in wrangler
         enable_integration: Sets enabled status of widgets related to
             integration
         first_arch, last_arch, next_arch: Handle moving between
             different arches in the overall sphere
-        get_args: Calls integrator tree get_args on sphere
         load_and_set: Combination of load and set methods. Also governs
             file explorer behavior in h5viewer.
         load_sphere: 
@@ -125,7 +122,6 @@ class tthetaWidget(QWidget):
 
         # H5Viewer signal connections
         self.h5viewer.sigUpdate.connect(self.set_data)
-        self.h5viewer.sigNewFile.connect(self.set_file)
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(self.sphere, self.arch, 
@@ -145,15 +141,14 @@ class tthetaWidget(QWidget):
         )
         
         # IntegratorFrame setup
-        self.integratorTree = integratorTree()
+        self.integratorTree = integratorTree(self.sphere, self.arch)
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
-        self.integratorTree.update(self.sphere)
+        self.integratorTree.update()
 
         # Integrator signal connections
-        self.integratorTree.sigUpdateArgs.connect(self.get_args)
         self.integratorTree.ui.integrate1D.clicked.connect(self.bai_1d)
         self.integratorTree.ui.integrate2D.clicked.connect(self.bai_2d)
-        self.integrator_thread.update.connect(self.displayframe.update)
+        self.integrator_thread.update.connect(self.thread_update)
         self.integrator_thread.finished.connect(self.thread_finished)
 
         # Metadata setup
@@ -173,8 +168,8 @@ class tthetaWidget(QWidget):
         self.command_queue = Queue()
         self.set_wrangler(self.ui.wranglerStack.currentIndex())
         
-        self.get_args('bai_1d')
-        self.get_args('bai_2d')
+        self.integratorTree.get_args('bai_1d')
+        self.integratorTree.get_args('bai_2d')
         
         # Setup defaultWidget in h5viewer with parameters
         parameters = [self.integratorTree.parameters]
@@ -192,6 +187,9 @@ class tthetaWidget(QWidget):
         args:
             qint: Qt int, index of the new wrangler
         """
+        if 'wrangler' in self.__dict__:
+            self.disconnect_wrangler()
+            
         self.wrangler = self.ui.wranglerStack.widget(qint)
         self.wrangler.input_q = self.command_queue
         self.wrangler.fname = self.fname
@@ -201,22 +199,26 @@ class tthetaWidget(QWidget):
         self.wrangler.sigUpdateFile.connect(self.new_scan)
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
+        self.h5viewer.sigNewFile.connect(self.wrangler.set_fname)
+    
+    def disconnect_wrangler(self):
+        """Disconnects all signals attached the the current wrangler
+        """
+        for signal in (self.wrangler.sigStart,
+                       self.wrangler.sigUpdateData,
+                       self.wrangler.sigUpdateFile,
+                       self.wrangler.finished,
+                       self.h5viewer.sigNewFile):
+            while True:
+                try:
+                    signal.disconnect()
+                except TypeError:
+                    break
     
     def clock(self):
         """Called whenever the QTimer counts down.
         """
         pass
-
-    def set_file(self, fname):
-        """Changes the data file. Ensures children with same file name
-        are properly synced.
-        
-        args:
-            fname: str, absolute path for data file
-        """
-        with self.file_lock:
-            if not self.wrangler.thread.isRunning():
-                self.wrangler.set_fname(fname)
     
     def update_data(self, q):
         """Called by signal from wrangler. If the current scan name
@@ -252,8 +254,6 @@ class tthetaWidget(QWidget):
                 self.integratorTree.ui.all1D.setEnabled(False)
                 self.integratorTree.ui.all2D.setChecked(True)
                 self.integratorTree.ui.all2D.setEnabled(False)
-                
-                self.metawidget.update(self.sphere)
             
             else:
                 self.displayframe.ui.imageIntRaw.setEnabled(True)
@@ -262,7 +262,8 @@ class tthetaWidget(QWidget):
                 self.integratorTree.ui.all1D.setEnabled(True)
                 self.integratorTree.ui.all2D.setEnabled(True)
                 
-                self.metawidget.update(self.sphere)
+            self.metawidget.update(self.sphere)
+            self.integratorTree.update()
     
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
@@ -335,17 +336,10 @@ class tthetaWidget(QWidget):
         del(self.displayframe.arch)
         super().close()
     
-    def get_args(self, key):
-        """Calls integratorTree get_args function.
-        """
-        self.integratorTree.get_args(self.sphere, key)
-    
     def bai_1d(self, q):
         """Uses the integrator_thread attribute to call bai_1d
         """
         with self.integrator_thread.lock:
-            self.integrator_thread.sphere = self.sphere
-            self.integrator_thread.arch = self.arch
             if self.integratorTree.ui.all1D.isChecked() or type(self.arch) != int:
                 self.integrator_thread.method = 'bai_1d_all'
             else:
@@ -360,8 +354,6 @@ class tthetaWidget(QWidget):
         """Uses the integrator_thread attribute to call bai_2d
         """
         with self.integrator_thread.lock:
-            self.integrator_thread.sphere = self.sphere
-            self.integrator_thread.arch = self.arch
             if self.integratorTree.ui.all2D.isChecked():
                 self.integrator_thread.method = 'bai_2d_all'
             else:
@@ -376,8 +368,6 @@ class tthetaWidget(QWidget):
         """Uses the integrator_thread attribute to call mg_setup
         """
         with self.integrator_thread.lock:
-            self.integrator_thread.sphere = self.sphere
-            self.integrator_thread.arch = self.arch
             self.integrator_thread.method = 'mg_setup'
         self.enable_integration(False)
         self.integrator_thread.start()
@@ -386,8 +376,6 @@ class tthetaWidget(QWidget):
         """Uses the integrator_thread attribute to call mg_1d
         """
         with self.integrator_thread.lock:
-            self.integrator_thread.sphere = self.sphere
-            self.integrator_thread.arch = self.arch
             self.integrator_thread.method = 'mg_1d'
         self.enable_integration(False)
         self.integrator_thread.start()
@@ -396,8 +384,6 @@ class tthetaWidget(QWidget):
         """Uses the integrator_thread attribute to call mg_2d
         """
         with self.integrator_thread.lock:
-            self.integrator_thread.sphere = self.sphere
-            self.integrator_thread.arch = self.arch
             self.integrator_thread.method = 'mg_2d'
         self.enable_integration(False)
         self.integrator_thread.start()
@@ -418,17 +404,28 @@ class tthetaWidget(QWidget):
             )
         else:
             self.displayframe.update()
-        self.metadata.update(self.sphere)
+        self.metawidget.update(self.sphere)
+    
+    def thread_update(self, idx):
+        if self.displayframe.auto_last:
+            items = self.h5viewer.ui.listData.findItems(str(idx),
+                                                        QtCore.Qt.MatchExactly)
+            for item in items:
+                self.h5viewer.ui.listData.setCurrentItem(item)
+            self.displayframe.auto_last = True
+        else:
+            self.displayframe.update()
     
     def thread_finished(self):
         """Function connected to threadFinished signals for
         integratorThread
         """
         self.enable_integration(True)
-        self.ui.wranglerBox.setEnabled(True)
-        self.wrangler.enabled(True)
         self.h5viewer.set_open_enabled(True)
         self.update_all()
+        if not self.wrangler.thread.isRunning():
+            self.ui.wranglerBox.setEnabled(True)
+            self.wrangler.enabled(True)
     
     def new_scan(self, name, fname):
         """Connected to sigUpdateFile from wrangler. Called when a new
@@ -449,7 +446,6 @@ class tthetaWidget(QWidget):
         """
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
-        #self.h5viewer.set_open_enabled(False) // why was this here?
         args = {'bai_1d_args': self.sphere.bai_1d_args,
                 'bai_2d_args': self.sphere.bai_2d_args}
         self.wrangler.sphere_args = copy.deepcopy(args)
@@ -465,21 +461,6 @@ class tthetaWidget(QWidget):
         else:
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
-
-    def pause_wrangler(self):
-        """Passes pause signal to wrangler TODO: Do these three need
-        to be in the main widget??
-        """
-        if self.batch_integrator.isRunning():
-            self.command_queue.put('pause')
-
-    def continue_wrangler(self):
-        if self.batch_integrator.isRunning():
-            self.command_queue.put('continue')
-
-    def stop_wrangler(self):
-        if self.batch_integrator.isRunning():
-            self.command_queue.put('stop')
 
                 
 

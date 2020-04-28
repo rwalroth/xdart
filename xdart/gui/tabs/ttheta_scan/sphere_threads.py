@@ -41,7 +41,7 @@ class integratorThread(Qt.QtCore.QThread):
     signals:
         update: empty, tells parent when new data is ready.
     """
-    update = Qt.QtCore.Signal()
+    update = Qt.QtCore.Signal(int)
     def __init__(self, sphere, arch, parent=None):
         super().__init__(parent)
         self.sphere = sphere
@@ -88,7 +88,7 @@ class integratorThread(Qt.QtCore.QThread):
             arch.integrate_2d(**self.sphere.bai_2d_args)
             self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_2d(arch)
-            self.update.emit()
+            self.update.emit(arch.idx)
 
     def bai_2d_SI(self):
         """Integrate the current arch, 2d
@@ -106,7 +106,7 @@ class integratorThread(Qt.QtCore.QThread):
             arch.integrate_1d(**self.sphere.bai_1d_args)
             self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_1d(arch)
-            self.update.emit()
+            self.update.emit(arch.idx)
 
     def bai_1d_SI(self):
         """Integrate the current arch, 1d.

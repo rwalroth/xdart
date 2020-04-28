@@ -91,8 +91,10 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         args:
             fname: str, path for new file.
         """
-        self.fname = fname
-        self.thread.fname = fname
+        with self.file_lock:
+            if not self.thread.isRunning():
+                self.fname = fname
+                self.thread.fname = fname
 
 
 class wranglerThread(Qt.QtCore.QThread):
