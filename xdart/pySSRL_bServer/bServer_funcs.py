@@ -1,24 +1,47 @@
+# -*- coding: utf-8 -*-
+"""
+@author: thampy
+"""
+
+# Standard library imports
 import requests
 import time
+import sys
+
+# Other imports
 import uuid
 import pandas as pd
 import re
-import time
-try:
-    from .helper_funcs import find_between, find_between_r
-except ImportError:
-    from helper_funcs import find_between, find_between_r
 
+try:
+    from xdart.utils import find_between, find_between_r
+except ImportError:
+    sys.path.append('C:\\Users\\Public\\repos\\xdart')
+    from xdart.utils import find_between, find_between_r
+
+#  Hard coded server address - to be changed
 bServer = "http://127.0.0.1:18085/SIS/"
 
 
 def create_UUID():
-    """UUIDs will be unique for a given run of the kernel"""
+    """Create unique ID to identify scan
+
+    Returns:
+        str -- unique ID
+    """
     unique_uuid = uuid.uuid4().hex[:8].upper()
     return unique_uuid
 
 
 def is_available(debug=False):
+    """Check if SPEC is available to send commands.
+
+    Keyword Arguments:
+        debug {bool} --  Prints out SIS message if true (default: {False})
+
+    Returns:
+        bool -- True/False
+    """
     t0 = time.time()
     for i in range(5):
         try:
@@ -36,6 +59,14 @@ def is_available(debug=False):
           
 
 def is_busy(debug=False):
+    """Another way to check if SPEC is available to send commands.
+
+    Keyword Arguments:
+        debug {bool} --  Prints out SIS message if true (default: {False})
+
+    Returns:
+        bool -- True/False
+    """
     t0 = time.time()
     for i in range(5):
         try:
@@ -53,6 +84,16 @@ def is_busy(debug=False):
 
 
 def is_SpecBusy(debug=False):
+    """Yet another way to heck if SPEC is busy.
+    SpecInfoServer doesn't always track SPEC status well. 
+    So it's good to try out different ways to make sure
+ 
+    Keyword Arguments:
+        debug {bool} --  Prints out SIS message if true (default: {False})
+
+    Returns:
+        bool -- True/False
+    """
     t0 = time.time()
     
     rv = True
@@ -70,6 +111,13 @@ def is_SpecBusy(debug=False):
 
   
 def wait_until_SPECfinished(debug=False, polling_time=1):
+    """"Wait till SPEC finishes executing current command.
+    
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command if true (default: {False})
+        polling_time {float} -- Time to eait before querying again (default: {1})
+    """
     while is_SpecBusy():
         time.sleep(polling_time)
         if not is_busy():
@@ -79,6 +127,7 @@ def wait_until_SPECfinished(debug=False, polling_time=1):
       
     
 def wait_until_SPECfinished_old():
+    """Deprecated"""
     t0 = time.time()
     while True:
         try:
@@ -95,6 +144,16 @@ def wait_until_SPECfinished_old():
 
 
 def specCommand(cmd, queue=False, debug=False, print_console=True):
+    """Function to send command to SPEC through SIS
+
+    Arguments:
+        cmd {str} -- SPEC command
+
+    Keyword Arguments:
+        queue {bool} -- Flag to enable queueing of command (default: {False})
+        debug {bool} -- Flag to show output of SIS (default: {False})
+        print_console {bool} -- Flag to print output to console (default: {True})
+    """
     #if (not is_available()) or (status is 'running'):
     if (is_SpecBusy()) and (not is_available()):
         if queue:
@@ -121,6 +180,14 @@ def specCommand(cmd, queue=False, debug=False, print_console=True):
     
     
 def get_counter_mnemonics(debug=False):
+    """Get the names of counters (Monitor, PD1 etc.)
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command (default: {False})
+
+    Returns:
+        [str] -- List of counter names (Monitor, PD1 etc.)
+    """
     t0 = time.time()
     
     #Get the counters and put in dictionary
@@ -133,6 +200,14 @@ def get_counter_mnemonics(debug=False):
         
     
 def get_counter_values(debug=False):
+    """Get the values of counters (Monitor, PD1 etc.)
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command (default: {False})
+
+    Returns:
+        [float] -- List of counter values
+    """
     t0 = time.time()
     
     #Get the counters and put in dictionary
@@ -145,6 +220,14 @@ def get_counter_values(debug=False):
 
     
 def read_counters(debug=False):
+    """Return dictionary containing counter names and values
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command if true (default: {False})
+
+    Returns:
+        dict -- counter names and values
+    """
     t0 = time.time()
     
     #Get the counters and put in dictionary
@@ -157,6 +240,14 @@ def read_counters(debug=False):
 
 
 def get_motor_mnemonics(debug=False):
+    """Get the names of motors
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command (default: {False})
+
+    Returns:
+        [str] -- List of motor names
+    """
     t0 = time.time()
     
     #Get the motor positions and put in dictionary
@@ -169,6 +260,14 @@ def get_motor_mnemonics(debug=False):
 
 
 def get_motor_positions(debug=False):
+    """Get the values of motors
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command (default: {False})
+
+    Returns:
+        [float] -- List of motor values
+    """
     t0 = time.time()
     
     #Get the motor positions and put in dictionary
@@ -181,6 +280,14 @@ def get_motor_positions(debug=False):
 
 
 def read_motors(debug=False):
+    """Return dictionary containing motor names and values
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command if true (default: {False})
+
+    Returns:
+        dict -- motor names and values
+    """
     t0 = time.time()
     
     #Get the motor positions and put in dictionary
@@ -193,6 +300,14 @@ def read_motors(debug=False):
 
 
 def get_current_scan_details(debug=False):
+    """Get details of current scan
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command if true (default: {False})
+
+    Returns:
+        str -- scan status (busy, done, unknown)
+    """
     t0 = time.time()
     
     #Get current scan details
@@ -208,6 +323,14 @@ def get_current_scan_details(debug=False):
     
     
 def get_scan_status(debug=False):
+    """Get details of current scan
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command if true (default: {False})
+
+    Returns:
+        str -- scan status (busy, done, unknown)
+    """
     #Get current scan details
     try: 
         r = requests.get(bServer + "get_current_scan_details", params={})
@@ -218,6 +341,14 @@ def get_scan_status(debug=False):
     
     
 def get_last_scan_details(debug=False):
+    """Get details of last finished scan
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command if true (default: {False})
+
+    Returns:
+        dict -- scan details (scan_type, scan_number, scan_sfx, scan_pts)
+    """
     t0 = time.time()
     
     #Get current scan details
@@ -244,6 +375,11 @@ def get_last_scan_details(debug=False):
     
 
 def get_user():
+    """Return name of current SPEC user
+
+    Returns:
+        str -- SPEC user name
+    """
     t0 = time.time()
     
     #Get user name
@@ -254,6 +390,11 @@ def get_user():
 
 
 def abort_command():
+    """Abort current command
+
+    Returns:
+        str -- Result of abort command returned by SIS
+    """
     #Abort - similar to Ctrl-C in SPEC
     r = requests.get(bServer + "abort_command", params={})
     result = r.json()['data']
@@ -262,6 +403,15 @@ def abort_command():
 
 
 def set_sis_logging(set_logging_on=True, debug=False):
+    """Enable SIS logging that is useful for debugging
+
+    Keyword Arguments:
+        set_logging_on {bool} -- Enables logging (default: {True})
+        debug {bool} -- Print output of SIS command to enable logging (default: {False})
+
+    Returns:
+        str -- result of SIS command to enable logging (success/fail)
+    """
     t0 = time.time()
     
     #Get current scan details
@@ -274,6 +424,15 @@ def set_sis_logging(set_logging_on=True, debug=False):
 
 
 def get_sis_logs(num_entries=None, debug=False):
+    """Get last num_entries lines of SIS log. Returns the whole log if num_entries is None
+
+    Keyword Arguments:
+        num_entries {int} -- Last number of lines of log to return (default: {None})
+        debug {bool} -- Print output of SIS command if true (default: {False})
+
+    Returns:
+        [str] -- Lines of SIS log
+    """
     t0 = time.time()
     
     #Get log from SIS log
@@ -286,6 +445,17 @@ def get_sis_logs(num_entries=None, debug=False):
 
 
 def get_plot_points(num_pts=None, debug=False, columns=None):
+    """Return all the values recorded for scan points. The last num_pts are
+    reported. If num_pts is None, the entire last scan is reported 
+
+    Keyword Arguments:
+        num_pts {int} -- Number of scan points to report (default: {None})
+        debug {bool} -- Print output of SIS command if True (default: {False})
+        columns {[str]} -- list of column values to return (default: {None})
+
+    Returns:
+        pandas dataframe -- dataframe containing columns and related values
+    """
     t0 = time.time()
     
     #Get log from SIS log
@@ -299,6 +469,14 @@ def get_plot_points(num_pts=None, debug=False, columns=None):
 
 
 def get_spec_result(debug=False):
+    """Return result of last SPEC command
+
+    Keyword Arguments:
+        debug {bool} -- Print output of SIS command if true (default: {False})
+
+    Returns:
+        str -- Result of last scan command
+    """
     t0 = time.time()
     
     #Get log from SIS log
@@ -311,6 +489,15 @@ def get_spec_result(debug=False):
 
 
 def get_console_output(idx=1, debug=False):
+    """Return the console output for idx number of lines
+
+    Keyword Arguments:
+        idx {int} -- Number of lines of console output to return (default: {1})
+        debug {bool} -- Print output of SIS command if true (default: {False})
+
+    Returns:
+        [str] -- Console output
+    """
     t0 = time.time()
     
     #Get log from SIS log

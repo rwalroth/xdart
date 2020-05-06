@@ -29,7 +29,7 @@ from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .liveSpecUI import Ui_Form
 from xdart.gui.gui_utils import NamedActionParameter, commandLine
 from xdart.pySSRL_bServer.watcher import Watcher
-from xdart.pySSRL_bServer.helper_funcs import get_from_pdi
+from xdart.utils import get_from_pdi
 from xdart.pySSRL_bServer.bServer_funcs import specCommand
 
 params = [

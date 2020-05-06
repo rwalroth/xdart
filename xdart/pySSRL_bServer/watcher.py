@@ -4,6 +4,20 @@ from fnmatch import filter
 from multiprocessing import Queue, Process
 
 class Watcher(Process):
+    """
+    Run background process to monitor when new files are added to watched folders
+
+    Inheritance:
+        Process: from multiprocessing module
+
+    Attributes:
+        watchpPaths: list of folders to watch
+        filetypes: list of filetypes to watch in each folder
+        pollingPeriod: interval between polling the folders
+        queues: Dictionary of queues in which changes in each folder are stored
+        command_q: Queue object from multuprocessing module
+        verbose: Flag to enable output messages (for debugging)
+    """
     def __init__(self,
                  watchPaths = ["Z:\\", "P:\\bl2-1"],
                  filetypes = ['raw', 'pdi'],
@@ -27,6 +41,8 @@ class Watcher(Process):
         
     
     def run(self):
+        """Run the watcher process to watch changes in folders
+        """
         paths, filetypes = self.watchPaths, self.filetypes
         paths_dict = {filetype:path for filetype, path in zip(filetypes, paths)}
         
