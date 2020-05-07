@@ -30,8 +30,8 @@ from .liveSpecUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.watcher import Watcher
-from xdart.modules.pySSRL_bServer.helper_funcs import get_from_pdi
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
+from xdart.utils import get_from_pdi
 
 params = [
     {'name': 'Image Directory', 'type': 'str', 'default': ''},

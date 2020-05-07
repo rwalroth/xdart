@@ -12,10 +12,10 @@ import numpy as np
 import re
 
 from skimage import io
-
 import scipy
 import scipy.ndimage as ndimage
 from scipy.signal import medfilt2d
+
 import pandas as pd
 import yaml
 import json
@@ -66,6 +66,17 @@ def check_encoded(grp, name):
 
 
 def find_between( s, first, last ):
+    """find first occurence of substring in string s
+     between two substrings (first and last)
+
+    Args:
+        s (str): input string
+        first (str): first substring
+        last (str): second substring
+
+    Returns:
+        str: substring between first and last
+    """
     try:
         start = s.index( first ) + len( first )
         end = s.index( last, start )
@@ -74,6 +85,17 @@ def find_between( s, first, last ):
         return ""
 
 def find_between_r( s, first, last ):
+    """find last occurence of substring in string s
+     between two substrings (first and last)
+
+    Args:
+        s (str): input string
+        first (str): first substring
+        last (str): second substring
+
+    Returns:
+        str: substring between first and last
+    """
     try:
         start = s.rindex( first ) + len( first )
         end = s.rindex( last, start )
@@ -91,6 +113,14 @@ def query(question):
 
     
 def get_from_pdi(pdi_file):
+    """Get motor and counter names and values from PDI file
+
+    Args:
+        pdi_file (str): PDI file name with path
+
+    Returns:
+        [dict]: Tupe of two dictionaries containing Counters and Motors
+    """
 
     with open(pdi_file, 'r') as f:
         pdi_data = f.read()
@@ -119,6 +149,15 @@ def get_from_pdi(pdi_file):
 
 
 def get_motor_val(pdi_file, motor):
+    """Return position of a particular motor from PDI file
+
+    Args:
+        pdi_file (str): PDI file name with path
+        motor (str): Motor name
+
+    Returns:
+        float: Motor position
+    """
     _, Motors = get_from_pdi(pdi_file)
 
     return Motors[motor]
@@ -127,6 +166,20 @@ def get_motor_val(pdi_file, motor):
 def read_image_file(fname, orientation='horizontal', flip=False,
                     shape_100K=(195, 487), shape_300K=(195,1475),
                     return_float=False, verbose=False):
+    """Read image file and return numpy array
+
+    Args:
+        fname (str): File Name with path
+        orientation (str, optional): Orientation of detector. Defaults to 'horizontal'.
+        flip (bool, optional): Flag to flip the image (required by pyFAI at times). Defaults to False.
+        shape_100K (tuple, optional): Shape of numpy array for Pilatus 100K. Defaults to (195, 487).
+        shape_300K (tuple, optional): Shape of numpy array for Pilatus 300K. Defaults to (195,1475).
+        return_float (bool, optional): Convert array to float. Defaults to False.
+        verbose (bool, optional): Print debug messages. Defaults to False.
+
+    Returns:
+        ndarray: Image data read into numpy array
+    """
     if verbose: print('Reading image data into numpy array..')
     if 'tif' in fname[-5:]:
         img = np.asarray(io.imread(fname))
@@ -149,6 +202,17 @@ def read_image_file(fname, orientation='horizontal', flip=False,
 
 
 def smooth_img(img, kernel_size=3, window_size=3, order=0):
+    """Apply a Gaussian filter to smooth image
+
+    Args:
+        img (ndarray): 2D numpy array for image
+        kernel_size (int, optional): Gaussian filter kernel. Defaults to 3.
+        window_size (int, optional): Gaussian filter window (should be odd). Defaults to 3.
+        order (int, optional): Order of the filter. Defaults to 0.
+
+    Returns:
+        ndarray: Smoothed image
+    """
     if (np.mod(kernel_size, 2) == 0) or (np.mod(window_size, 2) == 0):
         print('Smoothing windows should be odd integers')
         return img
@@ -165,6 +229,15 @@ def smooth_img(img, kernel_size=3, window_size=3, order=0):
 
 
 def get_fit(im, function='gaussian'):
+    """Custom function to perform 2D fit (using lmfit) on an image
+
+    Args:
+        im (ndarray): 2D array representing the image
+        function (str, optional): Fitting function to use. Defaults to 'gaussian'.
+
+    Returns:
+        tuple: Fit result (lmfit Model object), fit parameters, and evaluated fit
+    """
     # Flatten Arrays
     ydata = im.flatten()
     nrows, ncols = im.shape
@@ -209,6 +282,24 @@ def fit_images_2D(fname, tth, function='gaussian',
                   kernel_size=3, window_size=3, order=0,
                   Fit_Results={}, FNames={}, Img_Fits={}, Init_Params={},
                   verbose=False, **kwargs):
+    """Wrapper function aroung get_fit function
+
+    Args:
+        fname (str): Image file name
+        tth (float): Value of 2th (used as key for returned dictionary)
+        function (str, optional): Fitting function. Defaults to 'gaussian'.
+        kernel_size (int, optional): Gaussian smoothing kernel size. Defaults to 3.
+        window_size (int, optional): Gaussian smoothing window size. Defaults to 3.
+        order (int, optional): Order of Gaussian filter. Defaults to 0.
+        Fit_Results (dict, optional): Dictionary with tth as key containing fit result. Defaults to {}.
+        FNames (dict, optional): Dictionary containing file names for each tth. Defaults to {}.
+        Img_Fits (dict, optional): Dictionary containing the evaluated fits for each tth. Defaults to {}.
+        Init_Params (dict, optional): Dictionary containing initial fit parameters for each tth. Defaults to {}.
+        verbose (bool, optional): Flag to print debug messages. Defaults to False.
+
+    Returns:
+        tuple: tth value and fit result
+    """
     if verbose: print(f'Processing {fname}')
     img = read_image_file(fname, return_float=True, verbose=False, **kwargs)
     
