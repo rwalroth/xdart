@@ -395,7 +395,7 @@ def assymetric_rectangle(x, amplitude1=1.0, center1=0.0, sigma1=1.0,
     if form == 'erf':
         out = 0.5*( amplitude1*(erf(arg1) + 1) + amplitude2*(erf(arg2) + 1))
     elif form.startswith('logi'):
-        out = 0.5*( amplitude1*(1. - 1./(1. + exp(arg1))) + amplitude2(1. - 1./(1. + exp(arg2))) )
+        out = 0.5*( amplitude1*(1. - 1./(1. + np.exp(arg1))) + amplitude2(1. - 1./(1. + np.exp(arg2))) )
     elif form in ('atan', 'arctan'):
         out = (amplitude1*np.arctan(arg1) + amplitude2*np.arctan(arg2))/np.pi
     else:
@@ -423,6 +423,26 @@ prefix: string to prepend to paramter names, needed to add two Models that
 """
 
 class LorentzianSquaredModel(Model):
+    """Model based on Lorentzian squared defined by amplitude
+      amplitude*(1/(1 +((x[0] - x_center)/sigma_x)**2)**2
+
+    The HWHM is related to the parameter :math:`\Gamma` by the relation:
+      :math:`\kappa = \sqrt{\sqrt{2} - 1}\sigma`
+
+    Parameters of Lorentzian Squared Function
+    -----------------------------------------
+    x : 1D np.array
+        input x data for which function value is calculated
+
+    amplitude : np.float
+        amplitude of the lorentzian-squared function
+
+    center: np.float
+        center of the lorentzian-squared function
+
+    sigma : np.float
+        sigma of the lorentzian-squared function
+    """
     __doc__ = lorentzian_squared.__doc__ + COMMON_DOC if lorentzian_squared.__doc__ else ""
     fwhm_factor = 2.0*np.sqrt(np.sqrt(2)-1)
     def __init__(self, *args, **kwargs):
@@ -436,6 +456,25 @@ class LorentzianSquaredModel(Model):
 
 
 class PlaneModel(Model):
+    """Model based on 2D plane
+    Function:
+       :math:`f(x) = p_0 + p_1x + p_2y`
+
+    Parameters of 2D Plane
+    ----------------------
+    x : 2D np.array (or 2 element list of 1D np.array)
+        x-data - must be a 2D array, each of which has the same dimension as y
+        for which function value is calculated
+
+    intercept : np.float
+        intercept of the plane
+
+    slope_x: np.float
+        slope of plane along 1st dimension
+
+    slope_y: np.float
+        slope of plane along 2nd dimension
+    """
     __doc__ = plane.__doc__ + COMMON_DOC if plane.__doc__ else ""
     def __init__(self, *args, **kwargs):
         super(PlaneModel, self).__init__(plane, *args, **kwargs)
@@ -451,6 +490,35 @@ class PlaneModel(Model):
 
 
 class LorentzianSquared2DModel(Model):
+    """Model based on a 2D Lorentzian squared defined by amplitude
+    amplitude*(1/(1 +((x[0] - x_center)/sigma_x)**2 + ((x[1] - y_center)/sigma_y)**2))**2
+
+    The HWHM is related to the parameter :math:`\Gamma` by the relation:
+      :math:`\kappa = \sqrt{\sqrt{2} - 1}\Gamma`
+
+    Parameters of Lor2 Function
+    ---------------------------
+    x : 2D np.array (or 2 element list of 1D np.array)
+        x-data - must be a 2D array, each of which has the same dimension as y
+        for which function value is calculated
+
+    amplitude : np.float
+        amplitude of the 2D lorentzian-squared function
+
+    center_x: np.float
+        center of the lorentzian-squared function along the 1st dimension
+
+    center_y: np.float
+        center of the lorentzian-squared function along the 2nd dimension
+
+    sigma_x : np.float
+        sigma of the lorentzian-squared function along the 1st dimension
+
+    sigma_y : np.float
+        sigma of the lorentzian-squared function along the 2nd dimension
+
+    """
+
     __doc__ = lor2_2D.__doc__ + COMMON_DOC if lor2_2D.__doc__ else ""
     fwhm_factor = 2.0*np.sqrt(np.sqrt(2)-1)
     def __init__(self, *args, **kwargs):
@@ -467,6 +535,33 @@ class LorentzianSquared2DModel(Model):
 
 
 class Gaussian2DModel(Model):
+    """A model based on a 2D Gaussian defined by amplitide
+    out = amplitude * ( exp( -1.0 * (x[0] - center_x)**2 / (2 * sigma_x**2) +
+                             -1.0 * (x[1] - center_y)**2 / (2 * sigma_y**2) ) )
+
+    Parameters of Gaussian2D Function
+    ---------------------------------
+    x : 2D np.array (or 2 element list of 1D np.array)
+        x-data - must be a 2D array, each of which has the same dimension as y
+        for which function value is calculated
+
+    amplitude : np.float
+        amplitude of the 2D gaussian function
+
+    center_x: np.float
+        center of the 2D gaussian function along the 1st dimension
+
+    center_y: np.float
+        center of the 2D gaussian function along the 2nd dimension
+
+    sigma_x : np.float
+        sigma of the 2D gaussian function along the 1st dimension
+
+    sigma_y : np.float
+        sigma of the 2D gaussian function along the 2nd dimension
+                             
+    """
+
     __doc__ = gauss_2D.__doc__ + COMMON_DOC if gauss_2D.__doc__ else ""
     fwhm_factor = 2.354820
     def __init__(self, *args, **kwargs):
@@ -482,7 +577,22 @@ class Gaussian2DModel(Model):
 
 
 class Pvoigt2DModel(Model):
+    """Model based on a 2-dimensional pseudo-Voigt function.
+
+    pvoigt(x, amplitude, center, sigma, fraction) =
+       amplitude*(1-fraction)*gaussion(x, center, sigma_g) +
+       amplitude*fraction*lorentzian(x, center, sigma)
+
+    where sigma_g (the sigma for the Gaussian component) is
+
+        sigma_g = sigma / sqrt(2*log(2)) ~= sigma / 1.17741
+
+    so that the Gaussian and Lorentzian components have the
+    same FWHM of 2*sigma.
+
+    """
     __doc__ = pvoigt_2D.__doc__ + COMMON_DOC if pvoigt_2D.__doc__ else ""
+    
     fwhm_factor = 2.0
     def __init__(self, *args, **kwargs):
         super(Pvoigt2DModel, self).__init__(pvoigt_2D, *args, **kwargs)
@@ -497,7 +607,7 @@ class Pvoigt2DModel(Model):
 
 
 class AssymetricRectangleModel(Model):
-    r"""A model based on a Step-up and Step-down function, with five
+    """A model based on a Step-up and Step-down function, with five
     Parameters: ``amplitude`` (:math:`A`), ``center1`` (:math:`\mu_1`),
     ``center2`` (:math:`\mu_2`), `sigma1`` (:math:`\sigma_1`) and
     ``sigma2`` (:math:`\sigma_2`) and four choices for functional form
