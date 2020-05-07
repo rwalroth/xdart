@@ -104,7 +104,6 @@ class tthetaWidget(QWidget):
         self.sphere = EwaldSphere('null_main', data_file=self.fname)
         self.arch = EwaldArch()
         
-        self.integrator_thread = integratorThread(self.sphere, self.arch)
         self.timer = Qt.QtCore.QTimer()
         self.timer.timeout.connect(self.clock)
         self.timer.start(42)
@@ -152,7 +151,7 @@ class tthetaWidget(QWidget):
         self.integrator_thread.finished.connect(self.thread_finished)
 
         # Metadata setup
-        self.metawidget = metadataWidget()
+        self.metawidget = metadataWidget(self.sphere, self.arch)
         self.ui.metaFrame.setLayout(self.metawidget.layout)
 
         # Wrangler frame setup
@@ -262,7 +261,7 @@ class tthetaWidget(QWidget):
                 self.integratorTree.ui.all1D.setEnabled(True)
                 self.integratorTree.ui.all2D.setEnabled(True)
                 
-            self.metawidget.update(self.sphere)
+            self.metawidget.update()
             self.integratorTree.update()
     
     def next_arch(self):
@@ -363,30 +362,6 @@ class tthetaWidget(QWidget):
             with catch(self.sphere.data_file, 'a') as file:
                 ut.dict_to_h5(self.sphere.bai_2d_args, file, 'bai_2d_args')
         self.integrator_thread.start()
-
-    def mg_setup(self, q):
-        """Uses the integrator_thread attribute to call mg_setup
-        """
-        with self.integrator_thread.lock:
-            self.integrator_thread.method = 'mg_setup'
-        self.enable_integration(False)
-        self.integrator_thread.start()
-
-    def mg_1d(self, q):
-        """Uses the integrator_thread attribute to call mg_1d
-        """
-        with self.integrator_thread.lock:
-            self.integrator_thread.method = 'mg_1d'
-        self.enable_integration(False)
-        self.integrator_thread.start()
-    
-    def mg_2d(self, q):
-        """Uses the integrator_thread attribute to call mg_2d
-        """
-        with self.integrator_thread.lock:
-            self.integrator_thread.method = 'mg_2d'
-        self.enable_integration(False)
-        self.integrator_thread.start()
     
     def enable_integration(self, enable=True):
         """Calls the integratorTree setEnabled function.
@@ -404,7 +379,7 @@ class tthetaWidget(QWidget):
             )
         else:
             self.displayframe.update()
-        self.metawidget.update(self.sphere)
+        self.metawidget.update()
     
     def thread_update(self, idx):
         if self.displayframe.auto_last:

@@ -224,6 +224,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
         
         self.ui.advanced1D.clicked.connect(self.advancedWidget1D.show)
         self.ui.advanced2D.clicked.connect(self.advancedWidget2D.show)
+        
+        self.integrator_thread = integratorThread(self.sphere, self.arch)
     
     def update(self):
         """Grabs args from sphere and uses _sync_ranges and

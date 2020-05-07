@@ -24,7 +24,7 @@ class metadataWidget(Qt.QtWidgets.QWidget):
     methods:
         update: Updates the data displayed
     """
-    def __init__(self, parent=None):
+    def __init__(self, sphere, arch, parent=None):
         super().__init__(parent)
         self.layout = Qt.QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -32,18 +32,18 @@ class metadataWidget(Qt.QtWidgets.QWidget):
         self.tableview = Qt.QtWidgets.QTableView()
         self.tableview.setModel(DFTableModel())
         self.layout.addWidget(self.tableview)
+        self.sphere = sphere
+        self.arch = arch
     
-    def update(self, sphere, arch=None):
+    def update(self):
         """Updates the table with new data.
-        
-        args:
-            sphere: EwaldSphere, sphere to get data from.
-            arch: int, idx of EwaldArch to update table with.
         """
         #self.tableview.reset()
-        if arch is None:
-            self.tableview.setModel(DFTableModel(sphere.scan_data.transpose()))
+        if self.arch.idx is None:
+            self.tableview.setModel(
+                DFTableModel(self.sphere.scan_data.transpose())
+            )
         
         else:
-            data = pd.DataFrame(sphere.arches[arch].scan_info, index=[0])
+            data = pd.DataFrame(self.arch.scan_info, index=[0])
             self.tableview.setModel(DFTableModel(data.transpose()))
