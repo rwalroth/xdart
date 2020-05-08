@@ -14,6 +14,8 @@ from xdart.utils.containers import int_1d_data, int_2d_data
 from pyqtgraph import Qt
 
 # This module imports
+from xdart.utils import catch_h5py_file as catch
+from xdart import utils as ut
 
 class integratorThread(Qt.QtCore.QThread):
     """Thread for handling integration. Frees main gui thread from
@@ -42,10 +44,11 @@ class integratorThread(Qt.QtCore.QThread):
         update: empty, tells parent when new data is ready.
     """
     update = Qt.QtCore.Signal(int)
-    def __init__(self, sphere, arch, parent=None):
+    def __init__(self, sphere, arch, file_lock, parent=None):
         super().__init__(parent)
         self.sphere = sphere
         self.arch = arch
+        self.file_lock = file_lock
         self.method = None
         self.lock = Condition()
         self.mg_1d_args = {}
@@ -89,6 +92,9 @@ class integratorThread(Qt.QtCore.QThread):
             self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_2d(arch)
             self.update.emit(arch.idx)
+        with self.file_lock:
+            with catch(self.sphere.data_file, 'a') as file:
+                ut.dict_to_h5(self.sphere.bai_2d_args, file, 'bai_2d_args')
 
     def bai_2d_SI(self):
         """Integrate the current arch, 2d
@@ -107,6 +113,9 @@ class integratorThread(Qt.QtCore.QThread):
             self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_1d(arch)
             self.update.emit(arch.idx)
+        with self.file_lock:
+            with catch(self.sphere.data_file, 'a') as file:
+                ut.dict_to_h5(self.sphere.bai_1d_args, file, 'bai_1d_args')
 
     def bai_1d_SI(self):
         """Integrate the current arch, 1d.

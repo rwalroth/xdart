@@ -13,7 +13,10 @@ from pyqtgraph import Qt
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
+from xdart.utils import catch_h5py_file as catch
+from xdart import utils as ut
 from .integratorUI import Ui_Form
+from .sphere_threads import integratorThread
 from ...widgets import rangeWidget
 
 params = [
@@ -89,52 +92,8 @@ params = [
         ]
 
     },
-    {'name': 'Multi. Geometry', 'type': 'group', 'children': [
-            {'name': 'Multi Geometry Setup', 'type': 'group', 'children': [
-                {'name': 'unit', 'type': 'list', 'values': {
-                    "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
-                    }, 'value': '2th_deg'},
-                {'name': 'radial_range', 'type': 'group', 'children': [
-                        {'name': 'Low', 'type': 'float', 'value': 0.0},
-                        {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': False, 
-                         'visible': False, 'enabled': False},
-                    ]
-                },
-                {'name': 'azimuth_range', 'type': 'group', 'children': [
-                        {'name': 'Low', 'type': 'float', 'value': -180.0},
-                        {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': False, 
-                         'visible': False, 'enabled': False},
-                    ]
-                },
-                {'name': 'empty', 'type': 'float', 'value': -1.0},
-                {'name': 'chi_disc', 'type': 'float', 'value': 180},
-            ]
-            },
-            {'name': 'Integrate 1D', 'type': 'group', 'children': [
-                {'name': 'npt', 'type': 'int', 'value': 1000},
-                {'name': 'monitor', 'type': 'str', 'value': 'None'},
-                {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
-                {'name': 'Apply polarization factor', 'type': 'bool', 'value': False},
-                {'name': 'polarization_factor', 'type': 'float', 'value': 0, 
-                    'limits': (-1, 1)}
-                ]
-            },
-            {'name': 'Integrate 2D', 'type': 'group', 'children': [
-                {'name': 'npt_rad', 'type': 'int', 'value': 1000},
-                {'name': 'npt_azim', 'type': 'int', 'value': 1000},
-                {'name': 'monitor', 'type': 'str', 'value': 'None'},
-                {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
-                {'name': 'Apply polarization factor', 'type': 'bool', 'value': False},
-                {'name': 'polarization_factor', 'type': 'float', 'value': 0, 
-                    'limits': (-1, 1)}
-                ]
-            }
-        ]
-
-    }
 ]
+
 
 class integratorTree(Qt.QtWidgets.QWidget):
     """Widget for controlling integration of loaded data. Presents basic
@@ -162,23 +121,26 @@ class integratorTree(Qt.QtWidgets.QWidget):
         update: Grabs args from EwaldSphere object and sets all params
             to match.
     """
-    def __init__(self, sphere, arch, parent=None):
+    def __init__(self, sphere, arch, file_lock, parent=None):
         super().__init__(parent) 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.sphere = sphere
         self.arch = arch
+        self.file_lock = file_lock
         self.parameters = Parameter.create(
             name='integrator', type='group', children=params
         )
         self.bai_1d_pars = self.parameters.child('Default', 'Integrate 1D')
         self.bai_2d_pars = self.parameters.child('Default', 'Integrate 2D')
+        """
         self.mg_pars = self.parameters.child('Multi. Geometry', 
                                              'Multi Geometry Setup')
         self.mg_1d_pars = self.parameters.child('Multi. Geometry', 
                                                 'Integrate 1D')
         self.mg_2d_pars = self.parameters.child('Multi. Geometry', 
                                                 'Integrate 2D')
+        """
         self.radialRange1D = rangeWidget("Radial", 
                                        unit=["2" + u"\u03B8" + " (deg.)", 
                                              "q (A-1)"], 
@@ -225,7 +187,11 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.ui.advanced1D.clicked.connect(self.advancedWidget1D.show)
         self.ui.advanced2D.clicked.connect(self.advancedWidget2D.show)
         
-        self.integrator_thread = integratorThread(self.sphere, self.arch)
+        self.ui.integrate1D.clicked.connect(self.bai_1d)
+        self.ui.integrate2D.clicked.connect(self.bai_2d)
+        
+        self.integrator_thread = integratorThread(self.sphere, self.arch,
+                                                  self.file_lock)
     
     def update(self):
         """Grabs args from sphere and uses _sync_ranges and
@@ -337,7 +303,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         with self.sphere.sphere_lock:
             self._args_to_params(self.sphere.bai_1d_args, self.bai_1d_pars)
             self._args_to_params(self.sphere.bai_2d_args, self.bai_2d_pars)
-            self._args_to_params(self.sphere.mg_args, self.mg_pars)
+            #self._args_to_params(self.sphere.mg_args, self.mg_pars)
         
     def get_args(self, key):
         """Updates sphere with all parameters held in integrator.
@@ -458,6 +424,28 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def _set_azimuthal_points2D(self, val):
         self.bai_2d_pars.child("npt_azim").setValue(val)
         self.get_args("bai_2d")
+    
+    def bai_1d(self, q):
+        """Uses the integrator_thread attribute to call bai_1d
+        """
+        with self.integrator_thread.lock:
+            if self.ui.all1D.isChecked() or type(self.arch.idx) != int:
+                self.integrator_thread.method = 'bai_1d_all'
+            else:
+                self.integrator_thread.method = 'bai_1d_SI'
+        self.setEnabled(False)
+        self.integrator_thread.start()
+
+    def bai_2d(self, q):
+        """Uses the integrator_thread attribute to call bai_2d
+        """
+        with self.integrator_thread.lock:
+            if self.ui.all2D.isChecked() or type(self.arch.idx) != int:
+                self.integrator_thread.method = 'bai_2d_all'
+            else:
+                self.integrator_thread.method = 'bai_2d_SI'
+        self.setEnabled(False)
+        self.integrator_thread.start()
 
 
 class advancedParameters(Qt.QtWidgets.QWidget):
@@ -490,3 +478,54 @@ class advancedParameters(Qt.QtWidgets.QWidget):
     
     def process_change(self, tree, changes):
         self.sigUpdateArgs.emit(self.name)
+
+# Params for multigeometry
+
+    """
+    {'name': 'Multi. Geometry', 'type': 'group', 'children': [
+            {'name': 'Multi Geometry Setup', 'type': 'group', 'children': [
+                {'name': 'unit', 'type': 'list', 'values': {
+                    "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
+                    }, 'value': '2th_deg'},
+                {'name': 'radial_range', 'type': 'group', 'children': [
+                        {'name': 'Low', 'type': 'float', 'value': 0.0},
+                        {'name': 'High', 'type': 'float', 'value': 180.0},
+                        {'name': 'Auto', 'type': 'bool', 'value': False, 
+                         'visible': False, 'enabled': False},
+                    ]
+                },
+                {'name': 'azimuth_range', 'type': 'group', 'children': [
+                        {'name': 'Low', 'type': 'float', 'value': -180.0},
+                        {'name': 'High', 'type': 'float', 'value': 180.0},
+                        {'name': 'Auto', 'type': 'bool', 'value': False, 
+                         'visible': False, 'enabled': False},
+                    ]
+                },
+                {'name': 'empty', 'type': 'float', 'value': -1.0},
+                {'name': 'chi_disc', 'type': 'float', 'value': 180},
+            ]
+            },
+            {'name': 'Integrate 1D', 'type': 'group', 'children': [
+                {'name': 'npt', 'type': 'int', 'value': 1000},
+                {'name': 'monitor', 'type': 'str', 'value': 'None'},
+                {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
+                {'name': 'Apply polarization factor', 'type': 'bool', 'value': False},
+                {'name': 'polarization_factor', 'type': 'float', 'value': 0, 
+                    'limits': (-1, 1)}
+                ]
+            },
+            {'name': 'Integrate 2D', 'type': 'group', 'children': [
+                {'name': 'npt_rad', 'type': 'int', 'value': 1000},
+                {'name': 'npt_azim', 'type': 'int', 'value': 1000},
+                {'name': 'monitor', 'type': 'str', 'value': 'None'},
+                {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
+                {'name': 'Apply polarization factor', 'type': 'bool', 'value': False},
+                {'name': 'polarization_factor', 'type': 'float', 'value': 0, 
+                    'limits': (-1, 1)}
+                ]
+            }
+        ]
+
+    }
+    """
+    

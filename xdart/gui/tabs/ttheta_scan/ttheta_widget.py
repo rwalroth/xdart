@@ -103,10 +103,6 @@ class tthetaWidget(QWidget):
         self.fname = os.path.join(dirname, 'default.hdf5')
         self.sphere = EwaldSphere('null_main', data_file=self.fname)
         self.arch = EwaldArch()
-        
-        self.timer = Qt.QtCore.QTimer()
-        self.timer.timeout.connect(self.clock)
-        self.timer.start(42)
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -140,15 +136,14 @@ class tthetaWidget(QWidget):
         )
         
         # IntegratorFrame setup
-        self.integratorTree = integratorTree(self.sphere, self.arch)
+        self.integratorTree = integratorTree(self.sphere, self.arch,
+                                             self.file_lock)
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
         self.integratorTree.update()
 
         # Integrator signal connections
-        self.integratorTree.ui.integrate1D.clicked.connect(self.bai_1d)
-        self.integratorTree.ui.integrate2D.clicked.connect(self.bai_2d)
-        self.integrator_thread.update.connect(self.thread_update)
-        self.integrator_thread.finished.connect(self.thread_finished)
+        self.integratorTree.integrator_thread.update.connect(self.thread_update)
+        self.integratorTree.integrator_thread.finished.connect(self.thread_finished)
 
         # Metadata setup
         self.metawidget = metadataWidget(self.sphere, self.arch)
@@ -178,6 +173,10 @@ class tthetaWidget(QWidget):
         self.h5viewer.defaultWidget.set_parameters(parameters)
 
         self.show()
+        
+        self.timer = Qt.QtCore.QTimer()
+        self.timer.timeout.connect(self.clock)
+        self.timer.start(10)
     
     def set_wrangler(self, qint):
         """Sets the wrangler based on the selected item in the dropdown.
@@ -217,7 +216,12 @@ class tthetaWidget(QWidget):
     def clock(self):
         """Called whenever the QTimer counts down.
         """
-        pass
+        if self.integratorTree.integrator_thread.isRunning():
+            self.integratorTree.setEnabled(False)
+            self.h5viewer.ui.listScans.setEnabled(False)
+        else:
+            self.integratorTree.setEnabled(True)
+            self.h5viewer.ui.listScans.setEnabled(True)
     
     def update_data(self, q):
         """Called by signal from wrangler. If the current scan name
@@ -334,34 +338,6 @@ class tthetaWidget(QWidget):
         del(self.arch)
         del(self.displayframe.arch)
         super().close()
-    
-    def bai_1d(self, q):
-        """Uses the integrator_thread attribute to call bai_1d
-        """
-        with self.integrator_thread.lock:
-            if self.integratorTree.ui.all1D.isChecked() or type(self.arch) != int:
-                self.integrator_thread.method = 'bai_1d_all'
-            else:
-                self.integrator_thread.method = 'bai_1d_SI'
-        self.enable_integration(False)
-        with self.file_lock:
-            with catch(self.sphere.data_file, 'a') as file:
-                ut.dict_to_h5(self.sphere.bai_1d_args, file, 'bai_1d_args')
-        self.integrator_thread.start()
-
-    def bai_2d(self, q):
-        """Uses the integrator_thread attribute to call bai_2d
-        """
-        with self.integrator_thread.lock:
-            if self.integratorTree.ui.all2D.isChecked():
-                self.integrator_thread.method = 'bai_2d_all'
-            else:
-                self.integrator_thread.method = 'bai_2d_SI'
-        self.enable_integration(False)
-        with self.file_lock:
-            with catch(self.sphere.data_file, 'a') as file:
-                ut.dict_to_h5(self.sphere.bai_2d_args, file, 'bai_2d_args')
-        self.integrator_thread.start()
     
     def enable_integration(self, enable=True):
         """Calls the integratorTree setEnabled function.
