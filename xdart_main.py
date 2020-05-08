@@ -20,6 +20,7 @@ QMainWindow = QtWidgets.QMainWindow
 from xdart.gui.mainWindow import Ui_MainWindow
 from xdart.gui import tabs
 
+
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()

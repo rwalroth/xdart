@@ -117,6 +117,8 @@ class tthetaWidget(QWidget):
 
         # H5Viewer signal connections
         self.h5viewer.sigUpdate.connect(self.set_data)
+        self.h5viewer.file_thread.started.connect(self.thread_state_changed)
+        self.h5viewer.file_thread.finished.connect(self.thread_state_changed)
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(self.sphere, self.arch, 
@@ -142,8 +144,9 @@ class tthetaWidget(QWidget):
         self.integratorTree.update()
 
         # Integrator signal connections
-        self.integratorTree.integrator_thread.update.connect(self.thread_update)
-        self.integratorTree.integrator_thread.finished.connect(self.thread_finished)
+        self.integratorTree.integrator_thread.started.connect(self.thread_state_changed)
+        self.integratorTree.integrator_thread.update.connect(self.integrator_thread_update)
+        self.integratorTree.integrator_thread.finished.connect(self.integrator_thread_finished)
 
         # Metadata setup
         self.metawidget = metadataWidget(self.sphere, self.arch)
@@ -173,7 +176,7 @@ class tthetaWidget(QWidget):
         self.h5viewer.defaultWidget.set_parameters(parameters)
 
         self.show()
-        
+        """
         self.timer = Qt.QtCore.QTimer()
         self.timer.timeout.connect(self.clock)
         self.timer.start(10)
@@ -195,6 +198,7 @@ class tthetaWidget(QWidget):
         self.wrangler.sigStart.connect(self.start_wrangler)
         self.wrangler.sigUpdateData.connect(self.update_data)
         self.wrangler.sigUpdateFile.connect(self.new_scan)
+        self.wrangler.started.connect(self.thread_state_changed)
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
         self.h5viewer.sigNewFile.connect(self.wrangler.set_fname)
@@ -357,7 +361,8 @@ class tthetaWidget(QWidget):
             self.displayframe.update()
         self.metawidget.update()
     
-    def thread_update(self, idx):
+    def integrator_thread_update(self, idx):
+        self.thread_state_changed()
         if self.displayframe.auto_last:
             items = self.h5viewer.ui.listData.findItems(str(idx),
                                                         QtCore.Qt.MatchExactly)
@@ -367,10 +372,11 @@ class tthetaWidget(QWidget):
         else:
             self.displayframe.update()
     
-    def thread_finished(self):
+    def integrator_thread_finished(self):
         """Function connected to threadFinished signals for
         integratorThread
         """
+        self.thread_state_changed()
         self.enable_integration(True)
         self.h5viewer.set_open_enabled(True)
         self.update_all()
@@ -407,8 +413,9 @@ class tthetaWidget(QWidget):
         """Called by the wrangler finished signal. If current scan
         matches the wrangler scan, allows for integration.
         """
+        self.thread_state_changed()
         if self.sphere.name == self.wrangler.scan_name:
-            self.thread_finished()
+            self.integrator_thread_finished()
         else:
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
