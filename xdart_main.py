@@ -61,6 +61,10 @@ class Main(QMainWindow):
             if 'ttheta_scan' not in self.modules:
                 self.modules['ttheta_scan'] = modules.ttheta_scan.tthetaWidget()
                 self.tabwidget.addTab(self.modules['ttheta_scan'], 'ttheta_scan')
+        elif q.text() == 'time_scan':
+            if 'time_scan' not in self.modules:
+                self.modules['time_scan'] = modules.time_scan.timescanWidget()
+                self.tabwidget.addTab(self.modules['time_scan'], 'time_scan')
 
     def closeExperiment(self, q):
         _to_close = self.tabwidget.widget(q)
