@@ -135,7 +135,15 @@ class fileHandlerThread(Qt.QtCore.QThread):
     """
     sigNewFile = Qt.QtCore.Signal(str)
     sigUpdate = Qt.QtCore.Signal()
+    
     def __init__(self, sphere, arch, file_lock, parent=None):
+        """
+        Parameters
+        ----------
+        file_lock : multiprocessing.Condition
+        arch : xdart.modules.ewald.EwaldArch
+        sphere : xdart.modules.ewald.EwaldSphere
+        """
         super().__init__(parent)
         self.sphere = sphere
         self.arch = arch
@@ -146,13 +154,14 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.lock = Condition()
         
     def run(self):
-        if self.method is not None:
-            try:
-                method = getattr(self, self.method)
-                time.sleep(0.05)
-                method()
-            except KeyError:
-                traceback.print_exc()
+        with self.lock:
+            if self.method is not None:
+                try:
+                    method = getattr(self, self.method)
+                    time.sleep(0.05)
+                    method()
+                except KeyError:
+                    traceback.print_exc()
     
     def set_datafile(self):
         with self.file_lock:
@@ -162,6 +171,11 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.sigNewFile.emit(self.fname)
         self.sigUpdate.emit()
     
+    def update_sphere(self):
+        with self.file_lock:
+            self.sphere.load_from_h5(replace=False, data_only=True,
+                                     set_mg=False)
+    
     def load_arch(self):
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
@@ -169,10 +183,10 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.sigUpdate.emit()
     
     def save_data_as(self):
-        if self.new_file is not None:
+        if self.new_fname is not None:
             with self.file_lock:
                 with catch(self.sphere.data_file, 'r') as f1:
-                    with catch(self.new_file, 'w') as f2:
+                    with catch(self.new_fname, 'w') as f2:
                         for key in f1:
                             f1.copy(key, f2)
                         for attr in f1.attrs:

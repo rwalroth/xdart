@@ -264,11 +264,11 @@ class tthetaWidget(QWidget):
         """
         with self.sphere.sphere_lock:
             if self.sphere.name == self.wrangler.scan_name:
+                with self.h5viewer.file_thread.lock:
+                    self.h5viewer.file_thread.method = "update_sphere"
+                    self.h5viewer.file_thread.start()
+
                 with self.file_lock:
-                    self.sphere.load_from_h5(
-                        replace=False, data_only=True, 
-                        set_mg=False
-                    )
                     self.update_all()
 
     def set_data(self):

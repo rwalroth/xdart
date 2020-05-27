@@ -272,8 +272,10 @@ class H5Viewer(QWidget):
         selected file.
         """
         fname, _ = QFileDialog.getSaveFileName()
-        self.file_thread.method = "save_data_as"
-        self.file_thread.start()
+        with self.file_thread.lock:
+            self.file_thread.method = "save_data_as"
+            self.file_thread.new_fname = fname
+            self.file_thread.start()
         self.set_file(fname)
     
     def new_file(self):
