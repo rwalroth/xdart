@@ -54,6 +54,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     sigUpdateData = Qt.QtCore.Signal(int)
     sigUpdateFile = Qt.QtCore.Signal(str, str)
     finished = Qt.QtCore.Signal()
+    started = Qt.QtCore.Signal()
 
     def __init__(self, fname, file_lock, parent=None):
         """fname: str, file path
@@ -71,6 +72,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         self.command_queue = Queue()
         self.thread = wranglerThread(self.command_queue, self.sphere_args, self.fname, self.file_lock, self)
         self.thread.finished.connect(self.finished.emit)
+        self.thread.started.connect(self.started.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
     
     def enabled(self, enable):
@@ -121,6 +123,7 @@ class wranglerThread(Qt.QtCore.QThread):
     """
     sigUpdate = Qt.QtCore.Signal(int)
     sigUpdateFile = Qt.QtCore.Signal(str, str)
+
     def __init__(self, command_queue, sphere_args, fname, file_lock,
                  parent=None):
         """command_queue: mp.Queue, queue for commands sent from parent

@@ -20,6 +20,7 @@ QFileDialog = QtWidgets.QFileDialog
 # This module imports
 from xdart.utils import catch_h5py_file
 from .h5viewerUI import Ui_Form
+from .sphere_threads import fileHandlerThread
 from ...widgets import defaultWidget
 
 class H5Viewer(QWidget):
@@ -131,7 +132,13 @@ class H5Viewer(QWidget):
         self.actionOpenFolder.triggered.connect(self.open_folder)
         self.actionSaveDataAs.triggered.connect(self.save_data_as)
         self.actionNewFile.triggered.connect(self.new_file)
-
+        
+        self.file_thread = fileHandlerThread(self.sphere, self.arch,
+                                             self.file_lock)
+        self.file_thread.finished.connect(self.thread_finished)
+        self.file_thread.sigNewFile.connect(self.sigNewFile.emit)
+        self.file_thread.sigUpdate.connect(self.sigUpdate.emit)
+        
         self.update()
         self.show()
 
@@ -157,14 +164,20 @@ class H5Viewer(QWidget):
         """Updates list with all arch ids.
         """
         previous_loc = self.ui.listData.currentRow()
-        with self.sphere.sphere_lock:
-            self.ui.listData.clear()
-            self.ui.listData.addItem('Overall')
-            for idx in self.sphere.arches.index:
-                self.ui.listData.addItem(str(idx))
+        if self.sphere.name != "null_main":
+            with self.sphere.sphere_lock:
+                self.ui.listData.clear()
+                self.ui.listData.addItem('Overall')
+                for idx in self.sphere.arches.index:
+                    self.ui.listData.addItem(str(idx))
         if previous_loc > self.ui.listData.count() - 1:
             previous_loc = self.ui.listData.count() - 1
         self.ui.listData.setCurrentRow(previous_loc)
+    
+    def thread_finished(self):
+        self.set_open_enabled(True)
+        if self.file_thread.method != "load_arch":
+            self.update()
     
     def scans_clicked(self, q):
         """Handles items being double clicked in listScans. Either
@@ -172,7 +185,6 @@ class H5Viewer(QWidget):
         
         q: QListItem, item selected in h5viewer.
         """
-        # TODO: Most of this should be in h5viewer
         if q.data(0) == '..':
             if self.dirname[-1] in ['/', '\\']:
                 up = os.path.dirname(self.dirname[:-1])
@@ -196,23 +208,21 @@ class H5Viewer(QWidget):
         args:
             fname: str, absolute path for data file
         """
-        with self.file_lock:
-            if fname not in ('', self.sphere.data_file):
-                try:
+        if fname not in ('', self.sphere.data_file):
+            try:
+                with self.file_lock:
                     with catch_h5py_file(fname, 'a') as _:
                         pass
-                
-                    self.ui.listData.clear()
-                    self.ui.listData.addItem('Loading...')
-                    Qt.QtGui.QApplication.processEvents()
-                    self.sphere.set_datafile(fname, 
-                                             save_args={'compression':'lzf'})
-                    self.update_data()
-                    self.sigNewFile.emit(fname)
-                    self.sigUpdate.emit()
-                except:
-                    traceback.print_exc()
-                    return
+            
+                self.ui.listData.clear()
+                self.ui.listData.addItem('Loading...')
+                self.set_open_enabled(False)
+                self.file_thread.method = "set_datafile"
+                self.file_thread.fname = fname
+                self.file_thread.start()
+            except:
+                traceback.print_exc()
+                return
     
     def data_clicked(self, current, previous):
         """Connected to currentItemChanged signal of listData
@@ -220,7 +230,13 @@ class H5Viewer(QWidget):
         current: QListItem, item selected
         previous: QListItem, previous selection
         """
-        if current is not None and current.data(0) != 'No data':
+        if current is not None and previous is not None:
+            nochange = (current.data(0) == previous.data(0))
+        else:
+            nochange = False
+        if (current is not None and 
+                current.data(0) not in ('No data', "Loading...") and not
+                nochange):
             self.arch.reset()
             if current.data(0) != 'Overall' and 'scan' not in current.data(0):
                 try:
@@ -228,10 +244,10 @@ class H5Viewer(QWidget):
                 except ValueError:
                     return
                 self.arch.idx = idx
-                with self.file_lock:
-                    with catch_h5py_file(self.sphere.data_file, 'r') as file:
-                        self.arch.load_from_h5(file['arches'])
-        self.sigUpdate.emit()
+                self.file_thread.method = "load_arch"
+                self.file_thread.start()
+            else:
+                self.sigUpdate.emit()
     
     def open_folder(self):
         """Changes the directory being displayed in the file explorer.
@@ -249,19 +265,15 @@ class H5Viewer(QWidget):
         self.actionSetDefaults.setEnabled(enable)
         self.actionOpenFolder.setEnabled(enable)
         self.actionNewFile.setEnabled(enable)
+        self.ui.listScans.setEnabled(enable)
     
     def save_data_as(self):
         """Saves all data to hdf5 file. Also sets fname to be the
         selected file.
         """
         fname, _ = QFileDialog.getSaveFileName()
-        with self.file_lock:
-            with catch(self.sphere.data_file, 'r') as f1:
-                with catch(fname, 'w') as f2:
-                    for key in f1:
-                        f1.copy(key, f2)
-                    for attr in f1.attrs:
-                        f2.attrs[attr] = f1.attrs[attr]
+        self.file_thread.method = "save_data_as"
+        self.file_thread.start()
         self.set_file(fname)
     
     def new_file(self):

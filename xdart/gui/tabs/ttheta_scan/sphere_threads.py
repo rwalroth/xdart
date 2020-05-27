@@ -6,6 +6,7 @@
 # Standard library imports
 from threading import Condition
 import traceback
+import time
 
 # Other imports
 from xdart.utils.containers import int_1d_data, int_2d_data
@@ -126,3 +127,53 @@ class integratorThread(Qt.QtCore.QThread):
         """Load data.
         """
         self.sphere.load_from_h5()
+
+
+class fileHandlerThread(Qt.QtCore.QThread):
+    """Thread class for loading data. Handles locks and waiting for
+    locks to be released.
+    """
+    sigNewFile = Qt.QtCore.Signal(str)
+    sigUpdate = Qt.QtCore.Signal()
+    def __init__(self, sphere, arch, file_lock, parent=None):
+        super().__init__(parent)
+        self.sphere = sphere
+        self.arch = arch
+        self.file_lock = file_lock
+        self.method = None
+        self.fname = sphere.data_file
+        self.new_fname = None
+        self.lock = Condition()
+        
+    def run(self):
+        if self.method is not None:
+            try:
+                method = getattr(self, self.method)
+                time.sleep(0.05)
+                method()
+            except KeyError:
+                traceback.print_exc()
+    
+    def set_datafile(self):
+        with self.file_lock:
+            self.sphere.set_datafile(
+                self.fname, save_args={'compression':'lzf'}
+            )
+        self.sigNewFile.emit(self.fname)
+        self.sigUpdate.emit()
+    
+    def load_arch(self):
+        with self.file_lock:
+            with catch(self.sphere.data_file, 'r') as file:
+                self.arch.load_from_h5(file['arches'])
+        self.sigUpdate.emit()
+    
+    def save_data_as(self):
+        if self.new_file is not None:
+            with self.file_lock:
+                with catch(self.sphere.data_file, 'r') as f1:
+                    with catch(self.new_file, 'w') as f2:
+                        for key in f1:
+                            f1.copy(key, f2)
+                        for attr in f1.attrs:
+                            f2.attrs[attr] = f1.attrs[attr]

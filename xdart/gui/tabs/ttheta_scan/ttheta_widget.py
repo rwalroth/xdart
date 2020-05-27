@@ -9,10 +9,10 @@ import multiprocessing as mp
 import copy
 import os
 import traceback
+import time
 
 # Other imports
 import h5py
-from matplotlib import pyplot as plt
 
 # Qt imports
 from pyqtgraph import Qt
@@ -21,7 +21,7 @@ QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
 QFileDialog = QtWidgets.QFileDialog
 
-## This module imports
+# This module imports
 from xdart.modules.ewald import EwaldSphere, EwaldArch
 from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
@@ -31,12 +31,13 @@ from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .sphere_threads import integratorThread
 from .metadata import metadataWidget
-from .wranglers import specWrangler, liveSpecWrangler
+from .wranglers import specWrangler, liveSpecWrangler, wranglerWidget
 
 wranglers = {
     'SPEC': specWrangler, 
     'Live Spec': liveSpecWrangler
 }
+
 
 def spherelocked(func):
     def wrapper(self, *args, **kwargs):
@@ -45,6 +46,7 @@ def spherelocked(func):
                 func(self, *args, **kwargs)
                 return func(self, *args, **kwargs)
     return wrapper
+
 
 class tthetaWidget(QWidget):
     """Tab for integrating data collected by a scanning area detector.
@@ -153,6 +155,7 @@ class tthetaWidget(QWidget):
         self.ui.metaFrame.setLayout(self.metawidget.layout)
 
         # Wrangler frame setup
+        self.wrangler = wranglerWidget("uninitialized", mp.Condition())
         for name, w in wranglers.items():
             self.ui.wranglerStack.addWidget(
                 w(
@@ -179,8 +182,8 @@ class tthetaWidget(QWidget):
         """
         self.timer = Qt.QtCore.QTimer()
         self.timer.timeout.connect(self.clock)
-        self.timer.start(10)
-    
+        self.timer.start()
+    """
     def set_wrangler(self, qint):
         """Sets the wrangler based on the selected item in the dropdown.
         Syncs the wrangler's attributes and wires signals as needed.
@@ -216,17 +219,44 @@ class tthetaWidget(QWidget):
                     signal.disconnect()
                 except TypeError:
                     break
-    
-    def clock(self):
-        """Called whenever the QTimer counts down.
+
+    def thread_state_changed(self):
+        """Called whenever a thread is started or finished.
         """
-        if self.integratorTree.integrator_thread.isRunning():
+        wrangler_running = self.wrangler.thread.isRunning()
+        integrator_running = self.integratorTree.integrator_thread.isRunning()
+        loader_running = self.h5viewer.file_thread.isRunning()
+        same_name = self.sphere.name == self.wrangler.scan_name
+
+        if loader_running:
+            self.h5viewer.ui.listData.setEnabled(False)
+            self.h5viewer.ui.listScans.setEnabled(False)
+            self.integratorTree.setEnabled(False)
+
+        elif integrator_running:
+            self.h5viewer.ui.listData.setEnabled(True)
             self.integratorTree.setEnabled(False)
             self.h5viewer.ui.listScans.setEnabled(False)
-        else:
-            self.integratorTree.setEnabled(True)
+            if same_name or wrangler_running:
+                self.wrangler.enabled(False)
+            else:
+                self.wrangler.enabled(True)
+
+        elif wrangler_running:
+            self.h5viewer.ui.listData.setEnabled(True)
             self.h5viewer.ui.listScans.setEnabled(True)
-    
+            self.wrangler.enabled(False)
+            if same_name:
+                self.integratorTree.setEnabled(False)
+            else:
+                self.integratorTree.setEnabled(True)
+
+        else:
+            self.h5viewer.ui.listData.setEnabled(True)
+            self.h5viewer.ui.listScans.setEnabled(True)
+            self.integratorTree.setEnabled(True)
+            self.wrangler.enabled(True)
+
     def update_data(self, q):
         """Called by signal from wrangler. If the current scan name
         is the same as the wrangler scan name, updates the data in
@@ -349,8 +379,8 @@ class tthetaWidget(QWidget):
         self.integratorTree.setEnabled(enable)
 
     def update_all(self):
-        """Updates all data in displays TODO: Currently taking the most
-        time for the main gui thread
+        """Updates all data in displays
+        TODO: Currently taking the most time for the main gui thread
         """
         self.h5viewer.update_data()
         if self.displayframe.auto_last:
