@@ -7,6 +7,7 @@ Created on Mon Aug 26 14:21:58 2019
 import copy
 from threading import Condition
 
+import pyFAI
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI import units
 import numpy as np
@@ -89,8 +90,8 @@ class EwaldArch():
     """
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, idx=None, map_raw=None, poni=PONI(), mask=None,
-                 scan_info={}, ai_args={}, file_lock=Condition()):
+    def __init__(self, idx=None, map_raw=None, poni=PONI(), poni_file=None,
+                 mask=None, scan_info={}, ai_args={}, file_lock=Condition()):
         # pylint: disable=too-many-arguments
         """idx: int, name of the arch.
         map_raw: numpy array, raw image data
@@ -104,6 +105,7 @@ class EwaldArch():
         self.idx = idx
         self.map_raw = map_raw
         self.poni = poni
+        self.poni_file = poni_file
         if mask is None and map_raw is not None:
             self.mask = np.arange(map_raw.size)[map_raw.flatten() < 0]
         else:
@@ -111,17 +113,21 @@ class EwaldArch():
         self.scan_info = scan_info
         self.ai_args = ai_args
         self.file_lock = file_lock
-        self.integrator = AzimuthalIntegrator(
-            dist=self.poni.dist,
-            poni1=self.poni.poni1,
-            poni2=self.poni.poni2,
-            rot1=self.poni.rot1,
-            rot2=self.poni.rot2,
-            rot3=self.poni.rot3,
-            wavelength=self.poni.wavelength,
-            detector=self.poni.detector,
-            **ai_args
-        )
+        
+        if poni_file is not None:
+            self.integrator = pyFAI.load(poni_file)
+        else:
+            self.integrator = AzimuthalIntegrator(
+                dist=self.poni.dist,
+                poni1=self.poni.poni1,
+                poni2=self.poni.poni2,
+                rot1=self.poni.rot1,
+                rot2=self.poni.rot2,
+                rot3=self.poni.rot3,
+                wavelength=self.poni.wavelength,
+                detector=self.poni.detector,
+                **ai_args
+            )
         self.arch_lock = Condition()
         self.map_norm = 1
         self.int_1d = int_1d_data()
@@ -324,9 +330,9 @@ class EwaldArch():
         """
         arch_copy = EwaldArch(
             copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
-            copy.deepcopy(self.poni), copy.deepcopy(self.mask),
-            copy.deepcopy(self.scan_info), copy.deepcopy(self.ai_args),
-            self.file_lock
+            copy.deepcopy(self.poni), copy.deepcopy(self.poni_file),
+            copy.deepcopy(self.mask), copy.deepcopy(self.scan_info), 
+            copy.deepcopy(self.ai_args), self.file_lock
         )
         arch_copy.integrator = copy.deepcopy(self.integrator)
         arch_copy.arch_lock = Condition()

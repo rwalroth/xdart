@@ -36,7 +36,18 @@ params = [
     NamedActionParameter(name='image_file_browse', title= 'Browse...'),
     {'name': 'Calibration PONI File', 'type': 'str', 'default': ''},
     NamedActionParameter(name='poni_file_browse', title= 'Browse...'),
-    {'name': 'Timeout', 'type': 'float', 'value': 5},
+    {'name': 'Timeout', 'type': 'float', 'value': 1},
+    # {'name': 'Rotation Motors', 'type': 'group', 'children': [
+    #     {'name': 'Rot1', 'type': 'str', 'default': ''},
+    #     {'name': 'Rot2', 'type': 'str', 'default': 'TwoTheta'},
+    #     {'name': 'Rot3', 'type': 'str', 'default': ''}
+    # ]},
+    # {'name': 'Calibration Angles', 'type': 'group', 'children': [
+    #     {'name': 'Rot1', 'type': 'float', 'value': 0},
+    #     {'name': 'Rot2', 'type': 'float', 'value': 0},
+    #     {'name': 'Rot3', 'type': 'float', 'value': 0}
+    # ]},
+
 ]
 
 class specWrangler(wranglerWidget):
@@ -63,7 +74,6 @@ class specWrangler(wranglerWidget):
         cont, pause, stop: functions to pass continue, pause, and stop
             commands to thread via command_queue 
         enabled: Enables or disables interactivity
-        set_image_dir: sets the image directory
         set_poni_file: sets the calibration poni file
         set_spec_file: sets the spec data file
         set_fname: Method to safely change file name
@@ -71,11 +81,11 @@ class specWrangler(wranglerWidget):
     
     signals:
         finished: Connected to thread.finished signal
-        sigStart: Tells tthetaWidget to start the thread and prepare
+        sigStart: Tells timescanWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
         sigUpdateFile: (str, str), sends new scan_name and file name
-            to tthetaWidget.
+            to timescanWidget.
         showLabel: str, connected to thread showLabel signal, sets text
             in specLabel
     """
@@ -130,7 +140,6 @@ class specWrangler(wranglerWidget):
             0, 
             {},
             {}, None, None, None, 5, self
-            # 0, {}, {}, None, 5, self
         )
         self.thread.showLabel.connect(self.ui.specLabel.setText)
         self.thread.sigUpdateFile.connect(self.sigUpdateFile.emit)
@@ -148,21 +157,19 @@ class specWrangler(wranglerWidget):
         self.scan_name = lsf_inputs['spec_file_name'] + '_scan' + \
                          str(self.scan_number)
         
-        self.fname = os.path.join(lsf_inputs['spec_file_path'],
-                                  self.scan_name + '.hdf5')
-        self.thread.fname = self.fname
-        
         self.thread.scan_name = self.scan_name
         self.thread.scan_number = self.scan_number
         
-        # self.thread.img_dir = self.parameters.child('Image Directory').value()
-        
         self.image_path = self.parameters.child('Image File').value()
         self.thread.image_path = self.image_path
-        
+        print(f'image_path: {self.image_path}')
+
         img_dir, img_root, img_ext = self.split_image_name(self.image_path)
         self.img_dir, self.img_root, self.img_ext = img_dir, img_root, img_ext
         self.thread.img_dir, self.thread.img_root, self.thread.img_ext = img_dir, img_root, img_ext
+        
+        self.fname = os.path.join(self.img_dir, self.img_root + '.hdf5')
+        self.thread.fname = self.fname
         
         self.timeout = self.parameters.child('Timeout').value()
         self.thread.timeout = self.parameters.child('Timeout').value()
@@ -218,9 +225,33 @@ class specWrangler(wranglerWidget):
         """Organizes inputs for MakePONI from parameters.
         """
         mp_inputs = OrderedDict(
+            # rotations = {
+            #     "rot1": None,
+            #     "rot2": None,
+            #     "rot3": None
+            # },
+            # calib_rotations = {
+            #     "rot1": 0,
+            #     "rot2": 0,
+            #     "rot3": 0
+            # },
             poni_file = None,
             spec_dict = {}
         )
+        # rot_mot = self.parameters.child('Rotation Motors')
+        # for child in rot_mot:
+        #     if child.value() == "":
+        #         mp_inputs['rotations'][child.name().lower()] = None
+        #     else:
+        #         mp_inputs['rotations'][child.name().lower()] = child.value()
+
+        
+        # cal_rot = self.parameters.child('Calibration Angles')
+        # for child in cal_rot:
+        #     if child.value() == 0:
+        #         pass
+        #     else:
+        #         mp_inputs['calib_rotations'][child.name().lower()] = child.value()
         
         mp_inputs['poni_file'] = self.parameters.child(
                                      'Calibration PONI File').value()
@@ -259,10 +290,9 @@ class specThread(wranglerThread):
         file_lock: mp.Condition, process safe lock for file access
         fname: str, path to data file.
         img_dir: str, path to image directory
-        lsf_inputs: dict, input parameters for LoadSpecFile
+        img_root: str, image filename without path and extension and image number
+        img_ext: str, extension of image file
         mp_inputs: dict, input parameters for MakePONI
-        scan_name: str, name of current scan
-        scan_number: int, number of current scan
         input_q: mp.Queue, queue for commands sent from parent
         signal_q: mp.Queue, queue for commands sent from process
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -297,20 +327,19 @@ class specThread(wranglerThread):
             see EwaldSphere.
         fname: str, path to data file.
         file_lock: mp.Condition, process safe lock for file access
-        scan_name: str, name of current scan
-        scan_number: int, number of current scan
         mp_inputs: dict, input parameters for MakePONI
-        lsf_inputs: dict, input parameters for LoadSpecFile
         img_dir: str, path to image directory
+        img_root: str, image filename without path and extension and image number
+        img_ext: str, extension of image file
         timeout: float or int, how long to continue checking for new
             data.
         """
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
-        self.scan_name = scan_name
-        self.scan_number = scan_number
         self.mp_inputs = mp_inputs
         self.lsf_inputs = lsf_inputs
         self.img_dir = img_dir
+        self.img_root = img_root
+        self.img_ext = img_ext
         self.timeout = timeout
 
     def run(self):
@@ -351,6 +380,8 @@ class specThread(wranglerThread):
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
                     self.sigUpdateFile.emit(self.scan_name, self.fname)
+                    # print(self.image_path, self.fname)
+                    # self.sigUpdateFile.emit(self.image_path, self.fname)
                 elif signal == 'TERMINATE':
                     last = True
             
@@ -383,13 +414,10 @@ class specProcess(wranglerProcess):
         file_lock: mp.Condition, process safe lock for file access
         fname: str, path to data file
         img_dir: str, path to image directory
-        lsf_inputs: dict, input parameters for LoadSpecFile
+        img_root: str, image filename without path and extension and image number
+        img_ext: str, extension of image file
         mp_inputs: dict, input parameters for MakePONI
-        scan_name: str, name of current scan
-        scan_number: int, number of current scan
         signal_q: queue to place signals back to parent thread.
-        spec_name: str, spec base name used for checking raw files
-        specFile: dict, data from spec file read into dataframes
         sphere_args: dict, used as **kwargs in sphere initialization.
             see EwaldSphere.
         timeout: float or int, how long to continue checking for new
@@ -405,19 +433,18 @@ class specProcess(wranglerProcess):
     """
     def __init__(self, command_q, signal_q, sphere_args, scan_name, 
                  scan_number, fname, file_lock, lsf_inputs, mp_inputs,
+                 # fname, file_lock, mp_inputs,
                  img_dir, img_root, img_ext, timeout, *args, **kwargs):
-                 # img_dir, timeout, *args, **kwargs):
         """command_q: mp.Queue, queue for commands from parent thread.
         signal_q: queue to place signals back to parent thread.
         sphere_args: dict, used as **kwargs in sphere initialization.
             see EwaldSphere.
-        scan_name: str, name of current scan
-        scan_number: int, number of current scan
         fname: str, path to data file
         file_lock: mp.Condition, process safe lock for file access
-        lsf_inputs: dict, input parameters for LoadSpecFile
         mp_inputs: dict, input parameters for MakePONI
         img_dir: str, path to image directory
+        img_root: str, image filename without path and extension and image number
+        img_ext: str, extension of image file
         timeout: float or int, how long to continue checking for new
             data.
         """
@@ -452,8 +479,11 @@ class specProcess(wranglerProcess):
         """
         # Initialize sphere and save to disk, send update for new scan
         print(f'self.fname: {self.fname}')
+        print(f'self.fname[:-5]: {self.fname[:-5]}')
         sphere = EwaldSphere(self.scan_name, data_file=self.fname,
                              **self.sphere_args)
+        # sphere = EwaldSphere(1, data_file=self.fname,
+        #                      **self.sphere_args)
         with self.file_lock:
             sphere.save_to_h5(replace=True)
             self.signal_q.put(('new_scan', None))
@@ -461,14 +491,14 @@ class specProcess(wranglerProcess):
         # Operation instantiated within process to avoid conflicts with locks
         make_poni = MakePONI()
         make_poni.inputs.update(self.mp_inputs)
-
+        
         # full spec path grabbed from lsf_inputs
         # TODO: just give full spec path as argument
         spec_path = os.path.join(self.lsf_inputs['spec_file_path'],
                                  self.lsf_inputs['spec_file_name'])
 
         # Enter main loop
-        i = 0
+        i = 0   # To change this
         pause = False
         start = time.time()
         while True:
@@ -487,6 +517,7 @@ class specProcess(wranglerProcess):
             # Get result from wrangle
             try:
                 flag, data = self.wrangle(i, spec_path, make_poni)
+                # flag, data = self.wrangle(i)#, spec_path, make_poni)
             # Errors associated with image not yet taken
             except (KeyError, FileNotFoundError, AttributeError, ValueError):
                 elapsed = time.time() - start
@@ -502,8 +533,8 @@ class specProcess(wranglerProcess):
             # TODO: Test how long integrating vs io takes
             if flag == 'image':
                 idx, map_raw, scan_info, poni = data
+                # idx, map_raw, scan_info = data
                 arch = EwaldArch(
-                    # idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
                     idx, map_raw, poni_file=self.mp_inputs['poni_file'], scan_info=scan_info
                 )
                 
@@ -532,6 +563,7 @@ class specProcess(wranglerProcess):
         self.signal_q.put(('TERMINATE', None))
 
 
+    # def wrangle(self, i):#, spec_path, make_poni):
     def wrangle(self, i, spec_path, make_poni):
         """Method for reading in data from raw files and spec file.
         
@@ -566,68 +598,45 @@ class specProcess(wranglerProcess):
         # Construct raw_file path from attributes and index
         # raw_file = self._get_raw_path(i)
         image_file = self._get_image_path(i+1)
-        
-        # Read raw file into numpy array
-        # arr = self.read_raw(raw_file)
-        arr = read_image_file(image_file)#, flip=True)
-        print(f'Image File Name: {image_file}')
-        
+
         # Get scan meta data
-        # if self.scan_number in self.specFile['scans'].keys():
-        #     image_meta = self.specFile['scans']\
-        #                         [self.scan_number].loc[i].to_dict()
+        if self.scan_number in self.specFile['scans'].keys():
+            image_meta = self.specFile['scans']\
+                                [self.scan_number].loc[i].to_dict()
         
-        # else:
-        #     image_meta = self.specFile['current_scan'].loc[i].to_dict()
-        meta_file = image_file[:-3] + 'txt'
-        image_meta = get_image_meta_data(meta_file, BL='11-3')
-        print(f'Image Meta Data: {image_meta}')
+        else:
+            image_meta = self.specFile['current_scan'].loc[i].to_dict()
         
         # Get poni dict based on meta data
         make_poni.inputs['spec_dict'] = copy.deepcopy(image_meta)
         poni = copy.deepcopy(make_poni.run())
         
+        # Read raw file into numpy array
+        # arr = self.read_raw(raw_file)
+        arr = read_image_file(image_file)#, flip=True)
+        
         self.signal_q.put(('message', f'Image {i} wrangled'))
 
         return 'image', (i, arr, image_meta, poni)
 
-    def _get_raw_path(self, i):
-        """Creates raw path name from attributes, following spec
-        convention.
+        self.signal_q.put(('message', f'Checking for {i}'))
         
-        args:
-            i: int, index of image
+        # Construct image_file path from attributes and index
+        image_file = self._get_image_path(i+1)
+
+        # Read raw file into numpy array
+        print(f'Image File Name: {image_file}')
+        arr = read_image_file(image_file)#, flip=True)
+
+        # Get scan meta data
+        meta_file = image_file[:-3] + 'txt'
+        image_meta = get_image_meta_data(meta_file, BL='11-3')
+        # print(f'Image Meta Data: {image_meta}')
         
-        returns:
-            raw_file: str, absolute path to .raw image file.
-        """
-        im_base = '_'.join([
-            self.user,
-            self.spec_name,
-            'scan' + str(self.scan_number),
-            str(i).zfill(4)
-        ])
-        return os.path.join(self.img_dir, im_base + '.raw')
-    
-    def read_raw(self, file, mask=True):
-        """Reads in .raw file and returns a numpy array.
-        
-        args:
-            file: str, path to .raw file
-            mask: bool, if True clips the edges of the image
-        
-        returns:
-            map_raw: numpy array, image data.
-        """
-        with open(file, 'rb') as im:
-            arr = np.fromstring(im.read(), dtype='int32')
-            arr = arr.reshape((195, 487))
-            if mask:
-                for i in range(0, 10):
-                    arr[:,i] = -2.0
-                for i in range(477, 487):
-                    arr[:,i] = -2.0
-            return arr.T
+        self.signal_q.put(('message', f'Image {i} wrangled'))
+
+        return 'image', (i, arr, image_meta, poni)
+        # return 'image', (i, arr, image_meta)
 
     def _get_image_path(self, i):
         """Creates raw path name from attributes, following spec

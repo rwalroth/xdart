@@ -135,20 +135,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates image and plot frames based on toolbar options
         """
         # Sets title text
-        if sphere is not None:
-            if arch is None:
-                self.ui.labelCurrent.setText(sphere.name)
-            else:
-                self.ui.labelCurrent.setText("Image " + str(arch))
+        # if sphere is not None:
+            # if arch is None:
+            #     self.ui.labelCurrent.setText(sphere.name)
+            # else:
+            #     self.ui.labelCurrent.setText("Image " + str(arch))
 
-        if self.ui.shareAxis.isChecked():
-            self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
-            self.ui.plotUnit.setEnabled(False)
-            self.plot.setXLink(self.image_plot)
+        # if self.ui.shareAxis.isChecked():
+        #     self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
+        #     self.ui.plotUnit.setEnabled(False)
+        #     self.plot.setXLink(self.image_plot)
         
-        else:
-            self.plot.setXLink(None)
-            self.ui.plotUnit.setEnabled(True)
+        # else:
+        self.plot.setXLink(None)
+        self.ui.plotUnit.setEnabled(True)
         
         if self.auto_last and sphere is not None:
             arch = sphere.arches.iloc(-1).idx
@@ -188,6 +188,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         with arc.arch_lock:
             int_data = arc.int_2d
         
+        self.ui.imageNRP = 'Normalized'
         if self.ui.imageNorm.currentIndex() == 0:
             data, corners = read_NRP(self.ui.imageNRP, int_data)
             
@@ -227,6 +228,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             # elif self.ui.imageMethod.currentIndex() == 1:
             #     int_data = sphere.bai_2d
         
+        self.ui.imageNRP = 'Normalized'
         data, corners = read_NRP(self.ui.imageNRP, int_data)
         
         rect = get_rect(
@@ -255,6 +257,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 elif self.ui.plotMethod.currentIndex() == 1:
                     sphere_int_data = sphere.bai_1d
             
+            self.ui.plotNRP = 'Normalized'
             s_ydata, corners = read_NRP(self.ui.plotNRP, sphere_int_data)
             s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
@@ -294,7 +297,8 @@ def read_NRP(box, int_data):
         corners: tuple, the bounds of the non-zero region of the
             dataset
     """
-    if box.currentIndex() == 0:
+    # if box.currentIndex() == 0:
+    if box == 'Normalized':
         nzarr = int_data.norm
     elif box.currentIndex() == 1:
         nzarr = int_data.raw
@@ -322,6 +326,9 @@ def get_xdata(box, int_data):
     returns:
         xdata: numpy array, x axis data for plot.
     """
+    xdata = int_data.q
+    return xdata
+    
     if box.currentIndex() == 0:
         xdata = int_data.time
     elif box.currentIndex() == 1:

@@ -10,6 +10,7 @@ import sys
 # Other imports
 import numpy as np
 import re
+from datetime import datetime
 
 from skimage import io
 import scipy
@@ -112,6 +113,68 @@ def query(question):
     return input()
 
     
+def get_image_meta_data(meta_file, BL='2-1'):
+    """Get image meta data from pdi/txt files for different beamlines
+
+    Args:
+        meta_file (str): Meta file name with path
+        BL (str, optional): Beamline. Defaults to '2-1'.
+
+    Returns:
+        [dict]: Dictionary with all the meta data
+    """
+
+    with open(meta_file, 'r') as f:
+        data = f.read()
+
+    image_meta_data = {}
+    if BL == '2-1':
+        data = data.replace('\n', ';')
+
+        try:
+            counters = re.search('All Counters;(.*);;# All Motors', data).group(1)
+            cts = re.split(';|=', counters)
+            Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+
+            motors = re.search('All Motors;(.*);#', data).group(1)
+            cts = re.split(';|=', motors)
+            Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+        except:
+            ss1 = '# Diffractometer Motor Positions for image;# '
+            ss2 = ';# Calculated Detector Calibration Parameters for image:'
+
+            motors = re.search(f'{ss1}(.*){ss2}', data).group(1)
+            cts = re.split(';|=', motors)
+            Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+            Motors['TwoTheta'] = Motors['2Theta']
+            Counters = {}
+        
+        image_meta_data['epoch'] = data[data.rindex(';')+1:]
+
+    elif BL == '11-3':
+
+        counters = re.search('# Counters\n(.*)\n', data).group(1)
+        cts = re.split(',|=', counters)
+        Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+
+        motors = re.search('# Motors\n(.*)\n', data).group(1)
+        cts = re.split(',|=', motors)
+        Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+        
+        # image_meta_data['User'] = (data[data.index('User: ')+5: data.index(', time')]).strip()
+        # image_meta_data['Time'] = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
+        Time = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
+        
+        # d = datetime.strptime(image_meta_data['Time'], "%a %b %d %H:%M:%S %Y")
+        d = datetime.strptime(Time, "%a %b %d %H:%M:%S %Y")
+        image_meta_data['epoch'] = time.mktime(d.timetuple())
+
+    image_meta_data.update(Counters)
+    image_meta_data.update(Motors)
+    
+    return image_meta_data
+
+
 def get_from_pdi(pdi_file):
     """Get motor and counter names and values from PDI file
 

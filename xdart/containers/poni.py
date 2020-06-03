@@ -86,6 +86,7 @@ class PONI(object):
         for key in input:
             if key == 'Detector':
                 if 'Detector_config' in input:
+                    continue
                     if 'max_shape' in input['Detector_config']:
                         if not (input['Detector_config']['max_shape'] is None or 
                                 type(input['Detector_config']['max_shape']) == str):
