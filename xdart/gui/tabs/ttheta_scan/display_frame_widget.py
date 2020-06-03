@@ -119,7 +119,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.plotOverlay.stateChanged.connect(self.update_plot)
 
         #self.update()
-    
+
     def update(self):
         """Updates image and plot frames based on toolbar options
         """
@@ -140,12 +140,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         
         try:
             self.update_image()
-        except:
-            print(traceback.print_exc())
+        except TypeError:
+            return False
         try:
             self.update_plot()
-        except:
-            print(traceback.print_exc())
+        except TypeError:
+            return False
+        return True
     
     def update_image(self):
         """Updates image plotted in image frame
@@ -153,12 +154,16 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if self.sphere.name == 'null_main':
             data = np.arange(100).reshape(10,10)
             rect = Qt.QtCore.QRect(1,1,1,1)
-        
-        elif self.arch.idx is not None:
-            data, rect = self.get_arch_data_2d()
-        
         else:
-            data, rect = self.get_sphere_data_2d()
+            try:
+                if self.arch.idx is not None:
+                    data, rect = self.get_arch_data_2d()
+
+                else:
+                    data, rect = self.get_sphere_data_2d()
+            except (TypeError, IndexError):
+                data = np.arange(100).reshape(10, 10)
+                rect = Qt.QtCore.QRect(1, 1, 1, 1)
         
         self.image.setImage(data)
         self.image.setRect(rect)
@@ -228,39 +233,46 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             return data
         
         else:
-            with self.sphere.sphere_lock:
-                if self.ui.plotMethod.currentIndex() == 0:
-                    sphere_int_data = self.sphere.mgi_1d
-                    if type(sphere_int_data.ttheta) == int:
-                        self.ui.plotMethod.setCurrentIndex(1)
+            try:
+                with self.sphere.sphere_lock:
+                    if self.ui.plotMethod.currentIndex() == 0:
+                        sphere_int_data = self.sphere.mgi_1d
+                        if type(sphere_int_data.ttheta) == int:
+                            self.ui.plotMethod.setCurrentIndex(1)
+                            sphere_int_data = self.sphere.bai_1d
+                    elif self.ui.plotMethod.currentIndex() == 1:
                         sphere_int_data = self.sphere.bai_1d
-                elif self.ui.plotMethod.currentIndex() == 1:
-                    sphere_int_data = self.sphere.bai_1d
-            
-            s_ydata, corners = read_NRP(self.ui.plotNRP, sphere_int_data)
-            s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
-            if self.arch.idx is not None:
-                with self.arch.arch_lock:
-                    arc_int_data = self.arch.int_1d
+                s_ydata, corners = read_NRP(self.ui.plotNRP, sphere_int_data)
+                s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
-                if self.ui.plotOverlay.isChecked():
-                    self.curve1.setData(s_xdata, s_ydata)
+                if self.arch.idx is not None:
+                    with self.arch.arch_lock:
+                        arc_int_data = self.arch.int_1d
+
+                    if self.ui.plotOverlay.isChecked():
+                        self.curve1.setData(s_xdata, s_ydata)
+                    else:
+                        self.curve1.clear()
+
+                    a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
+                    a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
+                    self.curve2.setData(a_xdata, a_ydata)
+
+                    return a_xdata, a_ydata
+
                 else:
-                    self.curve1.clear()
-                
-                a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
-                a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
-                self.curve2.setData(a_xdata, a_ydata)
+                    self.curve1.setData(s_xdata, s_ydata)
+                    self.curve2.clear()
 
-                return a_xdata, a_ydata
-            
-            else:
-                self.curve1.setData(s_xdata, s_ydata)
-                self.curve2.clear()
+                    return s_xdata, s_ydata
 
-                return s_xdata, s_ydata
-    
+            except (TypeError, IndexError):
+                data = (np.arange(100), np.arange(100))
+                self.curve1.setData(data[0], data[1])
+                self.curve2.setData(data[0], data[1])
+                return data
+
     def save_image(self):
         """Saves currently displayed image. Formats are automatically
         grabbed from Qt. Also implements tiff saving.
