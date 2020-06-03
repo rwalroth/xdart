@@ -49,6 +49,8 @@ class H5Viewer(QWidget):
     """
     sigNewFile = Qt.QtCore.Signal(str)
     sigUpdate = Qt.QtCore.Signal()
+    sigThreadFinished = Qt.QtCore.Signal()
+
     def __init__(self, file_lock, fname, dirname, sphere, arch, parent=None):
         super().__init__(parent)
         self.file_lock = file_lock
@@ -135,9 +137,10 @@ class H5Viewer(QWidget):
         
         self.file_thread = fileHandlerThread(self.sphere, self.arch,
                                              self.file_lock)
-        self.file_thread.finished.connect(self.thread_finished)
+        self.file_thread.sigTaskDone.connect(self.thread_finished)
         self.file_thread.sigNewFile.connect(self.sigNewFile.emit)
         self.file_thread.sigUpdate.connect(self.sigUpdate.emit)
+        self.file_thread.start(Qt.QtCore.QThread.LowPriority)
         
         self.update()
         self.show()
@@ -166,18 +169,19 @@ class H5Viewer(QWidget):
         previous_loc = self.ui.listData.currentRow()
         if self.sphere.name != "null_main":
             with self.sphere.sphere_lock:
-                self.ui.listData.clear()
-                self.ui.listData.addItem('Overall')
-                for idx in self.sphere.arches.index:
-                    self.ui.listData.addItem(str(idx))
+                _idxs = list(self.sphere.arches.index)
+            self.ui.listData.clear()
+            self.ui.listData.addItem('Overall')
+            for idx in _idxs:
+                self.ui.listData.addItem(str(idx))
         if previous_loc > self.ui.listData.count() - 1:
             previous_loc = self.ui.listData.count() - 1
         self.ui.listData.setCurrentRow(previous_loc)
     
-    def thread_finished(self):
-        self.set_open_enabled(True)
-        if self.file_thread.method != "load_arch":
+    def thread_finished(self, task):
+        if task != "load_arch":
             self.update()
+        self.sigThreadFinished.emit()
     
     def scans_clicked(self, q):
         """Handles items being double clicked in listScans. Either
@@ -191,7 +195,7 @@ class H5Viewer(QWidget):
             else:
                 up = os.path.dirname(self.dirname)
             
-            if (os.path.isdir(up) and os.path.splitdrive(up)[1] != ''):
+            if os.path.isdir(up) and os.path.splitdrive(up)[1] != '':
                 self.dirname = up
                 self.update_scans()
         elif '/' in q.data(0):
@@ -208,7 +212,7 @@ class H5Viewer(QWidget):
         args:
             fname: str, absolute path for data file
         """
-        if fname not in ('', self.sphere.data_file):
+        if fname != '':
             try:
                 with self.file_lock:
                     with catch_h5py_file(fname, 'a') as _:
@@ -217,9 +221,8 @@ class H5Viewer(QWidget):
                 self.ui.listData.clear()
                 self.ui.listData.addItem('Loading...')
                 self.set_open_enabled(False)
-                self.file_thread.method = "set_datafile"
                 self.file_thread.fname = fname
-                self.file_thread.start()
+                self.file_thread.queue.put("set_datafile")
             except:
                 traceback.print_exc()
                 return
@@ -244,8 +247,7 @@ class H5Viewer(QWidget):
                 except ValueError:
                     return
                 self.arch.idx = idx
-                self.file_thread.method = "load_arch"
-                self.file_thread.start()
+                self.file_thread.queue.put("load_arch")
             else:
                 self.sigUpdate.emit()
     
@@ -262,7 +264,7 @@ class H5Viewer(QWidget):
             enable: bool, if True actions are enabled
         """
         self.actionSaveDataAs.setEnabled(enable)
-        self.actionSetDefaults.setEnabled(enable)
+        self.paramMenu.setEnabled(enable)
         self.actionOpenFolder.setEnabled(enable)
         self.actionNewFile.setEnabled(enable)
         self.ui.listScans.setEnabled(enable)
@@ -273,9 +275,8 @@ class H5Viewer(QWidget):
         """
         fname, _ = QFileDialog.getSaveFileName()
         with self.file_thread.lock:
-            self.file_thread.method = "save_data_as"
             self.file_thread.new_fname = fname
-            self.file_thread.start()
+            self.file_thread.queue.put("save_data_as")
         self.set_file(fname)
     
     def new_file(self):
@@ -283,4 +284,3 @@ class H5Viewer(QWidget):
         """
         fname, _ = QFileDialog.getSaveFileName()
         self.set_file(fname)
-    

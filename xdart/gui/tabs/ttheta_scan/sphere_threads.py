@@ -4,6 +4,7 @@
 """
 
 # Standard library imports
+from queue import Queue
 from threading import Condition
 import traceback
 import time
@@ -135,6 +136,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
     """
     sigNewFile = Qt.QtCore.Signal(str)
     sigUpdate = Qt.QtCore.Signal()
+    sigTaskStarted = Qt.QtCore.Signal()
+    sigTaskDone = Qt.QtCore.Signal(str)
     
     def __init__(self, sphere, arch, file_lock, parent=None):
         """
@@ -148,25 +151,29 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.sphere = sphere
         self.arch = arch
         self.file_lock = file_lock
-        self.method = None
+        self.queue = Queue()
         self.fname = sphere.data_file
         self.new_fname = None
         self.lock = Condition()
+        self.running = False
         
     def run(self):
-        with self.lock:
-            if self.method is not None:
-                try:
-                    method = getattr(self, self.method)
-                    time.sleep(0.05)
-                    method()
-                except KeyError:
-                    traceback.print_exc()
+        while True:
+            method_name = self.queue.get()
+            try:
+                self.running = True
+                self.sigTaskStarted.emit()
+                method = getattr(self, method_name)
+                method()
+            except KeyError:
+                traceback.print_exc()
+            self.running = False
+            self.sigTaskDone.emit(method_name)
     
     def set_datafile(self):
         with self.file_lock:
             self.sphere.set_datafile(
-                self.fname, save_args={'compression':'lzf'}
+                self.fname, save_args={'compression': 'lzf'}
             )
         self.sigNewFile.emit(self.fname)
         self.sigUpdate.emit()
@@ -191,3 +198,4 @@ class fileHandlerThread(Qt.QtCore.QThread):
                             f1.copy(key, f2)
                         for attr in f1.attrs:
                             f2.attrs[attr] = f1.attrs[attr]
+        self.new_fname = None

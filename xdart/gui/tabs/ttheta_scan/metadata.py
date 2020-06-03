@@ -45,5 +45,5 @@ class metadataWidget(Qt.QtWidgets.QWidget):
             )
         
         else:
-            data = pd.DataFrame(self.arch.scan_info, index=[0])
+            data = pd.DataFrame(self.arch.scan_info, index=[self.arch.idx])
             self.tableview.setModel(DFTableModel(data.transpose()))

@@ -119,8 +119,9 @@ class tthetaWidget(QWidget):
 
         # H5Viewer signal connections
         self.h5viewer.sigUpdate.connect(self.set_data)
-        self.h5viewer.file_thread.started.connect(self.thread_state_changed)
-        self.h5viewer.file_thread.finished.connect(self.thread_state_changed)
+        self.h5viewer.file_thread.sigTaskStarted.connect(self.thread_state_changed)
+        self.h5viewer.sigThreadFinished.connect(self.thread_state_changed)
+        self.h5viewer.ui.listData.itemClicked.connect(self.enable_last)
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(self.sphere, self.arch, 
@@ -225,18 +226,20 @@ class tthetaWidget(QWidget):
         """
         wrangler_running = self.wrangler.thread.isRunning()
         integrator_running = self.integratorTree.integrator_thread.isRunning()
-        loader_running = self.h5viewer.file_thread.isRunning()
+        loader_running = self.h5viewer.file_thread.running
         same_name = self.sphere.name == self.wrangler.scan_name
 
         if loader_running:
             self.h5viewer.ui.listData.setEnabled(False)
             self.h5viewer.ui.listScans.setEnabled(False)
+            self.h5viewer.set_open_enabled(False)
             self.integratorTree.setEnabled(False)
 
         elif integrator_running:
             self.h5viewer.ui.listData.setEnabled(True)
             self.integratorTree.setEnabled(False)
             self.h5viewer.ui.listScans.setEnabled(False)
+            self.h5viewer.set_open_enabled(False)
             if same_name or wrangler_running:
                 self.wrangler.enabled(False)
             else:
@@ -245,6 +248,8 @@ class tthetaWidget(QWidget):
         elif wrangler_running:
             self.h5viewer.ui.listData.setEnabled(True)
             self.h5viewer.ui.listScans.setEnabled(True)
+            self.h5viewer.set_open_enabled(True)
+            self.h5viewer.paramMenu.setEnabled(False)
             self.wrangler.enabled(False)
             if same_name:
                 self.integratorTree.setEnabled(False)
@@ -254,6 +259,7 @@ class tthetaWidget(QWidget):
         else:
             self.h5viewer.ui.listData.setEnabled(True)
             self.h5viewer.ui.listScans.setEnabled(True)
+            self.h5viewer.set_open_enabled(True)
             self.integratorTree.setEnabled(True)
             self.wrangler.enabled(True)
 
@@ -264,23 +270,25 @@ class tthetaWidget(QWidget):
         """
         with self.sphere.sphere_lock:
             if self.sphere.name == self.wrangler.scan_name:
-                with self.h5viewer.file_thread.lock:
-                    self.h5viewer.file_thread.method = "update_sphere"
-                    self.h5viewer.file_thread.start()
+                self.h5viewer.file_thread.queue.put("update_sphere")
 
                 with self.file_lock:
                     self.update_all()
 
+    def enable_last(self, q):
+        """
+        Parameters
+        ----------
+        q : Qt.QtWidgets.QListWidgetItem
+        """
+        self.displayframe.auto_last = False
+        self.displayframe.ui.pushRightLast.setEnabled(True)
+
     def set_data(self):
         """Connected to h5viewer, sets the data in displayframe based
         on the selected image or overall data.
-        
-        args:
-            q: QListItem, the item selected in the h5viewer.
         """
         if self.sphere.name != 'null_main':
-            self.displayframe.auto_last = False
-            self.displayframe.ui.pushRightLast.setEnabled(True)
             self.displayframe.update()
             
             if self.arch.idx is None:
@@ -291,14 +299,14 @@ class tthetaWidget(QWidget):
                 self.integratorTree.ui.all1D.setEnabled(False)
                 self.integratorTree.ui.all2D.setChecked(True)
                 self.integratorTree.ui.all2D.setEnabled(False)
-            
+
             else:
                 self.displayframe.ui.imageIntRaw.setEnabled(True)
                 self.displayframe.ui.imageMask.setEnabled(True)
 
                 self.integratorTree.ui.all1D.setEnabled(True)
                 self.integratorTree.ui.all2D.setEnabled(True)
-                
+
             self.metawidget.update()
             self.integratorTree.update()
     
@@ -316,7 +324,6 @@ class tthetaWidget(QWidget):
             )
             self.displayframe.auto_last = False
             self.displayframe.ui.pushRightLast.setEnabled(True)
-            self.set_data()
     
     def prev_arch(self):
         """Goes back one arch in data list, updates displayframe
@@ -331,7 +338,6 @@ class tthetaWidget(QWidget):
             )
             self.displayframe.auto_last = False
             self.displayframe.ui.pushRightLast.setEnabled(True)
-            self.set_data()
     
     def last_arch(self):
         """Advances to last arch in data list, updates displayframe, and
@@ -341,14 +347,13 @@ class tthetaWidget(QWidget):
             pass
 
         else: 
-            if self.arch == self.sphere.arches.iloc(-1).idx:
+            if self.arch.idx == self.sphere.arches.index[-1]:
                 pass
 
             else:
                 self.h5viewer.ui.listData.setCurrentRow(
                     self.h5viewer.ui.listData.count() - 1
                 )
-                self.set_data()
         
             self.displayframe.auto_last = True
             self.displayframe.ui.pushRightLast.setEnabled(False)
@@ -362,7 +367,6 @@ class tthetaWidget(QWidget):
             self.h5viewer.ui.listData.setCurrentRow(1)
             self.displayframe.auto_last = False
             self.displayframe.ui.pushRightLast.setEnabled(True)
-            self.set_data()
     
     def close(self):
         """Tries a graceful close.
