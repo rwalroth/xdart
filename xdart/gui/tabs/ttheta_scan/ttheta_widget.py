@@ -93,13 +93,13 @@ class tthetaWidget(QWidget):
             file explorer behavior in h5viewer.
         load_sphere: 
     """
-    def __init__(self, parent=None):
+    def __init__(self, local_path=None, parent=None):
         super().__init__(parent)
 
         # Data object initialization
         self.file_lock = mp.Condition()
-        dirname = os.path.join(os.path.dirname(__file__).split('xdart')[0],
-                               os.path.join('xdart', 'data'))
+        self.local_path = local_path
+        dirname = os.path.join(local_path)
         if not os.path.isdir(dirname):
             os.mkdir(dirname)
         self.fname = os.path.join(dirname, 'default.hdf5')
@@ -110,7 +110,7 @@ class tthetaWidget(QWidget):
         self.ui.setupUi(self)
 
         # H5Viewer setup
-        self.h5viewer = H5Viewer(self.file_lock, self.fname, dirname,
+        self.h5viewer = H5Viewer(self.file_lock, self.local_path, dirname,
                                  self.sphere, self.arch, self.ui.hdf5Frame)
         self.h5viewer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
@@ -178,6 +178,7 @@ class tthetaWidget(QWidget):
             w = self.ui.wranglerStack.widget(i)
             parameters.append(w.parameters)
         self.h5viewer.defaultWidget.set_parameters(parameters)
+        self.h5viewer.load_starting_defaults()
 
         self.show()
         """

@@ -3,6 +3,7 @@
 @author: walroth
 """
 # Standard library imorts
+import json
 import os
 import traceback
 
@@ -12,6 +13,7 @@ from xdart.utils import catch_h5py_file as catch
 # Qt imports
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
+
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
 QWidget = QtWidgets.QWidget
@@ -22,6 +24,7 @@ from xdart.utils import catch_h5py_file
 from .h5viewerUI import Ui_Form
 from .sphere_threads import fileHandlerThread
 from ...widgets import defaultWidget
+from ...gui_utils import XdartDecoder, XdartEncoder
 
 class H5Viewer(QWidget):
     """Widget for displaying the contents of an EwaldSphere object and
@@ -51,8 +54,9 @@ class H5Viewer(QWidget):
     sigUpdate = Qt.QtCore.Signal()
     sigThreadFinished = Qt.QtCore.Signal()
 
-    def __init__(self, file_lock, fname, dirname, sphere, arch, parent=None):
+    def __init__(self, file_lock, local_path, dirname, sphere, arch, parent=None):
         super().__init__(parent)
+        self.local_path = local_path
         self.file_lock = file_lock
         self.dirname = dirname
         self.sphere = sphere
@@ -144,6 +148,24 @@ class H5Viewer(QWidget):
         
         self.update()
         self.show()
+
+    def load_starting_defaults(self):
+        default_path = os.path.join(self.local_path, "last_defaults.json")
+        if os.path.exists(default_path):
+            with open(default_path, 'r') as f:
+                valdict = json.load(f, cls=XdartDecoder)
+            for key, param in self.defaultWidget.parameters.items():
+                try:
+                    self.defaultWidget.set_defaults(param, valdict[key])
+                except KeyError:
+                    print(f"Key Error in load_default, key: {key}")
+        else:
+            jdict = {}
+            for key, param in self.defaultWidget.parameters.items():
+                jdict[key] = self.defaultWidget.param_to_valdict(param)
+
+            with open(default_path, 'w') as f:
+                json.dump(jdict, f, cls=XdartEncoder)
 
     def update(self):
         """Calls both update_scans and update_data.

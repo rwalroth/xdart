@@ -190,7 +190,7 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.sigUpdate.emit()
     
     def save_data_as(self):
-        if self.new_fname is not None:
+        if self.new_fname is not None and self.new_fname != "":
             with self.file_lock:
                 with catch(self.sphere.data_file, 'r') as f1:
                     with catch(self.new_fname, 'w') as f2:
