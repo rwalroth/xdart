@@ -154,7 +154,7 @@ class timescanWidget(QWidget):
         self.displayframe.ui.plotMethod.activated.connect(self.update_display_frame)
         self.displayframe.ui.plotUnit.activated.connect(self.update_display_frame)
         #self.displayframe.ui.plotNRP.activated.connect(self.update_display_frame)
-        #self.displayframe.ui.plotOverlay.stateChanged.connect(self.update_display_frame)
+        self.displayframe.ui.plotOverlay.stateChanged.connect(self.update_display_frame)
         
         # IntegratorFrame setup
         self.integratorTree = integratorTree()
@@ -274,6 +274,7 @@ class timescanWidget(QWidget):
         args:
             name: str, name of the scan
         """
+        print(f'\nload_sphere: {name}')
         # TODO: Don't initialize sphere, find way to reset sphere
         if not isinstance(self.sphere, EwaldSphere):
             self.sphere = EwaldSphere(name, data_file=self.fname)

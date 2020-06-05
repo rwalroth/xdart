@@ -12,8 +12,6 @@ import traceback
 
 # Other imports
 import numpy as np
-from xdart.classes.spec import MakePONI, get_spec_header, get_spec_scan
-from xdart.containers import PONI
 from xdart.classes.ewald import EwaldArch, EwaldSphere
 from xdart.utils import catch_h5py_file as catch
 from xdart.utils import read_image_file, get_image_meta_data
@@ -27,16 +25,17 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .specUI import Ui_Form
 from xdart.gui.gui_utils import NamedActionParameter
+from xdart.gui.gui_utils import defaultWidget
+
+img_fname = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0001.tif'
+poni = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
 
 params = [
-    {'name': 'Scan Number', 'type': 'int', 'value': 0},
-    {'name': 'Spec File', 'type': 'str', 'default': ''},
-    NamedActionParameter(name='spec_file_browse', title= 'Browse...'),
-    {'name': 'Image File', 'type': 'str', 'default': ''},
+    {'name': 'Image File', 'type': 'str', 'default': img_fname},
     NamedActionParameter(name='image_file_browse', title= 'Browse...'),
-    {'name': 'Calibration PONI File', 'type': 'str', 'default': ''},
+    {'name': 'Calibration PONI File', 'type': 'str', 'default': poni},
     NamedActionParameter(name='poni_file_browse', title= 'Browse...'),
-    {'name': 'Timeout', 'type': 'float', 'value': 5},
+    {'name': 'Timeout', 'type': 'float', 'value': 1},
 ]
 
 class specWrangler(wranglerWidget):
@@ -65,8 +64,9 @@ class specWrangler(wranglerWidget):
         enabled: Enables or disables interactivity
         set_image_dir: sets the image directory
         set_poni_file: sets the calibration poni file
-        set_spec_file: sets the spec data file
-        set_fname: Method to safely change file name
+        split_image_name: breaks up full file name to get 
+                          image folder, root(used as scan_name),
+                          and image file extension 
         setup: Syncs thread parameters prior to starting
     
     signals:
@@ -94,6 +94,11 @@ class specWrangler(wranglerWidget):
         self.ui.stopButton.clicked.connect(self.stop)
         self.ui.continueButton.clicked.connect(self.cont)
 
+        # Testing! 
+        def_file = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/defaults.json'
+        dw = defaultWidget()
+        dw.load_defaults(fname=def_file)
+        
         # Setup parameter tree
         self.tree = ParameterTree()
         self.parameters = Parameter.create(
@@ -104,10 +109,6 @@ class specWrangler(wranglerWidget):
         self.layout.setContentsMargins(0,0,0,0)
         self.layout.addWidget(self.tree)
         
-        # Wire signals from parameter tree based buttons
-        self.parameters.child('spec_file_browse').sigActivated.connect(
-            self.set_spec_file
-        )
         self.parameters.child('image_file_browse').sigActivated.connect(
             self.set_image_file
         )
@@ -116,7 +117,7 @@ class specWrangler(wranglerWidget):
         )
         
         # Set attributes
-        self.scan_number = self.parameters.child('Scan Number').value()
+        self.poni_file = self.parameters.child('Calibration PONI File').value()
         self.timeout = self.parameters.child('Timeout').value()
         self.parameters.sigTreeStateChanged.connect(self.setup)
         
@@ -127,10 +128,11 @@ class specWrangler(wranglerWidget):
             self.fname, 
             self.file_lock, 
             self.scan_name, 
-            0, 
-            {},
-            {}, None, None, None, 5, self
-            # 0, {}, {}, None, 5, self
+            None,
+            None,
+            None,
+            1,
+            self
         )
         self.thread.showLabel.connect(self.ui.specLabel.setText)
         self.thread.sigUpdateFile.connect(self.sigUpdateFile.emit)
@@ -141,35 +143,33 @@ class specWrangler(wranglerWidget):
     def setup(self):
         """Sets up the child thread, syncs all parameters.
         """
-        self.thread.mp_inputs.update(self._get_mp_inputs())
-        lsf_inputs = self._get_lsf_inputs()
-        self.thread.lsf_inputs.update(lsf_inputs)
-        self.scan_number = self.parameters.child('Scan Number').value()
-        self.scan_name = lsf_inputs['spec_file_name'] + '_scan' + \
-                         str(self.scan_number)
-        
-        self.fname = os.path.join(lsf_inputs['spec_file_path'],
-                                  self.scan_name + '.hdf5')
-        self.thread.fname = self.fname
-        
-        self.thread.scan_name = self.scan_name
-        self.thread.scan_number = self.scan_number
-        
-        # self.thread.img_dir = self.parameters.child('Image Directory').value()
+        # Testing!
+        self.parameters.child('Image File').setValue(img_fname)
         
         self.image_path = self.parameters.child('Image File').value()
         self.thread.image_path = self.image_path
         
-        img_dir, img_root, img_ext = self.split_image_name(self.image_path)
-        self.img_dir, self.img_root, self.img_ext = img_dir, img_root, img_ext
-        self.thread.img_dir, self.thread.img_root, self.thread.img_ext = img_dir, img_root, img_ext
+        img_dir, scan_name, img_ext = self.split_image_name(self.image_path)
+        self.img_dir, self.scan_name, self.img_ext = img_dir, scan_name, img_ext
+        self.thread.img_dir, self.thread.scan_name, self.thread.img_ext = img_dir, scan_name, img_ext
+
+        # Testing!
+        self.parameters.child('Calibration PONI File').setValue(poni)
+        
+        self.poni_file = self.parameters.child('Calibration PONI File').value()
+        self.thread.poni_file = self.poni_file
+        
+        self.thread.scan_name = self.scan_name
+        
+        self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
+        self.thread.fname = self.fname
         
         self.timeout = self.parameters.child('Timeout').value()
         self.thread.timeout = self.parameters.child('Timeout').value()
         
         self.thread.file_lock = self.file_lock
         self.thread.sphere_args = self.sphere_args
-
+        
     def pause(self):
         if self.thread.isRunning():
             self.command_queue.put('pause')
@@ -182,20 +182,22 @@ class specWrangler(wranglerWidget):
         if self.thread.isRunning():
             self.command_queue.put('stop')
     
-    def set_spec_file(self):
-        """Opens file dialogue and sets the spec data file
-        """
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
-        if fname != '':
-            self.parameters.child('Spec File').setValue(fname)
-    
     def set_image_file(self):
         """Opens file dialogue and sets the spec data file
         """
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
         if fname != '':
             self.parameters.child('Image File').setValue(fname)
+        self.image_path = fname
     
+    def set_poni_file(self):
+        """Opens file dialogue and sets the calibration file
+        """
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        if fname != '':
+            self.parameters.child('Calibration PONI File').setValue(fname)
+        self.poni_file = fname
+
     def split_image_name(self, fname):
         """Splits image filename to get directory, file root and extension
 
@@ -205,40 +207,13 @@ class specWrangler(wranglerWidget):
         dir = os.path.dirname(fname)
         root, ext = os.path.splitext(os.path.basename(fname))
         
-        return dir, root[:-5], ext
-    
-    def set_poni_file(self):
-        """Opens file dialogue and sets the calibration file
-        """
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
-        if fname != '':
-            self.parameters.child('Calibration PONI File').setValue(fname)
-    
-    def _get_mp_inputs(self):
-        """Organizes inputs for MakePONI from parameters.
-        """
-        mp_inputs = OrderedDict(
-            poni_file = None,
-            spec_dict = {}
-        )
+        try:
+            root = root[:root.rindex('_')]
+        except:
+            pass
         
-        mp_inputs['poni_file'] = self.parameters.child(
-                                     'Calibration PONI File').value()
-
-        return mp_inputs
-
-    def _get_lsf_inputs(self):
-        """Organizes inputs for LoadSpecFile from parameters. No longer
-        used.
-        """
-        dirname, fname = os.path.split(self.parameters.child('Spec File').value())
-        lsf_inputs = OrderedDict(
-            spec_file_path=dirname,
-            spec_file_name=fname
-        )
-
-        return lsf_inputs
-
+        return dir, root, ext
+    
     def enabled(self, enable):
         """Sets tree and start button to enable.
         
@@ -259,10 +234,8 @@ class specThread(wranglerThread):
         file_lock: mp.Condition, process safe lock for file access
         fname: str, path to data file.
         img_dir: str, path to image directory
-        lsf_inputs: dict, input parameters for LoadSpecFile
-        mp_inputs: dict, input parameters for MakePONI
+        poni_file: str, Poni File name
         scan_name: str, name of current scan
-        scan_number: int, number of current scan
         input_q: mp.Queue, queue for commands sent from parent
         signal_q: mp.Queue, queue for commands sent from process
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -284,11 +257,8 @@ class specThread(wranglerThread):
             fname, 
             file_lock,
             scan_name, 
-            scan_number,
-            mp_inputs, 
-            lsf_inputs,
+            poni_file, 
             img_dir, 
-            img_root, 
             img_ext, 
             timeout,
             parent=None):
@@ -298,19 +268,17 @@ class specThread(wranglerThread):
         fname: str, path to data file.
         file_lock: mp.Condition, process safe lock for file access
         scan_name: str, name of current scan
-        scan_number: int, number of current scan
-        mp_inputs: dict, input parameters for MakePONI
-        lsf_inputs: dict, input parameters for LoadSpecFile
+        poni_file: str, poni file name
         img_dir: str, path to image directory
+        img_ext : str, extension of image file
         timeout: float or int, how long to continue checking for new
             data.
         """
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
         self.scan_name = scan_name
-        self.scan_number = scan_number
-        self.mp_inputs = mp_inputs
-        self.lsf_inputs = lsf_inputs
+        self.poni_file = poni_file
         self.img_dir = img_dir
+        self.img_ext = img_ext
         self.timeout = timeout
 
     def run(self):
@@ -322,13 +290,10 @@ class specThread(wranglerThread):
             self.signal_q, 
             self.sphere_args, 
             self.scan_name,
-            self.scan_number,
             self.fname, 
             self.file_lock,
-            self.lsf_inputs, 
-            self.mp_inputs,
+            self.poni_file,
             self.img_dir,
-            self.img_root,
             self.img_ext,
             self.timeout
         )
@@ -350,6 +315,7 @@ class specThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
+                    print(f'\nnews_scan: {self.scan_name}\n')
                     self.sigUpdateFile.emit(self.scan_name, self.fname)
                 elif signal == 'TERMINATE':
                     last = True
@@ -383,10 +349,8 @@ class specProcess(wranglerProcess):
         file_lock: mp.Condition, process safe lock for file access
         fname: str, path to data file
         img_dir: str, path to image directory
-        lsf_inputs: dict, input parameters for LoadSpecFile
-        mp_inputs: dict, input parameters for MakePONI
+        poni_file: str, poni file name
         scan_name: str, name of current scan
-        scan_number: int, number of current scan
         signal_q: queue to place signals back to parent thread.
         spec_name: str, spec base name used for checking raw files
         specFile: dict, data from spec file read into dataframes
@@ -404,31 +368,25 @@ class specProcess(wranglerProcess):
         wrangle: Method which handles data loading from files.
     """
     def __init__(self, command_q, signal_q, sphere_args, scan_name, 
-                 scan_number, fname, file_lock, lsf_inputs, mp_inputs,
-                 img_dir, img_root, img_ext, timeout, *args, **kwargs):
-                 # img_dir, timeout, *args, **kwargs):
+                 fname, file_lock, poni_file,
+                 img_dir, img_ext, timeout, *args, **kwargs):
         """command_q: mp.Queue, queue for commands from parent thread.
         signal_q: queue to place signals back to parent thread.
         sphere_args: dict, used as **kwargs in sphere initialization.
             see EwaldSphere.
         scan_name: str, name of current scan
-        scan_number: int, number of current scan
         fname: str, path to data file
         file_lock: mp.Condition, process safe lock for file access
-        lsf_inputs: dict, input parameters for LoadSpecFile
-        mp_inputs: dict, input parameters for MakePONI
+        poni_file: str, poni file name
         img_dir: str, path to image directory
         timeout: float or int, how long to continue checking for new
             data.
         """
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
                          *args, **kwargs)
-        self.lsf_inputs = lsf_inputs
-        self.mp_inputs = mp_inputs
+        self.poni_file = poni_file
         self.scan_name = scan_name
-        self.scan_number = scan_number
         self.img_dir = img_dir
-        self.img_root = img_root
         self.img_ext = img_ext
         self.specFile = OrderedDict(
             header=dict(
@@ -442,7 +400,7 @@ class specProcess(wranglerProcess):
             scans_meta={}
         )
         self.user = None
-        self.spec_name = None
+        # self.spec_name = None
         self.timeout = timeout
     
     def _main(self):
@@ -451,22 +409,15 @@ class specProcess(wranglerProcess):
         reading in data, then performs integration.
         """
         # Initialize sphere and save to disk, send update for new scan
-        print(f'self.fname: {self.fname}')
+        print(f'\nself.fname: {self.fname}')
+        print(f'self.scan_name: {self.scan_name}')
         sphere = EwaldSphere(self.scan_name, data_file=self.fname,
                              **self.sphere_args)
         with self.file_lock:
             sphere.save_to_h5(replace=True)
             self.signal_q.put(('new_scan', None))
+        print(f'sphere name: {sphere.name}\n')
         
-        # Operation instantiated within process to avoid conflicts with locks
-        make_poni = MakePONI()
-        make_poni.inputs.update(self.mp_inputs)
-
-        # full spec path grabbed from lsf_inputs
-        # TODO: just give full spec path as argument
-        spec_path = os.path.join(self.lsf_inputs['spec_file_path'],
-                                 self.lsf_inputs['spec_file_name'])
-
         # Enter main loop
         i = 0
         pause = False
@@ -486,7 +437,7 @@ class specProcess(wranglerProcess):
             
             # Get result from wrangle
             try:
-                flag, data = self.wrangle(i, spec_path, make_poni)
+                flag, data = self.wrangle(i)
             # Errors associated with image not yet taken
             except (KeyError, FileNotFoundError, AttributeError, ValueError):
                 elapsed = time.time() - start
@@ -501,10 +452,9 @@ class specProcess(wranglerProcess):
             # Unpack data and load into sphere
             # TODO: Test how long integrating vs io takes
             if flag == 'image':
-                idx, map_raw, scan_info, poni = data
+                idx, map_raw, scan_info = data
                 arch = EwaldArch(
-                    # idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
-                    idx, map_raw, poni_file=self.mp_inputs['poni_file'], scan_info=scan_info
+                    idx, map_raw, poni_file=self.poni_file, scan_info=scan_info
                 )
                 
                 # integrate image to 1d and 2d arrays
@@ -532,102 +482,34 @@ class specProcess(wranglerProcess):
         self.signal_q.put(('TERMINATE', None))
 
 
-    def wrangle(self, i, spec_path, make_poni):
+    def wrangle(self, i):
         """Method for reading in data from raw files and spec file.
         
         args:
             i: int, index of image to check
-            spec_path: str, absolute path to spec file
-            make_poni: MakePONI, operation for creating poni objects
         
         returns:
             flag: str, signal for what kind of data to expect.
             data: tuple (int, numpy array, dict, dict), the
-                index of the data, raw image array, metadata, and PONI
+                index of the data, raw image array, metadata
                 dict associated with the image.
         """
         self.signal_q.put(('message', f'Checking for {i}'))
         
-        # reads in spec data file header
-        self.specFile['header'] = get_spec_header(spec_path)
-        
-        # reads in scan data
-        self.specFile['scans'][self.scan_number], \
-        self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
-            spec_path, self.scan_number, self.specFile['header']
-        )
-
-        # checks for user and spec_name information
-        if self.user is None:
-            self.user = self.specFile['header']['meta']['User']
-        if self.spec_name is None:
-            self.spec_name = self.specFile['header']['meta']['File'][0]
-
         # Construct raw_file path from attributes and index
-        # raw_file = self._get_raw_path(i)
         image_file = self._get_image_path(i+1)
         
         # Read raw file into numpy array
-        # arr = self.read_raw(raw_file)
-        arr = read_image_file(image_file)#, flip=True)
+        arr = read_image_file(image_file)
         print(f'Image File Name: {image_file}')
         
-        # Get scan meta data
-        # if self.scan_number in self.specFile['scans'].keys():
-        #     image_meta = self.specFile['scans']\
-        #                         [self.scan_number].loc[i].to_dict()
-        
-        # else:
-        #     image_meta = self.specFile['current_scan'].loc[i].to_dict()
         meta_file = image_file[:-3] + 'txt'
         image_meta = get_image_meta_data(meta_file, BL='11-3')
         print(f'Image Meta Data: {image_meta}')
         
-        # Get poni dict based on meta data
-        make_poni.inputs['spec_dict'] = copy.deepcopy(image_meta)
-        poni = copy.deepcopy(make_poni.run())
-        
         self.signal_q.put(('message', f'Image {i} wrangled'))
 
-        return 'image', (i, arr, image_meta, poni)
-
-    def _get_raw_path(self, i):
-        """Creates raw path name from attributes, following spec
-        convention.
-        
-        args:
-            i: int, index of image
-        
-        returns:
-            raw_file: str, absolute path to .raw image file.
-        """
-        im_base = '_'.join([
-            self.user,
-            self.spec_name,
-            'scan' + str(self.scan_number),
-            str(i).zfill(4)
-        ])
-        return os.path.join(self.img_dir, im_base + '.raw')
-    
-    def read_raw(self, file, mask=True):
-        """Reads in .raw file and returns a numpy array.
-        
-        args:
-            file: str, path to .raw file
-            mask: bool, if True clips the edges of the image
-        
-        returns:
-            map_raw: numpy array, image data.
-        """
-        with open(file, 'rb') as im:
-            arr = np.fromstring(im.read(), dtype='int32')
-            arr = arr.reshape((195, 487))
-            if mask:
-                for i in range(0, 10):
-                    arr[:,i] = -2.0
-                for i in range(477, 487):
-                    arr[:,i] = -2.0
-            return arr.T
+        return 'image', (i, arr, image_meta)
 
     def _get_image_path(self, i):
         """Creates raw path name from attributes, following spec
@@ -640,7 +522,7 @@ class specProcess(wranglerProcess):
             image_file: str, absolute path to image file.
         """
         im_base = '_'.join([
-            self.img_root,
+            self.scan_name,
             str(i).zfill(4)
         ])
         return os.path.join(self.img_dir, im_base + self.img_ext)

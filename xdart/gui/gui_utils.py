@@ -312,10 +312,11 @@ class defaultWidget(Qt.QtWidgets.QWidget):
             with open(fname, 'w') as f:
                 json.dump(jdict, f, cls=XdartEncoder)
     
-    def load_defaults(self):
+    def load_defaults(self, fname=None):
         """Opens a QFileDialog and loads values from json file.
         """
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(filter="*.json")
+        if not fname:
+            fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(filter="*.json")
         if fname != "":
             with open(fname, 'r') as f:
                 valdict = json.load(f, cls=XdartDecoder)

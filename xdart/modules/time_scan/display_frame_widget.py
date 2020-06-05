@@ -8,10 +8,15 @@ import traceback
 
 # Other imports
 import numpy as np
+from matplotlib import cm
 
 # Qt imports
 import pyqtgraph as pg
 from pyqtgraph import Qt
+
+## Switch to using white background and black foreground
+pg.setConfigOption('background', 'w')
+pg.setConfigOption('foreground', 'k')
 
 # This module imports
 from .displayFrameUI import Ui_Form
@@ -44,7 +49,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         get_arch_data_2d: Gets 2D data from an arch object
         get_sphere_data_2d: Gets overall 2D data for the sphere
         update: Updates the displayed image and plot
-        update_image: Updates image data based on selections
+        update_image: Updates raw image data based on selections
+        update_binned: Updates binned image data based on selections
         update_plot: Updates plot data based on selections
     """
     def __init__(self, parent=None, sphere=None):
@@ -58,7 +64,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Data object initialization
 
         # State variable initialization
-        self.auto_last = False
+        # self.auto_last = False
+        self.auto_last = True
 
         # Image pane setup
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
@@ -116,15 +123,15 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.wf_layout.setContentsMargins(0, 0, 0, 0)
         self.wf_win = pg.GraphicsLayoutWidget()
         self.wf_layout.addWidget(self.wf_win)
-        vb = RectViewBox()
-        self.plot = self.wf_win.addPlot(viewBox=vb)
-        self.curve1 = self.plot.plot(pen=(50,100,255))
-        self.curve2 = self.plot.plot(
-            pen=(200,50,50,200), 
-            symbolBrush=(200,50,50,200), 
-            symbolPen=(0,0,0,0), 
-            symbolSize=4
-        )
+        # vb = RectViewBox()
+        # self.plot = self.wf_win.addPlot(viewBox=vb)
+        # self.curve1 = self.plot.plot(pen=(50,100,255))
+        # self.curve2 = self.plot.plot(
+        #     pen=(200,50,50,200), 
+        #     symbolBrush=(200,50,50,200), 
+        #     symbolPen=(0,0,0,0), 
+        #     symbolSize=4
+        # )
         
         self.ui.plotMethod.setCurrentIndex(1)
         self.ui.plotMethod.setEnabled(False)
@@ -159,6 +166,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         except Exception as e:
             print(traceback.print_exc())
         try:
+            self.update_binned(sphere, arch)
+        except Exception as e:
+            print(traceback.print_exc())
+        try:
             self.update_plot(sphere, arch)
         except Exception as e:
             print(traceback.print_exc())
@@ -171,15 +182,66 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             rect = Qt.QtCore.QRect(1,1,1,1)
         
         elif arch is not None:
+            data, rect = self.get_arch_raw_data(sphere, arch)
+        
+        else:
+            data, rect = self.get_sphere_data_2d(sphere)
+        
+        mn, mx = np.nanpercentile(data, (5,95))
+        mn, mx = int(mn/np.max(data)*255), int(mx/np.max(data)*255) 
+        
+        # self.image.setImage(data, levels=(mn, max))
+        self.image.setImage(data)
+        self.image.setRect(rect)
+        apply_cmap(self.image, 'viridis')
+        
+        self.histogram.setLevels(min=mn, max=mx)
+        # self.histogram.setHistogramRange(mn, mx)
+        print(f'\nhist_levels: {self.histogram.getLevels()}\n')
+        return data
+
+    def update_binned(self, sphere, arch):
+        """Updates binned (Qchi/QzQxy) plotted in binned frame
+        """
+        if sphere is None:
+            data = np.arange(100).reshape(10,10)
+            rect = Qt.QtCore.QRect(1,1,1,1)
+        
+        elif arch is not None:
             data, rect = self.get_arch_data_2d(sphere, arch)
         
         else:
             data, rect = self.get_sphere_data_2d(sphere)
         
-        self.image.setImage(data)
-        self.image.setRect(rect)
+        self.binned.setImage(data)
+        self.binned.setRect(rect)
+        apply_cmap(self.binned, 'viridis')
         
         return data
+
+    def get_arch_raw_data(self, sphere, arch):
+        """Returns data and QRect for data in arch
+        """
+        arc = sphere.arches[arch]
+        
+        self.ui.imageNRP = 'Normalized'
+        with arc.arch_lock:
+            # if self.ui.imageNRP.currentIndex() == 0:
+            if self.ui.imageNorm.currentIndex() == 0:
+                if arc.map_norm is None or arc.map_norm == 0:
+                    data = arc.map_raw.copy()
+                else:
+                    data = arc.map_raw.copy()/arc.map_norm
+            else:
+                data = arc.map_raw.copy()
+            if self.ui.imageMask.isChecked():
+                data[arc.mask] = 0
+        rect = get_rect(
+            np.arange(data.shape[0]), 
+            np.arange(data.shape[1]),
+        )
+        
+        return data, rect
 
     def get_arch_data_2d(self, sphere, arch):
         """Returns data and QRect for data in arch
@@ -335,4 +397,13 @@ def get_xdata(box, int_data):
         xdata = int_data.q
     return xdata
 
+def apply_cmap(img, cmap='viridis'):
+
+    # Get the colormap
+    colormap = cm.get_cmap(cmap)  # cm.get_cmap("CMRmap")
+    colormap._init()
+    lut = (colormap._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0 -255 for Qt
+
+    # Apply the colormap
+    img.setLookupTable(lut)
 
