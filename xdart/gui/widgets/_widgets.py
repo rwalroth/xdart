@@ -42,6 +42,8 @@ class defaultWidget(Qt.QtWidgets.QWidget):
         set_defaults: Sets the default values using a provided dict
         set_parameters: Sets the list of parameters
     """
+    sigSetUserDefaults = Qt.QtCore.Signal()
+
     def __init__(self, parameters=None, parent=None):
         """parameters: dict, parameters to use
         """
@@ -108,24 +110,41 @@ class defaultWidget(Qt.QtWidgets.QWidget):
             param.setDefault(valdict[param.name()])
             param.setValue(valdict[param.name()])
     
-    def save_defaults(self):
+    def save_defaults(self, checked=False, fname=None):
         """Opens a QFileDialog and saves the current values as json
         file.
+
+        Parameters
+        ----------
+        fname : str, path to file to save defaults
         """
+        emit = False
+        if fname is None:
+            fname, _ = Qt.QtWidgets.QFileDialog().getSaveFileName(filter="*.json")
+            emit = True
         self.set_all_defaults()
         jdict = {}
         for key, param in self.parameters.items():
             jdict[key] = self.param_to_valdict(param)
-        
-        fname, _ = Qt.QtWidgets.QFileDialog().getSaveFileName(filter="*.json")
+
         if fname != "":
             with open(fname, 'w') as f:
                 json.dump(jdict, f, cls=XdartEncoder)
+        if emit:
+            self.sigSetUserDefaults.emit()
     
-    def load_defaults(self):
+    def load_defaults(self, checked=False, fname=None):
         """Opens a QFileDialog and loads values from json file.
+
+        Parameters
+        ----------
+        checked : bool, used by QAction triggered signal
+        fname : str, path to file to load
         """
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(filter="*.json")
+        emit = False
+        if fname is None:
+            fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(filter="*.json")
+            emit = True
         if fname != "":
             with open(fname, 'r') as f:
                 valdict = json.load(f, cls=XdartDecoder)
@@ -134,6 +153,8 @@ class defaultWidget(Qt.QtWidgets.QWidget):
                     self.set_defaults(param, valdict[key])
                 except KeyError:
                     print(f"Key Error in load_default, key: {key}")
+        if emit:
+            self.sigSetUserDefaults.emit()
     
     def set_all_defaults(self):
         """Sets the current values to be the default values for all

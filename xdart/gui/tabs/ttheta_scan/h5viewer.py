@@ -66,6 +66,7 @@ class H5Viewer(QWidget):
 
         self.layout = self.ui.layout
         self.defaultWidget = defaultWidget()
+        self.defaultWidget.sigSetUserDefaults.connect(self.set_user_defaults)
 
         # Toolbar setup
         self.toolbar = QtWidgets.QToolBar('Tools')
@@ -152,20 +153,14 @@ class H5Viewer(QWidget):
     def load_starting_defaults(self):
         default_path = os.path.join(self.local_path, "last_defaults.json")
         if os.path.exists(default_path):
-            with open(default_path, 'r') as f:
-                valdict = json.load(f, cls=XdartDecoder)
-            for key, param in self.defaultWidget.parameters.items():
-                try:
-                    self.defaultWidget.set_defaults(param, valdict[key])
-                except KeyError:
-                    print(f"Key Error in load_default, key: {key}")
+            self.defaultWidget.load_defaults(fname=default_path)
         else:
-            jdict = {}
-            for key, param in self.defaultWidget.parameters.items():
-                jdict[key] = self.defaultWidget.param_to_valdict(param)
+            self.defaultWidget.save_defaults(fname=default_path)
 
-            with open(default_path, 'w') as f:
-                json.dump(jdict, f, cls=XdartEncoder)
+    def set_user_defaults(self):
+        default_path = os.path.join(self.local_path, "last_defaults.json")
+        self.defaultWidget.save_defaults(fname=default_path)
+
 
     def update(self):
         """Calls both update_scans and update_data.
