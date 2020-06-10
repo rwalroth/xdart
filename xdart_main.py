@@ -8,6 +8,7 @@ __version__ = '0.4.2'
 # Standard library imports
 import sys
 import gc
+import os
 
 # Other imports
 
@@ -21,9 +22,42 @@ from xdart.gui.mainWindow import Ui_MainWindow
 from xdart.gui import tabs
 
 
+def setup_data_folders(exp_list):
+    """
+    Creates xdart/data folder and xdart/data/tabs folder for storing
+    local data. These are ignored by gitignore.
+
+    Parameters
+    ----------
+    exp_list : list, set of tabs to be
+
+    Returns
+    -------
+    tab_paths : dict, paths for tabs to store data
+    """
+    current_directory = os.path.dirname(__file__)
+    data_directory = os.path.join(current_directory, "data")
+    if not os.path.isdir(data_directory):
+        os.mkdir(data_directory)
+    tab_paths = {}
+    for e in exp_list:
+        tab_directory = os.path.join(data_directory, e)
+        tab_paths[e] = tab_directory
+        if not os.path.isdir(tab_directory):
+            os.mkdir(tab_directory)
+    return tab_paths
+
+
 class Main(QMainWindow):
-    def __init__(self):
+    def __init__(self, tab_paths):
+        """
+
+        Parameters
+        ----------
+        tab_paths : dict
+        """
         super().__init__()
+        self.tab_paths = tab_paths
         self.tabs = {}
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -60,7 +94,7 @@ class Main(QMainWindow):
     def openExperiment(self, q):
         if q.text() == 'ttheta_scan':
             if 'ttheta_scan' not in self.tabs:
-                self.tabs['ttheta_scan'] = tabs.ttheta_scan.tthetaWidget()
+                self.tabs['ttheta_scan'] = tabs.ttheta_scan.tthetaWidget(local_path=self.tab_paths['ttheta_scan'])
                 self.tabwidget.addTab(self.tabs['ttheta_scan'], 'ttheta_scan')
 
     def closeExperiment(self, q):
@@ -71,9 +105,11 @@ class Main(QMainWindow):
         del self.tabs[name]
         gc.collect()
 
+
 if __name__ == '__main__':
+    tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
-    mw = Main()
+    mw = Main(tab_paths)
     mw.show()
     app.exec_()
