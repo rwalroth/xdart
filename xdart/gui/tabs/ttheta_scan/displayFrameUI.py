@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'c:\Users\walroth\Documents\repos\xdart\xdart\experiments\ttheta_scan\gui\displayFrameUI.ui'
+# Form implementation generated from reading ui file 'displayFrameUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.9.2
+# Created by: PyQt5 UI code generator 5.12.3
 #
 # WARNING! All changes made in this file will be lost!
 
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -17,7 +19,13 @@ class Ui_Form(object):
         self.layout.setSpacing(0)
         self.layout.setObjectName("layout")
         self.frame = QtWidgets.QFrame(Form)
-        self.frame.setMaximumSize(QtCore.QSize(50, 16777215))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.frame.sizePolicy().hasHeightForWidth())
+        self.frame.setSizePolicy(sizePolicy)
+        self.frame.setMinimumSize(QtCore.QSize(40, 0))
+        self.frame.setMaximumSize(QtCore.QSize(40, 16777215))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
@@ -25,9 +33,23 @@ class Ui_Form(object):
         self.verticalLayout_2.setContentsMargins(4, 0, 4, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.pushLeft = QtWidgets.QPushButton(self.frame)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushLeft.sizePolicy().hasHeightForWidth())
+        self.pushLeft.setSizePolicy(sizePolicy)
+        self.pushLeft.setMinimumSize(QtCore.QSize(30, 0))
+        self.pushLeft.setMaximumSize(QtCore.QSize(30, 16777215))
         self.pushLeft.setObjectName("pushLeft")
         self.verticalLayout_2.addWidget(self.pushLeft)
         self.pushLeftLast = QtWidgets.QPushButton(self.frame)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushLeftLast.sizePolicy().hasHeightForWidth())
+        self.pushLeftLast.setSizePolicy(sizePolicy)
+        self.pushLeftLast.setMinimumSize(QtCore.QSize(30, 0))
+        self.pushLeftLast.setMaximumSize(QtCore.QSize(30, 16777215))
         self.pushLeftLast.setObjectName("pushLeftLast")
         self.verticalLayout_2.addWidget(self.pushLeftLast)
         self.layout.addWidget(self.frame)
@@ -133,7 +155,13 @@ class Ui_Form(object):
         self.verticalLayout_4.addWidget(self.plotToolBar)
         self.layout.addWidget(self.splitter)
         self.frame_2 = QtWidgets.QFrame(Form)
-        self.frame_2.setMaximumSize(QtCore.QSize(50, 16777215))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.frame_2.sizePolicy().hasHeightForWidth())
+        self.frame_2.setSizePolicy(sizePolicy)
+        self.frame_2.setMinimumSize(QtCore.QSize(40, 0))
+        self.frame_2.setMaximumSize(QtCore.QSize(40, 16777215))
         self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
@@ -141,9 +169,23 @@ class Ui_Form(object):
         self.verticalLayout.setContentsMargins(4, 0, 4, 0)
         self.verticalLayout.setObjectName("verticalLayout")
         self.pushRight = QtWidgets.QPushButton(self.frame_2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushRight.sizePolicy().hasHeightForWidth())
+        self.pushRight.setSizePolicy(sizePolicy)
+        self.pushRight.setMinimumSize(QtCore.QSize(30, 0))
+        self.pushRight.setMaximumSize(QtCore.QSize(30, 16777215))
         self.pushRight.setObjectName("pushRight")
         self.verticalLayout.addWidget(self.pushRight)
         self.pushRightLast = QtWidgets.QPushButton(self.frame_2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pushRightLast.sizePolicy().hasHeightForWidth())
+        self.pushRightLast.setSizePolicy(sizePolicy)
+        self.pushRightLast.setMinimumSize(QtCore.QSize(30, 0))
+        self.pushRightLast.setMaximumSize(QtCore.QSize(30, 16777215))
         self.pushRightLast.setObjectName("pushRightLast")
         self.verticalLayout.addWidget(self.pushRightLast)
         self.layout.addWidget(self.frame_2)
@@ -179,4 +221,3 @@ class Ui_Form(object):
         self.plotOverlay.setText(_translate("Form", "Overlay"))
         self.pushRight.setText(_translate("Form", ">"))
         self.pushRightLast.setText(_translate("Form", ">>"))
-

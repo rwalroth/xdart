@@ -71,6 +71,7 @@ class Main(QMainWindow):
         self.set_tabs()
         #
         self.show()
+        self.resize(1300, 720)
 
     def exit(self):
         try:
@@ -94,6 +95,8 @@ class Main(QMainWindow):
     def openExperiment(self, q):
         if q.text() == 'ttheta_scan':
             if 'ttheta_scan' not in self.tabs:
+                if self.width() < 1300:
+                    self.resize(1300, self.height())
                 self.tabs['ttheta_scan'] = tabs.ttheta_scan.tthetaWidget(local_path=self.tab_paths['ttheta_scan'])
                 self.tabwidget.addTab(self.tabs['ttheta_scan'], 'ttheta_scan')
 
@@ -109,7 +112,9 @@ class Main(QMainWindow):
 if __name__ == '__main__':
     tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
-    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+    with open("xdart_css.css", 'r') as file:
+        sheet = file.read()
+    app.setStyleSheet(sheet)
     mw = Main(tab_paths)
     mw.show()
     app.exec_()

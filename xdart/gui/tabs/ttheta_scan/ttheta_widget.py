@@ -179,8 +179,10 @@ class tthetaWidget(QWidget):
             parameters.append(w.parameters)
         self.h5viewer.defaultWidget.set_parameters(parameters)
         self.h5viewer.load_starting_defaults()
-
         self.show()
+
+        self.resize(1300, self.height())
+        self.ui.mainSplitter.setSizes([200,700,400])
         """
         self.timer = Qt.QtCore.QTimer()
         self.timer.timeout.connect(self.clock)
