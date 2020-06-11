@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'c:\Users\walroth\Documents\repos\xdart\xdart\experiments\time_scan\gui\h5viewerUI.ui'
+# Form implementation generated from reading ui file 'h5viewerUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.9.2
+# Created by: PyQt5 UI code generator 5.12.3
 #
 # WARNING! All changes made in this file will be lost!
 
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(666, 445)
+        Form.resize(1440, 853)
         self.layout = QtWidgets.QGridLayout(Form)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setVerticalSpacing(0)
@@ -31,6 +33,8 @@ class Ui_Form(object):
         self.label_2.setObjectName("label_2")
         self.layout.addWidget(self.label_2, 1, 1, 1, 1)
         self.listData = QtWidgets.QListWidget(Form)
+        self.listData.setTabKeyNavigation(True)
+        self.listData.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.listData.setObjectName("listData")
         self.layout.addWidget(self.listData, 2, 1, 1, 1)
 
@@ -43,3 +47,12 @@ class Ui_Form(object):
         self.label.setText(_translate("Form", "Scans"))
         self.label_2.setText(_translate("Form", "Data"))
 
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Form = QtWidgets.QWidget()
+    ui = Ui_Form()
+    ui.setupUi(Form)
+    Form.show()
+    sys.exit(app.exec_())

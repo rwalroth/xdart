@@ -2,7 +2,7 @@
 """
 @author: walroth
 """
-# Standard library imorts
+# Standard library imports
 import os
 
 # Other imports
@@ -10,13 +10,15 @@ from xdart.utils import catch_h5py_file as catch
 
 # Qt imports
 from pyqtgraph.Qt import QtWidgets
-QTreeWidget = QtWidgets.QTreeWidget
-QTreeWidgetItem = QtWidgets.QTreeWidgetItem
-QWidget = QtWidgets.QWidget
 
 # This module imports
 from .h5viewerUI import Ui_Form
 from xdart.gui.gui_utils import defaultWidget
+
+QTreeWidget = QtWidgets.QTreeWidget
+QTreeWidgetItem = QtWidgets.QTreeWidgetItem
+QWidget = QtWidgets.QWidget
+
 
 class H5Viewer(QWidget):
     """Widget for displaying the contents of an EwaldSphere object and
@@ -42,6 +44,7 @@ class H5Viewer(QWidget):
         TODO: Rename the methods and attributes based on what they
             actually do
     """
+
     def __init__(self, file_lock, fname, parent=None):
         super().__init__(parent)
         self.file_lock = file_lock
@@ -78,20 +81,20 @@ class H5Viewer(QWidget):
         self.actionSaveArray = QtWidgets.QAction()
         self.actionSaveArray.setText('Current 1D Array')
         self.exportMenu.addAction(self.actionSaveArray)
-        
+
         self.paramMenu = QtWidgets.QMenu()
         self.paramMenu.setTitle('Config')
-        
+
         self.actionSaveParams = QtWidgets.QAction()
         self.actionSaveParams.setText('Save')
         self.actionSaveParams.triggered.connect(self.defaultWidget.save_defaults)
         self.paramMenu.addAction(self.actionSaveParams)
-        
+
         self.actionLoadParams = QtWidgets.QAction()
         self.actionLoadParams.setText('Load')
         self.actionLoadParams.triggered.connect(self.defaultWidget.load_defaults)
         self.paramMenu.addAction(self.actionLoadParams)
-        
+
         self.paramMenu.addAction(self.actionSetDefaults)
 
         self.fileMenu = QtWidgets.QMenu()
@@ -104,7 +107,7 @@ class H5Viewer(QWidget):
         self.fileButton.setText('File')
         self.fileButton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
         self.fileButton.setMenu(self.fileMenu)
-        
+
         self.paramButton = QtWidgets.QToolButton()
         self.paramButton.setText('Config')
         self.paramButton.setPopupMode(QtWidgets.QToolButton.InstantPopup)
@@ -134,7 +137,7 @@ class H5Viewer(QWidget):
                 self.ui.listScans.addItem(name + '/')
             elif name.split('.')[-1] in ('h5', 'hdf5'):
                 self.ui.listScans.addItem(name)
-    
+
     def set_data(self, sphere):
         """Takes sphere object and updates list with all arch ids.
         
@@ -150,7 +153,7 @@ class H5Viewer(QWidget):
         if idx > self.ui.listData.count() - 1:
             idx = self.ui.listData.count() - 1
         self.ui.listData.setCurrentRow(idx)
-    
+
     def set_open_enabled(self, enable):
         """Sets the save and open actions to enable
         

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>853</height>
+    <height>878</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -158,24 +158,6 @@
              <property name="frameShadow">
               <enum>QFrame::Raised</enum>
              </property>
-             <widget class="QLabel" name="label">
-              <property name="geometry">
-               <rect>
-                <x>240</x>
-                <y>220</y>
-                <width>60</width>
-                <height>16</height>
-               </rect>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>20</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Raw</string>
-              </property>
-             </widget>
             </widget>
             <widget class="QFrame" name="binnedFrame">
              <property name="frameShape">
@@ -184,24 +166,6 @@
              <property name="frameShadow">
               <enum>QFrame::Raised</enum>
              </property>
-             <widget class="QLabel" name="label_2">
-              <property name="geometry">
-               <rect>
-                <x>260</x>
-                <y>220</y>
-                <width>60</width>
-                <height>16</height>
-               </rect>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>20</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Binned</string>
-              </property>
-             </widget>
             </widget>
            </widget>
           </item>
@@ -443,24 +407,6 @@
              <property name="frameShadow">
               <enum>QFrame::Raised</enum>
              </property>
-             <widget class="QLabel" name="label_3">
-              <property name="geometry">
-               <rect>
-                <x>230</x>
-                <y>160</y>
-                <width>60</width>
-                <height>16</height>
-               </rect>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>20</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>1D Plot</string>
-              </property>
-             </widget>
             </widget>
             <widget class="QFrame" name="wfFrame">
              <property name="frameShape">
@@ -469,24 +415,6 @@
              <property name="frameShadow">
               <enum>QFrame::Raised</enum>
              </property>
-             <widget class="QLabel" name="label_4">
-              <property name="geometry">
-               <rect>
-                <x>250</x>
-                <y>150</y>
-                <width>60</width>
-                <height>16</height>
-               </rect>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>20</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Waterfall</string>
-              </property>
-             </widget>
             </widget>
            </widget>
           </item>

@@ -274,7 +274,6 @@ class timescanWidget(QWidget):
         args:
             name: str, name of the scan
         """
-        print(f'\nload_sphere: {name}')
         # TODO: Don't initialize sphere, find way to reset sphere
         if not isinstance(self.sphere, EwaldSphere):
             self.sphere = EwaldSphere(name, data_file=self.fname)
@@ -303,7 +302,6 @@ class timescanWidget(QWidget):
         is the same as the wrangler scan name, updates the data in
         memory.
         """
-        print(f'update_data: {self.wrangler.scan_name}')
         with self.sphere.sphere_lock:
             if self.sphere.name == self.wrangler.scan_name:
                 with self.file_lock:
@@ -321,7 +319,6 @@ class timescanWidget(QWidget):
         args:
             q: QListItem, the item selected in the h5viewer.
         """
-        print(f'set_data {q.data(0)}')
         if q.data(0) != 'No data':
             self.displayframe.auto_last = False
             self.displayframe.ui.pushRightLast.setEnabled(True)
@@ -524,13 +521,11 @@ class timescanWidget(QWidget):
     def get_args(self, key):
         """Calls integratorTree get_args function.
         """
-        print(f'get_args: {key}')
         self.integratorTree.get_args(self.sphere, key)
     
     def bai_1d(self, q):
         """Uses the integrator_thread attribute to call bai_1d
         """
-        print('bai_1d')
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
@@ -547,7 +542,6 @@ class timescanWidget(QWidget):
     def bai_2d(self, q):
         """Uses the integrator_thread attribute to call bai_2d
         """
-        print('bai_2d')
         with self.integrator_thread.lock:
             self.integrator_thread.sphere = self.sphere
             self.integrator_thread.arch = self.arch
