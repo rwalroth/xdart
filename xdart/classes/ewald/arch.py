@@ -169,7 +169,7 @@ class EwaldArch():
         return result
 
     def integrate_2d(self, npt_rad=1000, npt_azim=1000, monitor=None,
-                     radial_range=[0,180], azimuth_range=[-180,180], 
+                     radial_range=[0, 180], azimuth_range=[-180, 180],
                      unit=units.TTH_DEG, **kwargs):
         """Wrapper for integrate2d method of AzimuthalIntegrator from pyFAI.
         Returns result and also stores the data in the int_2d object.
@@ -212,7 +212,6 @@ class EwaldArch():
             self.int_2d.from_result(result, self.poni.wavelength)
         return result
             
-
     def set_integrator(self, **args):
         """Sets AzimuthalIntegrator with new arguments.
 

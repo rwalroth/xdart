@@ -10,17 +10,39 @@ import traceback
 import numpy as np
 from matplotlib import cm
 
+# This module imports
+from .displayFrameUI import Ui_Form
+from xdart.gui.gui_utils import RectViewBox, get_rect
+
 # Qt imports
 import pyqtgraph as pg
 from pyqtgraph import Qt
 
-## Switch to using white background and black foreground
+# Switch to using white background and black foreground
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
 
-# This module imports
-from .displayFrameUI import Ui_Form
-from xdart.gui.gui_utils import RectViewBox, get_rect
+colors = cm.hot(range(5))
+
+viridis = cm.get_cmap('viridis', 256)
+colors = viridis(np.linspace(0, 1, 5))
+
+colors = np.round(colors * [255, 255, 255, 1]).astype(int)
+colors = [tuple(color[:3]) for color in colors]
+print(colors)
+# colors = [
+#     (255, 100, 0),
+#     (255, 10, 0),
+#     (255, 0, 10),
+#     (25, 100, 100),
+#     (55, 100, 20),
+#           ]
+
+# cmap = 'hot'
+# colormap = cm.get_cmap(cmap)  # cm.get_cmap("CMRmap")
+# colormap._init()
+#
+# colors = (colormap._lut * 255).view(np.ndarray)
 
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
@@ -79,7 +101,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.image_layout.addWidget(self.raw_histogram)
         self.imageViewBox = RectViewBox()
         self.image_plot = self.image_win.addPlot(viewBox=self.imageViewBox)
-        self.image = pg.ImageItem(colormap=cm.get_cmap('viridis'))
+        self.image = pg.ImageItem()
         self.image_plot.addItem(self.image)
         self.raw_histogram.setImageItem(self.image)
 
@@ -111,13 +133,24 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.plot_layout.addWidget(self.plot_win)
         vb = RectViewBox()
         self.plot = self.plot_win.addPlot(viewBox=vb)
-        self.curve1 = self.plot.plot(pen=(50, 100, 255))
-        self.curve2 = self.plot.plot(
-            pen=(200, 50, 50, 200),
-            symbolBrush=(200, 50, 50, 200),
-            symbolPen=(0, 0, 0, 0),
-            symbolSize=4
-        )
+        # self.curve1 = self.plot.plot(pen=(50, 100, 255))
+        # colors = ['r', 'b', 'k', 'g', 'c']
+        self.curves = [self.plot.plot(
+            pen=color,
+            symbolBrush=color,
+            symbolPen=color,
+            symbolSize=3
+            # pen=tuple(color[:3]),
+            # symbolBrush=tuple(color[:3]),
+            # symbolPen=tuple(color[:3]),
+            # symbolSize=3
+        ) for color in colors]
+        # self.curve = self.plot.plot(
+        #     pen=color,  # (50, 100, 255),
+        #     symbolBrush=color,  # (200, 50, 50, 200),
+        #     symbolPen=(0, 0, 0, 0),
+        #     symbolSize=3,
+        # )
 
         # Waterfall Pane Setup
         self.wf_layout = Qt.QtWidgets.QVBoxLayout(self.ui.wfFrame)
@@ -139,7 +172,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # self.update()
 
-    def update(self, sphere, arch=None):
+    def update(self, sphere, arch=None, update_frames='all',
+               curve=None, y_offset=0):
         """Updates image and plot frames based on toolbar options
         """
         # Sets title text
@@ -162,16 +196,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             arch = sphere.arches.iloc(-1).idx
             # TODO This is breaking link to parent arch, need to revisit
 
+        if update_frames == 'all':
+            try:
+                self.update_image(sphere, arch)
+            except Exception as e:
+                print(traceback.print_exc())
+            try:
+                self.update_binned(sphere, arch)
+            except Exception as e:
+                print(traceback.print_exc())
         try:
-            self.update_image(sphere, arch)
-        except Exception as e:
-            print(traceback.print_exc())
-        try:
-            self.update_binned(sphere, arch)
-        except Exception as e:
-            print(traceback.print_exc())
-        try:
-            self.update_plot(sphere, arch)
+            self.update_plot(sphere, arch, curve, y_offset)
         except Exception as e:
             print(traceback.print_exc())
 
@@ -188,7 +223,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             data, rect = self.get_sphere_data_2d(sphere)
 
-        mn, mx = np.nanpercentile(data, (5, 99.8))
+        mn, mx = np.nanpercentile(data, (5, 99.5))
         self.image.setImage(data.T[:, ::-1], levels=(mn, mx))
         self.image.setRect(rect)
         apply_cmap(self.image, 'viridis')
@@ -210,7 +245,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             data, rect = self.get_sphere_data_2d(sphere)
 
-        mn, mx = np.nanpercentile(data, (5, 99.8))
+        mn, mx = np.nanpercentile(data, (5, 99.5))
         self.binned.setImage(data, levels=(mn, mx))
         self.binned.setRect(rect)
         apply_cmap(self.binned, 'viridis')
@@ -301,13 +336,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         return data, rect
 
-    def update_plot(self, sphere, arch):
+    def update_plot(self, sphere, arch, curve, y_offset):
         """Updates data in plot frame
         """
+        if curve is None:
+            curve = self.curves[0]
+
         if sphere is None:
             data = (np.arange(100), np.arange(100))
-            self.curve1.setData(data[0], data[1])
-            self.curve2.setData(data[0], data[1])
+            self.curves[0].setData(data[0], data[1])
+            # self.curve1.setData(data[0], data[1])
+            # self.curve2.setData(data[0], data[1])
             return data
 
         else:
@@ -329,13 +368,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                     arc_int_data = sphere.arches[arch].int_1d
 
                 if self.ui.plotOverlay.isChecked():
-                    self.curve1.setData(s_xdata, s_ydata)
+                    # self.curve1.setData(s_xdata, s_ydata)
+                    curve.setData(s_xdata, s_ydata + y_offset)
                 else:
-                    self.curve1.clear()
+                    # self.curve1.clear()
+                    curve.setData(s_xdata, s_ydata + y_offset)
+                    curve.clear()
 
                 a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
                 a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
-                self.curve2.setData(a_xdata, a_ydata)
+                # self.curve2.setData(a_xdata, a_ydata)
+                curve.setData(a_xdata, a_ydata + y_offset)
 
                 return a_xdata, a_ydata
 

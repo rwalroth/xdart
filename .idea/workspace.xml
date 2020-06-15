@@ -1,13 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="">
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Changed to allow multiple selection.">
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/v.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/xdart.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/xdart.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/classes/ewald/arch.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/classes/ewald/arch.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/gui_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/gui_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/displayFrameUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/time_scan/displayFrameUI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/displayFrameUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/time_scan/displayFrameUI.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/time_scan/display_frame_widget.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/time_scan_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/time_scan/time_scan_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/spec_wrangler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart_main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +49,80 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+  </component>
+  <component name="RunManager" selected="Python.xdart_main">
+    <configuration name="h5viewerUI" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="xdart" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/xdart/modules/time_scan" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xdart/modules/time_scan/h5viewerUI.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="time_scan_widget" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="xdart" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/xdart/modules/time_scan" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xdart/modules/time_scan/time_scan_widget.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="xdart_main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="xdart" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xdart_main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.xdart_main" />
+        <item itemvalue="Python.time_scan_widget" />
+        <item itemvalue="Python.h5viewerUI" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -38,12 +135,76 @@
       <option name="presentableId" value="Default" />
       <updated>1590558942811</updated>
     </task>
+    <task id="LOCAL-00001" summary="Changed to allow multiple selection.">
+      <created>1591866212366</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1591866212366</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Changed to allow multiple selection." />
+    <option name="LAST_COMMIT_MESSAGE" value="Changed to allow multiple selection." />
+  </component>
   <component name="WindowStateProjectService">
+    <state x="463" y="159" width="485" height="456" key="#Notifications" timestamp="1591919527783">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="463" y="159" width="485" height="456" key="#Notifications/0.0.1440.900@0.0.1440.900" timestamp="1591919527783" />
     <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1590558996736">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1440.900@0.0.1440.900" timestamp="1590558996736" />
+    <state x="345" y="132" key="#com.intellij.openapi.keymap.impl.ui.EditKeymapsDialog" timestamp="1591840646629">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="345" y="132" key="#com.intellij.openapi.keymap.impl.ui.EditKeymapsDialog/0.0.1440.900@0.0.1440.900" timestamp="1591840646629" />
+    <state x="100" y="100" width="1240" height="700" key="DiffContextDialog" timestamp="1591866724987">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="100" y="100" width="1240" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1591866724987" />
+    <state width="1419" height="255" key="GridCell.Tab.0.bottom" timestamp="1592088948288">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state width="1419" height="255" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1592088948288" />
+    <state width="1419" height="255" key="GridCell.Tab.0.center" timestamp="1592088948287">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state width="1419" height="255" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1592088948287" />
+    <state width="1419" height="255" key="GridCell.Tab.0.left" timestamp="1592088948286">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state width="1419" height="255" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1592088948286" />
+    <state width="1419" height="255" key="GridCell.Tab.0.right" timestamp="1592088948287">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state width="1419" height="255" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1592088948287" />
+    <state x="249" y="89" key="SettingsEditor" timestamp="1591985439748">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="249" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1591985439748" />
+    <state x="320" y="177" key="Vcs.Push.Dialog.v2" timestamp="1591866240088">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1591866240088" />
+    <state x="421" y="82" width="598" height="735" key="find.popup" timestamp="1592088985034">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="421" y="82" width="598" height="735" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1592088985034" />
   </component>
 </project>

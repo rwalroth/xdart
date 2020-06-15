@@ -112,6 +112,7 @@ class RectViewBox(pg.ViewBox):
                 self.translateBy(x=x, y=y)
             self.sigRangeChangedManually.emit(self.state['mouseEnabled'])
 
+
 class DFTableModel(QtCore.QAbstractTableModel):
     """TableModel for handling pandas DataFrame. Used with a QTableView.
     See QAbstractTableModel for details on implemented methods.

@@ -3,6 +3,7 @@
 @author: walroth
 """
 __version__ = '0.4.2'
+
 # Top level script for running gui based program
 
 # Standard library imports
@@ -14,11 +15,13 @@ import gc
 # Qt imports
 import qdarkstyle
 from pyqtgraph.Qt import QtGui, QtWidgets
-QMainWindow = QtWidgets.QMainWindow
 
 # This module imports
 from xdart.gui.mainWindow import Ui_MainWindow
 from xdart import modules
+
+QMainWindow = QtWidgets.QMainWindow
+
 
 class Main(QMainWindow):
     def __init__(self):
@@ -50,7 +53,6 @@ class Main(QMainWindow):
         except Exception as e:
             print(e)
 
-
     def set_modules(self):
         for e in modules.exp_list:
             self.ui.menuExperiments.addAction(e)
@@ -73,6 +75,7 @@ class Main(QMainWindow):
         self.tabwidget.removeTab(q)
         del self.modules[name]
         gc.collect()
+
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

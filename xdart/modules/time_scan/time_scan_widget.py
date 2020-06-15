@@ -15,13 +15,11 @@ import h5py
 from matplotlib import pyplot as plt
 
 # Qt imports
+import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
-QWidget = QtWidgets.QWidget
-QSizePolicy = QtWidgets.QSizePolicy
-QFileDialog = QtWidgets.QFileDialog
 
-## This module imports
+# This module imports
 from xdart.classes.ewald import EwaldSphere
 from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
@@ -33,8 +31,12 @@ from .sphere_threads import integratorThread
 from .metadata import metadataWidget
 from .wranglers import specWrangler, liveSpecWrangler
 
+QWidget = QtWidgets.QWidget
+QSizePolicy = QtWidgets.QSizePolicy
+QFileDialog = QtWidgets.QFileDialog
+
 wranglers = {
-    'SPEC': specWrangler, 
+    'SPEC': specWrangler,
     'Live Spec': liveSpecWrangler
 }
 
@@ -43,13 +45,16 @@ formats = [
     Qt.QtGui.QImageReader.supportedImageFormats()
 ]
 
+
 def spherelocked(func):
     def wrapper(self, *args, **kwargs):
         if isinstance(self.sphere, EwaldSphere):
             with self.sphere.sphere_lock:
                 func(self, *args, **kwargs)
                 return func(self, *args, **kwargs)
+
     return wrapper
+
 
 class timescanWidget(QWidget):
     """Tab for integrating data collected by a scanning area detector.
@@ -99,6 +104,7 @@ class timescanWidget(QWidget):
             file explorer behavior in h5viewer.
         load_sphere: 
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -110,7 +116,7 @@ class timescanWidget(QWidget):
             os.mkdir(self.dirname)
         self.fname = os.path.join(self.dirname, 'default.hdf5')
         self.sphere = EwaldSphere('null_main', data_file=self.fname)
-        
+
         self.arch = None
         self.integrator_thread = integratorThread(self.sphere, self.arch)
         self.timer = Qt.QtCore.QTimer()
@@ -146,16 +152,17 @@ class timescanWidget(QWidget):
         self.displayframe.ui.pushRightLast.clicked.connect(self.last_arch)
         self.displayframe.ui.pushLeftLast.clicked.connect(self.first_arch)
         self.displayframe.ui.imageNorm.activated.connect(self.update_display_frame)
-        #self.displayframe.ui.imageMethod.activated.connect(self.update_display_frame)
+        # self.displayframe.ui.imageMethod.activated.connect(self.update_display_frame)
         self.displayframe.ui.imageUnit.activated.connect(self.update_display_frame)
-        #self.displayframe.ui.imageNRP.activated.connect(self.update_display_frame)
+        # self.displayframe.ui.imageNRP.activated.connect(self.update_display_frame)
         self.displayframe.ui.imageMask.stateChanged.connect(self.update_display_frame)
-        #self.displayframe.ui.shareAxis.stateChanged.connect(self.update_display_frame)
+        # self.displayframe.ui.shareAxis.stateChanged.connect(self.update_display_frame)
         self.displayframe.ui.plotMethod.activated.connect(self.update_display_frame)
         self.displayframe.ui.plotUnit.activated.connect(self.update_display_frame)
-        #self.displayframe.ui.plotNRP.activated.connect(self.update_display_frame)
+        # self.displayframe.ui.plotNRP.activated.connect(self.update_display_frame)
         self.displayframe.ui.plotOverlay.stateChanged.connect(self.update_display_frame)
-        
+        self.displayframe.ui.yOffsetSlider.valueChanged.connect(self.update_plot_frame)
+
         # IntegratorFrame setup
         self.integratorTree = integratorTree()
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
@@ -184,23 +191,23 @@ class timescanWidget(QWidget):
         self.ui.wranglerStack.currentChanged.connect(self.set_wrangler)
         self.command_queue = Queue()
         self.set_wrangler(self.ui.wranglerStack.currentIndex())
-        
+
         self.get_args('bai_1d')
         self.get_args('bai_2d')
-        
+
         # Setup defaultWidget in h5viewer with parameters
         parameters = [self.integratorTree.parameters]
         for i in range(self.ui.wranglerStack.count()):
             w = self.ui.wranglerStack.widget(i)
             parameters.append(w.parameters)
         self.h5viewer.defaultWidget.set_parameters(parameters)
-        
+
         # Update h5viewer with dirname
         # TODO: Can this be moved earlier in __init__?
         self.h5viewer.update(self.dirname)
 
         self.show()
-    
+
     def set_wrangler(self, qint):
         """Sets the wrangler based on the selected item in the dropdown.
         Syncs the wrangler's attributes and wires signals as needed.
@@ -217,27 +224,29 @@ class timescanWidget(QWidget):
         self.wrangler.sigUpdateFile.connect(self.new_scan)
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
-    
+
     def update_display_frame(self):
         """Calls displayframe update. Used to pass on self.sphere and
         arch to displayframe.
         """
         # TODO: See if sphere can be held as a shared memory object.
-        print(f'update_display_frame self.arch: {self.arch}')
         self.displayframe.update(self.sphere, self.arch)
-    
+
+    def update_plot_frame(self):
+        """Calls displayframe update. Used to pass on self.sphere and
+        arch to displayframe.
+        """
+        # TODO: See if sphere can be held as a shared memory object.
+        items = self.h5viewer.ui.listData.selectedItems()
+        arches = [str(item.text()) for item in items]
+        print(arches)
+        self.set_data(arches=arches, update_frames='1d')
+
     def clock(self):
         """Called whenever the QTimer counts down.
         """
         pass
-        #if isinstance(self.sphere, EwaldSphere):
-        #    if self.sphere.sphere_lock._lock._count > 0:
-        #        self.h5viewer.ui.listScans.setEnabled(False)
-        #        self.h5viewer.ui.listData.setEnabled(False)
-        #    else:
-        #        self.h5viewer.ui.listScans.setEnabled(True)
-        #        self.h5viewer.ui.listData.setEnabled(True)
-    
+
     def open_file(self):
         """Changes the directory being displayed in the file explorer.
         """
@@ -256,7 +265,7 @@ class timescanWidget(QWidget):
         with self.file_lock:
             if fname in ('', self.fname):
                 return
-            
+
             try:
                 with catch(fname, 'a') as _:
                     self.fname = fname
@@ -277,7 +286,7 @@ class timescanWidget(QWidget):
         # TODO: Don't initialize sphere, find way to reset sphere
         if not isinstance(self.sphere, EwaldSphere):
             self.sphere = EwaldSphere(name, data_file=self.fname)
-        
+
         elif self.sphere.name != name:
             self.sphere = EwaldSphere(name, data_file=self.fname)
         with self.file_lock:
@@ -296,7 +305,7 @@ class timescanWidget(QWidget):
             self.enable_integration(True)
         elif self.wrangler.scan_name == self.sphere.name:
             self.enable_integration(False)
-    
+
     def update_data(self, q):
         """Called by signal from wrangler. If the current scan name
         is the same as the wrangler scan name, updates the data in
@@ -306,53 +315,96 @@ class timescanWidget(QWidget):
             if self.sphere.name == self.wrangler.scan_name:
                 with self.file_lock:
                     self.sphere.load_from_h5(
-                        replace=False, data_only=True, 
+                        replace=False, data_only=True,
                         set_mg=False
                     )
                     self.update_all()
-            
-                
-    def set_data(self, q):
+
+    def set_data(self, q=None, arches=None, update_frames='all'):
         """Connected to h5viewer, sets the data in displayframe based
         on the selected image or overall data.
         
         args:
             q: QListItem, the item selected in the h5viewer.
         """
-        if q.data(0) != 'No data':
-            self.displayframe.auto_last = False
-            self.displayframe.ui.pushRightLast.setEnabled(True)
+        if (q is None) and (arches is None):
+            return
 
-            if not isinstance(self.sphere, EwaldSphere):
-                return
-            
-            if q.data(0) == 'Overall' or 'scan' in q.data(0):
-                self.arch = None
-                self.displayframe.arch = None
-                self.displayframe.update(self.sphere, self.arch)
-                self.displayframe.ui.imageNorm.setEnabled(False)
-                self.displayframe.ui.imageMask.setEnabled(False)
+        if arches is None:
+            print(f'q type: {type(q)} {q}')
+            print(f'set_data {q.data(0)}')
+            print(f'set_data {self.h5viewer.ui.listData.selectedItems()}')
+            items = self.h5viewer.ui.listData.selectedItems()
+            arches = [str(item.text()) for item in items]
+            print(arches)
 
-                self.integratorTree.ui.all1D.setChecked(True)
-                self.integratorTree.ui.all1D.setEnabled(False)
-                self.integratorTree.ui.all2D.setChecked(True)
-                self.integratorTree.ui.all2D.setEnabled(False)
-                
-                self.metawidget.update(self.sphere)
-            
-            else:
+        # if q.data(0) != 'No data':
+        self.displayframe.auto_last = False
+        self.displayframe.ui.pushRightLast.setEnabled(True)
+
+        if not isinstance(self.sphere, EwaldSphere):
+            return
+
+        # if q.data(0) == 'Overall' or 'scan' in q.data(0):
+        if 'Overall' in arches:
+            self.arch = None
+            self.displayframe.arch = None
+            self.displayframe.update(self.sphere, self.arch)
+            self.displayframe.ui.imageNorm.setEnabled(False)
+            self.displayframe.ui.imageMask.setEnabled(False)
+
+            self.integratorTree.ui.all1D.setChecked(True)
+            self.integratorTree.ui.all1D.setEnabled(False)
+            self.integratorTree.ui.all2D.setChecked(True)
+            self.integratorTree.ui.all2D.setEnabled(False)
+
+            self.metawidget.update(self.sphere)
+
+        else:
+            # curves = self.displayframe.plot.curves
+            curves = self.displayframe.curves
+            print(f'len(curves): {len(curves)}')
+            [curve.clear() for curve in curves]
+            print(f'len(curves, arches): {len(curves)}, {len(arches)}')
+
+            while len(curves) < len(arches):
+                n_curves = len(curves)
+                print(n_curves)
+                # pen = pg.intColor(n_curve),
+                pen = (n_curves*5, n_curves*5, n_curves*5, 100)
+                _ = self.displayframe.plot.plot(
+                    pen=pen,
+                    symbolBrush=pen,
+                    symbolPen=pen,
+                    symbolSize=3)
+            # curves = self.displayframe.plot.curves
+            print(f'len(curves, arches): {len(curves)}, {len(arches)}')
+
+            offset = self.displayframe.ui.yOffsetSlider.value()
+            print(f'offset: {offset}')
+
+            y_offset = 0
+            for idx, (arch, curve) in enumerate(zip(sorted(arches), curves)):
                 try:
-                    self.arch = int(q.data(0))
+                    # self.arch = int(q.data(0))
+                    self.arch = int(arch)
                 except ValueError:
                     return
-                self.displayframe.arch = int(q.data(0))
-                self.displayframe.update(self.sphere, self.arch)
+
+                if idx == 1:
+                    y0 = self.displayframe.plot.curves[0].yData
+                    y_offset = offset/100 * (y0.max() - y0.min())
+
+                self.displayframe.arch = self.arch
+                self.displayframe.update(self.sphere, update_frames=update_frames,
+                                         arch=self.arch, curve=curve,
+                                         y_offset=y_offset*idx)
                 self.displayframe.ui.imageNorm.setEnabled(True)
                 self.displayframe.ui.imageMask.setEnabled(True)
 
                 self.integratorTree.ui.all1D.setEnabled(True)
                 self.integratorTree.ui.all2D.setEnabled(True)
-                
+
                 self.metawidget.update(self.sphere, self.arch)
 
     def load_and_set(self, q):
@@ -367,9 +419,9 @@ class timescanWidget(QWidget):
                     up = os.path.dirname(self.dirname[:-1])
                 else:
                     up = os.path.dirname(self.dirname)
-                
+
                 if (os.path.isdir(up) and
-                    os.path.splitdrive(up)[1] != ''):
+                        os.path.splitdrive(up)[1] != ''):
                     self.dirname = up
                     self.h5viewer.update(self.dirname)
             elif '/' in q.data(0):
@@ -379,14 +431,14 @@ class timescanWidget(QWidget):
                 self.h5viewer.ui.listData.clear()
                 self.h5viewer.ui.listData.addItem('Loading...')
                 Qt.QtGui.QApplication.processEvents()
-                
+
                 self.set_file(os.path.join(self.dirname, q.data(0)))
                 self.load_sphere(q.data(0).split('.')[0])
                 try:
                     self.set_data(q)
                 except TypeError:
                     traceback.print_exc()
-    
+
     def save_image(self):
         """Saves currently displayed image. Formats are automatically
         grabbed from Qt. Also implements tiff saving.
@@ -404,11 +456,11 @@ class timescanWidget(QWidget):
         _, ext = fname.split('.')
         if ext.lower() in formats:
             self.displayframe.image.save(fname)
-        
+
         elif ext.lower() == 'tiff':
             data = self.displayframe.update_image(self.sphere, self.arch)
             plt.imsave(fname, data.T, cmap='gray')
-    
+
     def save_array(self):
         """Saves currently displayed data. Currently supports .xye
         and .csv.
@@ -424,10 +476,10 @@ class timescanWidget(QWidget):
         _, ext = fname.split('.')
         if ext.lower() == 'xye':
             ut.write_xye(fname, xdata, ydata)
-        
+
         elif ext.lower() == 'csv':
             ut.write_csv(fname, xdata, ydata)
-    
+
     def save_data_as(self):
         """Saves all data to hdf5 file. Also sets fname to be the
         selected file.
@@ -441,19 +493,19 @@ class timescanWidget(QWidget):
                     for attr in f1.attrs:
                         f2.attrs[attr] = f1.attrs[attr]
         self.set_file(fname)
-    
+
     def new_file(self):
         """Calls file dialog and sets the file name.
         """
         fname, _ = QFileDialog.getSaveFileName()
         self.set_file(fname)
-    
+
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
         """
-        if (self.arch == self.sphere.arches.iloc(-1).idx or 
-            self.arch is None or
-            self.h5viewer.ui.listData.currentRow() == self.h5viewer.ui.listData.count() - 1):
+        if (self.arch == self.sphere.arches.iloc(-1).idx or
+                self.arch is None or
+                self.h5viewer.ui.listData.currentRow() == self.h5viewer.ui.listData.count() - 1):
             pass
         else:
             self.h5viewer.ui.listData.setCurrentRow(
@@ -462,13 +514,13 @@ class timescanWidget(QWidget):
             self.displayframe.auto_last = False
             self.displayframe.ui.pushRightLast.setEnabled(True)
             self.set_data(self.h5viewer.ui.listData.currentItem())
-    
+
     def prev_arch(self):
         """Goes back one arch in data list, updates displayframe
         """
-        if (self.arch == self.sphere.arches.iloc(0).idx or 
-            self.arch is None or
-            self.h5viewer.ui.listData.currentRow() == 1):
+        if (self.arch == self.sphere.arches.iloc(0).idx or
+                self.arch is None or
+                self.h5viewer.ui.listData.currentRow() == 1):
             pass
         else:
             self.h5viewer.ui.listData.setCurrentRow(
@@ -477,7 +529,7 @@ class timescanWidget(QWidget):
             self.displayframe.auto_last = False
             self.displayframe.ui.pushRightLast.setEnabled(True)
             self.set_data(self.h5viewer.ui.listData.currentItem())
-    
+
     def last_arch(self):
         """Advances to last arch in data list, updates displayframe, and
         set auto_last to True
@@ -485,7 +537,7 @@ class timescanWidget(QWidget):
         if self.arch is None:
             pass
 
-        else: 
+        else:
             if self.arch == self.sphere.arches.iloc(-1).idx:
                 pass
 
@@ -494,7 +546,7 @@ class timescanWidget(QWidget):
                     self.h5viewer.ui.listData.count() - 1
                 )
                 self.set_data(self.h5viewer.ui.listData.currentItem())
-        
+
             self.displayframe.auto_last = True
             self.displayframe.ui.pushRightLast.setEnabled(False)
 
@@ -508,21 +560,21 @@ class timescanWidget(QWidget):
             self.displayframe.auto_last = False
             self.displayframe.ui.pushRightLast.setEnabled(True)
             self.set_data(self.h5viewer.ui.listData.currentItem())
-    
+
     def close(self):
         """Tries a graceful close.
         """
-        del(self.sphere)
-        del(self.displayframe.sphere)
-        del(self.arch)
-        del(self.displayframe.arch)
+        del (self.sphere)
+        del (self.displayframe.sphere)
+        del (self.arch)
+        del (self.displayframe.arch)
         super().close()
-    
+
     def get_args(self, key):
         """Calls integratorTree get_args function.
         """
         self.integratorTree.get_args(self.sphere, key)
-    
+
     def bai_1d(self, q):
         """Uses the integrator_thread attribute to call bai_1d
         """
@@ -574,7 +626,7 @@ class timescanWidget(QWidget):
             self.integrator_thread.method = 'mg_1d'
         self.enable_integration(False)
         self.integrator_thread.start()
-    
+
     def mg_2d(self, q):
         """Uses the integrator_thread attribute to call mg_2d
         """
@@ -584,7 +636,7 @@ class timescanWidget(QWidget):
             self.integrator_thread.method = 'mg_2d'
         self.enable_integration(False)
         self.integrator_thread.start()
-    
+
     def enable_integration(self, enable=True):
         """Calls the integratorTree setEnabled function.
         """
@@ -600,7 +652,7 @@ class timescanWidget(QWidget):
             self.h5viewer.ui.listData.setCurrentRow(
                 self.h5viewer.ui.listData.count() - 1
             )
-    
+
     def thread_finished(self):
         """Function connected to threadFinished signals for
         integratorThread
@@ -610,7 +662,7 @@ class timescanWidget(QWidget):
         self.wrangler.enabled(True)
         self.h5viewer.set_open_enabled(True)
         self.update()
-    
+
     def new_scan(self, name, fname):
         """Connected to sigUpdateFile from wrangler. Called when a new
         scan is started. 
@@ -635,13 +687,13 @@ class timescanWidget(QWidget):
         """
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
-        #self.h5viewer.set_open_enabled(False) // why was this here?
+        # self.h5viewer.set_open_enabled(False) // why was this here?
         args = {'bai_1d_args': self.sphere.bai_1d_args,
                 'bai_2d_args': self.sphere.bai_2d_args}
         self.wrangler.sphere_args = copy.deepcopy(args)
         self.wrangler.setup()
         self.wrangler.thread.start()
-    
+
     def wrangler_finished(self):
         """Called by the wrangler finished signal. If current scan
         matches the wrangler scan, allows for integration.
@@ -670,7 +722,3 @@ class timescanWidget(QWidget):
     def stop_wrangler(self):
         if self.batch_integrator.isRunning():
             self.command_queue.put('stop')
-
-                
-
-
