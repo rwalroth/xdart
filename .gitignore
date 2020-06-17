@@ -122,3 +122,9 @@ xdart/pySSRL_bServer/bServer.lnk
 *.srctrlbm
 *.srctrldb
 *.srctrlprj
+
+# Mac temp files
+*.DS_Store
+
+# .idea files
+.idea*
