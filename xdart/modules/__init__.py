@@ -1,3 +1,2 @@
-exp_list = ['ttheta_scan', 'time_scan']
+# -*- coding: utf-8 -*-
 
-from . import ttheta_scan, time_scan
