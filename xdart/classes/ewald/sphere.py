@@ -252,6 +252,7 @@ class EwaldSphere():
                     )
                 except Exception as e:
                     print(e)
+                    print('Exception 1')
                     result = self.multi_geo.integrate1d(
                         [a.map_raw for a in self.arches], lst_mask=lst_mask,
                         **kwargs
@@ -286,6 +287,7 @@ class EwaldSphere():
                     )
                 except Exception as e:
                     print(e)
+                    print('Exception 2')
                     result = self.multi_geo.integrate2d(
                         [a.map_raw for a in self.arches], lst_mask=lst_mask,
                         **kwargs

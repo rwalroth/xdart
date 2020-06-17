@@ -225,17 +225,21 @@ class EwaldArch():
 
         with self.arch_lock:
             self.ai_args = args
-            self.integrator = AzimuthalIntegrator(
-                dist=self.poni.dist,
-                poni1=self.poni.poni1,
-                poni2=self.poni.poni2,
-                rot1=self.poni.rot1,
-                rot2=self.poni.rot2,
-                rot3=self.poni.rot3,
-                wavelength=self.poni.wavelength,
-                detector=self.poni.detector,
-                **args
-            )
+
+            if self.poni_file is not None:
+                self.integrator = pyFAI.load(self.poni_file)
+            else:
+                self.integrator = AzimuthalIntegrator(
+                    dist=self.poni.dist,
+                    poni1=self.poni.poni1,
+                    poni2=self.poni.poni2,
+                    rot1=self.poni.rot1,
+                    rot2=self.poni.rot2,
+                    rot3=self.poni.rot3,
+                    wavelength=self.poni.wavelength,
+                    detector=self.poni.detector,
+                    **args
+                )
 
     def set_map_raw(self, new_data):
         with self.arch_lock:
@@ -312,17 +316,20 @@ class EwaldArch():
                             self.poni = PONI.from_yamdict(
                                 utils.h5_to_dict(grp['poni'])
                             )
-                            self.integrator = AzimuthalIntegrator(
-                                dist=self.poni.dist,
-                                poni1=self.poni.poni1,
-                                poni2=self.poni.poni2,
-                                rot1=self.poni.rot1,
-                                rot2=self.poni.rot2,
-                                rot3=self.poni.rot3,
-                                wavelength=self.poni.wavelength,
-                                detector=self.poni.detector,
-                                **self.ai_args
-                            )
+                            if self.poni_file is not None:
+                                self.integrator = pyFAI.load(self.poni_file)
+                            else:
+                                self.integrator = AzimuthalIntegrator(
+                                    dist=self.poni.dist,
+                                    poni1=self.poni.poni1,
+                                    poni2=self.poni.poni2,
+                                    rot1=self.poni.rot1,
+                                    rot2=self.poni.rot2,
+                                    rot3=self.poni.rot3,
+                                    wavelength=self.poni.wavelength,
+                                    detector=self.poni.detector,
+                                    **self.ai_args
+                                )
 
     def copy(self):
         """Returns a copy of self.

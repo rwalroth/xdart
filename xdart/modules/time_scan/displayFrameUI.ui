@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>853</height>
+    <height>878</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -91,7 +91,7 @@
       <property name="minimumSize">
        <size>
         <width>0</width>
-        <height>400</height>
+        <height>440</height>
        </size>
       </property>
       <property name="frameShape">
@@ -454,7 +454,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="plotMethod">
+           <widget class="QComboBox" name="plotScale">
             <property name="maximumSize">
              <size>
               <width>100</width>
@@ -488,7 +488,42 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>30</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QComboBox" name="plotMethod">
+            <item>
+             <property name="text">
+              <string>Overlay</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Average</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Waterfall</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_7">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>30</width>
               <height>20</height>
              </size>
             </property>
@@ -536,7 +571,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>30</width>
               <height>20</height>
              </size>
             </property>
@@ -578,7 +613,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>30</width>
               <height>20</height>
              </size>
             </property>

@@ -29,21 +29,6 @@ colors = viridis(np.linspace(0, 1, 5))
 
 colors = np.round(colors * [255, 255, 255, 1]).astype(int)
 colors = [tuple(color[:3]) for color in colors]
-print(colors)
-# colors = [
-#     (255, 100, 0),
-#     (255, 10, 0),
-#     (255, 0, 10),
-#     (25, 100, 100),
-#     (55, 100, 20),
-#           ]
-
-# cmap = 'hot'
-# colormap = cm.get_cmap(cmap)  # cm.get_cmap("CMRmap")
-# colormap._init()
-#
-# colors = (colormap._lut * 255).view(np.ndarray)
-
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
     """Widget for displaying 2D image data and 1D plots from EwaldSphere
@@ -152,23 +137,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         #     symbolSize=3,
         # )
 
-        # Waterfall Pane Setup
-        self.wf_layout = Qt.QtWidgets.QVBoxLayout(self.ui.wfFrame)
-        self.wf_layout.setContentsMargins(0, 0, 0, 0)
-        self.wf_win = pg.GraphicsLayoutWidget()
-        self.wf_layout.addWidget(self.wf_win)
-        # vb = RectViewBox()
-        # self.plot = self.wf_win.addPlot(viewBox=vb)
-        # self.curve1 = self.plot.plot(pen=(50,100,255))
-        # self.curve2 = self.plot.plot(
-        #     pen=(200,50,50,200), 
-        #     symbolBrush=(200,50,50,200), 
-        #     symbolPen=(0,0,0,0), 
-        #     symbolSize=4
-        # )
-
         self.ui.plotMethod.setCurrentIndex(1)
-        self.ui.plotMethod.setEnabled(False)
+        self.ui.plotMethod.setEnabled(True)
 
         # self.update()
 
@@ -192,6 +162,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.plot.setXLink(None)
         self.ui.plotUnit.setEnabled(True)
 
+        print(f'update: {arch}')
+
+        print(f'\nself.auto_last: {self.auto_last}')
         if self.auto_last and sphere is not None:
             arch = sphere.arches.iloc(-1).idx
             # TODO This is breaking link to parent arch, need to revisit
@@ -201,14 +174,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 self.update_image(sphere, arch)
             except Exception as e:
                 print(traceback.print_exc())
+                print('update image failed')
             try:
                 self.update_binned(sphere, arch)
             except Exception as e:
                 print(traceback.print_exc())
+                print('update binned failed')
         try:
             self.update_plot(sphere, arch, curve, y_offset)
         except Exception as e:
             print(traceback.print_exc())
+            print('update plot failed')
 
     def update_image(self, sphere, arch):
         """Updates image plotted in image frame
@@ -246,7 +222,15 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             data, rect = self.get_sphere_data_2d(sphere)
 
         mn, mx = np.nanpercentile(data, (5, 99.5))
-        self.binned.setImage(data, levels=(mn, mx))
+        print(f'update_binned: {len(data[0, :])} {len(data[:, 0])} {data.shape} {rect.top()} {rect.height()} {rect.left()} {rect.width()}')
+
+        # Center Chi around 0
+        if rect.height() > 340:
+            self.binned.setImage(np.roll(data, 250, axis=1),
+                                 levels=(mn, mx))
+        else:
+            self.binned.setImage(data, levels=(mn, mx))
+
         self.binned.setRect(rect)
         apply_cmap(self.binned, 'viridis')
 
@@ -279,7 +263,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         return data, rect
 
-    def get_arch_data_2d(self, sphere, arch):
+    def get_arch_data_2d(self, sphere, arch, x_shift=0, y_shift=0):
         """Returns data and QRect for data in arch
         """
         arc = sphere.arches[arch]
@@ -292,7 +276,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
             rect = get_rect(
                 get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]],
-                int_data.chi[corners[0]:corners[1]]
+                int_data.chi[corners[0]:corners[1]],
+                x_shift=x_shift, y_shift=y_shift
             )
 
         elif self.ui.imageNorm.currentIndex() == 1:

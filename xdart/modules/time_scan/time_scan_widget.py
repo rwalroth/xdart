@@ -136,6 +136,7 @@ class timescanWidget(QWidget):
         # H5Viewer signal connections
         self.h5viewer.ui.listScans.itemDoubleClicked.connect(self.load_and_set)
         self.h5viewer.ui.listData.itemClicked.connect(self.set_data)
+        # self.h5viewer.ui.listData.itemSelectionChanged.connect(self.set_data)
         self.h5viewer.actionOpen.triggered.connect(self.open_file)
         self.h5viewer.actionSaveImage.triggered.connect(self.save_image)
         self.h5viewer.actionSaveArray.triggered.connect(self.save_array)
@@ -161,7 +162,9 @@ class timescanWidget(QWidget):
         self.displayframe.ui.plotUnit.activated.connect(self.update_display_frame)
         # self.displayframe.ui.plotNRP.activated.connect(self.update_display_frame)
         self.displayframe.ui.plotOverlay.stateChanged.connect(self.update_display_frame)
+        self.displayframe.ui.plotScale.activated.connect(self.update_display_frame)
         self.displayframe.ui.yOffsetSlider.valueChanged.connect(self.update_plot_frame)
+        # self.displayframe.ui.plotScale.currentIndexChanged.connect(self.update_plot_frame)
 
         # IntegratorFrame setup
         self.integratorTree = integratorTree()
@@ -239,7 +242,7 @@ class timescanWidget(QWidget):
         # TODO: See if sphere can be held as a shared memory object.
         items = self.h5viewer.ui.listData.selectedItems()
         arches = [str(item.text()) for item in items]
-        print(arches)
+        print(f'update_plot_frame: {arches}')
         self.set_data(arches=arches, update_frames='1d')
 
     def clock(self):
@@ -320,26 +323,48 @@ class timescanWidget(QWidget):
                     )
                     self.update_all()
 
-    def set_data(self, q=None, arches=None, update_frames='all'):
+    def set_data(self, q=None, q_prev=None, arches=None, update_frames='all'):
         """Connected to h5viewer, sets the data in displayframe based
         on the selected image or overall data.
         
         args:
             q: QListItem, the item selected in the h5viewer.
         """
-        if (q is None) and (arches is None):
-            return
+        print(f'set_data q, q_prev, arches: {q} {q_prev} {arches}')
+        # if arches is None:
+        #     if (q is None) and (arches is None):
+        #         return
+
+        # if (q == -1) and (arches is None):
+        #     return
+
+        current_row = self.h5viewer.ui.listData.currentRow()
+        n_items = self.h5viewer.ui.listData.count()
+        n_selected = len(self.h5viewer.ui.listData.selectedItems())
+        print(f'currentRow, n_items, n_selected: {current_row} {n_items} {n_selected}')
+
+        # if (n_selected == 1) and (current_row == (n_items - 1)):
+        #     self.displayframe.auto_last = True
+        #     return
 
         if arches is None:
-            print(f'q type: {type(q)} {q}')
-            print(f'set_data {q.data(0)}')
-            print(f'set_data {self.h5viewer.ui.listData.selectedItems()}')
+            if q is not None:
+                print(f'q type: {type(q)} {q}')
+                try:
+                    print(f'set_data {q.data(0)}')
+                except AttributeError:
+                    print(f'q: {q} {type(q)}')
+                print(f'set_data {self.h5viewer.ui.listData.selectedItems()}')
             items = self.h5viewer.ui.listData.selectedItems()
+            if len(items) < 1:
+                return
+
             arches = [str(item.text()) for item in items]
-            print(arches)
+            print(f'arches {arches}')
 
         # if q.data(0) != 'No data':
         self.displayframe.auto_last = False
+        # self.displayframe.auto_last = True
         self.displayframe.ui.pushRightLast.setEnabled(True)
 
         if not isinstance(self.sphere, EwaldSphere):
@@ -347,6 +372,7 @@ class timescanWidget(QWidget):
 
         # if q.data(0) == 'Overall' or 'scan' in q.data(0):
         if 'Overall' in arches:
+            # return
             self.arch = None
             self.displayframe.arch = None
             self.displayframe.update(self.sphere, self.arch)
@@ -369,7 +395,6 @@ class timescanWidget(QWidget):
 
             while len(curves) < len(arches):
                 n_curves = len(curves)
-                print(n_curves)
                 # pen = pg.intColor(n_curve),
                 pen = (n_curves*5, n_curves*5, n_curves*5, 100)
                 _ = self.displayframe.plot.plot(

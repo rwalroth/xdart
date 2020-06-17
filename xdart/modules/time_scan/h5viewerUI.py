@@ -33,6 +33,7 @@ class Ui_Form(object):
         self.label_2.setObjectName("label_2")
         self.layout.addWidget(self.label_2, 1, 1, 1, 1)
         self.listData = QtWidgets.QListWidget(Form)
+        self.listData.setEditTriggers(QtWidgets.QAbstractItemView.AllEditTriggers)
         self.listData.setTabKeyNavigation(True)
         self.listData.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.listData.setObjectName("listData")

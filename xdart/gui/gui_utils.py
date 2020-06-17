@@ -34,7 +34,7 @@ def return_no_zero(x, y):
     """
     return x[y > 0], y[y > 0]
 
-def get_rect(x, y):
+def get_rect(x, y, x_shift=0, y_shift=0):
     """Gets a QRectF object from given x and y data.
     
     args:
@@ -43,8 +43,8 @@ def get_rect(x, y):
     returns:
         QRectF object
     """
-    left = x[0]
-    top = y[0]
+    left = x[0] + x_shift
+    top = y[0] + y_shift
     width = max(x) - min(x)
     height = max(y) - min(y)
     return Qt.QtCore.QRectF(left, top, width, height)
