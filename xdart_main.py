@@ -115,7 +115,7 @@ class Main(QMainWindow):
 if __name__ == '__main__':
     tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
-    app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+    # app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     mw = Main(tab_paths)
     mw.show()
     app.exec_()
