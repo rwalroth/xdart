@@ -20,108 +20,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Reset merge and starting again. Updated .gitignore">
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/h5viewer.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/ttheta_widget.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/wranglers/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/widgets/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/widgets/_widgets.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/utils/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/utils/containers/_containers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/calibration/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/calibration/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/calibration/calibrate.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/calibration/calibrate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/calibration/lmfit_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/lmfit_models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/calibration/test_notebooks/calibration_notebook_detailed.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/calibration/test_notebooks/calibration_notebook_detailed.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/calibration/test_notebooks/kevin's code/kevins_code_Integrate.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/calibration/test_notebooks/kevin's code/kevins_code_Integrate.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/calibration/test_notebooks/kevin's code/kevins_code_calibrate.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/calibration/test_notebooks/kevin's code/kevins_code_calibrate.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/calibration/test_notebooks/kevin's code/test_notebook.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/calibration/test_notebooks/kevin's code/test_notebook.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/calibration/test_notebooks/run_calibration.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/calibration/test_notebooks/run_calibration.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/ewald/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/ewald/arch.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/ewald/arch_series.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/arch_series.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/ewald/sphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/operation.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/operation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/spec/LoadSpecFile.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/spec/LoadSpecFile.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/spec/MakePONI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/spec/MakePONI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/spec/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/classes/spec/spec_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/spec/spec_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/containers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/containers/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/containers/containers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/containers/int_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/containers/int_data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/containers/nzarrays.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/containers/nzarrays.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/containers/poni.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/containers/poni.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/gui_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/gui_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/mainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/mainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/rangeWidgetUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/widgets/rangeWidgetUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/rangeWidgetUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/widgets/rangeWidgetUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/range_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/widgets/range_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/displayFrameUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/displayFrameUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/displayFrameUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/displayFrameUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/display_frame_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/h5viewer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/h5viewerUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/h5viewerUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/h5viewerUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/h5viewerUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/integrator.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/integrator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/integratorUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/integratorUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/integratorUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/integratorUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/metadata.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/metadata.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/sphere_threads.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/sphere_threads.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/tthetaUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/tthetaUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/tthetaUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/tthetaUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/ttheta_widget.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/wranglers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/wranglers/liveSpecUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/wranglers/liveSpecUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/wranglers/liveSpecUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/wranglers/liveSpecUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/wranglers/live_spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/wranglers/live_spec_wrangler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/wranglers/specUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/wranglers/specUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/wranglers/specUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/wranglers/specUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/wranglers/spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/wranglers/spec_wrangler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ttheta_scan/wranglers/wrangler_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/wranglers/wrangler_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/.vscode/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/.vscode/settings.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/LICENSE" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/LICENSE" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/BL_Error.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/BL_Error.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/BL_Variables.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/BL_Variables.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/ControlFrame.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/ControlFrame.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/FramePool.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/FramePool.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/OracleFrame.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/OracleFrame.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/PulpitObject.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/PulpitObject.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/bl_command.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_command.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/bl_communication.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_communication.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/bl_interaction.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_interaction.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/frame_objects.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/frame_objects.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer/useful_func.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/useful_func.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/bServer_funcs.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer_funcs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/config/Create YAML file for Beamline Configuration.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/Create YAML file for Beamline Configuration.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/config/Create YAML file for Beamline Configuration_bl2-1.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/Create YAML file for Beamline Configuration_bl2-1.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/config/Create YAML file for Motor Mode.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/Create YAML file for Motor Mode.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/config/beamline_catalogue.yml" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/config/beamline_catalogue.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/docs/sis documentation 10-2012.docx" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/docs/sis documentation 10-2012.docx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/main.exe" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/main.exe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/old_funcs/run_calibration.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/run_calibration.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/old_funcs/watchfolder.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/watchfolder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/old_funcs/watchfolder2.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/watchfolder2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/old_funcs/watchfolder3.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/watchfolder3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/old_funcs/watchfolder4.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/watchfolder4.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/old_funcs/watchfolder5.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/watchfolder5.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/test_notebooks/BL 7-2 multi battery 5-Copy1.22.2018.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/BL 7-2 multi battery 5-Copy1.22.2018.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/test_notebooks/BL 7-2 multi battery 5.21.2018.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/BL 7-2 multi battery 5.21.2018.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/test_notebooks/BL 7-2 multi battery 5.22.2018.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/BL 7-2 multi battery 5.22.2018.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/test_notebooks/BL 7-2 multi battery pressure testing 5_20_2018.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/BL 7-2 multi battery pressure testing 5_20_2018.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/test_notebooks/Basic Tests of bServer with SPEC Infoserver.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/Basic Tests of bServer with SPEC Infoserver.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/test_notebooks/More tests of bServer with SPEC infoserver.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/More tests of bServer with SPEC infoserver.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/test_notebooks/runSPEC_bServer.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/runSPEC_bServer.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/test_notebooks/test_bServer_funcs.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/test_bServer_funcs.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/pySSRL_bServer/watcher.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/watcher.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart_main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -141,7 +40,13 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/xdart/modules/spec" />
     <property name="settings.editor.selected.configurable" value="com.github.izhangzhihao.rainbow.brackets.settings.RainbowConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/xdart/modules/spec" />
+    </key>
   </component>
   <component name="RunManager" selected="Python.xdart_main">
     <configuration name="h5viewerUI" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
@@ -281,29 +186,29 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="345" y="132" key="#com.intellij.openapi.keymap.impl.ui.EditKeymapsDialog/0.0.1440.900@0.0.1440.900" timestamp="1591840646629" />
-    <state x="100" y="100" width="1240" height="700" key="DiffContextDialog" timestamp="1591866724987">
+    <state x="189" y="72" width="1240" height="700" key="DiffContextDialog" timestamp="1592438239113">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="100" y="100" width="1240" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1591866724987" />
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom" timestamp="1592437653794">
+    <state x="189" y="72" width="1240" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1592438239113" />
+    <state width="1419" height="234" key="GridCell.Tab.0.bottom" timestamp="1592438413787">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1592437653794" />
+    <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1592438413787" />
     <state width="1419" height="255" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592243057287" />
-    <state width="1419" height="234" key="GridCell.Tab.0.center" timestamp="1592437653793">
+    <state width="1419" height="234" key="GridCell.Tab.0.center" timestamp="1592438413786">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1592437653793" />
+    <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1592438413786" />
     <state width="1419" height="255" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592243057286" />
-    <state width="1419" height="234" key="GridCell.Tab.0.left" timestamp="1592437653792">
+    <state width="1419" height="234" key="GridCell.Tab.0.left" timestamp="1592438413786">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1592437653792" />
+    <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1592438413786" />
     <state width="1419" height="255" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592243057285" />
-    <state width="1419" height="234" key="GridCell.Tab.0.right" timestamp="1592437653793">
+    <state width="1419" height="234" key="GridCell.Tab.0.right" timestamp="1592438413786">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1592437653793" />
+    <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1592438413786" />
     <state width="1419" height="255" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592243057286" />
     <state x="0" y="79" width="1435" height="742" key="MergeDialog" timestamp="1592437259280">
       <screen x="0" y="0" width="1440" height="900" />
@@ -322,6 +227,10 @@
     </state>
     <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1591866240088" />
     <state x="569" y="283" key="Vcs.Push.Dialog.v2/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592241904406" />
+    <state x="498" y="191" key="VcsDiffUtil.ChangesDialog" timestamp="1592438215242">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="498" y="191" key="VcsDiffUtil.ChangesDialog/0.0.1440.900@0.0.1440.900" timestamp="1592438215242" />
     <state x="421" y="82" width="598" height="735" key="find.popup" timestamp="1592393834713">
       <screen x="0" y="0" width="1440" height="900" />
     </state>

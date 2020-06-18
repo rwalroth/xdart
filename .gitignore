@@ -129,3 +129,4 @@ xdart/pySSRL_bServer/bServer.lnk
 # .idea files
 .idea*
 .idea/*
+*.idea/*
