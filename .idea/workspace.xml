@@ -20,6 +20,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Reset merge and starting again. Updated .gitignore">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -41,7 +43,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/xdart/modules/spec" />
-    <property name="settings.editor.selected.configurable" value="com.github.izhangzhihao.rainbow.brackets.settings.RainbowConfigurable" />
+    <property name="settings.editor.selected.configurable" value="configurable.group.appearance" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -218,10 +220,10 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="353" y="218" key="MultipleFileMergeDialog/0.0.1440.900@0.0.1440.900" timestamp="1592437259336" />
-    <state x="45" y="47" width="1354" height="777" key="SettingsEditor" timestamp="1592391295453">
+    <state x="45" y="47" width="1354" height="777" key="SettingsEditor" timestamp="1592439938641">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="45" y="47" width="1354" height="777" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1592391295453" />
+    <state x="45" y="47" width="1354" height="777" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1592439938641" />
     <state x="569" y="283" key="Vcs.Push.Dialog.v2" timestamp="1592241904406">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
@@ -236,5 +238,9 @@
     </state>
     <state x="421" y="82" width="598" height="735" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1592393834713" />
     <state x="748" y="131" width="1064" height="1176" key="find.popup/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592241985686" />
+    <state x="474" y="170" key="git4idea.branch.GitSmartOperationDialog" timestamp="1592440367401">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state x="474" y="170" key="git4idea.branch.GitSmartOperationDialog/0.0.1440.900@0.0.1440.900" timestamp="1592440367401" />
   </component>
 </project>
