@@ -2,7 +2,7 @@ from collections import OrderedDict
 from pyFAI.detectors import Detector
 import numpy as np
 
-from ...containers import PONI
+from xdart.utils.containers import PONI
 from ..operation import Operation
 
 inputs = OrderedDict(

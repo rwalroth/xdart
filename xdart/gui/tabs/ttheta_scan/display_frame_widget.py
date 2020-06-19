@@ -8,14 +8,23 @@ import traceback
 
 # Other imports
 import numpy as np
+from matplotlib import pyplot as plt
 
 # Qt imports
 import pyqtgraph as pg
 from pyqtgraph import Qt
+from pyqtgraph.Qt import QtWidgets
+QFileDialog = QtWidgets.QFileDialog
 
 # This module imports
 from .displayFrameUI import Ui_Form
-from xdart.gui.gui_utils import RectViewBox, get_rect
+from ...gui_utils import RectViewBox, get_rect
+import xdart.utils as ut
+
+formats = [
+    str(f.data(), encoding='utf-8').lower() for f in
+    Qt.QtGui.QImageReader.supportedImageFormats()
+]
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
     """Widget for displaying 2D image data and 1D plots from EwaldSphere
@@ -47,7 +56,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         update_image: Updates image data based on selections
         update_plot: Updates plot data based on selections
     """
-    def __init__(self, parent=None, sphere=None):
+    def __init__(self, sphere, arch, parent=None):
         _translate = Qt.QtCore.QCoreApplication.translate
         super().__init__(parent)
         self.ui = Ui_Form()
@@ -56,6 +65,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.plotUnit.setItemText(0, _translate("Form", "2" + u"\u03B8"))
 
         # Data object initialization
+        self.sphere = sphere
+        self.arch = arch
 
         # State variable initialization
         self.auto_last = False
@@ -94,18 +105,29 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         self.ui.plotMethod.setCurrentIndex(1)
         self.ui.plotMethod.setEnabled(False)
+        
+        # Signal connections
+        self.ui.imageIntRaw.activated.connect(self.update_image)
+        self.ui.imageMethod.activated.connect(self.update_image)
+        self.ui.imageUnit.activated.connect(self.update_image)
+        self.ui.imageNRP.activated.connect(self.update_image)
+        self.ui.imageMask.stateChanged.connect(self.update_image)
+        self.ui.shareAxis.stateChanged.connect(self.update)
+        self.ui.plotMethod.activated.connect(self.update_plot)
+        self.ui.plotUnit.activated.connect(self.update_plot)
+        self.ui.plotNRP.activated.connect(self.update_plot)
+        self.ui.plotOverlay.stateChanged.connect(self.update_plot)
 
         #self.update()
-    
-    def update(self, sphere, arch=None):
+
+    def update(self):
         """Updates image and plot frames based on toolbar options
         """
         # Sets title text
-        if sphere is not None:
-            if arch is None:
-                self.ui.labelCurrent.setText(sphere.name)
-            else:
-                self.ui.labelCurrent.setText("Image " + str(arch))
+        if self.arch.idx is None:
+            self.ui.labelCurrent.setText(self.sphere.name)
+        else:
+            self.ui.labelCurrent.setText("Image " + str(self.arch.idx))
 
         if self.ui.shareAxis.isChecked():
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
@@ -116,43 +138,43 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.plot.setXLink(None)
             self.ui.plotUnit.setEnabled(True)
         
-        if self.auto_last and sphere is not None:
-            arch = sphere.arches.iloc(-1).idx
-            # TODO This is breaking link to parent arch, need to revisit
-        
         try:
-            self.update_image(sphere, arch)
-        except Exception as e:
-            print(traceback.print_exc())
+            self.update_image()
+        except TypeError:
+            return False
         try:
-            self.update_plot(sphere, arch)
-        except Exception as e:
-            print(traceback.print_exc())
+            self.update_plot()
+        except TypeError:
+            return False
+        return True
     
-    def update_image(self, sphere, arch):
+    def update_image(self):
         """Updates image plotted in image frame
         """
-        if sphere is None:
+        if self.sphere.name == 'null_main':
             data = np.arange(100).reshape(10,10)
             rect = Qt.QtCore.QRect(1,1,1,1)
-        
-        elif arch is not None:
-            data, rect = self.get_arch_data_2d(sphere, arch)
-        
         else:
-            data, rect = self.get_sphere_data_2d(sphere)
+            try:
+                if self.arch.idx is not None:
+                    data, rect = self.get_arch_data_2d()
+
+                else:
+                    data, rect = self.get_sphere_data_2d()
+            except (TypeError, IndexError):
+                data = np.arange(100).reshape(10, 10)
+                rect = Qt.QtCore.QRect(1, 1, 1, 1)
         
         self.image.setImage(data)
         self.image.setRect(rect)
         
         return data
 
-    def get_arch_data_2d(self, sphere, arch):
+    def get_arch_data_2d(self):
         """Returns data and QRect for data in arch
         """
-        arc = sphere.arches[arch]
-        with arc.arch_lock:
-            int_data = arc.int_2d
+        with self.arch.arch_lock:
+            int_data = self.arch.int_2d
         
         if self.ui.imageIntRaw.currentIndex() == 0:
             data, corners = read_NRP(self.ui.imageNRP, int_data)
@@ -163,16 +185,16 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             )
         
         elif self.ui.imageIntRaw.currentIndex() == 1:
-            with arc.arch_lock:
+            with self.arch.arch_lock:
                 if self.ui.imageNRP.currentIndex() == 0:
-                    if arc.map_norm is None or arc.map_norm == 0:
-                        data = arc.map_raw.copy()
+                    if self.arch.map_norm is None or self.arch.map_norm == 0:
+                        data = self.arch.map_raw.copy()
                     else:
-                        data = arc.map_raw.copy()/arc.map_norm
+                        data = self.arch.map_raw.copy()/self.arch.map_norm
                 else:
-                    data = arc.map_raw.copy()
+                    data = self.arch.map_raw.copy()
                 if self.ui.imageMask.isChecked():
-                    data[arc.mask] = 0
+                    data[self.arch.mask] = 0
             rect = get_rect(
                 np.arange(data.shape[0]), 
                 np.arange(data.shape[1]),
@@ -180,17 +202,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         
         return data, rect
 
-    def get_sphere_data_2d(self, sphere):
+    def get_sphere_data_2d(self):
         """Returns data and QRect for data in sphere
         """
-        with sphere.sphere_lock:
+        with self.sphere.sphere_lock:
             if self.ui.imageMethod.currentIndex() == 0:
-                int_data = sphere.mgi_2d
+                int_data = self.sphere.mgi_2d
                 if type(int_data.ttheta) == int:
                     self.ui.imageMethod.setCurrentIndex(1)
-                    int_data = sphere.bai_2d
+                    int_data = self.sphere.bai_2d
             elif self.ui.imageMethod.currentIndex() == 1:
-                int_data = sphere.bai_2d
+                int_data = self.sphere.bai_2d
         
         data, corners = read_NRP(self.ui.imageNRP, int_data)
         
@@ -201,48 +223,96 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         
         return data, rect
     
-    def update_plot(self, sphere, arch):
+    def update_plot(self):
         """Updates data in plot frame
         """
-        if sphere is None:
+        if self.sphere.name == 'null_main':
             data = (np.arange(100), np.arange(100))
             self.curve1.setData(data[0], data[1])
             self.curve2.setData(data[0], data[1])
             return data
         
         else:
-            with sphere.sphere_lock:
-                if self.ui.plotMethod.currentIndex() == 0:
-                    sphere_int_data = sphere.mgi_1d
-                    if type(sphere_int_data.ttheta) == int:
-                        self.ui.plotMethod.setCurrentIndex(1)
-                        sphere_int_data = sphere.bai_1d
-                elif self.ui.plotMethod.currentIndex() == 1:
-                    sphere_int_data = sphere.bai_1d
-            
-            s_ydata, corners = read_NRP(self.ui.plotNRP, sphere_int_data)
-            s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
+            try:
+                with self.sphere.sphere_lock:
+                    if self.ui.plotMethod.currentIndex() == 0:
+                        sphere_int_data = self.sphere.mgi_1d
+                        if type(sphere_int_data.ttheta) == int:
+                            self.ui.plotMethod.setCurrentIndex(1)
+                            sphere_int_data = self.sphere.bai_1d
+                    elif self.ui.plotMethod.currentIndex() == 1:
+                        sphere_int_data = self.sphere.bai_1d
 
-            if arch is not None:
-                with sphere.arches[arch].arch_lock:
-                    arc_int_data = sphere.arches[arch].int_1d
+                s_ydata, corners = read_NRP(self.ui.plotNRP, sphere_int_data)
+                s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
-                if self.ui.plotOverlay.isChecked():
-                    self.curve1.setData(s_xdata, s_ydata)
+                if self.arch.idx is not None:
+                    with self.arch.arch_lock:
+                        arc_int_data = self.arch.int_1d
+
+                    if self.ui.plotOverlay.isChecked():
+                        self.curve1.setData(s_xdata, s_ydata)
+                    else:
+                        self.curve1.clear()
+
+                    a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
+                    a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
+                    self.curve2.setData(a_xdata, a_ydata)
+
+                    return a_xdata, a_ydata
+
                 else:
-                    self.curve1.clear()
-                
-                a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
-                a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
-                self.curve2.setData(a_xdata, a_ydata)
+                    self.curve1.setData(s_xdata, s_ydata)
+                    self.curve2.clear()
 
-                return a_xdata, a_ydata
-            
-            else:
-                self.curve1.setData(s_xdata, s_ydata)
-                self.curve2.clear()
+                    return s_xdata, s_ydata
 
-                return s_xdata, s_ydata
+            except (TypeError, IndexError):
+                data = (np.arange(100), np.arange(100))
+                self.curve1.setData(data[0], data[1])
+                self.curve2.setData(data[0], data[1])
+                return data
+
+    def save_image(self):
+        """Saves currently displayed image. Formats are automatically
+        grabbed from Qt. Also implements tiff saving.
+        """
+        ext_filter = "Images ("
+        for f in formats:
+            ext_filter += "*." + f + " "
+
+        ext_filter += "*.tiff)"
+
+        fname, _ = QFileDialog.getSaveFileName(filter=ext_filter)
+        if fname == '':
+            return
+
+        _, ext = fname.split('.')
+        if ext.lower() in formats:
+            self.image.save(fname)
+        
+        elif ext.lower() == 'tiff':
+            data = self.update_image()
+            plt.imsave(fname, data.T, cmap='gray')
+    
+    def save_array(self):
+        """Saves currently displayed data. Currently supports .xye
+        and .csv.
+        """
+        fname, _ = QFileDialog.getSaveFileName(
+            filter="XRD Files (*.xye *.csv)"
+        )
+        if fname == '':
+            return
+
+        xdata, ydata = self.update_plot()
+
+        _, ext = fname.split('.')
+        if ext.lower() == 'xye':
+            ut.write_xye(fname, xdata, ydata)
+        
+        elif ext.lower() == 'csv':
+            ut.write_csv(fname, xdata, ydata)
 
 
 def read_NRP(box, int_data):

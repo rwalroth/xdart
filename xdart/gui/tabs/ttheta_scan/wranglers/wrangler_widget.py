@@ -10,7 +10,6 @@ import multiprocessing as mp
 import traceback
 
 # Other imports
-from xdart.classes.ewald import EwaldSphere
 
 # Qt imports
 import pyqtgraph as pg
@@ -18,6 +17,9 @@ from pyqtgraph import Qt
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
+from xdart.modules.ewald import EwaldSphere
+
+
 class wranglerWidget(Qt.QtWidgets.QWidget):
     """Base class for wranglers. Extending this ensures all methods,
     signals, and attributes expected by ttheta_widget are present.
@@ -52,6 +54,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     sigUpdateData = Qt.QtCore.Signal(int)
     sigUpdateFile = Qt.QtCore.Signal(str, str)
     finished = Qt.QtCore.Signal()
+    started = Qt.QtCore.Signal()
 
     def __init__(self, fname, file_lock, parent=None):
         """fname: str, file path
@@ -69,6 +72,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         self.command_queue = Queue()
         self.thread = wranglerThread(self.command_queue, self.sphere_args, self.fname, self.file_lock, self)
         self.thread.finished.connect(self.finished.emit)
+        self.thread.started.connect(self.started.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
     
     def enabled(self, enable):
@@ -89,8 +93,10 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         args:
             fname: str, path for new file.
         """
-        self.fname = fname
-        self.thread.fname = fname
+        with self.file_lock:
+            if not self.thread.isRunning():
+                self.fname = fname
+                self.thread.fname = fname
 
 
 class wranglerThread(Qt.QtCore.QThread):
@@ -117,6 +123,7 @@ class wranglerThread(Qt.QtCore.QThread):
     """
     sigUpdate = Qt.QtCore.Signal(int)
     sigUpdateFile = Qt.QtCore.Signal(str, str)
+
     def __init__(self, command_queue, sphere_args, fname, file_lock,
                  parent=None):
         """command_queue: mp.Queue, queue for commands sent from parent

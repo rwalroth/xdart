@@ -8,7 +8,7 @@ from pyFAI import units
 import h5py
 
 from .nzarrays import nzarray1d, nzarray2d
-from .. import utils
+from .. import _utils as utils
 
 class int_1d_data:
     """Container for 1-dimensional integration data returned by pyFAI.

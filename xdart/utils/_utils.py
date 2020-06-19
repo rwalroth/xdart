@@ -24,7 +24,7 @@ import h5py
 
 # This module imports
 from lmfit.models import LinearModel, GaussianModel, ParabolicModel
-from xdart.calibration.lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
+from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
 
 
 def write_xye(fname, xdata, ydata):
