@@ -19,6 +19,7 @@ QFileDialog = QtWidgets.QFileDialog
 # This module imports
 from .displayFrameUI import Ui_Form
 from ...gui_utils import RectViewBox, get_rect
+from ...widgets import XDImageWidget
 import xdart.utils as ut
 
 formats = [
@@ -75,15 +76,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
         self.image_layout.setContentsMargins(0, 0, 0, 0)
         self.image_layout.setSpacing(0)
-        self.image_win = pg.GraphicsLayoutWidget()
-        self.image_layout.addWidget(self.image_win)
-        self.histogram = pg.HistogramLUTWidget(self.image_win)
-        self.image_layout.addWidget(self.histogram)
-        self.imageViewBox = RectViewBox()
-        self.image_plot = self.image_win.addPlot(viewBox=self.imageViewBox)
-        self.image = pg.ImageItem()
-        self.image_plot.addItem(self.image)
-        self.histogram.setImageItem(self.image)
+        self.image = XDImageWidget()
+        self.image_layout.addWidget(self.image)
 
         # Image pane signal connections
         self.ui.imageMethod.setCurrentIndex(1)
