@@ -20,39 +20,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Reset merge and starting again. Updated .gitignore">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/displayFrameUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/displayFrameUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/h5viewerUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/h5viewerUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/integratorUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/integratorUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/timescanUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/timescanUI.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/mainWindow.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/mainWindow.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/mainWindow.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/mainWindow.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/displayFrameUI.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/displayFrameUI.ui" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/displayFrameUI_1.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/display_frame_widget.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/h5viewer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/h5viewerUI.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/h5viewerUI.ui" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/integrator.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/integratorUI.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/integratorUI.ui" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/metadata.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/sphere_threads.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/time_scan_widget.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/timescanUI.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/timescanUI.ui" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/liveSpecUI.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/liveSpecUI.ui" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/live_spec_wrangler.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/specUI.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/specUI.ui" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/spec_wrangler.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/spec_wrangler2.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/spec_wrangler_1.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/time_scan/wranglers/wrangler_widget.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/utils/containers/poni.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/containers/poni.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart_main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -226,26 +202,26 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="20" y="72" width="1409" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1592452088358" />
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom" timestamp="1592455982641">
-      <screen x="0" y="0" width="1440" height="900" />
+    <state width="1419" height="234" key="GridCell.Tab.0.bottom" timestamp="1593029717961">
+      <screen x="0" y="0" width="2560" height="1440" />
     </state>
     <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1592455982641" />
-    <state width="1419" height="255" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592243057287" />
-    <state width="1419" height="234" key="GridCell.Tab.0.center" timestamp="1592455982640">
-      <screen x="0" y="0" width="1440" height="900" />
+    <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593029717961" />
+    <state width="1419" height="234" key="GridCell.Tab.0.center" timestamp="1593029717960">
+      <screen x="0" y="0" width="2560" height="1440" />
     </state>
     <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1592455982640" />
-    <state width="1419" height="255" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592243057286" />
-    <state width="1419" height="234" key="GridCell.Tab.0.left" timestamp="1592455982640">
-      <screen x="0" y="0" width="1440" height="900" />
+    <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593029717960" />
+    <state width="1419" height="234" key="GridCell.Tab.0.left" timestamp="1593029717958">
+      <screen x="0" y="0" width="2560" height="1440" />
     </state>
     <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1592455982640" />
-    <state width="1419" height="255" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592243057285" />
-    <state width="1419" height="234" key="GridCell.Tab.0.right" timestamp="1592455982641">
-      <screen x="0" y="0" width="1440" height="900" />
+    <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593029717958" />
+    <state width="1419" height="234" key="GridCell.Tab.0.right" timestamp="1593029717960">
+      <screen x="0" y="0" width="2560" height="1440" />
     </state>
     <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1592455982641" />
-    <state width="1419" height="255" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592243057286" />
+    <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593029717960" />
     <state x="0" y="79" width="1435" height="742" key="MergeDialog" timestamp="1592437259280">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
@@ -254,6 +230,10 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="353" y="218" key="MultipleFileMergeDialog/0.0.1440.900@0.0.1440.900" timestamp="1592437259336" />
+    <state x="1088" y="496" key="RollbackChangesDialog" timestamp="1593030164759">
+      <screen x="0" y="0" width="2560" height="1440" />
+    </state>
+    <state x="1088" y="496" key="RollbackChangesDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593030164759" />
     <state x="45" y="47" width="1354" height="777" key="SettingsEditor" timestamp="1592454076726">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
