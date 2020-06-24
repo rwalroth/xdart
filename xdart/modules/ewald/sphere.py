@@ -55,7 +55,9 @@ class EwaldSphere():
     """
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
-                 bai_1d_args={}, bai_2d_args={}):
+                 bai_1d_args={}, bai_2d_args={},
+                 keep_in_memory=False, data_1d=pd.DataFrame(),
+                 ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
         data_file: str, path to hdf5 file where data is stored
@@ -92,6 +94,14 @@ class EwaldSphere():
         self.bai_1d = int_1d_data()
         self.bai_2d = int_2d_data()
 
+        self.keep_in_memory = keep_in_memory
+        print(f'keep_in_memory: {self.keep_in_memory}')
+        if len(data_1d) == 0:
+            columns = ['raw', 'ttheta', 'q']
+            data_1d = pd.DataFrame(columns=columns)
+        self.data_1d = data_1d
+        # print(f'data_1d: {self.data_1d}')
+
     def reset(self):
         """Resets all held data objects to blank state, called when all
         new data is going to be loaded or when a sphere needs to be
@@ -104,7 +114,8 @@ class EwaldSphere():
             self.mgi_1d = int_1d_data()
             self.mgi_2d = int_2d_data()
             self.arches = ArchSeries(self.data_file, self.file_lock)
-    
+            self.data_1d = pd.DataFrame()
+
     def add_arch(self, arch=None, calculate=True, update=True, get_sd=True,
                  set_mg=True, **kwargs):
         """Adds new arch to sphere.
@@ -160,6 +171,14 @@ class EwaldSphere():
                     [a.integrator for a in self.arches], **self.mg_args
                 )
 
+            if self.keep_in_memory:
+                ds = pd.Series(dict(raw=arch.int_1d.raw,
+                                    ttheta=arch.int_1d.ttheta,
+                                    q=arch.int_1d.q),
+                               name=arch.idx)
+                self.data_1d = self.data_1d.append(ds)
+                print(self.data_1d.columns, self.data_1d.index)
+
     def by_arch_integrate_1d(self, **args):
         """Integrates all arches individually, then sums the results for
         the overall integration result.
@@ -212,7 +231,7 @@ class EwaldSphere():
             self.bai_1d.ttheta = arch.int_1d.ttheta
             self.bai_1d.q = arch.int_1d.q
             self.save_bai_1d()
-    
+
     def _update_bai_2d(self, arch):
         """helper function to update overall bai variables.
         """
