@@ -27,7 +27,8 @@ class int_1d_data:
         parse_unit: Ensures both q and ttheta data is held
         to_hdf5: Saves data to hdf5 file
     """
-    def __init__(self, raw=None, pcount=None, norm=None, ttheta=0, q=0):
+    def __init__(self, raw=None, pcount=None, norm=None, ttheta=0, q=0,
+                 sigma=None, sigma_raw=None):
         """
         raw: nzarray1d, raw integrated signal
         pcount: nzarray1d, how many pixels in each bin
@@ -41,6 +42,8 @@ class int_1d_data:
         self.norm = norm
         self.ttheta = ttheta
         self.q = q
+        self.sigma = sigma
+        self.sigma_raw = sigma_raw
 
     def from_result(self, result, wavelength):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
@@ -55,6 +58,8 @@ class int_1d_data:
         self.pcount = result._count
         self.raw = result._sum_signal
         self.norm = self.raw/self.pcount
+        self.sigma = result.sigma
+        self.sigma_raw = result.sigma**2
     
     def parse_unit(self, result, wavelength):
         """Helper function to take integrator result and return a two
@@ -108,6 +113,10 @@ class int_1d_data:
         self.pcount.to_hdf5(pcount, compression)
         norm = grp.create_group('norm')
         self.norm.to_hdf5(norm, compression)
+        sigma = grp.create_group('sigma')
+        self.sigma.to_hdf5(sigma, compression)
+        sigma_raw = grp.create_group('sigma_raw')
+        self.sigma_raw.to_hdf5(sigma_raw, compression)
         utils.attributes_to_h5(self, grp, ['ttheta', 'q'], compression=compression)
     
     def from_hdf5(self, grp):
@@ -119,12 +128,14 @@ class int_1d_data:
         self.raw.from_hdf5(grp['raw'])
         self.pcount.from_hdf5(grp['pcount'])
         self.norm.from_hdf5(grp['norm'])
+        self.sigma.from_hdf5(grp['sigma'])
+        self.sigma_raw.from_hdf5(grp['sigma_raw'])
         utils.h5_to_attributes(self, grp, ['ttheta', 'q'])
     
     def __setattr__(self, name, value):
         """Ensures raw, norm, and pcount are nzarray1d objects.
         """
-        if name in ['raw', 'norm', 'pcount']:
+        if name in ['raw', 'norm', 'pcount', 'sigma']:
             self.__dict__[name] = nzarray1d(value)
         else:
             super().__setattr__(name, value)
@@ -133,6 +144,10 @@ class int_1d_data:
         out = self.__class__()
         out.raw = self.raw + other.raw
         out.pcount = self.pcount + other.pcount
+        out.sigma_raw = self.sigma_raw + other.sigma_raw
+        out.sigma = copy.deepcopy(self.sigma_raw)
+        out.sigma.data = np.sqrt(out.sigma_raw.data)
+        out.sigma = out.sigma/out.pcount
         out.norm = out.raw/out.pcount
         out.ttheta = copy.deepcopy(self.ttheta)
         out.q = copy.deepcopy(self.q)
@@ -157,7 +172,7 @@ class int_2d_data(int_1d_data):
         to_hdf5: Saves data to hdf5 file
     """
     def __init__(self,  raw=None, pcount=None, norm=None, ttheta=0, q=0,
-                 chi=0):
+                 chi=0, sigma=None, sigma_raw=None):
         """
         raw: nzarray2d, raw integrated signal
         pcount: nzarray2d, how many pixels in each bin
@@ -173,6 +188,8 @@ class int_2d_data(int_1d_data):
         self.ttheta = ttheta
         self.q = q
         self.chi = chi
+        self.sigma = sigma
+        self.sigma_raw = sigma_raw
 
     def from_result(self, result, wavelength):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
