@@ -259,6 +259,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         try:
             self._sync_range_hilow(args, rkey, rwidget)
             self._sync_range_points(args, pkey, rwidget)
+            self._sync_unit(args, rwidget)
         finally:
             rwidget.blockSignals(False)
         
@@ -292,8 +293,16 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 rwidget.ui.high.setValue(args[rkey][1])
         else:
             args[rkey] = [rwidget.ui.low.value(), rwidget.ui.high.value()]
-            
-    
+
+    def _sync_unit(self, args, rwidget):
+        try:
+            if args["unit"] == "2th_deg":
+                rwidget.ui.units.setCurrentIndex(0)
+            elif args["unit"] == "q_A^-1":
+                rwidget.ui.units.setCurrentIndex(1)
+        except (KeyError, AttributeError):
+            pass
+
     def _update_params(self):
         """Grabs args from sphere and syncs parameters with them.
         
@@ -396,7 +405,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.get_args('bai_1d')
         
     def _set_radial_unit1D(self, val):
-        self.bai_1d_pars.child("unit").setIndex(val)
+        textval = self.bai_1d_pars.child("unit").reverse[0][val]
+        self.bai_1d_pars.child("unit").setValue(textval)
         self.get_args('bai_1d')
 
     def _set_radial_points1D(self, val):
@@ -409,7 +419,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.get_args('bai_2d')
         
     def _set_radial_unit2D(self, val):
-        self.bai_2d_pars.child("unit").setIndex(val)
+        textval = self.bai_2d_pars.child("unit").reverse[0][val]
+        self.bai_2d_pars.child("unit").setValue(textval)
         self.get_args('bai_2d')
 
     def _set_radial_points2D(self, val):

@@ -271,8 +271,10 @@ class H5Viewer(QWidget):
     def open_folder(self):
         """Changes the directory being displayed in the file explorer.
         """
-        self.dirname = QFileDialog().getExistingDirectory()
-        self.update_scans()
+        dirname = QFileDialog().getExistingDirectory()
+        if dirname != "":
+            self.dirname = dirname
+            self.update_scans()
     
     def set_open_enabled(self, enable):
         """Sets the save and open actions to enable
