@@ -19,15 +19,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Reset merge and starting again. Updated .gitignore">
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/displayFrameUI.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/displayFrameUI.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/h5viewerUI.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/h5viewerUI.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/integratorUI.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/integratorUI.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/timescanUI.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/timescanUI.ui" afterDir="false" />
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -36,6 +28,11 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="7095e1af0a94318031901e43ab5472abd96763f6" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectId" id="1cTiNI29TMRByeBKoMwAZfy5zBe" />
@@ -47,14 +44,6 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/xdart/modules/spec" />
-    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
-  </component>
-  <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/xdart/modules/spec" />
-    </key>
   </component>
   <component name="RunManager" selected="Python.xdart_main">
     <configuration name="h5viewerUI" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
@@ -125,6 +114,8 @@
         <item itemvalue="Python.xdart_main" />
         <item itemvalue="Python.time_scan_widget" />
         <item itemvalue="Python.h5viewerUI" />
+        <item itemvalue="Python.xdart_main" />
+        <item itemvalue="Python.time_scan_widget" />
       </list>
     </recent_temporary>
   </component>
@@ -139,28 +130,6 @@
       <option name="presentableId" value="Default" />
       <updated>1590558942811</updated>
     </task>
-    <task id="LOCAL-00001" summary="Changed to allow multiple selection.">
-      <created>1591866212366</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1591866212366</updated>
-    </task>
-    <task id="LOCAL-00002" summary="Working version before removing waterfall frame.">
-      <created>1592241896558</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1592241896558</updated>
-    </task>
-    <task id="LOCAL-00003" summary="Reset merge and starting again. Updated .gitignore">
-      <created>1592435815026</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1592435815026</updated>
-    </task>
-    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -175,86 +144,34 @@
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="Changed to allow multiple selection." />
-    <MESSAGE value="Working version before removing waterfall frame." />
-    <MESSAGE value="Reset merge and starting again. Updated .gitignore" />
-    <option name="LAST_COMMIT_MESSAGE" value="Reset merge and starting again. Updated .gitignore" />
-  </component>
   <component name="WindowStateProjectService">
-    <state x="354" y="135" key="#Inspections" timestamp="1592442767912">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="354" y="135" key="#Inspections/0.0.1440.900@0.0.1440.900" timestamp="1592442767912" />
-    <state x="463" y="159" width="485" height="456" key="#Notifications" timestamp="1591919527783">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="463" y="159" width="485" height="456" key="#Notifications/0.0.1440.900@0.0.1440.900" timestamp="1591919527783" />
     <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1590558996736">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1440.900@0.0.1440.900" timestamp="1590558996736" />
-    <state x="345" y="132" key="#com.intellij.openapi.keymap.impl.ui.EditKeymapsDialog" timestamp="1591840646629">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="345" y="132" key="#com.intellij.openapi.keymap.impl.ui.EditKeymapsDialog/0.0.1440.900@0.0.1440.900" timestamp="1591840646629" />
-    <state x="20" y="72" width="1409" height="700" key="DiffContextDialog" timestamp="1592452088358">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="20" y="72" width="1409" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1592452088358" />
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom" timestamp="1593029717961">
+    <state width="1658" height="234" key="GridCell.Tab.0.bottom" timestamp="1593031704990">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1592455982641" />
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593029717961" />
-    <state width="1419" height="234" key="GridCell.Tab.0.center" timestamp="1593029717960">
+    <state width="1658" height="234" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031704990" />
+    <state width="1658" height="234" key="GridCell.Tab.0.center" timestamp="1593031704989">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1592455982640" />
-    <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593029717960" />
-    <state width="1419" height="234" key="GridCell.Tab.0.left" timestamp="1593029717958">
+    <state width="1658" height="234" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031704989" />
+    <state width="1658" height="234" key="GridCell.Tab.0.left" timestamp="1593031704989">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1592455982640" />
-    <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593029717958" />
-    <state width="1419" height="234" key="GridCell.Tab.0.right" timestamp="1593029717960">
+    <state width="1658" height="234" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031704989" />
+    <state width="1658" height="234" key="GridCell.Tab.0.right" timestamp="1593031704989">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1592455982641" />
-    <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593029717960" />
-    <state x="0" y="79" width="1435" height="742" key="MergeDialog" timestamp="1592437259280">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="0" y="79" width="1435" height="742" key="MergeDialog/0.0.1440.900@0.0.1440.900" timestamp="1592437259280" />
-    <state x="353" y="218" key="MultipleFileMergeDialog" timestamp="1592437259336">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="353" y="218" key="MultipleFileMergeDialog/0.0.1440.900@0.0.1440.900" timestamp="1592437259336" />
-    <state x="1088" y="496" key="RollbackChangesDialog" timestamp="1593030164759">
+    <state width="1658" height="234" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031704989" />
+    <state x="512" y="266" key="MergeDialog" timestamp="1593031610349">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
-    <state x="1088" y="496" key="RollbackChangesDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593030164759" />
-    <state x="45" y="47" width="1354" height="777" key="SettingsEditor" timestamp="1592454076726">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="45" y="47" width="1354" height="777" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1592454076726" />
-    <state x="569" y="283" key="Vcs.Push.Dialog.v2" timestamp="1592241904406">
+    <state x="512" y="266" key="MergeDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031610349" />
+    <state x="896" y="583" key="git4idea.branch.GitSmartOperationDialog" timestamp="1593031607553">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
-    <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1591866240088" />
-    <state x="569" y="283" key="Vcs.Push.Dialog.v2/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592241904406" />
-    <state x="498" y="191" key="VcsDiffUtil.ChangesDialog" timestamp="1592438215242">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="498" y="191" key="VcsDiffUtil.ChangesDialog/0.0.1440.900@0.0.1440.900" timestamp="1592438215242" />
-    <state x="421" y="82" width="598" height="735" key="find.popup" timestamp="1592455252414">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="421" y="82" width="598" height="735" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1592455252414" />
-    <state x="748" y="131" width="1064" height="1176" key="find.popup/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1592241985686" />
-    <state x="474" y="170" key="git4idea.branch.GitSmartOperationDialog" timestamp="1592440367401">
-      <screen x="0" y="0" width="1440" height="900" />
-    </state>
-    <state x="474" y="170" key="git4idea.branch.GitSmartOperationDialog/0.0.1440.900@0.0.1440.900" timestamp="1592440367401" />
+    <state x="896" y="583" key="git4idea.branch.GitSmartOperationDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031607553" />
   </component>
 </project>
