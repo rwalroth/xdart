@@ -364,7 +364,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         _, ext = fname.split('.')
         if ext.lower() in formats:
-            self.image_widget.image.save(fname)
+            self.image_widget.imageItem.save(fname)
         
         elif ext.lower() == 'tiff':
             data = self.update_image()
