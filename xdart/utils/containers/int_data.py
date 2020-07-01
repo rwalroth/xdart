@@ -28,7 +28,7 @@ class int_1d_data:
         to_hdf5: Saves data to hdf5 file
     """
     def __init__(self, raw=None, pcount=None, norm=None, ttheta=0, q=0,
-                 sigma=None, sigma_raw=None):
+                 sigma=None, sigma_raw=None, monitor=1):
         """
         raw: nzarray1d, raw integrated signal
         pcount: nzarray1d, how many pixels in each bin
@@ -45,7 +45,7 @@ class int_1d_data:
         self.sigma = sigma
         self.sigma_raw = sigma_raw
 
-    def from_result(self, result, wavelength):
+    def from_result(self, result, wavelength, monitor=1):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
         
         args:
@@ -58,8 +58,13 @@ class int_1d_data:
         self.pcount = result._count
         self.raw = result._sum_signal
         self.norm = self.raw/self.pcount
-        self.sigma = result.sigma
-        self.sigma_raw = result.sigma**2
+        if result.sigma is None:
+            self.sigma = result._sum_signal
+            self.sigma /= self.norm
+            self.sigma_raw = result._sum_signal
+        else:
+            self.sigma = result.sigma
+            self.sigma_raw = monitor * (result._count * result.sigma)**2
     
     def parse_unit(self, result, wavelength):
         """Helper function to take integrator result and return a two
@@ -104,19 +109,18 @@ class int_1d_data:
             compression: str, compression algorithm to use. See h5py
                 documentation.
         """
-        for key in ['raw', 'pcount', 'norm']:
+        for key in ['raw', 'pcount', 'norm', 'sigma', 'sigma_raw']:
+            attr = self.__getattribute__(key)
             if key in grp:
-                del grp[key]
-        raw = grp.create_group('raw')
-        self.raw.to_hdf5(raw, compression)
-        pcount = grp.create_group('pcount')
-        self.pcount.to_hdf5(pcount, compression)
-        norm = grp.create_group('norm')
-        self.norm.to_hdf5(norm, compression)
-        sigma = grp.create_group('sigma')
-        self.sigma.to_hdf5(sigma, compression)
-        sigma_raw = grp.create_group('sigma_raw')
-        self.sigma_raw.to_hdf5(sigma_raw, compression)
+                if not utils.check_encoded(grp, 'nzarray'):
+                    del grp[key]
+                    sgrp = grp.create_group(key)
+                else:
+                    sgrp = grp[key]
+            else:
+                sgrp = grp.create_group(key)
+            attr.to_hdf5(sgrp, compression)
+
         utils.attributes_to_h5(self, grp, ['ttheta', 'q'], compression=compression)
     
     def from_hdf5(self, grp):
@@ -135,7 +139,7 @@ class int_1d_data:
     def __setattr__(self, name, value):
         """Ensures raw, norm, and pcount are nzarray1d objects.
         """
-        if name in ['raw', 'norm', 'pcount', 'sigma']:
+        if name in ['raw', 'norm', 'pcount', 'sigma', 'sigma_raw']:
             self.__dict__[name] = nzarray1d(value)
         else:
             super().__setattr__(name, value)
@@ -145,7 +149,7 @@ class int_1d_data:
         out.raw = self.raw + other.raw
         out.pcount = self.pcount + other.pcount
         out.sigma_raw = self.sigma_raw + other.sigma_raw
-        out.sigma = copy.deepcopy(self.sigma_raw)
+        out.sigma = copy.deepcopy(out.sigma_raw)
         out.sigma.data = np.sqrt(out.sigma_raw.data)
         out.sigma = out.sigma/out.pcount
         out.norm = out.raw/out.pcount
@@ -191,14 +195,14 @@ class int_2d_data(int_1d_data):
         self.sigma = sigma
         self.sigma_raw = sigma_raw
 
-    def from_result(self, result, wavelength):
+    def from_result(self, result, wavelength, monitor=1):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
         
         args:
             result: object returned by AzimuthalIntegrator
             wavelength: float, energy of the beam in meters
         """
-        super(int_2d_data, self).from_result(result, wavelength)
+        super(int_2d_data, self).from_result(result, wavelength, monitor)
         self.chi = result.azimuthal
     
     def from_hdf5(self, grp):
@@ -224,7 +228,7 @@ class int_2d_data(int_1d_data):
     def __setattr__(self, name, value):
         """Ensures raw, norm, and pcount are nzarray2d objects.
         """
-        if name in ['raw', 'norm', 'pcount']:
+        if name in ['raw', 'norm', 'pcount', 'sigma', 'sigma_raw']:
             self.__dict__[name] = nzarray2d(value)
         else:
             super().__setattr__(name, value)

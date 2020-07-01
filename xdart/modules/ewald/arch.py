@@ -185,7 +185,7 @@ class EwaldArch():
                 mask=self.get_mask(), **kwargs
             )
 
-            self.int_1d.from_result(result, self.poni.wavelength)
+            self.int_1d.from_result(result, self.poni.wavelength, self.map_norm)
         return result
 
     def integrate_2d(self, npt_rad=1000, npt_azim=1000, monitor=None,
@@ -229,7 +229,7 @@ class EwaldArch():
                 azimuth_range=azimuth_range, **kwargs
             )
 
-            self.int_2d.from_result(result, self.poni.wavelength)
+            self.int_2d.from_result(result, self.poni.wavelength, self.map_norm)
         return result
             
 
