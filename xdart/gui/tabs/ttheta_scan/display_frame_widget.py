@@ -14,6 +14,81 @@ from matplotlib import pyplot as plt
 import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
+
+PUSHBUTTON_STYLESHEET = """
+            QPushButton {
+              background-color: #505F69;
+              border: 1px solid #32414B;
+              color: #F0F0F0;
+              border-radius: 4px;
+              padding: 3px;
+              outline: none;
+              min-width: 20px;
+            }
+            QPushButton:disabled {
+              background-color: #32414B;
+              border: 1px solid #32414B;
+              color: #787878;
+              border-radius: 4px;
+              padding: 3px;
+            }
+            
+            QPushButton:checked {
+              background-color: #32414B;
+              border: 1px solid #32414B;
+              border-radius: 4px;
+              padding: 3px;
+              outline: none;
+            }
+            
+            QPushButton:checked:disabled {
+              background-color: #19232D;
+              border: 1px solid #32414B;
+              color: #787878;
+              border-radius: 4px;
+              padding: 3px;
+              outline: none;
+            }
+            
+            QPushButton:checked:selected {
+              background: #1464A0;
+              color: #32414B;
+            }
+            
+            QPushButton::menu-indicator {
+              subcontrol-origin: padding;
+              subcontrol-position: bottom right;
+              bottom: 4px;
+            }
+            
+            QPushButton:pressed {
+              background-color: #19232D;
+              border: 1px solid #19232D;
+            }
+            
+            QPushButton:pressed:hover {
+              border: 1px solid #148CD2;
+            }
+            
+            QPushButton:hover {
+              border: 1px solid #148CD2;
+              color: #F0F0F0;
+            }
+            
+            QPushButton:selected {
+              background: #1464A0;
+              color: #32414B;
+            }
+            
+            QPushButton:hover {
+              border: 1px solid #148CD2;
+              color: #F0F0F0;
+            }
+            
+            QPushButton:focus {
+              border: 1px solid #1464A0;
+            }
+        """
 QFileDialog = QtWidgets.QFileDialog
 
 # This module imports
@@ -76,8 +151,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
         self.image_layout.setContentsMargins(0, 0, 0, 0)
         self.image_layout.setSpacing(0)
-        self.image = XDImageWidget()
-        self.image_layout.addWidget(self.image)
+        self.image_widget = XDImageWidget()
+        self.image_layout.addWidget(self.image_widget)
 
         # Image pane signal connections
         self.ui.imageMethod.setCurrentIndex(1)
@@ -112,6 +187,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.plotNRP.activated.connect(self.update_plot)
         self.ui.plotOverlay.stateChanged.connect(self.update_plot)
 
+        # Fix width of buttons
+        self.ui.pushRight.setStyleSheet(PUSHBUTTON_STYLESHEET)
+        self.ui.pushRightLast.setStyleSheet(PUSHBUTTON_STYLESHEET)
+        self.ui.pushLeft.setStyleSheet(PUSHBUTTON_STYLESHEET)
+        self.ui.pushLeftLast.setStyleSheet(PUSHBUTTON_STYLESHEET)
+
         #self.update()
 
     def update(self):
@@ -126,7 +207,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if self.ui.shareAxis.isChecked():
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
             self.ui.plotUnit.setEnabled(False)
-            self.plot.setXLink(self.image_plot)
+            self.plot.setXLink(self.image_widget.image_plot)
         
         else:
             self.plot.setXLink(None)
@@ -159,8 +240,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 data = np.arange(100).reshape(10, 10)
                 rect = Qt.QtCore.QRect(1, 1, 1, 1)
         
-        self.image.setImage(data)
-        self.image.setRect(rect)
+        self.image_widget.setImage(data)
+        self.image_widget.setRect(rect)
         
         return data
 
@@ -188,7 +269,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 else:
                     data = self.arch.map_raw.copy()
                 if self.ui.imageMask.isChecked():
-                    data[self.arch.mask] = 0
+                    data.ravel()[self.arch.mask] = data.max()
             rect = get_rect(
                 np.arange(data.shape[0]), 
                 np.arange(data.shape[1]),
@@ -283,7 +364,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         _, ext = fname.split('.')
         if ext.lower() in formats:
-            self.image.save(fname)
+            self.image_widget.imageItem.save(fname)
         
         elif ext.lower() == 'tiff':
             data = self.update_image()

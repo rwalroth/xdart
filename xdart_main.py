@@ -110,11 +110,11 @@ class Main(QMainWindow):
 
 
 if __name__ == '__main__':
+    os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
-    with open("xdart_css.css", 'r') as file:
-        sheet = file.read()
-    app.setStyleSheet(sheet)
+    os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
+    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api=os.environ['PYQTGRAPH_QT_LIB']))
     mw = Main(tab_paths)
     mw.show()
     app.exec_()
