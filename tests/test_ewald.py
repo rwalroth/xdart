@@ -139,8 +139,8 @@ class TestEwaldSphere(unittest.TestCase):
             user="b_stone_",
             image_path=os.path.join(xdart_dir, "tests/test_data/spec_pd100k/images/"),
             spec_path=os.path.join(xdart_dir, "tests/test_data/spec_pd100k/"),
-            spec_name = "LaB6_2",
-            scan_number = 1
+            spec_name="LaB6_2",
+            scan_number=1
         )
         
         self.true_1d_ttheta = np.load(

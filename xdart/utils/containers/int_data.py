@@ -56,15 +56,16 @@ class int_1d_data:
             result, wavelength)
 
         self.pcount = result._count
-        self.raw = result._sum_signal
+        self.raw = result._sum_signal/monitor
         self.norm = self.raw/self.pcount
         if result.sigma is None:
             self.sigma = result._sum_signal
-            self.sigma /= self.norm
-            self.sigma_raw = result._sum_signal
+            self.sigma.data = np.sqrt(self.sigma.data)
+            self.sigma /= (self.pcount * monitor)
+            self.sigma_raw = result._sum_signal / (monitor**2)
         else:
-            self.sigma = result.sigma
-            self.sigma_raw = monitor * (result._count * result.sigma)**2
+            self.sigma = result.sigma / monitor
+            self.sigma_raw = ((result._count * result.sigma)**2) / (monitor**2)
     
     def parse_unit(self, result, wavelength):
         """Helper function to take integrator result and return a two
@@ -132,8 +133,16 @@ class int_1d_data:
         self.raw.from_hdf5(grp['raw'])
         self.pcount.from_hdf5(grp['pcount'])
         self.norm.from_hdf5(grp['norm'])
-        self.sigma.from_hdf5(grp['sigma'])
-        self.sigma_raw.from_hdf5(grp['sigma_raw'])
+        try:
+            self.sigma.from_hdf5(grp['sigma'])
+            self.sigma_raw.from_hdf5(grp['sigma_raw'])
+        except KeyError:
+            self.sigma = copy.deepcopy(self.norm)
+            data = self.sigma.data
+            if data[data > 0].size > 0:
+                minval = data[data > 0].min()
+                data[data > 0] = np.sqrt(data[data > 0]/minval) * minval
+            self.sigma_raw = self.sigma * self.pcount
         utils.h5_to_attributes(self, grp, ['ttheta', 'q'])
     
     def __setattr__(self, name, value):
@@ -149,9 +158,13 @@ class int_1d_data:
         out.raw = self.raw + other.raw
         out.pcount = self.pcount + other.pcount
         out.sigma_raw = self.sigma_raw + other.sigma_raw
+
+        #out.sigma = self.sigma*self.sigma + other.sigma*other.sigma
+        #out.sigma.data = np.sqrt(out.sigma.data)
         out.sigma = copy.deepcopy(out.sigma_raw)
         out.sigma.data = np.sqrt(out.sigma_raw.data)
         out.sigma = out.sigma/out.pcount
+
         out.norm = out.raw/out.pcount
         out.ttheta = copy.deepcopy(self.ttheta)
         out.q = copy.deepcopy(self.q)

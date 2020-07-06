@@ -171,7 +171,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             int_data = self.arch.int_2d
         
         if self.ui.imageIntRaw.currentIndex() == 0:
-            data, corners = read_NRP(self.ui.imageNRP, int_data)
+            data, corners, sigma = read_NRP(self.ui.imageNRP, int_data)
             
             rect = get_rect(
                 get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
@@ -208,7 +208,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             elif self.ui.imageMethod.currentIndex() == 1:
                 int_data = self.sphere.bai_2d
         
-        data, corners = read_NRP(self.ui.imageNRP, int_data)
+        data, corners, sigma = read_NRP(self.ui.imageNRP, int_data)
         
         rect = get_rect(
             get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
@@ -237,7 +237,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                     elif self.ui.plotMethod.currentIndex() == 1:
                         sphere_int_data = self.sphere.bai_1d
 
-                s_ydata, corners = read_NRP(self.ui.plotNRP, sphere_int_data)
+                s_ydata, corners, s_sigma = read_NRP(self.ui.plotNRP, sphere_int_data)
                 s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
                 if self.arch.idx is not None:
@@ -249,17 +249,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                     else:
                         self.curve1.clear()
 
-                    a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
+                    a_ydata, corners, a_sigma = read_NRP(self.ui.plotNRP, arc_int_data)
                     a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
                     self.curve2.setData(a_xdata, a_ydata)
 
-                    return a_xdata, a_ydata
+                    return a_xdata, a_ydata, a_sigma
 
                 else:
                     self.curve1.setData(s_xdata, s_ydata)
                     self.curve2.clear()
 
-                    return s_xdata, s_ydata
+                    return s_xdata, s_ydata, s_sigma
 
             except (TypeError, IndexError):
                 data = (np.arange(100), np.arange(100))
@@ -299,14 +299,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if fname == '':
             return
 
-        xdata, ydata = self.update_plot()
+        xdata, ydata, sigma = self.update_plot()
 
         _, ext = fname.split('.')
         if ext.lower() == 'xye':
-            ut.write_xye(fname, xdata, ydata)
+            ut.write_xye(fname, xdata, ydata, sigma)
         
         elif ext.lower() == 'csv':
-            ut.write_csv(fname, xdata, ydata)
+            ut.write_csv(fname, xdata, ydata, sigma)
 
 
 def read_NRP(box, int_data):
@@ -325,20 +325,25 @@ def read_NRP(box, int_data):
     """
     if box.currentIndex() == 0:
         nzarr = int_data.norm
+        sigmanz = int_data.sigma
     elif box.currentIndex() == 1:
         nzarr = int_data.raw
+        sigmanz = int_data.sigma_raw
     elif box.currentIndex() == 2:
         nzarr = int_data.pcount
+        sigmanz = None
     data = nzarr.data[()].T
+    sigma = sigmanz.data[()].T
     corners = nzarr.corners
     
     if data.size == 0:
         data = np.zeros(int_data.norm.shape)
+        sigma = np.zeros_like(data)
         if len(corners) == 2:
-            corners = [0,int_data.norm.shape[0]]
-        if len(corners) == 4:
-            corners = [0,int_data.norm.shape[0],0,int_data.norm.shape[1]]
-    return data, corners
+            corners = [0, int_data.norm.shape[0]]
+        elif len(corners) == 4:
+            corners = [0, int_data.norm.shape[0], 0, int_data.norm.shape[1]]
+    return data, corners, sigma
 
 
 def get_xdata(box, int_data):
