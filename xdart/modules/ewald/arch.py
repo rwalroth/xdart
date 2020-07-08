@@ -181,11 +181,11 @@ class EwaldArch():
                 self.mask = np.arange(self.map_raw.size)[self.map_raw.flatten() < 0]
 
             result = self.integrator.integrate1d(
-                self.map_raw/self.map_norm, numpoints, unit=unit, radial_range=radial_range,
+                self.map_raw, numpoints, unit=unit, radial_range=radial_range,
                 mask=self.get_mask(), **kwargs
             )
 
-            self.int_1d.from_result(result, self.poni.wavelength)
+            self.int_1d.from_result(result, self.poni.wavelength, self.map_norm)
         return result
 
     def integrate_2d(self, npt_rad=1000, npt_azim=1000, monitor=None,
@@ -224,12 +224,12 @@ class EwaldArch():
                 npt_azim = self.map_raw.shape[1]
 
             result = self.integrator.integrate2d(
-                self.map_raw/self.map_norm, npt_rad, npt_azim, unit=unit, 
+                self.map_raw, npt_rad, npt_azim, unit=unit,
                 mask=self.get_mask(), radial_range=radial_range, 
                 azimuth_range=azimuth_range, **kwargs
             )
 
-            self.int_2d.from_result(result, self.poni.wavelength)
+            self.int_2d.from_result(result, self.poni.wavelength, self.map_norm)
         return result
             
 

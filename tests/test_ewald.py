@@ -22,8 +22,8 @@ else:
 if xdart_dir not in sys.path:
     sys.path.append(xdart_dir)
 
-from xdart.classes.ewald import EwaldArch, EwaldSphere
-from xdart.containers import PONI
+from xdart.modules.ewald import EwaldArch, EwaldSphere
+from xdart.utils.containers import PONI
 
 def read_RAW(file, mask = True):
     #print("Reading RAW file here...")
@@ -99,7 +99,8 @@ def make_sphere(calib_path, poni_file, stepsize, user, image_path, spec_path,
     xmin_global = 180.0
     times = {'overall':[], 'creation':[], 'int':[], 'add':[]}
     detector = pyFAI.detectors.Detector(172e-6, 172e-6)
-    sphere = EwaldSphere(data_file="test_data/spec_pd100k/test_save.h5")
+    data_file_path = os.path.join(xdart_dir, "tests/test_data/spec_pd100k/test_save.h5")
+    sphere = EwaldSphere(data_file=data_file_path)
     sphere.save_to_h5(replace=True)
     poni = PONI.from_ponifile(os.path.join(calib_path, poni_file))
     for k in range(1, len(tth)):
@@ -132,22 +133,32 @@ def make_sphere(calib_path, poni_file, stepsize, user, image_path, spec_path,
 class TestEwaldSphere(unittest.TestCase):
     def setUp(self):
         self.sphere = make_sphere(
-            calib_path="test_data/spec_pd100k/",
+            calib_path=os.path.join(xdart_dir, "tests/test_data/spec_pd100k/"),
             poni_file="poni.poni",
             stepsize=0.01,
             user="b_stone_",
-            image_path="test_data/spec_pd100k/images/",
-            spec_path="test_data/spec_pd100k/",
-            spec_name = "LaB6_2",
-            scan_number = 1
+            image_path=os.path.join(xdart_dir, "tests/test_data/spec_pd100k/images/"),
+            spec_path=os.path.join(xdart_dir, "tests/test_data/spec_pd100k/"),
+            spec_name="LaB6_2",
+            scan_number=1
         )
         
-        self.true_1d_ttheta = np.load("test_data/spec_pd100k/1d_ttheta.npy")
-        self.true_1d_norm = np.load("test_data/spec_pd100k/1d_norm.npy")
+        self.true_1d_ttheta = np.load(
+            os.path.join(xdart_dir, "tests/test_data/spec_pd100k/1d_ttheta.npy")
+        )
+        self.true_1d_norm = np.load(
+            os.path.join(xdart_dir, "tests/test_data/spec_pd100k/1d_norm.npy")
+        )
         
-        self.true_2d_ttheta = np.load("test_data/spec_pd100k/2d_ttheta.npy")
-        self.true_2d_norm = np.load("test_data/spec_pd100k/2d_norm.npy")
-        self.true_2d_chi = np.load("test_data/spec_pd100k/2d_chi.npy")
+        self.true_2d_ttheta = np.load(
+            os.path.join(xdart_dir, "tests/test_data/spec_pd100k/2d_ttheta.npy")
+        )
+        self.true_2d_norm = np.load(
+            os.path.join(xdart_dir, "tests/test_data/spec_pd100k/2d_norm.npy")
+        )
+        self.true_2d_chi = np.load(
+            os.path.join(xdart_dir, "tests/test_data/spec_pd100k/2d_chi.npy")
+        )
     
     #@unittest.skip("Known to pass")
     def test_1d(self):
@@ -179,7 +190,6 @@ class TestEwaldSphere(unittest.TestCase):
         self.assertTrue(np.isclose(self.true_1d_norm, 
                                    self.sphere.bai_1d.norm.full(),
                                    rtol=1e-3, atol=1e-4).all())
-        
 
 
 if __name__ == '__main__':
