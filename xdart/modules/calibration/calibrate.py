@@ -27,8 +27,10 @@ import pyFAI
 from pyFAI.multi_geometry import MultiGeometry
 from silx.io.specfile import SpecFile
 
+xdart_dir = os.getcwd().split('xdart')[0] + 'xdart'
 if __name__ == '__main__':
-    sys.path.append('C:\\Users\\Public\\repos\\xdart')
+    if xdart_dir not in sys.path:
+        sys.path.append(xdart_dir)
     
 from xdart.utils import get_from_pdi, get_motor_val, query, query_yes_no
 from xdart.utils import read_image_file, smooth_img, get_fit, fit_images_2D
