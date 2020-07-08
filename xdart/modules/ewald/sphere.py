@@ -203,14 +203,19 @@ class EwaldSphere():
         """
         with self.sphere_lock:
             try:
-                self.bai_1d += arch.int_1d
-            except (TypeError, AssertionError, AttributeError):
+                assert list(self.bai_1d.raw.shape) == list(arch.int_1d.raw.shape)
+            except (AssertionError, AttributeError):
                 self.bai_1d.raw = np.zeros(arch.int_1d.raw.shape)
                 self.bai_1d.pcount = np.zeros(arch.int_1d.pcount.shape)
                 self.bai_1d.norm = np.zeros(arch.int_1d.norm.shape)
+                self.bai_1d.sigma = np.zeros(arch.int_1d.norm.shape)
+                self.bai_1d.sigma_raw = np.zeros(arch.int_1d.norm.shape)
+            try:
                 self.bai_1d += arch.int_1d
-            self.bai_1d.ttheta = arch.int_1d.ttheta
-            self.bai_1d.q = arch.int_1d.q
+                self.bai_1d.ttheta = arch.int_1d.ttheta
+                self.bai_1d.q = arch.int_1d.q
+            except AttributeError:
+                pass
             self.save_bai_1d()
     
     def _update_bai_2d(self, arch):
@@ -218,11 +223,13 @@ class EwaldSphere():
         """
         with self.sphere_lock:
             try:
-                assert self.bai_2d.raw.shape == arch.int_2d.raw.shape
+                assert list(self.bai_2d.raw.shape) == list(arch.int_2d.raw.shape)
             except (AssertionError, AttributeError):
                 self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
                 self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
                 self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
+                self.bai_2d.sigma = np.zeros(arch.int_2d.norm.shape)
+                self.bai_2d.sigma_raw = np.zeros(arch.int_2d.norm.shape)
             try:
                 self.bai_2d += arch.int_2d
                 self.bai_2d.ttheta = arch.int_2d.ttheta

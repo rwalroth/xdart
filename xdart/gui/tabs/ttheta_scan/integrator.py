@@ -50,6 +50,9 @@ params = [
                         "numpy", "cython", "BBox", "splitpixel", "lut", "csr", 
                         "nosplit_csr", "full_csr", "lut_ocl", "csr_ocl"
                     ], 'value':'csr'},
+                {'name': 'error_model', 'type': 'list', 'values': [
+                        "poisson", "azimuthal"
+                    ], 'value': 'poisson'},
                 {'name': 'safe', 'type': 'bool', 'value': True},
                 {'name': 'block_size', 'type': 'int', 'value': 32},
                 {'name': 'profile', 'type': 'bool', 'value': False},
@@ -86,6 +89,9 @@ params = [
                         "numpy", "cython", "BBox", "splitpixel", "lut", 
                         "csr", "lut_ocl", "csr_ocl"
                     ], 'value':'csr'},
+                {'name': 'error_model', 'type': 'list', 'values': [
+                        "poisson", "azimuthal"
+                    ], 'value': 'poisson'},
                 {'name': 'safe', 'type': 'bool', 'value': True}
                 ]
             }
