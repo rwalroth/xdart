@@ -153,13 +153,18 @@ class EwaldArch():
         self.int_1d = int_1d_data()
         self.int_2d = int_2d_data()
     
-    def get_mask(self):
+    def get_mask(self, global_mask=None):
+        if global_mask is not None:
+            mask_idx = np.unique(np.append(self.mask, global_mask))
+            mask_idx.sort()
+        else:
+            mask_idx = self.mask
         mask = np.zeros(self.map_raw.size, dtype=int)
-        mask[self.mask] = 1
+        mask[mask_idx] = 1
         return mask.reshape(self.map_raw.shape)
 
     def integrate_1d(self, numpoints=10000, radial_range=[0, 180],
-                     monitor=None, unit=units.TTH_DEG, **kwargs):
+                     monitor=None, unit=units.TTH_DEG, global_mask=None, **kwargs):
         """Wrapper for integrate1d method of AzimuthalIntegrator from pyFAI.
         Returns result and also stores the data in the int_1d object.
 
@@ -182,7 +187,7 @@ class EwaldArch():
 
             result = self.integrator.integrate1d(
                 self.map_raw, numpoints, unit=unit, radial_range=radial_range,
-                mask=self.get_mask(), **kwargs
+                mask=self.get_mask(global_mask), **kwargs
             )
 
             self.int_1d.from_result(result, self.poni.wavelength, self.map_norm)
@@ -190,7 +195,7 @@ class EwaldArch():
 
     def integrate_2d(self, npt_rad=1000, npt_azim=1000, monitor=None,
                      radial_range=[0,180], azimuth_range=[-180,180], 
-                     unit=units.TTH_DEG, **kwargs):
+                     unit=units.TTH_DEG, global_mask=None, **kwargs):
         """Wrapper for integrate2d method of AzimuthalIntegrator from pyFAI.
         Returns result and also stores the data in the int_2d object.
 
@@ -225,7 +230,7 @@ class EwaldArch():
 
             result = self.integrator.integrate2d(
                 self.map_raw, npt_rad, npt_azim, unit=unit,
-                mask=self.get_mask(), radial_range=radial_range, 
+                mask=self.get_mask(global_mask), radial_range=radial_range,
                 azimuth_range=azimuth_range, **kwargs
             )
 

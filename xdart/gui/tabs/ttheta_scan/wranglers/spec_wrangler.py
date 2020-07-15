@@ -26,6 +26,7 @@ from xdart.utils import catch_h5py_file as catch
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
+from ....widgets import MaskWidget
 
 params = [
     {'name': 'Scan Number', 'type': 'int', 'value': 0},
@@ -143,6 +144,9 @@ class specWrangler(wranglerWidget):
         self.thread.sigUpdateFile.connect(self.sigUpdateFile.emit)
         self.thread.finished.connect(self.finished.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
+
+        #self.mask_widget
+
         self.setup()
 
     def setup(self):

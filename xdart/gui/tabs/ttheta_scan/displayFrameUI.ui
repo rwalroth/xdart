@@ -271,6 +271,13 @@
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="setMaskButton">
+            <property name="text">
+             <string>Set mask...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QCheckBox" name="shareAxis">
             <property name="text">
              <string>Share Axis</string>

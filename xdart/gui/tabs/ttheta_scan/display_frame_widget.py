@@ -4,6 +4,7 @@
 """
 
 # Standard library imports
+import sys
 import traceback
 
 # Other imports
@@ -14,6 +15,10 @@ from matplotlib import pyplot as plt
 import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
+
+from xdart.utils import catch_h5py_file as catch
+
+from ...widgets import MaskWidget
 
 PUSHBUTTON_STYLESHEET = """
             QPushButton {
@@ -193,6 +198,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.pushLeft.setStyleSheet(PUSHBUTTON_STYLESHEET)
         self.ui.pushLeftLast.setStyleSheet(PUSHBUTTON_STYLESHEET)
 
+        self.mask_widget = MaskWidget()
+        self.mask_widget.hide()
+        self.ui.setMaskButton.clicked.connect(self.launch_mask_widget)
+        self.mask_widget.requestMask.connect(self._send_to_mask_widget)
+        self.mask_widget.newMask.connect(self._set_new_mask)
+
         #self.update()
 
     def update(self):
@@ -270,6 +281,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                     data = self.arch.map_raw.copy()
                 if self.ui.imageMask.isChecked():
                     data.ravel()[self.arch.mask] = data.max()
+                    if self.sphere.global_mask is not None:
+                        data.ravel()[self.sphere.global_mask] = data.max()
             rect = get_rect(
                 np.arange(data.shape[0]), 
                 np.arange(data.shape[1]),
@@ -389,6 +402,87 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         elif ext.lower() == 'csv':
             ut.write_csv(fname, xdata, ydata, sigma)
 
+    def launch_mask_widget(self, q=None):
+        self.update_mask_widget()
+        if self.arch.idx is None:
+            with self.sphere.file_lock:
+                try:
+                    _arch = self.sphere.arches[0]
+                    data = _arch.map_raw.copy()
+                except KeyError:
+                    traceback.print_exc()
+                    return
+            mask = np.zeros_like(data)
+            if self.sphere.global_mask is not None:
+                mask.ravel()[self.sphere.global_mask] = 1
+            self.mask_widget.set_data(data, base=mask)
+            self.mask_widget.blockSignals(True)
+            self.mask_widget.ui.archList.setCurrentIndex(0)
+            self.mask_widget.blockSignals(False)
+        else:
+            self.mask_widget.set_data(self.arch.map_raw, base=self.arch.get_mask())
+            idx = self.mask_widget.ui.archList.findText(str(self.arch.idx))
+            if idx < 0:
+                idx = 0
+            self.mask_widget.blockSignals(True)
+            self.mask_widget.ui.archList.setCurrentIndex(idx)
+            self.mask_widget.blockSignals(False)
+        self.mask_widget.show()
+
+    def update_mask_widget(self):
+        self.mask_widget.blockSignals(True)
+        try:
+            idx = self.mask_widget.ui.archList.currentIndex()
+            idx = max(idx, 0)
+            self.mask_widget.ui.archList.clear()
+            i = 0
+            self.mask_widget.ui.archList.insertItem(i, "Global")
+            i += 1
+            for idx in self.sphere.arches.index:
+                self.mask_widget.ui.archList.insertItem(i, str(idx))
+                i += 1
+            idx = min(idx, self.mask_widget.ui.archList.count() - 1)
+            self.mask_widget.ui.archList.setCurrentIndex(idx)
+        except:
+            traceback.print_exc()
+            t, v, tb = sys.exc_info()
+            self.mask_widget.blockSignals(False)
+            raise(t, v, tb)
+        finally:
+            self.mask_widget.blockSignals(False)
+
+    def _send_to_mask_widget(self, q):
+        if q >= 0:
+            with self.sphere.file_lock:
+                _arch = self.sphere.arches[q]
+            self.mask_widget.set_data(_arch.map_raw, base=_arch.get_mask())
+        elif self.sphere.global_mask is not None:
+            base = np.zeros_like(self.mask_widget.data)
+            base[self.sphere.global_mask] = 1
+            self.mask_widget.set_data(self.mask_widget.data, base=base)
+        else:
+            self.mask_widget.clear_mask()
+
+    def _set_new_mask(self, idx, mask):
+        mask_ids = np.arange(self.mask_widget.data.size)[mask.ravel() == 1]
+        if idx < 0:
+            self.sphere.global_mask = mask_ids
+        else:
+            if self.arch.idx is not None and self.arch.idx == idx:
+                _arch = self.arch
+            else:
+                try:
+                    with self.sphere.file_lock:
+                        _arch = self.sphere.arches[idx]
+                except KeyError:
+                    traceback.print_exc()
+                    return
+            _arch.mask = mask_ids
+            with self.sphere.file_lock:
+                with catch(self.sphere.data_file, 'a') as file:
+                    arches = file['arches']
+                    _arch.save_to_h5(arches)
+
 
 def read_NRP(box, int_data):
     """Reads the norm, raw, pcount option box and returns
@@ -414,7 +508,10 @@ def read_NRP(box, int_data):
         nzarr = int_data.pcount
         sigmanz = None
     data = nzarr.data[()].T
-    sigma = sigmanz.data[()].T
+    if sigmanz is not None:
+        sigma = sigmanz.data[()].T
+    else:
+        sigma = np.zeros_like(data)
     corners = nzarr.corners
     
     if data.size == 0:

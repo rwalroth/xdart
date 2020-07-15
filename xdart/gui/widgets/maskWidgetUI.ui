@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>363</width>
+    <height>366</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QFrame" name="toolsFrame">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="3" column="0">
+       <widget class="QPushButton" name="lineMaskButton">
+        <property name="text">
+         <string>Line</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QFrame" name="frame">
+        <property name="minimumSize">
+         <size>
+          <width>150</width>
+          <height>150</height>
+         </size>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_2">
+         <property name="leftMargin">
+          <number>1</number>
+         </property>
+         <property name="topMargin">
+          <number>1</number>
+         </property>
+         <property name="rightMargin">
+          <number>1</number>
+         </property>
+         <property name="bottomMargin">
+          <number>1</number>
+         </property>
+         <property name="spacing">
+          <number>1</number>
+         </property>
+         <item row="2" column="2">
+          <spacer name="horizontalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>88</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="3" column="2">
+          <widget class="QSpinBox" name="xMinBox"/>
+         </item>
+         <item row="3" column="1">
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>88</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="2" column="1">
+          <widget class="QSpinBox" name="yMinBox"/>
+         </item>
+         <item row="1" column="2">
+          <widget class="QSpinBox" name="xMaxBox"/>
+         </item>
+         <item row="3" column="3">
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>88</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="1" column="1">
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>88</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="1" column="3">
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>88</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="2" column="3">
+          <widget class="QSpinBox" name="yMaxBox"/>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Min</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Max</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4" rowspan="3">
+          <widget class="QSlider" name="yMaxSlider">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" rowspan="3">
+          <widget class="QSlider" name="yMinSlider">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1" colspan="3">
+          <widget class="QSlider" name="xMaxSlider">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1" colspan="3">
+          <widget class="QSlider" name="xMinSlider">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPushButton" name="ellipseMaskButton">
+        <property name="text">
+         <string>Ellipse</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QRadioButton" name="addROI">
+        <property name="text">
+         <string>Add</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="rectMaskButton">
+        <property name="text">
+         <string>Rect</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QRadioButton" name="subtractROI">
+        <property name="text">
+         <string>Subtract</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QPushButton" name="polyMaskButton">
+        <property name="text">
+         <string>Poly</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QComboBox" name="archList"/>
+      </item>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="clearButton">
+        <property name="text">
+         <string>Clear</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QPushButton" name="setCurrent">
+        <property name="text">
+         <string>Set Current</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QPushButton" name="setGlobal">
+        <property name="text">
+         <string>Set Global</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>xMaxBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>xMaxSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>167</x>
+     <y>178</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>164</x>
+     <y>133</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>xMaxSlider</sender>
+   <signal>sliderMoved(int)</signal>
+   <receiver>xMaxBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>201</x>
+     <y>138</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>196</x>
+     <y>183</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>yMaxBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>yMaxSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>290</x>
+     <y>221</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>335</x>
+     <y>221</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>yMaxSlider</sender>
+   <signal>sliderMoved(int)</signal>
+   <receiver>yMaxBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>332</x>
+     <y>191</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>283</x>
+     <y>230</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>xMinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>xMinSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>183</x>
+     <y>274</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>194</x>
+     <y>313</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>xMinSlider</sender>
+   <signal>sliderMoved(int)</signal>
+   <receiver>xMinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>161</x>
+     <y>311</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>162</x>
+     <y>270</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>yMinSlider</sender>
+   <signal>sliderMoved(int)</signal>
+   <receiver>yMinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>35</x>
+     <y>228</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>75</x>
+     <y>222</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>yMinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>yMinSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>118</x>
+     <y>227</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>34</x>
+     <y>251</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

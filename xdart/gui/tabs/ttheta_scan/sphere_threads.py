@@ -101,7 +101,7 @@ class integratorThread(Qt.QtCore.QThread):
     def bai_2d_SI(self):
         """Integrate the current arch, 2d
         """
-        self.sphere.arches[self.arch].integrate_2d(**self.sphere.bai_2d_args)
+        self.arch.integrate_2d(**self.sphere.bai_2d_args)
 
     def bai_1d_all(self):
         """Integrates all arches 1d. Note, does not call sphere method
@@ -122,7 +122,7 @@ class integratorThread(Qt.QtCore.QThread):
     def bai_1d_SI(self):
         """Integrate the current arch, 1d.
         """
-        self.sphere.arches[self.arch].integrate_1d(**self.sphere.bai_1d_args)
+        self.arch.integrate_1d(**self.sphere.bai_1d_args)
     
     def load(self):
         """Load data.
