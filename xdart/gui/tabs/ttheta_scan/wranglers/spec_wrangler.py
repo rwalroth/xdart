@@ -163,7 +163,7 @@ class specWrangler(wranglerWidget):
         self.mask_widget.set_data(data)
         self.mask_widget.hide()
         self.parameters.child('set_mask').sigActivated.connect(
-            self.mask_widget.show
+            self.launch_mask_widget
         )
 
         self.mask_widget.newMask.connect(self.set_mask)
@@ -284,6 +284,13 @@ class specWrangler(wranglerWidget):
     def set_mask(self, idx, mask):
         self.mask = np.arange(mask.size)[mask.ravel() == 1]
         self.thread.mask = self.mask
+
+    def launch_mask_widget(self):
+        key = self.parameters.child("Detector").value()
+        data = np.zeros(DETECTOR_DICT[key]["shape"])
+        data[0, 0] = 1
+        self.mask_widget.set_data(data)
+        self.mask_widget.show()
                 
 
 class specThread(wranglerThread):
