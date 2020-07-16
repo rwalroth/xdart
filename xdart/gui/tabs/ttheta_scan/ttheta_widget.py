@@ -104,6 +104,7 @@ class tthetaWidget(QWidget):
             os.mkdir(dirname)
         self.fname = os.path.join(dirname, 'default.hdf5')
         self.sphere = EwaldSphere('null_main', data_file=self.fname)
+        self.sphere.file_lock = self.file_lock
         self.arch = EwaldArch()
 
         self.ui = Ui_Form()
@@ -414,9 +415,10 @@ class tthetaWidget(QWidget):
         integratorThread
         """
         self.thread_state_changed()
-        self.enable_integration(True)
-        self.h5viewer.set_open_enabled(True)
-        self.update_all()
+        if self.integratorTree.integrator_thread.method in ["bai_1d_SI", "bai_2d_SI"]:
+            self.displayframe.update()
+        else:
+            self.update_all()
         if not self.wrangler.thread.isRunning():
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)

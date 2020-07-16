@@ -91,6 +91,7 @@ class EwaldSphere():
         self.sphere_lock = Condition(_PyRLock())
         self.bai_1d = int_1d_data()
         self.bai_2d = int_2d_data()
+        self.global_mask = None
 
     def reset(self):
         """Resets all held data objects to blank state, called when all
@@ -104,6 +105,7 @@ class EwaldSphere():
             self.mgi_1d = int_1d_data()
             self.mgi_2d = int_2d_data()
             self.arches = ArchSeries(self.data_file, self.file_lock)
+            self.global_mask = None
     
     def add_arch(self, arch=None, calculate=True, update=True, get_sd=True,
                  set_mg=True, **kwargs):
@@ -131,8 +133,8 @@ class EwaldSphere():
             if arch is None:
                 arch = EwaldArch(**kwargs)
             if calculate:
-                arch.integrate_1d(**self.bai_1d_args)
-                arch.integrate_2d(**self.bai_2d_args)
+                arch.integrate_1d(global_mask=self.global_mask, **self.bai_1d_args)
+                arch.integrate_2d(global_mask=self.global_mask, **self.bai_2d_args)
             arch.file_lock = self.file_lock
             self.arches = self.arches.append(pd.Series(arch, index=[arch.idx]))
             self.arches.sort_index(inplace=True)
@@ -175,7 +177,7 @@ class EwaldSphere():
         with self.sphere_lock:
             self.bai_1d = int_1d_data()
             for arch in self.arches:
-                arch.integrate_1d(**args)
+                arch.integrate_1d(global_mask=self.global_mask, **args)
                 self.arches[arch.idx] = arch
                 self._update_bai_1d(arch)
     
@@ -194,7 +196,7 @@ class EwaldSphere():
         with self.sphere_lock:
             self.bai_2d = int_2d_data()
             for arch in self.arches:
-                arch.integrate_2d(**args)
+                arch.integrate_2d(global_mask=self.global_mask, **args)
                 self.arches[arch.idx] = arch
                 self._update_bai_2d(arch)
 
@@ -352,11 +354,11 @@ class EwaldSphere():
             
             if data_only:
                 lst_attr = [
-                    "scan_data"
+                    "scan_data", "global_mask"
                 ]
             else:
                 lst_attr = [
-                    "scan_data", "mg_args", "bai_1d_args",
+                    "scan_data", "global_mask", "mg_args", "bai_1d_args",
                     "bai_2d_args"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
@@ -411,6 +413,10 @@ class EwaldSphere():
                         self._set_args(self.bai_1d_args)
                         self._set_args(self.bai_2d_args)
                         self._set_args(self.mg_args)
+                    if "global_mask" in grp:
+                        utils.h5_to_attributes(self, grp, ["global_mask"])
+                    else:
+                        self.global_mask = None
                     self.bai_1d.from_hdf5(grp['bai_1d'])
                     self.bai_2d.from_hdf5(grp['bai_2d'])
                     self.mgi_1d.from_hdf5(grp['mgi_1d'])
