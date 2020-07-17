@@ -188,9 +188,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             try:
                 if self.arch.idx is not None:
-                    data, rect = self.get_arch_data_2d()
+                    print(f'update_image arch idx:  {self.arch.idx}')
+                    data, rect = self.get_arch_data_2d('raw')
 
                 else:
+                    print('update image getting sphere')
                     data, rect = self.get_sphere_data_2d()
             except (TypeError, IndexError):
                 data = np.arange(100).reshape(10, 10)
@@ -213,7 +215,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             try:
                 if self.arch.idx is not None:
-                    data, rect = self.get_arch_data_2d()
+                    data, rect = self.get_arch_data_2d('rebinned')
 
                 else:
                     data, rect = self.get_sphere_data_2d()
@@ -229,13 +231,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.binned_histogram.setLevels(min=mn, max=mx)
         return data
 
-    def get_arch_data_2d(self):
+    def get_arch_data_2d(self, img_type):
         """Returns data and QRect for data in arch
         """
         with self.arch.arch_lock:
             int_data = self.arch.int_2d
 
-        if self.ui.imageIntRaw.currentIndex() == 0:
+        # Todo: remove this
+        self.ui.imageNRP == 'Normalized'
+
+        # if self.ui.imageIntRaw.currentIndex() == 0:
+        if img_type == 'rebinned':
             data, corners = read_NRP(self.ui.imageNRP, int_data)
 
             rect = get_rect(
@@ -243,9 +249,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 int_data.chi[corners[0]:corners[1]]
             )
 
-        elif self.ui.imageIntRaw.currentIndex() == 1:
+        # elif self.ui.imageIntRaw.currentIndex() == 1:
+        elif img_type == 'raw':
+            print('getting raw image')
             with self.arch.arch_lock:
-                if self.ui.imageNRP.currentIndex() == 0:
+                # if self.ui.imageNRP.currentIndex() == 0:
+                if self.ui.imageNRP == 'Normalized':
                     if self.arch.map_norm is None or self.arch.map_norm == 0:
                         data = self.arch.map_raw.copy()
                     else:

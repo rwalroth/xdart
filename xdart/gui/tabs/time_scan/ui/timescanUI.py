@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'c:\Users\walroth\Documents\repos\xdart\xdart\experiments\time_scan\gui\timescanUI.ui'
+# Form implementation generated from reading ui file 'c:\Users\walroth\Documents\repos\xdart\xdart\experiments\static_scan\gui\staticUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #

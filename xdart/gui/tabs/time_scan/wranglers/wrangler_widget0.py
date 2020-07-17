@@ -21,9 +21,9 @@ from pyqtgraph.parametertree import Parameter
 # This module imports
 class wranglerWidget(Qt.QtWidgets.QWidget):
     """Base class for wranglers. Extending this ensures all methods,
-    signals, and attributes expected by time_scan_widget are present.
+    signals, and attributes expected by static_scan_widget are present.
     Threads should be started by use of sigStart.emit, which ensures
-    timescanWidget handles initiation.
+    staticWidget handles initiation.
     
     attributes:
         command_queue: Queue, used to send commands to thread
@@ -43,11 +43,11 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     
     signals:
         finished: Should be connected to thread.finished signal
-        sigStart: Tells timescanWidget to start the thread and prepare
+        sigStart: Tells staticWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
         sigUpdateFile: (str, str), sends new scan_name and file name
-            to timescanWidget.
+            to staticWidget.
     """
     sigStart = Qt.QtCore.Signal()
     sigUpdateData = Qt.QtCore.Signal(int)
@@ -79,7 +79,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         pass
 
     def setup(self):
-        """Sets the thread child object. Called by timescanWidget prior
+        """Sets the thread child object. Called by staticWidget prior
         to starting thread.
         """
         self.thread = wranglerThread(self.command_queue, self.sphere_args, 
@@ -114,7 +114,7 @@ class wranglerThread(Qt.QtCore.QThread):
     signals:
         sigUpdate: int, signals a new arch has been added.
         sigUpdateFile: (str, str), sends new scan_name and file name
-            to timescanWidget.
+            to staticWidget.
     """
     sigUpdate = Qt.QtCore.Signal(int)
     sigUpdateFile = Qt.QtCore.Signal(str, str)

@@ -476,7 +476,6 @@ class specProcess(wranglerProcess):
         # If loop ends, signal terminate to parent thread.
         self.signal_q.put(('TERMINATE', None))
 
-
     def wrangle(self, i):
         """Method for reading in data from raw files and spec file.
         

@@ -21,7 +21,7 @@ from pyqtgraph.Qt import QtWidgets, QtCore
 from xdart.modules.ewald import EwaldSphere, EwaldArch
 from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
-from .timescanUI import Ui_Form
+from .staticUI import Ui_Form
 from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
@@ -54,7 +54,7 @@ def spherelocked(func):
     return wrapper
 
 
-class timescanWidget(QWidget):
+class staticWidget(QWidget):
     """Tab for integrating data collected by a scanning area detector.
     As of current version, only handles a single angle (2-theta).
     Displays raw images, stitched Q Chi arrays, and integrated I Q

@@ -19,15 +19,16 @@ from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from xdart.utils import read_image_file, get_image_meta_data
 
+img_fname = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0001.tif'
 poni = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
 
 params = [
     # {'name': 'Image File', 'type': 'str', 'default': img_fname},
-    {'name': 'Image File', 'type': 'str', 'default': ''},
-    NamedActionParameter(name='image_file_browse', title= 'Browse...'),
-    {'name': 'PONI File', 'type': 'str', 'default': poni},
-    # {'name': 'PONI File', 'type': 'str', 'default': ''},
-    NamedActionParameter(name='poni_file_browse', title= 'Browse...'),
+    {'name': 'Image File', 'type': 'str', 'value': img_fname},
+    NamedActionParameter(name='image_file_browse', title='Browse...'),
+    # {'name': 'PONI File', 'type': 'str', 'default': poni},
+    {'name': 'PONI File', 'type': 'str', 'value': poni},
+    NamedActionParameter(name='poni_file_browse', title='Browse...'),
     {'name': 'Timeout', 'type': 'float', 'value': 1},
 ]
 
@@ -138,10 +139,12 @@ class specWrangler(wranglerWidget):
         """
         self.img_fname = self.parameters.child('Image File').value()
         self.thread.img_fname = self.img_fname
+        print(f'img_fname: {self.img_fname}')
 
         img_dir, scan_name, img_ext = self.split_image_name()
         self.img_dir, self.scan_name, self.img_ext = img_dir, scan_name, img_ext
         self.thread.img_dir, self.thread.scan_name, self.thread.img_ext = img_dir, scan_name, img_ext
+        print(f'img_dir, scan_name, ing_ext : {self.img_dir} {self.scan_name} {self.img_ext}')
 
         self.poni_file = self.parameters.child('PONI File').value()
         self.thread.poni_file = self.poni_file
@@ -191,8 +194,8 @@ class specWrangler(wranglerWidget):
         Arguments:
             fname {str} -- full image file name with path
         """
-        dir = os.path.dirname(self.fname)
-        root, ext = os.path.splitext(os.path.basename(self.fname))
+        dir = os.path.dirname(self.img_fname)
+        root, ext = os.path.splitext(os.path.basename(self.img_fname))
 
         try:
             root = root[:root.rindex('_')]
@@ -412,6 +415,7 @@ class specProcess(wranglerProcess):
 
             # Get result from wrangle
             try:
+                print(f'wrangle: {i}')
                 flag, data = self.wrangle(i)
             # Errors associated with image not yet taken
             except (KeyError, FileNotFoundError, AttributeError, ValueError):
@@ -472,10 +476,10 @@ class specProcess(wranglerProcess):
 
         # Construct raw_file path from attributes and index
         image_file = self._get_image_path(i + 1)
+        print(f'Image File Name: {image_file}')
 
         # Read raw file into numpy array
         arr = read_image_file(image_file)
-        print(f'Image File Name: {image_file}')
 
         meta_file = image_file[:-3] + 'txt'
         image_meta = get_image_meta_data(meta_file, BL='11-3')

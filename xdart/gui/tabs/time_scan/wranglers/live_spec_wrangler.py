@@ -26,7 +26,7 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
-from .liveSpecUI import Ui_Form
+from .ui.liveSpecUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.watcher import Watcher
@@ -99,11 +99,11 @@ class liveSpecWrangler(wranglerWidget):
     signals:
         finished: Should be connected to thread.finished signal
         showLabel: str, text to be set as specLabel.
-        sigStart: Tells timescanWidget to start the thread and prepare
+        sigStart: Tells staticWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
         sigUpdateFile: (str, str), sends new scan_name and file name
-            to timescanWidget.
+            to staticWidget.
     """
     showLabel = Qt.QtCore.Signal(str)
     def __init__(self, fname, file_lock, parent=None):

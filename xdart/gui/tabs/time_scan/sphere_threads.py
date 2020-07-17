@@ -46,6 +46,7 @@ class integratorThread(Qt.QtCore.QThread):
         update: empty, tells parent when new data is ready.
     """
     update = Qt.QtCore.Signal(int)
+
     def __init__(self, sphere, arch, file_lock, parent=None):
         super().__init__(parent)
         self.sphere = sphere

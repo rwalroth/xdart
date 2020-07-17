@@ -1,1 +1,1 @@
-from .time_scan_widget import timescanWidget
+from .static_scan_widget import staticWidget
