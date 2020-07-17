@@ -84,7 +84,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.arch = arch
 
         # State variable initialization
-        self.auto_last = False
+        self.auto_last = True
 
         # Image pane setup
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
@@ -145,7 +145,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         print(f'display plotMethod: {self.ui.plotMethod.currentText()}')
 
-    # self.update()
+        # self.update()
 
     def update(self):
         """Updates image and plot frames based on toolbar options
