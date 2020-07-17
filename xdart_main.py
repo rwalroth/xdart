@@ -98,10 +98,10 @@ class Main(QMainWindow):
             if 'ttheta_scan' not in self.tabs:
                 self.tabs['ttheta_scan'] = tabs.ttheta_scan.tthetaWidget(local_path=self.tab_paths['ttheta_scan'])
                 self.tabwidget.addTab(self.tabs['ttheta_scan'], 'ttheta_scan')
-        elif q.text() == 'time_scan':
-            if 'time_scan' not in self.tabs:
-                self.tabs['time_scan'] = tabs.time_scan.timescanWidget(local_path=self.tab_paths['time_scan'])
-                self.tabwidget.addTab(self.tabs['time_scan'], 'time_scan')
+        elif q.text() == 'static_scan':
+            if 'static_scan' not in self.tabs:
+                self.tabs['static_scan'] = tabs.static_scan.staticWidget(local_path=self.tab_paths['static_scan'])
+                self.tabwidget.addTab(self.tabs['static_scan'], 'static_scan')
 
     def closeExperiment(self, q):
         _to_close = self.tabwidget.widget(q)

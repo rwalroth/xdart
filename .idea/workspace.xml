@@ -19,24 +19,39 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Trying to revert to working merge">
-      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/static_scan_widget.py" afterDir="false" />
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Renaming widgets to static from time 1st try.">
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget0.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/metadata.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/metadata0.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads0.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget0.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/live_spec_wrangler.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler0.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/liveSpecUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/liveSpecUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget0.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dictionaries/v.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/v.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/display_frame_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/sphere_threads.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/sphere_threads.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/time_scan_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/time_scan_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/time_scan_widget0.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/time_scan_widget0.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/integratorUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/integratorUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/timescanUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/ui/timescanUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/live_spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/live_spec_wrangler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/spec_wrangler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/spec_wrangler0.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/spec_wrangler0.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/ui/liveSpecUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/ui/liveSpecUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/ui/specUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/ui/specUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/wrangler_widget0.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/wrangler_widget0.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart_main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,6 +78,11 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/xdart/gui/tabs/time_scan" />
     <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
     <property name="two.files.diff.last.used.file" value="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/sphere_threads.py" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/xdart/gui/tabs/time_scan" />
+    </key>
   </component>
   <component name="RunManager" selected="Python.xdart_main">
     <configuration name="h5viewerUI" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
@@ -99,6 +119,27 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/spec_wrangler.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="spec_wrangler0" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="xdart" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/xdart/gui/tabs/time_scan/wranglers/spec_wrangler0.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -152,10 +193,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.xdart_main" />
+        <item itemvalue="Python.spec_wrangler0" />
         <item itemvalue="Python.spec_wrangler" />
         <item itemvalue="Python.time_scan_widget" />
         <item itemvalue="Python.h5viewerUI" />
-        <item itemvalue="Python.xdart_main" />
       </list>
     </recent_temporary>
   </component>
@@ -177,7 +218,14 @@
       <option name="project" value="LOCAL" />
       <updated>1593061620579</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Renaming widgets to static from time 1st try.">
+      <created>1595012061499</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1595012061499</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -194,7 +242,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Trying to revert to working merge" />
-    <option name="LAST_COMMIT_MESSAGE" value="Trying to revert to working merge" />
+    <MESSAGE value="Renaming widgets to static from time 1st try." />
+    <option name="LAST_COMMIT_MESSAGE" value="Renaming widgets to static from time 1st try." />
   </component>
   <component name="WindowStateProjectService">
     <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1590558996736">
@@ -209,25 +258,25 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="100" y="100" width="1240" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1595012015431" />
-    <state width="1419" height="192" key="GridCell.Tab.0.bottom" timestamp="1595010436336">
+    <state width="1419" height="192" key="GridCell.Tab.0.bottom" timestamp="1595012334237">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="192" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1595010436336" />
+    <state width="1419" height="192" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1595012334237" />
     <state width="1419" height="192" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412441839" />
-    <state width="1419" height="192" key="GridCell.Tab.0.center" timestamp="1595010436335">
+    <state width="1419" height="192" key="GridCell.Tab.0.center" timestamp="1595012334236">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="192" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1595010436335" />
+    <state width="1419" height="192" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1595012334236" />
     <state width="1419" height="192" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412441838" />
-    <state width="1419" height="192" key="GridCell.Tab.0.left" timestamp="1595010436335">
+    <state width="1419" height="192" key="GridCell.Tab.0.left" timestamp="1595012334236">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="192" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1595010436335" />
+    <state width="1419" height="192" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1595012334236" />
     <state width="1419" height="192" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412441838" />
-    <state width="1419" height="192" key="GridCell.Tab.0.right" timestamp="1595010436335">
+    <state width="1419" height="192" key="GridCell.Tab.0.right" timestamp="1595012334237">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="192" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1595010436335" />
+    <state width="1419" height="192" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1595012334237" />
     <state width="1419" height="192" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412441838" />
     <state x="512" y="266" key="MergeDialog" timestamp="1593031610349">
       <screen x="0" y="0" width="2560" height="1440" />
@@ -237,10 +286,10 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1594073879667" />
-    <state x="421" y="176" width="598" height="548" key="find.popup" timestamp="1595011738136">
+    <state x="421" y="176" width="598" height="548" key="find.popup" timestamp="1595012776389">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="421" y="176" width="598" height="548" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1595011738136" />
+    <state x="421" y="176" width="598" height="548" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1595012776389" />
     <state x="896" y="583" key="git4idea.branch.GitSmartOperationDialog" timestamp="1593031607553">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
