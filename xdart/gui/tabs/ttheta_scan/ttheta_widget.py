@@ -238,10 +238,12 @@ class tthetaWidget(QWidget):
             self.h5viewer.ui.listScans.setEnabled(False)
             self.h5viewer.set_open_enabled(False)
             self.integratorTree.setEnabled(False)
+            self.displayframe.ui.setMaskButton.setEnabled(False)
 
         elif integrator_running:
             self.h5viewer.ui.listData.setEnabled(True)
             self.integratorTree.setEnabled(False)
+            self.displayframe.ui.setMaskButton.setEnabled(False)
             self.h5viewer.ui.listScans.setEnabled(False)
             self.h5viewer.set_open_enabled(False)
             if same_name or wrangler_running:
@@ -257,6 +259,7 @@ class tthetaWidget(QWidget):
             self.wrangler.enabled(False)
             if same_name:
                 self.integratorTree.setEnabled(False)
+                self.displayframe.ui.setMaskButton.setEnabled(False)
             else:
                 self.integratorTree.setEnabled(True)
 
@@ -265,6 +268,7 @@ class tthetaWidget(QWidget):
             self.h5viewer.ui.listScans.setEnabled(True)
             self.h5viewer.set_open_enabled(True)
             self.integratorTree.setEnabled(True)
+            self.displayframe.ui.setMaskButton.setEnabled(True)
             self.wrangler.enabled(True)
 
     def update_data(self, q):

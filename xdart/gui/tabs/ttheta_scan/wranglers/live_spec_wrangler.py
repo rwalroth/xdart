@@ -184,7 +184,7 @@ class liveSpecWrangler(wranglerWidget):
         key = self.parameters.child("Detector").value()
         data = np.zeros(DETECTOR_DICT[key]["shape"])
         data[0, 0] = 1
-        self.mask_widget.set_data(data)
+        self.mask_widget.set_data(data.T)
         self.mask_widget.hide()
         self.parameters.child('set_mask').sigActivated.connect(
             self.launch_mask_widget
@@ -262,9 +262,9 @@ class liveSpecWrangler(wranglerWidget):
         if self.mask is not None:
             _mask = np.zeros_like(data)
             _mask.ravel()[self.mask] = 1
-            self.mask_widget.set_data(data, base=_mask)
+            self.mask_widget.set_data(data.T, base=_mask)
         else:
-            self.mask_widget.set_data(data)
+            self.mask_widget.set_data(data.T)
         self.mask_widget.show()
     
     def _get_mp_inputs(self):
