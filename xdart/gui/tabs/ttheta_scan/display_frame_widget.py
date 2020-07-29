@@ -465,7 +465,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.mask_widget.set_data(_arch.map_raw, base=_arch.get_mask())
         elif self.sphere.global_mask is not None:
             base = np.zeros_like(self.mask_widget.data)
-            base[self.sphere.global_mask] = 1
+            base.ravel()[self.sphere.global_mask] = 1
             self.mask_widget.set_data(self.mask_widget.data, base=base)
         else:
             self.mask_widget.clear_mask()
@@ -474,6 +474,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         mask_ids = np.arange(self.mask_widget.data.size)[mask.ravel() == 1]
         if idx < 0:
             self.sphere.global_mask = mask_ids
+            with self.sphere.file_lock:
+                self.sphere.save_to_h5()
         else:
             if self.arch.idx is not None and self.arch.idx == idx:
                 _arch = self.arch
