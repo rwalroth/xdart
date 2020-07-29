@@ -524,7 +524,7 @@ class liveSpecProcess(wranglerProcess):
         self.out_dir = out_dir
         self.mask = global_mask
     
-    def run(self):
+    def _main(self):
         """Main method. Takes in file paths from queues fed by watcher,
         reads in the metadata from pdi file and image data from raw
         file. Integrates data and stores it in hdf5 file.

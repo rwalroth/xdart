@@ -243,16 +243,23 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             try:
                 if self.arch.idx is not None:
-                    data, rect = self.get_arch_data_2d()
+                    for i in range(10):
+                        try:
+                            data, rect = self.get_arch_data_2d()
+                            break
+                        except AttributeError:
+                            pass
 
                 else:
                     data, rect = self.get_sphere_data_2d()
             except (TypeError, IndexError):
                 data = np.arange(100).reshape(10, 10)
                 rect = Qt.QtCore.QRect(1, 1, 1, 1)
-        
-        self.image_widget.setImage(data)
-        self.image_widget.setRect(rect)
+        try:
+            self.image_widget.setImage(data)
+            self.image_widget.setRect(rect)
+        except UnboundLocalError:
+            data = np.arange(100).resize((10, 10))
         
         return data
 
