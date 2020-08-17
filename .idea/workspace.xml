@@ -19,9 +19,19 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Renaming widgets to static from time 2nd try.">
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Renaming widgets to static from time 3rd try">
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/v.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/v.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/metadata.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/metadata.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -170,6 +180,7 @@
       </list>
     </recent_temporary>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="project-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
     <configuration />
   </component>
@@ -228,46 +239,48 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="184" y="112" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1440.900@0.0.1440.900" timestamp="1590558996736" />
-    <state x="745" y="193" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1594412399508">
-      <screen x="0" y="0" width="2560" height="1440" />
+    <state x="419" y="121" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1596400763202">
+      <screen x="0" y="0" width="1440" height="900" />
     </state>
+    <state x="419" y="121" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/0.0.1440.900@0.0.1440.900" timestamp="1596400763201" />
     <state x="745" y="193" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412399508" />
-    <state x="100" y="100" width="1240" height="700" key="DiffContextDialog" timestamp="1595014910803">
+    <state x="20" y="72" width="1409" height="700" key="DiffContextDialog" timestamp="1595024520281">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="100" y="100" width="1240" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1595014910803" />
-    <state width="1419" height="192" key="GridCell.Tab.0.bottom" timestamp="1595017307532">
+    <state x="20" y="72" width="1409" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1595024520281" />
+    <state width="1419" height="286" key="GridCell.Tab.0.bottom" timestamp="1597335152622">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="192" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1595017307532" />
-    <state width="1419" height="192" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412441839" />
-    <state width="1419" height="192" key="GridCell.Tab.0.center" timestamp="1595017307532">
+    <state width="1419" height="286" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1597335152622" />
+    <state width="2142" height="178" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596225581201" />
+    <state width="1419" height="286" key="GridCell.Tab.0.center" timestamp="1597335152621">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="192" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1595017307532" />
-    <state width="1419" height="192" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412441838" />
-    <state width="1419" height="192" key="GridCell.Tab.0.left" timestamp="1595017307531">
+    <state width="1419" height="286" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1597335152621" />
+    <state width="2142" height="178" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596225581200" />
+    <state width="1419" height="286" key="GridCell.Tab.0.left" timestamp="1597335152621">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="192" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1595017307531" />
-    <state width="1419" height="192" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412441838" />
-    <state width="1419" height="192" key="GridCell.Tab.0.right" timestamp="1595017307532">
+    <state width="1419" height="286" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1597335152621" />
+    <state width="2142" height="178" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596225581199" />
+    <state width="1419" height="286" key="GridCell.Tab.0.right" timestamp="1597335152622">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="192" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1595017307532" />
-    <state width="1419" height="192" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1594412441838" />
+    <state width="1419" height="286" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1597335152622" />
+    <state width="2142" height="178" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596225581200" />
     <state x="512" y="266" key="MergeDialog" timestamp="1593031610349">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
     <state x="512" y="266" key="MergeDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031610349" />
-    <state x="229" y="89" key="SettingsEditor" timestamp="1594073879667">
+    <state x="229" y="89" key="SettingsEditor" timestamp="1597335131453">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1594073879667" />
-    <state x="421" y="176" width="598" height="548" key="find.popup" timestamp="1595016068134">
+    <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1597335131453" />
+    <state x="421" y="176" width="725" height="673" key="find.popup" timestamp="1597333384619">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="421" y="176" width="598" height="548" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1595016068134" />
+    <state x="421" y="176" width="725" height="673" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1597333384619" />
+    <state x="748" y="282" width="1064" height="877" key="find.popup/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596218491230" />
     <state x="896" y="583" key="git4idea.branch.GitSmartOperationDialog" timestamp="1593031607553">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>

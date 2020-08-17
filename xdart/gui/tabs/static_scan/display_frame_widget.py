@@ -71,7 +71,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         update_plot: Updates plot data based on selections
     """
 
-    def __init__(self, sphere, arch, parent=None):
+    def __init__(self, sphere, arch, arch_ids, arches, parent=None):
         _translate = Qt.QtCore.QCoreApplication.translate
         super().__init__(parent)
         self.ui = Ui_Form()
@@ -82,9 +82,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Data object initialization
         self.sphere = sphere
         self.arch = arch
+        self.arch_ids = arch_ids
+        self.arches = arches
 
         # State variable initialization
-        self.auto_last = True
+        self.auto_last = False
 
         # Image pane setup
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
@@ -143,14 +145,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.yOffset.valueChanged.connect(self.update_plot)
         self.ui.plotUnit.activated.connect(self.update_plot)
 
-        print(f'display plotMethod: {self.ui.plotMethod.currentText()}')
-
         # self.update()
 
     def update(self):
         """Updates image and plot frames based on toolbar options
         """
-        print(f'update: {self.arch.idx}')
+        print(f'\ndisplay_frame_widget > update: self.arch.idx = {self.arch.idx}')
+        print(f'display_frame_widget > update: self.arch_ids = {self.arch_ids}')
         # Sets title text
         if self.arch.idx is None:
             self.ui.labelCurrent.setText(self.sphere.name)
@@ -188,11 +189,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             try:
                 if self.arch.idx is not None:
-                    print(f'update_image arch idx:  {self.arch.idx}')
+                    print(f'display_frame_widget > update_image arch idx:  {self.arch.idx}')
                     data, rect = self.get_arch_data_2d('raw')
 
                 else:
-                    print('update image getting sphere')
+                    print('display_frame_widget > update image getting sphere')
                     data, rect = self.get_sphere_data_2d()
             except (TypeError, IndexError):
                 data = np.arange(100).reshape(10, 10)
@@ -218,6 +219,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                     data, rect = self.get_arch_data_2d('rebinned')
 
                 else:
+                    print('display_frame_widget > update binned getting sphere')
                     data, rect = self.get_sphere_data_2d()
             except (TypeError, IndexError):
                 data = np.arange(100).reshape(10, 10)
@@ -238,11 +240,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             int_data = self.arch.int_2d
 
         # Todo: remove this
-        self.ui.imageNRP == 'Normalized'
+        # self.ui.imageNRP == 'Normalized'
 
         # if self.ui.imageIntRaw.currentIndex() == 0:
         if img_type == 'rebinned':
-            data, corners = read_NRP(self.ui.imageNRP, int_data)
+            # data, corners = read_NRP(self.ui.imageNRP, int_data)
+            data, corners = read_NRP(self.ui.normChannel, int_data)
 
             rect = get_rect(
                 get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]],
@@ -251,10 +254,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # elif self.ui.imageIntRaw.currentIndex() == 1:
         elif img_type == 'raw':
-            print('getting raw image')
+            print('display_frame_widget > getting raw image')
             with self.arch.arch_lock:
-                # if self.ui.imageNRP.currentIndex() == 0:
-                if self.ui.imageNRP == 'Normalized':
+                if self.ui.normChannel.currentIndex() == 0:
                     if self.arch.map_norm is None or self.arch.map_norm == 0:
                         data = self.arch.map_raw.copy()
                     else:
@@ -283,8 +285,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             # elif self.ui.imageMethod.currentIndex() == 1:
             #     int_data = self.sphere.bai_2d
 
-        self.ui.imageNRP = 'Normalized'
-        data, corners = read_NRP(self.ui.imageNRP, int_data)
+        # self.ui.imageNRP = 'Normalized'
+        data, corners = read_NRP(self.ui.normChannel, int_data)
 
         rect = get_rect(
             get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]],
@@ -296,6 +298,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_plot(self):
         """Updates data in plot frame
         """
+        print('display_frame_widget > updating 1D plot')
         if self.sphere.name == 'null_main':
             data = (np.arange(100), np.arange(100))
             self.curves[0].setData(data[0], data[1])
@@ -303,18 +306,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         try:
             with self.sphere.sphere_lock:
-                if self.ui.plotMethod.currentIndex() == 0:
-                    sphere_int_data = self.sphere.mgi_1d
-                    if type(sphere_int_data.ttheta) == int:
-                        self.ui.plotMethod.setCurrentIndex(1)
-                        sphere_int_data = self.sphere.bai_1d
-                elif self.ui.plotMethod.currentIndex() == 1:
-                    sphere_int_data = self.sphere.bai_1d
+                sphere_int_data = self.sphere.bai_1d
+                # if self.ui.plotMethod.currentIndex() == 0:
+                #     sphere_int_data = self.sphere.mgi_1d
+                #     if type(sphere_int_data.ttheta) == int:
+                #         self.ui.plotMethod.setCurrentIndex(1)
+                #         sphere_int_data = self.sphere.bai_1d
+                # elif self.ui.plotMethod.currentIndex() == 1:
+                #     sphere_int_data = self.sphere.bai_1d
 
-            self.ui.plotNRP = 'Normalized'
-            s_ydata, corners = read_NRP(self.ui.plotNRP, sphere_int_data)
+            # self.ui.plotNRP = 'Normalized'
+            s_ydata, corners = read_NRP(self.ui.normChannel, sphere_int_data)
             s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
+            print(f'display_frame_widget > update_plot: self.arch.idx: {self.arch.idx}')
             if self.arch.idx is not None:
                 with self.arch.arch_lock:
                     arc_int_data = self.arch.int_1d
@@ -326,7 +331,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 else:
                     self.curves[0].clear()
 
-                a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
+                # a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
+                a_ydata, corners = read_NRP(self.ui.normChannel, arc_int_data)
                 a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
                 # self.curve2.setData(a_xdata, a_ydata)
                 self.curves[0].setData(a_xdata, a_ydata)
@@ -334,8 +340,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 return a_xdata, a_ydata
 
             else:
-                self.curve1.setData(s_xdata, s_ydata)
-                self.curve2.clear()
+                [curve.clear() for curve in self.curves]
+                self.curves[0].setData(s_xdata, s_ydata)
+                # self.curve2.clear()
 
                 return s_xdata, s_ydata
 
@@ -402,14 +409,15 @@ def read_NRP(box, int_data):
         corners: tuple, the bounds of the non-zero region of the
             dataset
     """
-    # if box.currentIndex() == 0:
-    if box == 'Normalized':
-        nzarr = int_data.norm
-    elif box.currentIndex() == 1:
+    if box.currentIndex() == 0:
         nzarr = int_data.raw
+    elif box.currentIndex() == 1:
+        nzarr = int_data.norm
     elif box.currentIndex() == 2:
         nzarr = int_data.pcount
-    data = nzarr.data[()].T
+    data = nzarr.data[()]
+    if data.ndim > 1:
+        data = data.T
     corners = nzarr.corners
 
     if data.size == 0:
@@ -431,9 +439,6 @@ def get_xdata(box, int_data):
     returns:
         xdata: numpy array, x axis data for plot.
     """
-    xdata = int_data.q
-    return xdata
-
     if box.currentIndex() == 0:
         xdata = int_data.ttheta
     elif box.currentIndex() == 1:

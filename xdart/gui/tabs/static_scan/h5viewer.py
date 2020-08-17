@@ -7,8 +7,13 @@ import json
 import os
 import traceback
 
-# Other imports
-from xdart.utils import catch_h5py_file as catch
+# This module imports
+from xdart.modules.ewald import EwaldArch
+from xdart.utils import catch_h5py_file
+from .ui.h5viewerUI import Ui_Form
+from .sphere_threads import fileHandlerThread
+from ...widgets import defaultWidget
+from ...gui_utils import XdartDecoder, XdartEncoder
 
 # Qt imports
 from pyqtgraph import Qt
@@ -18,13 +23,6 @@ QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
 QWidget = QtWidgets.QWidget
 QFileDialog = QtWidgets.QFileDialog
-
-# This module imports
-from xdart.utils import catch_h5py_file
-from .ui.h5viewerUI import Ui_Form
-from .sphere_threads import fileHandlerThread
-from ...widgets import defaultWidget
-from ...gui_utils import XdartDecoder, XdartEncoder
 
 class H5Viewer(QWidget):
     """Widget for displaying the contents of an EwaldSphere object and
@@ -54,13 +52,16 @@ class H5Viewer(QWidget):
     sigUpdate = Qt.QtCore.Signal()
     sigThreadFinished = Qt.QtCore.Signal()
 
-    def __init__(self, file_lock, local_path, dirname, sphere, arch, parent=None):
+    def __init__(self, file_lock, local_path, dirname, sphere,
+                 arch, arch_ids, arches, parent=None):
         super().__init__(parent)
         self.local_path = local_path
         self.file_lock = file_lock
         self.dirname = dirname
         self.sphere = sphere
         self.arch = arch
+        self.arch_ids = arch_ids
+        self.arches = arches
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -135,20 +136,24 @@ class H5Viewer(QWidget):
         self.actionSetDefaults.triggered.connect(self.defaultWidget.show)
         
         self.ui.listScans.itemDoubleClicked.connect(self.scans_clicked)
-        self.ui.listData.currentItemChanged.connect(self.data_clicked)
+        self.ui.listData.itemSelectionChanged.connect(self.data_changed)
+        # self.ui.listData.currentItemChanged.connect(self.data_changed)
+        # self.ui.listData.currentItemChanged.connect(self.data_clicked)
         self.actionOpenFolder.triggered.connect(self.open_folder)
         self.actionSaveDataAs.triggered.connect(self.save_data_as)
         self.actionNewFile.triggered.connect(self.new_file)
         
         self.file_thread = fileHandlerThread(self.sphere, self.arch,
-                                             self.file_lock)
+                                             self.file_lock,
+                                             arch_ids=self.arch_ids,
+                                             arches=self.arches)
         self.file_thread.sigTaskDone.connect(self.thread_finished)
         self.file_thread.sigNewFile.connect(self.sigNewFile.emit)
         self.file_thread.sigUpdate.connect(self.sigUpdate.emit)
         self.file_thread.start(Qt.QtCore.QThread.LowPriority)
         
         self.update()
-        self.show()
+        # self.show()
 
     def load_starting_defaults(self):
         default_path = os.path.join(self.local_path, "last_defaults.json")
@@ -184,6 +189,11 @@ class H5Viewer(QWidget):
         """Updates list with all arch ids.
         """
         previous_loc = self.ui.listData.currentRow()
+        # try:
+        self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
+        # except TypeError:
+        #     pass
+        print(f'h5viewer > update_data: previous_loc = {previous_loc}')
         if self.sphere.name != "null_main":
             with self.sphere.sphere_lock:
                 _idxs = list(self.sphere.arches.index)
@@ -194,7 +204,10 @@ class H5Viewer(QWidget):
         if previous_loc > self.ui.listData.count() - 1:
             previous_loc = self.ui.listData.count() - 1
         self.ui.listData.setCurrentRow(previous_loc)
-    
+        self.ui.listData.itemSelectionChanged.connect(self.data_changed)
+        print(f'h5viewer > update_data: listitems (updated) = {self.ui.listData.count()}')
+        print(f'h5viewer > update_data: currentRow (updated) = {self.ui.listData.currentRow()}')
+
     def thread_finished(self, task):
         if task != "load_arch":
             self.update()
@@ -243,14 +256,50 @@ class H5Viewer(QWidget):
             except:
                 traceback.print_exc()
                 return
-    
+
+    def data_changed(self):#, current, previous):
+        """Connected to currentItemChanged signal of listData
+
+        current: QListItem, item selected
+        previous: QListItem, previous selection
+        """
+        items = self.ui.listData.selectedItems()
+        self.arch_ids.clear()
+        self.arch_ids += [str(item.text()) for item in items]
+        self.arch_ids.sort()
+        print(f'h5viewer > data_changed - selected items: {self.arch_ids} ')
+
+        if len(self.arch_ids) == 0:
+            # self.sigUpdate.emit()
+            return
+
+        if not any(key in self.arch_ids for key in ['No data', 'Overall']):
+            self.arches.clear()
+            [self.arches.append(EwaldArch(idx=idx)) for idx in self.arch_ids]
+            # for ii, idx in enumerate(self.arch_ids):
+            #     emit = False
+            #     if idx == len(self.arch_ids)-1:
+            #         emit = True
+            #     self.arch.reset()
+            #     self.arch.idx = idx
+            #     self.file_thread.queue.put("load_arch")
+            #     self.arches[ii] = self.arch
+
+            self.file_thread.queue.put("load_arches")
+            print(f'h5viewer > data_changed: len(self.arches) = {len(self.arches)}')
+
     def data_clicked(self, current, previous):
         """Connected to currentItemChanged signal of listData
         
         current: QListItem, item selected
         previous: QListItem, previous selection
         """
+        items = self.ui.listData.selectedItems()
+        arch_ids = [str(item.text()) for item in items]
+        print(f'h5viewer > data_clicked - selected items: {arch_ids} ')
+
         if current is not None and previous is not None:
+            print(f'h5viewer > data_clicked: {current.data(0)}, {previous.data(0)}')
             nochange = (current.data(0) == previous.data(0))
         else:
             nochange = False

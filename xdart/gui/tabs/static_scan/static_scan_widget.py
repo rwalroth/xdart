@@ -98,15 +98,20 @@ class staticWidget(QWidget):
         if not os.path.isdir(self.dirname):
             os.mkdir(self.dirname)
         self.fname = os.path.join(self.dirname, 'default.hdf5')
-        self.sphere = EwaldSphere('null_main', data_file=self.fname)
+        self.sphere = EwaldSphere('null_main',
+                                  data_file=self.fname,
+                                  keep_in_memory=True)
         self.arch = EwaldArch()
+        self.arch_ids = []
+        self.arches = []
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
         # H5Viewer setup
         self.h5viewer = H5Viewer(self.file_lock, self.local_path, self.dirname,
-                                 self.sphere, self.arch, self.ui.hdf5Frame)
+                                 self.sphere, self.arch, self.arch_ids, self.arches,
+                                 self.ui.hdf5Frame)
         self.h5viewer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
         self.h5viewer.ui.listData.addItem('No data')
@@ -120,6 +125,7 @@ class staticWidget(QWidget):
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(self.sphere, self.arch,
+                                               self.arch_ids, self.arches,
                                                parent=self.ui.middleFrame)
         self.ui.middleFrame.setLayout(self.displayframe.ui.layout)
 
@@ -147,7 +153,8 @@ class staticWidget(QWidget):
         self.integratorTree.integrator_thread.finished.connect(self.integrator_thread_finished)
 
         # Metadata setup
-        self.metawidget = metadataWidget(self.sphere, self.arch)
+        self.metawidget = metadataWidget(self.sphere, self.arch,
+                                         self.arch_ids, self.arches)
         self.ui.metaFrame.setLayout(self.metawidget.layout)
 
         # Wrangler frame setup
@@ -286,7 +293,9 @@ class staticWidget(QWidget):
         on the selected image or overall data.
         """
         if self.sphere.name != 'null_main':
+            print(f'static_scan_widget > updating displayframe')
             self.displayframe.update()
+            self.h5viewer.ui.listData.setFocus()
 
             if self.arch.idx is None:
                 # self.displayframe.ui.imageIntRaw.setEnabled(False)
@@ -314,7 +323,8 @@ class staticWidget(QWidget):
                 self.arch is None or
                 self.h5viewer.ui.listData.currentRow() == \
                 self.h5viewer.ui.listData.count() - 1):
-            pass
+            self.displayframe.auto_last = True
+            # pass
         else:
             self.h5viewer.ui.listData.setCurrentRow(
                 self.h5viewer.ui.listData.currentRow() + 1

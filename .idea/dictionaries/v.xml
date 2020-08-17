@@ -2,8 +2,10 @@
   <dictionary name="v">
     <words>
       <w>displayframe</w>
+      <w>nzarr</w>
       <w>poni</w>
       <w>ttheta</w>
+      <w>xdata</w>
     </words>
   </dictionary>
 </component>

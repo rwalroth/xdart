@@ -53,9 +53,12 @@ class EwaldSphere():
         set_multi_geo: instatiates the multigeometry object, or
             overrides it if it already exists.
     """
+
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
-                 bai_1d_args={}, bai_2d_args={}):
+                 bai_1d_args={}, bai_2d_args={},
+                 keep_in_memory=False, data_1d=pd.DataFrame(),
+                 ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
         data_file: str, path to hdf5 file where data is stored
@@ -92,6 +95,14 @@ class EwaldSphere():
         self.bai_1d = int_1d_data()
         self.bai_2d = int_2d_data()
 
+        self.keep_in_memory = keep_in_memory
+        print(f'keep_in_memory: {self.keep_in_memory}')
+        if len(data_1d) == 0:
+            columns = ['raw', 'ttheta', 'q']
+            data_1d = pd.DataFrame(columns=columns)
+        self.data_1d = data_1d
+        # print(f'data_1d: {self.data_1d}')
+
     def reset(self):
         """Resets all held data objects to blank state, called when all
         new data is going to be loaded or when a sphere needs to be
@@ -104,13 +115,14 @@ class EwaldSphere():
             self.mgi_1d = int_1d_data()
             self.mgi_2d = int_2d_data()
             self.arches = ArchSeries(self.data_file, self.file_lock)
-    
+            self.data_1d = pd.DataFrame()
+
     def add_arch(self, arch=None, calculate=True, update=True, get_sd=True,
                  set_mg=True, **kwargs):
         """Adds new arch to sphere.
 
         args:
-            arch: EwaldArch instance, arch to be added. Recommended to 
+            arch: EwaldArch instance, arch to be added. Recommended to
                 always pass a copy of an arch with the arch.copy method
                 or intialize with kwargs
             calculate: whether to run the arch's calculate methods after
@@ -160,6 +172,14 @@ class EwaldSphere():
                     [a.integrator for a in self.arches], **self.mg_args
                 )
 
+            if self.keep_in_memory:
+                ds = pd.Series(dict(raw=arch.int_1d.raw,
+                                    ttheta=arch.int_1d.ttheta,
+                                    q=arch.int_1d.q),
+                               name=arch.idx)
+                self.data_1d = self.data_1d.append(ds)
+                print(self.data_1d.columns, self.data_1d.index)
+
     def by_arch_integrate_1d(self, **args):
         """Integrates all arches individually, then sums the results for
         the overall integration result.
@@ -178,7 +198,7 @@ class EwaldSphere():
                 arch.integrate_1d(**args)
                 self.arches[arch.idx] = arch
                 self._update_bai_1d(arch)
-    
+
     def by_arch_integrate_2d(self, **args):
         """Integrates all arches individually, then sums the results for
         the overall integration result.
@@ -212,7 +232,7 @@ class EwaldSphere():
             self.bai_1d.ttheta = arch.int_1d.ttheta
             self.bai_1d.q = arch.int_1d.q
             self.save_bai_1d()
-    
+
     def _update_bai_2d(self, arch):
         """helper function to update overall bai variables.
         """
@@ -279,7 +299,7 @@ class EwaldSphere():
 
             self.mgi_1d.from_result(result, self.multi_geo.wavelength)
         return result
-    
+
     def multigeometry_integrate_2d(self, monitor=None, **kwargs):
         """Wrapper for integrate1d method of MultiGeometry.
 
@@ -295,7 +315,7 @@ class EwaldSphere():
             if monitor is None:
                 try:
                     result = self.multi_geo.integrate2d(
-                        [a.map_raw/a.map_norm for a in self.arches], lst_mask=lst_mask,
+                        [a.map_raw / a.map_norm for a in self.arches], lst_mask=lst_mask,
                         **kwargs
                     )
                 except Exception as e:
@@ -314,7 +334,7 @@ class EwaldSphere():
 
             self.mgi_2d.from_result(result, self.multi_geo.wavelength)
         return result
-    
+
     def save_to_h5(self, replace=False, *args, **kwargs):
         """Saves data to hdf5 file.
 
@@ -336,15 +356,15 @@ class EwaldSphere():
             with utils.catch_h5py_file(self.data_file, mode) as file:
                 self._save_to_h5(file, *args, **kwargs)
 
-    def _save_to_h5(self, grp, arches=None, data_only=False, 
+    def _save_to_h5(self, grp, arches=None, data_only=False,
                     compression='lzf'):
         """Actual function for saving data, run with the file open and
             holding the file_lock.
         """
         with self.sphere_lock:
-            
+
             grp.attrs['type'] = 'EwaldSphere'
-            
+
             if data_only:
                 lst_attr = [
                     "scan_data"
@@ -355,7 +375,7 @@ class EwaldSphere():
                     "bai_2d_args"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
-                                       compression=compression)
+                                   compression=compression)
             for key in ('bai_1d', 'bai_2d', 'mgi_1d', 'mgi_2d'):
                 if key not in grp:
                     grp.create_group(key)
@@ -363,10 +383,10 @@ class EwaldSphere():
             self.bai_2d.to_hdf5(grp['bai_2d'], compression)
             self.mgi_1d.to_hdf5(grp['mgi_1d'], compression)
             self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
-    
+
     def load_from_h5(self, replace=True, *args, **kwargs):
         """Loads data stored in hdf5 file.
-        
+
         args:
             data_only: bool, if True only loads the scan_data attribute
                 and does not load mg_args, bai_1d_args, or bai_2d_args.
@@ -389,12 +409,12 @@ class EwaldSphere():
                     for arch in grp['arches']:
                         if int(arch) not in self.arches.index:
                             self.arches.index.append(int(arch))
-                    
+
                     self.arches.sort_index(inplace=True)
-                            
+
                     if data_only:
                         lst_attr = [
-                            "scan_data", 
+                            "scan_data",
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                     else:
@@ -412,12 +432,12 @@ class EwaldSphere():
                     self.mgi_2d.from_hdf5(grp['mgi_2d'])
                     if set_mg:
                         self.set_multi_geo(**self.mg_args)
-    
+
     def set_datafile(self, fname, name=None, keep_current_data=False,
                      save_args={}, load_args={}):
         """Sets the data_file. If file exists and has data, loads in the
         data. Otherwise, creates new file and resets self.
-        
+
         args:
             fname: str, new data file
             name: str or None, new name. If None, name is obtained from
@@ -443,11 +463,10 @@ class EwaldSphere():
                 else:
                     self.reset()
                     self.save_to_h5(replace=True, **save_args)
-            
-    
+
     def save_bai_1d(self, compression='lzf'):
         """Function to save only the bai_1d object.
-        
+
         args:
             compression: str, what compression algorithm to pass to
                 h5py. See h5py documentation for acceptable compression
@@ -456,10 +475,10 @@ class EwaldSphere():
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_1d.to_hdf5(file['bai_1d'], compression=compression)
-    
+
     def save_bai_2d(self, compression='lzf'):
         """Function to save only the bai_2d object.
-        
+
         args:
             compression: str, what compression algorithm to pass to
                 h5py. See h5py documentation for acceptable compression

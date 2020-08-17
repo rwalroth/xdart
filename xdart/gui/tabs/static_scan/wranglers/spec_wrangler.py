@@ -139,12 +139,12 @@ class specWrangler(wranglerWidget):
         """
         self.img_fname = self.parameters.child('Image File').value()
         self.thread.img_fname = self.img_fname
-        print(f'img_fname: {self.img_fname}')
+        print(f'spec_wrangler > img_fname: {self.img_fname}')
 
         img_dir, scan_name, img_ext = self.split_image_name()
         self.img_dir, self.scan_name, self.img_ext = img_dir, scan_name, img_ext
         self.thread.img_dir, self.thread.scan_name, self.thread.img_ext = img_dir, scan_name, img_ext
-        print(f'img_dir, scan_name, ing_ext : {self.img_dir} {self.scan_name} {self.img_ext}')
+        print(f'spec_wrangler > img_dir, scan_name, ing_ext : {self.img_dir} {self.scan_name} {self.img_ext}')
 
         self.poni_file = self.parameters.child('PONI File').value()
         self.thread.poni_file = self.poni_file
@@ -306,7 +306,7 @@ class specThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
-                    print(f'\nnews_scan: {self.scan_name}\n')
+                    print(f'\nspec_wrangler > news_scan: {self.scan_name}\n')
                     self.sigUpdateFile.emit(self.scan_name, self.fname)
                 elif signal == 'TERMINATE':
                     last = True
@@ -387,14 +387,16 @@ class specProcess(wranglerProcess):
         reading in data, then performs integration.
         """
         # Initialize sphere and save to disk, send update for new scan
-        print(f'\nself.fname: {self.fname}')
-        print(f'self.scan_name: {self.scan_name}')
-        sphere = EwaldSphere(self.scan_name, data_file=self.fname,
+        print(f'\nspec_wrangler > self.fname: {self.fname}')
+        print(f'spec_wrangler > self.scan_name: {self.scan_name}')
+        sphere = EwaldSphere(self.scan_name,
+                             data_file=self.fname,
+                             keep_in_memory=True,
                              **self.sphere_args)
         with self.file_lock:
             sphere.save_to_h5(replace=True)
             self.signal_q.put(('new_scan', None))
-        print(f'sphere name: {sphere.name}\n')
+        print(f'spec_wrangler > sphere name: {sphere.name}\n')
 
         # Enter main loop
         i = 0
@@ -476,14 +478,14 @@ class specProcess(wranglerProcess):
 
         # Construct raw_file path from attributes and index
         image_file = self._get_image_path(i + 1)
-        print(f'Image File Name: {image_file}')
+        print(f'\nspec_wrangler > Image File Name: {image_file}')
 
         # Read raw file into numpy array
         arr = read_image_file(image_file)
 
         meta_file = image_file[:-3] + 'txt'
         image_meta = get_image_meta_data(meta_file, BL='11-3')
-        print(f'Image Meta Data: {image_meta}')
+        print(f'spec_wrangler > Image Meta Data: {image_meta}')
 
         self.signal_q.put(('message', f'Image {i} wrangled'))
 

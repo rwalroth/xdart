@@ -24,7 +24,7 @@ class metadataWidget(Qt.QtWidgets.QWidget):
     methods:
         update: Updates the data displayed
     """
-    def __init__(self, sphere, arch, parent=None):
+    def __init__(self, sphere, arch, arch_ids, arches, parent=None):
         super().__init__(parent)
         self.layout = Qt.QtWidgets.QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -34,7 +34,9 @@ class metadataWidget(Qt.QtWidgets.QWidget):
         self.layout.addWidget(self.tableview)
         self.sphere = sphere
         self.arch = arch
-    
+        self.arch_ids = arch_ids
+        self.arches = arches
+
     def update(self):
         """Updates the table with new data.
         """

@@ -140,7 +140,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
     sigTaskStarted = Qt.QtCore.Signal()
     sigTaskDone = Qt.QtCore.Signal(str)
     
-    def __init__(self, sphere, arch, file_lock, parent=None):
+    def __init__(self, sphere, arch, file_lock,
+                 parent=None, arch_ids=[], arches=None):
         """
         Parameters
         ----------
@@ -151,6 +152,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
         super().__init__(parent)
         self.sphere = sphere
         self.arch = arch
+        self.arch_ids = arch_ids
+        self.arches = arches
         self.file_lock = file_lock
         self.queue = Queue()
         self.fname = sphere.data_file
@@ -183,11 +186,29 @@ class fileHandlerThread(Qt.QtCore.QThread):
         with self.file_lock:
             self.sphere.load_from_h5(replace=False, data_only=True,
                                      set_mg=False)
-    
+
     def load_arch(self):
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
                 self.arch.load_from_h5(file['arches'])
+        print(f'sphere_threads > load_arch: emitting signal')
+        self.sigUpdate.emit()
+
+    def load_arches(self):
+        print(f'sphere_threads > load_arches: {self.arch_ids}')
+        print(f'sphere_threads > load_arches: self.sphere.arches.index = {self.sphere.arches.index}')
+        # self.arches.clear()
+        with self.file_lock:
+            with catch(self.sphere.data_file, 'r') as file:
+                # for idx in self.arch_ids:
+                for idx, arch in enumerate(self.arches):
+                    # arch = self.sphere.arches[int(idx)]
+                    print(f'sphere_threads > load_arches: [idx] = [{arch.idx}]')
+                    # self.arches.append(arch.load_from_h5(file['arches']))
+                    arch.load_from_h5(file['arches'])
+                    self.arches[idx] = arch
+        print(f'sphere_threads > load_arches: len(self.arches) = {len(self.arches)}')
+        print(f'sphere_threads > load_arches: emitting signal')
         self.sigUpdate.emit()
     
     def save_data_as(self):

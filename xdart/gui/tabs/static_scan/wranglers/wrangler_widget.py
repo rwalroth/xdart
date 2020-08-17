@@ -203,10 +203,13 @@ class wranglerProcess(mp.Process):
             print("-"*60)
             traceback.print_exc()
             print("-"*60)
+
     def _main(self):
         """Treated like overriding run in a normal multiprocess Process.
         """
-        sphere = EwaldSphere(data_file=self.fname, **self.sphere_args)
+        sphere = EwaldSphere(data_file=self.fname,
+                             keep_in_memory=True,
+                             **self.sphere_args)
         while True:
             if not self.command_q.empty():
                 command = self.command_q.get()
