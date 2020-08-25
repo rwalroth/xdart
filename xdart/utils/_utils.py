@@ -227,13 +227,13 @@ def get_motor_val(pdi_file, motor):
 
 
 def read_image_file(fname, orientation='horizontal', flip=False,
-                    shape_100K=(195, 487), shape_300K=(195,1475),
+                    shape_100K=(195, 487), shape_300K=(195, 1475),
                     return_float=False, verbose=False):
     """Read image file and return numpy array
 
     Args:
         fname (str): File Name with path
-        orientation (str, optional): Orientation of detector. Defaults to 'horizontal'.
+        orientation (str, optional): Orientation of detector. Options: 'horizontal', 'vertical'. Defaults to 'horizontal'.
         flip (bool, optional): Flag to flip the image (required by pyFAI at times). Defaults to False.
         shape_100K (tuple, optional): Shape of numpy array for Pilatus 100K. Defaults to (195, 487).
         shape_300K (tuple, optional): Shape of numpy array for Pilatus 300K. Defaults to (195,1475).
@@ -243,7 +243,9 @@ def read_image_file(fname, orientation='horizontal', flip=False,
     Returns:
         ndarray: Image data read into numpy array
     """
-    if verbose: print('Reading image data into numpy array..')
+    if verbose:
+        print('Reading image data into numpy array..')
+
     if 'tif' in fname[-5:]:
         img = np.asarray(io.imread(fname))
     else:

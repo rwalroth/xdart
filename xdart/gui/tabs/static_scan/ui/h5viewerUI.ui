@@ -63,16 +63,19 @@
    <item row="2" column="1">
     <widget class="QListWidget" name="listData">
      <property name="editTriggers">
-      <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+      <set>QAbstractItemView::CurrentChanged|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
      </property>
      <property name="tabKeyNavigation">
       <bool>true</bool>
      </property>
      <property name="alternatingRowColors">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="selectionMode">
       <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+     <property name="selectionRectVisible">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

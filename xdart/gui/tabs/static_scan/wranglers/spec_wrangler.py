@@ -399,7 +399,7 @@ class specProcess(wranglerProcess):
         print(f'spec_wrangler > sphere name: {sphere.name}\n')
 
         # Enter main loop
-        i = 0
+        i = 1
         pause = False
         start = time.time()
         while True:
@@ -477,7 +477,7 @@ class specProcess(wranglerProcess):
         self.signal_q.put(('message', f'Checking for {i}'))
 
         # Construct raw_file path from attributes and index
-        image_file = self._get_image_path(i + 1)
+        image_file = self._get_image_path(i)
         print(f'\nspec_wrangler > Image File Name: {image_file}')
 
         # Read raw file into numpy array

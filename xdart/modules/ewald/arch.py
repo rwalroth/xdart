@@ -91,7 +91,8 @@ class EwaldArch():
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, idx=None, map_raw=None, poni=None, mask=None,
-                 scan_info={}, ai_args={}, file_lock=Condition(), poni_file=None):
+                 scan_info={}, ai_args={}, file_lock=Condition(),
+                 poni_file=None):
         # pylint: disable=too-many-arguments
         """idx: int, name of the arch.
         map_raw: numpy array, raw image data
@@ -119,6 +120,7 @@ class EwaldArch():
 
         if poni_file is not None:
             self.integrator = pyFAI.load(poni_file)
+            self.integrator._rot3 -= np.deg2rad(90)
         else:
             self.integrator = AzimuthalIntegrator(
                 dist=self.poni.dist,
@@ -255,6 +257,7 @@ class EwaldArch():
 
             if self.poni_file is not None:
                 self.integrator = pyFAI.load(self.poni_file)
+                self.integrator._rot3 -= np.deg2rad(90)
             else:
                 self.integrator = AzimuthalIntegrator(
                     dist=self.poni.dist,
@@ -342,6 +345,7 @@ class EwaldArch():
                             )
                             if self.poni_file is not None:
                                 self.integrator = pyFAI.load(self.poni_file)
+                                self.integrator._rot3 -= np.deg2rad(90)
                             else:
                                 self.integrator = AzimuthalIntegrator(
                                     dist=self.poni.dist,

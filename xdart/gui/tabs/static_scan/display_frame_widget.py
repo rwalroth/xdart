@@ -86,7 +86,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.arches = arches
 
         # State variable initialization
-        self.auto_last = False
+        self.auto_last = True
 
         # Image pane setup
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
@@ -150,6 +150,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update(self):
         """Updates image and plot frames based on toolbar options
         """
+        if len(self.arches) == 0:
+            return True
+
         print(f'\ndisplay_frame_widget > update: self.arch.idx = {self.arch.idx}')
         print(f'display_frame_widget > update: self.arch_ids = {self.arch_ids}')
         # Sets title text
@@ -188,7 +191,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             rect = Qt.QtCore.QRect(1, 1, 1, 1)
         else:
             try:
-                if self.arch.idx is not None:
+                if len(self.arch_ids) > 0:
+                    for self.arch in self.arches:
+                        data, rect = self.get_arch_data_2d('raw')
+
+                elif self.arch.idx is not None:
                     print(f'display_frame_widget > update_image arch idx:  {self.arch.idx}')
                     data, rect = self.get_arch_data_2d('raw')
 
@@ -215,7 +222,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             rect = Qt.QtCore.QRect(1, 1, 1, 1)
         else:
             try:
-                if self.arch.idx is not None:
+                if len(self.arch_ids) > 0:
+                    print(f'display_frame_widget > update_binned: len(self.arches) = {len(self.arches)}')
+                    for self.arch in self.arches:
+                        print(f'display_frame_widget > update_binned: self.arch.idx = {self.arch.idx}')
+                        data, rect = self.get_arch_data_2d('rebinned')
+
+                elif self.arch.idx is not None:
                     data, rect = self.get_arch_data_2d('rebinned')
 
                 else:
@@ -226,25 +239,21 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 rect = Qt.QtCore.QRect(1, 1, 1, 1)
 
         mn, mx = np.nanpercentile(data, (5, 99.5))
-        self.binned.setImage(data.T[:, ::-1], levels=(mn, mx))
+        # self.binned.setImage(data.T[:, ::-1], levels=(mn, mx))
+        self.binned.setImage(data[:, ::-1], levels=(mn, mx))
         self.binned.setRect(rect)
         apply_cmap(self.binned, 'viridis')
 
         self.binned_histogram.setLevels(min=mn, max=mx)
         return data
 
-    def get_arch_data_2d(self, img_type):
+    def get_arch_data_2d(self, img_type='rebinned'):
         """Returns data and QRect for data in arch
         """
         with self.arch.arch_lock:
             int_data = self.arch.int_2d
 
-        # Todo: remove this
-        # self.ui.imageNRP == 'Normalized'
-
-        # if self.ui.imageIntRaw.currentIndex() == 0:
         if img_type == 'rebinned':
-            # data, corners = read_NRP(self.ui.imageNRP, int_data)
             data, corners = read_NRP(self.ui.normChannel, int_data)
 
             rect = get_rect(

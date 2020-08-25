@@ -182,7 +182,7 @@ class staticWidget(QWidget):
         self.h5viewer.defaultWidget.set_parameters(parameters)
         self.h5viewer.load_starting_defaults()
 
-        self.show()
+        # self.show()
         """
         self.timer = Qt.QtCore.QTimer()
         self.timer.timeout.connect(self.clock)
@@ -295,7 +295,6 @@ class staticWidget(QWidget):
         if self.sphere.name != 'null_main':
             print(f'static_scan_widget > updating displayframe')
             self.displayframe.update()
-            self.h5viewer.ui.listData.setFocus()
 
             if self.arch.idx is None:
                 # self.displayframe.ui.imageIntRaw.setEnabled(False)
@@ -315,6 +314,7 @@ class staticWidget(QWidget):
 
             self.metawidget.update()
             self.integratorTree.update()
+            self.h5viewer.ui.listData.setFocus()
 
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
@@ -378,10 +378,10 @@ class staticWidget(QWidget):
     def close(self):
         """Tries a graceful close.
         """
-        del (self.sphere)
-        del (self.displayframe.sphere)
-        del (self.arch)
-        del (self.displayframe.arch)
+        del self.sphere
+        del self.displayframe.sphere
+        del self.arch
+        del self.displayframe.arch
         super().close()
 
     def enable_integration(self, enable=True):
@@ -401,6 +401,9 @@ class staticWidget(QWidget):
         else:
             self.displayframe.update()
         self.metawidget.update()
+
+        # self.h5viewer.ui.listData.setFocus()
+        self.h5viewer.ui.listData.focusWidget()
 
     def integrator_thread_update(self, idx):
         self.thread_state_changed()

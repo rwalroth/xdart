@@ -17,12 +17,13 @@ from ...gui_utils import XdartDecoder, XdartEncoder
 
 # Qt imports
 from pyqtgraph import Qt
-from pyqtgraph.Qt import QtWidgets
+from pyqtgraph.Qt import QtWidgets, QtCore, QtGui
 
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
 QWidget = QtWidgets.QWidget
 QFileDialog = QtWidgets.QFileDialog
+QItemSelectionModel = QtCore.QItemSelectionModel
 
 class H5Viewer(QWidget):
     """Widget for displaying the contents of an EwaldSphere object and
@@ -189,24 +190,33 @@ class H5Viewer(QWidget):
         """Updates list with all arch ids.
         """
         previous_loc = self.ui.listData.currentRow()
-        # try:
+        previous_sel = self.ui.listData.selectedItems()
         self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
-        # except TypeError:
-        #     pass
         print(f'h5viewer > update_data: previous_loc = {previous_loc}')
         if self.sphere.name != "null_main":
             with self.sphere.sphere_lock:
                 _idxs = list(self.sphere.arches.index)
-            self.ui.listData.clear()
-            self.ui.listData.addItem('Overall')
-            for idx in _idxs:
-                self.ui.listData.addItem(str(idx))
+            if len(_idxs) > self.ui.listData.count() - 1:
+                self.ui.listData.clear()
+                self.ui.listData.addItem('Overall')
+                for idx in _idxs:
+                    self.ui.listData.addItem(str(idx))
         if previous_loc > self.ui.listData.count() - 1:
             previous_loc = self.ui.listData.count() - 1
-        self.ui.listData.setCurrentRow(previous_loc)
+
+        print(f'h5viewer > update_data: resetting selection = {len(previous_sel)}')
+        if len(previous_sel) < 2:
+            self.ui.listData.setCurrentRow(previous_loc)
+        else:
+            for item in previous_sel:
+                print(f'h5viewer > update_data: item = {item}')
+                item.setSelected(True)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
+
         print(f'h5viewer > update_data: listitems (updated) = {self.ui.listData.count()}')
         print(f'h5viewer > update_data: currentRow (updated) = {self.ui.listData.currentRow()}')
+
+        self.ui.listData.focusWidget()
 
     def thread_finished(self, task):
         if task != "load_arch":
