@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>218</width>
-    <height>264</height>
+    <width>1440</width>
+    <height>817</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -99,6 +99,9 @@
          </property>
          <item>
           <widget class="QPushButton" name="integrate1D">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string>Integrate</string>
            </property>
@@ -106,6 +109,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="advanced1D">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string>Advanced...</string>
            </property>
@@ -113,6 +119,9 @@
          </item>
          <item>
           <widget class="QCheckBox" name="all1D">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string>All</string>
            </property>
@@ -191,6 +200,9 @@
          </property>
          <item>
           <widget class="QPushButton" name="integrate2D">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string>Integrate</string>
            </property>
@@ -198,6 +210,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="advanced2D">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string>Advanced...</string>
            </property>
@@ -205,6 +220,9 @@
          </item>
          <item>
           <widget class="QCheckBox" name="all2D">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string>All</string>
            </property>

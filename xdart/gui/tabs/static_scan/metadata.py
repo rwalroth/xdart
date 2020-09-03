@@ -9,7 +9,7 @@
 import pandas as pd
 
 # Qt imports
-from pyqtgraph import Qt
+from pyqtgraph import Qt, QtCore
 
 # This module imports
 from ...gui_utils import DFTableModel
@@ -30,6 +30,7 @@ class metadataWidget(Qt.QtWidgets.QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
         self.tableview = Qt.QtWidgets.QTableView()
+        self.tableview.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.tableview.setModel(DFTableModel())
         self.layout.addWidget(self.tableview)
         self.sphere = sphere

@@ -9,7 +9,7 @@
 
 # Qt imports
 import pyqtgraph as pg
-from pyqtgraph import Qt
+from pyqtgraph import Qt, QtCore
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
@@ -149,21 +149,24 @@ class integratorTree(Qt.QtWidgets.QWidget):
                                        parent=self,
                                        range_low=0, 
                                        defaults=[0,180,1000])
-        self.azimuthalRange2D = rangeWidget("Azimuthal", 
+        self.radialRange1D.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.azimuthalRange2D = rangeWidget("Azimuthal",
                                           unit="(deg.)", 
                                           range_high=180, 
                                           points_high=1e9, 
                                           parent=self,
                                           range_low=-180, 
                                           defaults=[-180,180,1000])
-        self.radialRange2D = rangeWidget("Radial", 
+        self.azimuthalRange2D.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.radialRange2D = rangeWidget("Radial",
                                        unit=["2" + u"\u03B8" + " (deg.)", 
                                              "q (A-1)"], 
                                        range_high=180, 
                                        points_high=1e9, 
                                        parent=self,
-                                       range_low=0, 
+                                       range_low=0,
                                        defaults=[0,180,1000])
+        self.radialRange2D.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.ui.layout1D.insertWidget(1, self.radialRange1D)
         self.ui.layout2D.insertWidget(1, self.azimuthalRange2D)
         self.ui.layout2D.insertWidget(1, self.radialRange2D)

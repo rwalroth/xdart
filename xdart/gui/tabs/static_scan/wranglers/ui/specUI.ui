@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>1440</width>
+    <height>817</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -69,6 +69,9 @@
       </property>
       <item>
        <widget class="QPushButton" name="startButton">
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="text">
          <string>Start</string>
         </property>
@@ -76,6 +79,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="pauseButton">
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="text">
          <string>Pause</string>
         </property>
@@ -83,6 +89,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="continueButton">
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="text">
          <string>Continue</string>
         </property>
@@ -90,6 +99,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="stopButton">
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="text">
          <string>Stop</string>
         </property>

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1100</width>
-    <height>550</height>
+    <width>1440</width>
+    <height>817</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -186,7 +186,11 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QComboBox" name="wranglerBox"/>
+            <widget class="QComboBox" name="wranglerBox">
+             <property name="focusPolicy">
+              <enum>Qt::ClickFocus</enum>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QStackedWidget" name="wranglerStack"/>

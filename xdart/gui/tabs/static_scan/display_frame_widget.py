@@ -28,16 +28,18 @@ formats = [
     Qt.QtGui.QImageReader.supportedImageFormats()
 ]
 
+AA_inv = u'\u212B\u207B\u0029'
+x_labels = ('Q', u'\u03B8', 'Qxy')
+x_units = (AA_inv, 'deg', AA_inv)
+y_labels = (u'\u03C7', u'\u03C7', 'Qz')
+y_units = ('deg', 'deg', AA_inv)
+
 # Switch to using white background and black foreground
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('foreground', 'k')
 
 # Define color tuples
 viridis = cm.get_cmap('viridis', 256)
-colors = viridis(np.linspace(0, 1, 5))
-
-colors = np.round(colors * [255, 255, 255, 1]).astype(int)
-colors = [tuple(color[:3]) for color in colors]
 
 
 class displayFrameWidget(Qt.QtWidgets.QWidget):
@@ -76,8 +78,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        self.ui.imageUnit.setItemText(0, _translate("Form", "2" + u"\u03B8"))
-        self.ui.plotUnit.setItemText(0, _translate("Form", "2" + u"\u03B8"))
+        self.ui.imageUnit.setItemText(1, _translate("Form", "2" + u"\u03B8" + "-Chi"))
+        self.ui.plotUnit.setItemText(1, _translate("Form", "2" + u"\u03B8"))
 
         # Data object initialization
         self.sphere = sphere
@@ -126,14 +128,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # 1D Plot pane setup
         self.plot_win = pg.GraphicsLayoutWidget()
-        self.plotViewBox = RectViewBox()
-        self.plot = self.plot_win.addPlot(viewBox=self.plotViewBox)
-        self.curves = [self.plot.plot(
-            pen=color,
-            symbolBrush=color,
-            symbolPen=color,
-            symbolSize=3
-        ) for color in colors]
+        self.plot = self.plot_win.addPlot(viewBox=RectViewBox())
+        self.curves = []
+        # self.curves = [self.plot.plot(
+        #     pen=color,
+        #     symbolBrush=color,
+        #     symbolPen=color,
+        #     symbolSize=3
+        # ) for color in colors]
 
         # WF Plot pane setup
         self.wf_win = pg.GraphicsLayoutWidget()
@@ -153,8 +155,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # 2D Window Signal connections
         self.ui.normChannel.activated.connect(self.update)
         self.ui.imageUnit.activated.connect(self.update_image)
+        self.ui.imageUnit.activated.connect(self.update_binned)
         self.ui.shareAxis.stateChanged.connect(self.update)
         self.ui.imageMask.stateChanged.connect(self.update_image)
+        self.ui.imageMask.stateChanged.connect(self.update_binned)
 
         # 1D Window Signal connections
         self.ui.plotScale.currentIndexChanged.connect(self.update_plot)
@@ -279,6 +283,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         with self.arch.arch_lock:
             int_data = self.arch.int_2d
 
+        xdata = get_xdata(self.ui.imageUnit, int_data)
+        print(f'display_frame_widget > get_arch_data_2d: imageUnit ='
+              f' {self.ui.imageUnit.currentText()} {self.ui.imageUnit.currentIndex()}'
+              f' xdata(min, max) = {xdata.min()} {xdata.max()}')
+
         if img_type == 'rebinned':
             data, corners = read_NRP(self.ui.normChannel, int_data)
 
@@ -346,14 +355,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         print('display_frame_widget > update_1D: updating 1D plot')
         if (self.sphere.name == 'null_main') or (len(self.arch_ids) == 0):
             data = (np.arange(100), np.arange(100))
-            self.curves[0].setData(data[0], data[1])
+            # self.curves[0].setData(data[0], data[1])
             return data
 
         # Clear curves
         [curve.clear() for curve in self.curves]
+        self.curves.clear()
 
         print(f'display_frame_widget > update_plot: sphere.data_1d.keys = {self.sphere.data_1d.keys()}')
         print(f'display_frame_widget > update_plot: sphere.data_2d.keys = {self.sphere.data_2d.keys()}')
+
+        # Apply labels to plot
+        plot_unit = self.ui.plotUnit.currentIndex()
+        self.plot.setLabel("bottom", x_labels[plot_unit], units=x_units[plot_unit])
+        self.plot.setLabel("left", 'I', units='a.u.')
 
         # try:
         if self.ui.plotMethod.currentText() == 'Overlay':
@@ -361,6 +376,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             if 'Overall' in self.arch_ids:
                 # idxs = sorted(self.sphere.data_1d.keys())
                 idxs = sorted(list(self.sphere.arches.index))
+
+            self.setup_curves(len(idxs))
 
             offset = self.ui.yOffset.value()
             print(f'offset: {offset}')
@@ -378,9 +395,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
                 curve.setData(s_xdata, s_ydata + y_offset*nn)
 
-            return s_xdata, s_ydata
+            # return s_xdata, s_ydata
 
         elif self.ui.plotMethod.currentText() == 'Average':
+            self.setup_curves()
             if 'Overall' in self.arch_ids:
                 with self.sphere.sphere_lock:
                     sphere_int_data = self.sphere.bai_1d
@@ -389,6 +407,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
 
                 self.curves[0].setData(s_xdata, s_ydata)
+
+                # return s_xdata, s_ydata
             else:
                 y_data_all = []
                 for curve, (arch_id, arch) in zip(self.curves, self.arches.items()):
@@ -400,11 +420,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
                 self.curves[0].setData(s_xdata, s_ydata)
 
-        else:
-            [curve.clear() for curve in self.curves]
-            self.curves[0].setData(s_xdata, s_ydata)
+        return s_xdata, s_ydata
 
-            return s_xdata, s_ydata
+        # else:
+        #     [curve.clear() for curve in self.curves]
+        #     self.curves[0].setData(s_xdata, s_ydata)
+        #
+        #     return s_xdata, s_ydata
 
         # except (TypeError, IndexError):
         #     data = (np.arange(100), np.arange(100))
@@ -427,6 +449,22 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         self.wf_histogram.setLevels(min=mn, max=mx)
         return data
+
+    def setup_curves(self, idxs=1):
+        """Initialize curves for line plots
+        """
+        self.curves.clear()
+
+        colors = viridis(np.linspace(0, 1, idxs))
+        colors = np.round(colors * [255, 255, 255, 1]).astype(int)
+        colors = [tuple(color[:3]) for color in colors]
+
+        self.curves = [self.plot.plot(
+            pen=color,
+            symbolBrush=color,
+            symbolPen=color,
+            symbolSize=3
+        ) for color in colors]
 
     def save_image(self):
         """Saves currently displayed image. Formats are automatically
@@ -515,9 +553,9 @@ def get_xdata(box, int_data):
         xdata: numpy array, x axis data for plot.
     """
     if box.currentIndex() == 0:
-        xdata = int_data.ttheta
-    elif box.currentIndex() == 1:
         xdata = int_data.q
+    elif box.currentIndex() == 1:
+        xdata = int_data.ttheta
     return xdata
 
 

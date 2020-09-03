@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'c:\Users\walroth\Documents\repos\xdart\xdart\experiments\static_scan\gui\integratorUI.ui'
+# Form implementation generated from reading ui file 'integratorUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(218, 264)
+        Form.resize(1440, 817)
         self.verticalLayout = QtWidgets.QVBoxLayout(Form)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setSpacing(0)
@@ -43,12 +43,15 @@ class Ui_Form(object):
         self.horizontalLayout.setSpacing(2)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.integrate1D = QtWidgets.QPushButton(self.frame_3)
+        self.integrate1D.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.integrate1D.setObjectName("integrate1D")
         self.horizontalLayout.addWidget(self.integrate1D)
         self.advanced1D = QtWidgets.QPushButton(self.frame_3)
+        self.advanced1D.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.advanced1D.setObjectName("advanced1D")
         self.horizontalLayout.addWidget(self.advanced1D)
         self.all1D = QtWidgets.QCheckBox(self.frame_3)
+        self.all1D.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.all1D.setObjectName("all1D")
         self.horizontalLayout.addWidget(self.all1D)
         self.layout1D.addWidget(self.frame_3)
@@ -79,12 +82,15 @@ class Ui_Form(object):
         self.horizontalLayout_2.setSpacing(2)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.integrate2D = QtWidgets.QPushButton(self.frame_4)
+        self.integrate2D.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.integrate2D.setObjectName("integrate2D")
         self.horizontalLayout_2.addWidget(self.integrate2D)
         self.advanced2D = QtWidgets.QPushButton(self.frame_4)
+        self.advanced2D.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.advanced2D.setObjectName("advanced2D")
         self.horizontalLayout_2.addWidget(self.advanced2D)
         self.all2D = QtWidgets.QCheckBox(self.frame_4)
+        self.all2D.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.all2D.setObjectName("all2D")
         self.horizontalLayout_2.addWidget(self.all2D)
         self.layout2D.addWidget(self.frame_4)
@@ -104,4 +110,14 @@ class Ui_Form(object):
         self.integrate2D.setText(_translate("Form", "Integrate"))
         self.advanced2D.setText(_translate("Form", "Advanced..."))
         self.all2D.setText(_translate("Form", "All"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Form = QtWidgets.QWidget()
+    ui = Ui_Form()
+    ui.setupUi(Form)
+    Form.show()
+    sys.exit(app.exec_())
 
