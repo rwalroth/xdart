@@ -193,6 +193,7 @@ class wranglerProcess(mp.Process):
         self.sphere_args = sphere_args
         self.fname = fname
         self.file_lock = file_lock
+
     def run(self):
         """Target of process, calls _main inside a try except clause to
         handle errors.

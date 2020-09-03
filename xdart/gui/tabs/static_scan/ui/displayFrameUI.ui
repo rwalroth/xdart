@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>828</height>
+    <height>842</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -266,6 +266,9 @@
               <height>16777215</height>
              </size>
             </property>
+            <property name="focusPolicy">
+             <enum>Qt::ClickFocus</enum>
+            </property>
             <item>
              <property name="text">
               <string>None</string>
@@ -313,19 +316,17 @@
               <height>16777215</height>
              </size>
             </property>
+            <property name="focusPolicy">
+             <enum>Qt::StrongFocus</enum>
+            </property>
             <item>
              <property name="text">
-              <string>Q Chi</string>
+              <string>QChi</string>
              </property>
             </item>
             <item>
              <property name="text">
-              <string>Qz Qxy</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>2 u\u03B8 Chi</string>
+              <string>2Th-Chi</string>
              </property>
             </item>
            </widget>
@@ -385,6 +386,29 @@
             </property>
             <property name="text">
              <string>Mask</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_6">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Maximum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="update2D">
+            <property name="text">
+             <string>Update 2D</string>
             </property>
            </widget>
           </item>
@@ -531,6 +555,9 @@
               <height>16777215</height>
              </size>
             </property>
+            <property name="focusPolicy">
+             <enum>Qt::ClickFocus</enum>
+            </property>
             <item>
              <property name="text">
               <string>Linear</string>
@@ -566,6 +593,9 @@
           </item>
           <item>
            <widget class="QComboBox" name="plotMethod">
+            <property name="focusPolicy">
+             <enum>Qt::ClickFocus</enum>
+            </property>
             <item>
              <property name="text">
               <string>Overlay</string>

@@ -106,23 +106,28 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.binned_layout = Qt.QtWidgets.QHBoxLayout(self.ui.binnedFrame)
         self.binned_layout.setContentsMargins(0, 0, 0, 0)
         self.binned_layout.setSpacing(0)
+
         self.binned_win = pg.GraphicsLayoutWidget()
-        self.binned_layout.addWidget(self.binned_win)
-        self.binnedViewBox = RectViewBox()
-        self.binned_plot = self.binned_win.addPlot(viewBox=self.binnedViewBox)
+        # self.binnedViewBox = RectViewBox()
+        # self.binned_plot = self.binned_win.addPlot(viewBox=self.binnedViewBox)
+        self.binned_plot = self.binned_win.addPlot(viewBox=RectViewBox())
         self.binned = pg.ImageItem()
         self.binned_plot.addItem(self.binned)
         self.binned_histogram = pg.HistogramLUTWidget(self.binned_win)
-        self.binned_layout.addWidget(self.binned_histogram)
         self.binned_histogram.setImageItem(self.binned)
 
+        self.binned_layout.addWidget(self.binned_win)
+        self.binned_layout.addWidget(self.binned_histogram)
+
         # 1D/Waterfall Plot pane setup
-        self.plot_layout = Qt.QtWidgets.QVBoxLayout(self.ui.plotFrame)
+        self.plot_layout = Qt.QtWidgets.QHBoxLayout(self.ui.plotFrame)
         self.plot_layout.setContentsMargins(0, 0, 0, 0)
+        self.plot_layout.setSpacing(0)
+
+        # 1D Plot pane setup
         self.plot_win = pg.GraphicsLayoutWidget()
-        self.plot_layout.addWidget(self.plot_win)
-        vb = RectViewBox()
-        self.plot = self.plot_win.addPlot(viewBox=vb)
+        self.plotViewBox = RectViewBox()
+        self.plot = self.plot_win.addPlot(viewBox=self.plotViewBox)
         self.curves = [self.plot.plot(
             pen=color,
             symbolBrush=color,
@@ -130,8 +135,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             symbolSize=3
         ) for color in colors]
 
-        # self.ui.plotMethod.setCurrentIndex(1)
-        # self.ui.plotMethod.setEnabled(False)
+        # WF Plot pane setup
+        self.wf_win = pg.GraphicsLayoutWidget()
+        self.wf_plot = self.wf_win.addPlot(viewBox=RectViewBox())
+        self.wf = pg.ImageItem()
+        self.wf_plot.addItem(self.wf)
+        self.wf_histogram = pg.HistogramLUTWidget(self.wf_win)
+
+        # Waterfall Plot setup
+        if self.ui.plotMethod.currentText().lower() == 'waterfall':
+            self.plot_win.setParent(None)
+            self.plot_layout.addWidget(self.wf_win)
+        else:
+            self.wf_win.setParent(None)
+            self.plot_layout.addWidget(self.plot_win)
 
         # 2D Window Signal connections
         self.ui.normChannel.activated.connect(self.update)
@@ -145,21 +162,36 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.yOffset.valueChanged.connect(self.update_plot)
         self.ui.plotUnit.activated.connect(self.update_plot)
 
-        # self.update()
+    def setup_1D_layout(self):
+        """Setup the layout for 1D/WF plots
+        """
+        print(f'display_frame_widget > setup_1D_layout: currentText = {self.ui.plotMethod.currentText()}')
+        if self.ui.plotMethod.currentText().lower() == 'waterfall':
+            self.plot_win.setParent(None)
+            self.plot_layout.addWidget(self.wf_win)
+            self.plot_layout.addWidget(self.wf_histogram)
+        else:
+            self.wf_win.setParent(None)
+            self.wf_histogram.setParent(None)
+            self.plot_layout.addWidget(self.plot_win)
 
     def update(self):
         """Updates image and plot frames based on toolbar options
         """
-        if len(self.arches) == 0:
+        if (len(self.arch_ids) == 0) or (self.sphere.name == 'null_main'):
+            return True
+
+        if (len(self.sphere.arches.index) == 1) and (self.arch_ids[0] == 'Overall'):
             return True
 
         print(f'\ndisplay_frame_widget > update: self.arch.idx = {self.arch.idx}')
         print(f'display_frame_widget > update: self.arch_ids = {self.arch_ids}')
         # Sets title text
-        if self.arch.idx is None:
+        if 'Overall' in self.arch_ids:
             self.ui.labelCurrent.setText(self.sphere.name)
         else:
-            self.ui.labelCurrent.setText("Image " + str(self.arch.idx))
+            # self.ui.labelCurrent.setText("Image " + str(self.arches[0].idx))
+            self.ui.labelCurrent.setText("Image " + (self.arch_ids[0]))
 
         if self.ui.shareAxis.isChecked():
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
@@ -181,26 +213,25 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.update_plot()
         except TypeError:
             return False
+
         return True
 
     def update_image(self):
         """Updates image plotted in image frame
         """
+        print(f'display_frame_widget > update_image: sphere.overall_raw = {self.sphere.overall_raw}')
         if self.sphere.name == 'null_main':
             data = np.arange(100).reshape(10, 10)
             rect = Qt.QtCore.QRect(1, 1, 1, 1)
         else:
             try:
-                if len(self.arch_ids) > 0:
-                    for self.arch in self.arches:
-                        data, rect = self.get_arch_data_2d('raw')
-
-                elif self.arch.idx is not None:
-                    print(f'display_frame_widget > update_image arch idx:  {self.arch.idx}')
+                if len(self.arches) > 0:
+                    # for self.arch in self.arches:
+                    for (arch_id, self.arch) in self.arches.items():
+                        print(f'display_frame_widget > update_binned: self.arch.idx = {self.arch.idx}')
                     data, rect = self.get_arch_data_2d('raw')
-
                 else:
-                    print('display_frame_widget > update image getting sphere')
+                    print('display_frame_widget > update_image: getting sphere')
                     data, rect = self.get_sphere_data_2d()
             except (TypeError, IndexError):
                 data = np.arange(100).reshape(10, 10)
@@ -222,25 +253,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             rect = Qt.QtCore.QRect(1, 1, 1, 1)
         else:
             try:
-                if len(self.arch_ids) > 0:
+                if len(self.arches) > 0:
                     print(f'display_frame_widget > update_binned: len(self.arches) = {len(self.arches)}')
-                    for self.arch in self.arches:
+                    for (arch_id, self.arch) in self.arches.items():
                         print(f'display_frame_widget > update_binned: self.arch.idx = {self.arch.idx}')
                         data, rect = self.get_arch_data_2d('rebinned')
-
-                elif self.arch.idx is not None:
-                    data, rect = self.get_arch_data_2d('rebinned')
-
                 else:
-                    print('display_frame_widget > update binned getting sphere')
+                    print('display_frame_widget > update_binned: getting sphere')
                     data, rect = self.get_sphere_data_2d()
             except (TypeError, IndexError):
                 data = np.arange(100).reshape(10, 10)
                 rect = Qt.QtCore.QRect(1, 1, 1, 1)
 
         mn, mx = np.nanpercentile(data, (5, 99.5))
-        # self.binned.setImage(data.T[:, ::-1], levels=(mn, mx))
-        self.binned.setImage(data[:, ::-1], levels=(mn, mx))
+        self.binned.setImage(data.T[:, ::-1], levels=(mn, mx))
         self.binned.setRect(rect)
         apply_cmap(self.binned, 'viridis')
 
@@ -261,19 +287,25 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 int_data.chi[corners[0]:corners[1]]
             )
 
-        # elif self.ui.imageIntRaw.currentIndex() == 1:
         elif img_type == 'raw':
             print('display_frame_widget > getting raw image')
-            with self.arch.arch_lock:
-                if self.ui.normChannel.currentIndex() == 0:
-                    if self.arch.map_norm is None or self.arch.map_norm == 0:
-                        data = self.arch.map_raw.copy()
+            if 'Overall' in self.arch_ids:
+                with self.sphere.sphere_lock:
+                    if self.ui.normChannel.currentIndex() == 0:
+                        data = self.sphere.overall_raw
                     else:
-                        data = self.arch.map_raw.copy() / self.arch.map_norm
-                else:
-                    data = self.arch.map_raw.copy()
-                if self.ui.imageMask.isChecked():
-                    data[self.arch.mask] = 0
+                        data = self.sphere.overall_norm
+            else:
+                with self.arch.arch_lock:
+                    if self.ui.normChannel.currentIndex() == 0:
+                        if self.arch.map_norm is None or self.arch.map_norm == 0:
+                            data = self.arch.map_raw.copy()
+                        else:
+                            data = self.arch.map_raw.copy() / self.arch.map_norm
+                    else:
+                        data = self.arch.map_raw.copy()
+                    if self.ui.imageMask.isChecked():
+                        data[self.arch.mask] = 0
             rect = get_rect(
                 np.arange(data.shape[0]),
                 np.arange(data.shape[1]),
@@ -286,15 +318,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """
         with self.sphere.sphere_lock:
             int_data = self.sphere.bai_2d
-            # if self.ui.imageMethod.currentIndex() == 0:
-            #     int_data = self.sphere.mgi_2d
-            #     if type(int_data.ttheta) == int:
-            #         self.ui.imageMethod.setCurrentIndex(1)
-            #         int_data = self.sphere.bai_2d
-            # elif self.ui.imageMethod.currentIndex() == 1:
-            #     int_data = self.sphere.bai_2d
 
-        # self.ui.imageNRP = 'Normalized'
         data, corners = read_NRP(self.ui.normChannel, int_data)
 
         rect = get_rect(
@@ -307,60 +331,102 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_plot(self):
         """Updates data in plot frame
         """
-        print('display_frame_widget > updating 1D plot')
-        if self.sphere.name == 'null_main':
+        print(f'display_frame_widget > update_plot: updating 1D plot')
+        self.setup_1D_layout()
+
+        print(f'display_frame_widget > update_plot: currentText = {self.ui.plotMethod.currentText()}')
+        if self.ui.plotMethod.currentText().lower() == 'waterfall':
+            self.update_wf()
+        else:
+            self.update_1D()
+
+    def update_1D(self):
+        """Updates data in 1D plot Frame
+        """
+        print('display_frame_widget > update_1D: updating 1D plot')
+        if (self.sphere.name == 'null_main') or (len(self.arch_ids) == 0):
             data = (np.arange(100), np.arange(100))
             self.curves[0].setData(data[0], data[1])
             return data
 
-        try:
-            with self.sphere.sphere_lock:
-                sphere_int_data = self.sphere.bai_1d
-                # if self.ui.plotMethod.currentIndex() == 0:
-                #     sphere_int_data = self.sphere.mgi_1d
-                #     if type(sphere_int_data.ttheta) == int:
-                #         self.ui.plotMethod.setCurrentIndex(1)
-                #         sphere_int_data = self.sphere.bai_1d
-                # elif self.ui.plotMethod.currentIndex() == 1:
-                #     sphere_int_data = self.sphere.bai_1d
+        # Clear curves
+        [curve.clear() for curve in self.curves]
 
-            # self.ui.plotNRP = 'Normalized'
-            s_ydata, corners = read_NRP(self.ui.normChannel, sphere_int_data)
-            s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
+        print(f'display_frame_widget > update_plot: sphere.data_1d.keys = {self.sphere.data_1d.keys()}')
+        print(f'display_frame_widget > update_plot: sphere.data_2d.keys = {self.sphere.data_2d.keys()}')
 
-            print(f'display_frame_widget > update_plot: self.arch.idx: {self.arch.idx}')
-            if self.arch.idx is not None:
-                with self.arch.arch_lock:
-                    arc_int_data = self.arch.int_1d
+        # try:
+        if self.ui.plotMethod.currentText() == 'Overlay':
+            idxs = self.arch_ids
+            if 'Overall' in self.arch_ids:
+                # idxs = sorted(self.sphere.data_1d.keys())
+                idxs = sorted(list(self.sphere.arches.index))
 
-                # if self.ui.plotOverlay.isChecked():
-                if self.ui.plotMethod.currentText() == 'Overlay':
-                    # self.curve1.setData(s_xdata, s_ydata)
-                    self.curves[0].setData(s_xdata, s_ydata)
-                else:
-                    self.curves[0].clear()
+            offset = self.ui.yOffset.value()
+            print(f'offset: {offset}')
+            y_offset = 0
+            # for curve, (arch_id, arch) in zip(self.curves, self.arches.items()):
+            for nn, (curve, idx) in enumerate(zip(self.curves, idxs)):
+                print(f'display_frame_widget > update_plot: arch.idx: {idx}')
+                int_data = self.arches[idx].int_1d
+                # int_data = arch.int_1d
+                s_ydata, corners = read_NRP(self.ui.normChannel, int_data)
+                s_xdata = get_xdata(self.ui.plotUnit, int_data)[corners[0]:corners[1]]
 
-                # a_ydata, corners = read_NRP(self.ui.plotNRP, arc_int_data)
-                a_ydata, corners = read_NRP(self.ui.normChannel, arc_int_data)
-                a_xdata = get_xdata(self.ui.plotUnit, arc_int_data)[corners[0]:corners[1]]
-                # self.curve2.setData(a_xdata, a_ydata)
-                self.curves[0].setData(a_xdata, a_ydata)
+                if nn == 0:
+                    y_offset = offset / 100 * (s_ydata.max() - s_ydata.min())
 
-                return a_xdata, a_ydata
+                curve.setData(s_xdata, s_ydata + y_offset*nn)
 
-            else:
-                [curve.clear() for curve in self.curves]
+            return s_xdata, s_ydata
+
+        elif self.ui.plotMethod.currentText() == 'Average':
+            if 'Overall' in self.arch_ids:
+                with self.sphere.sphere_lock:
+                    sphere_int_data = self.sphere.bai_1d
+
+                s_ydata, corners = read_NRP(self.ui.normChannel, sphere_int_data)
+                s_xdata = get_xdata(self.ui.plotUnit, sphere_int_data)[corners[0]:corners[1]]
+
                 self.curves[0].setData(s_xdata, s_ydata)
-                # self.curve2.clear()
+            else:
+                y_data_all = []
+                for curve, (arch_id, arch) in zip(self.curves, self.arches.items()):
+                    y_data_all.append(self.sphere.data_1d[arch_id])
 
-                return s_xdata, s_ydata
+                # TODO: put in average below
+                s_ydata, corners = read_NRP(self.ui.normChannel, y_data_all[-1])
+                s_xdata = get_xdata(self.ui.plotUnit, y_data_all[-1])[corners[0]:corners[1]]
 
-        except (TypeError, IndexError):
-            data = (np.arange(100), np.arange(100))
-            # self.curve1.setData(data[0], data[1])
-            # self.curve2.setData(data[0], data[1])
-            self.curves[0].setData(data[0], data[1])
-            return data
+                self.curves[0].setData(s_xdata, s_ydata)
+
+        else:
+            [curve.clear() for curve in self.curves]
+            self.curves[0].setData(s_xdata, s_ydata)
+
+            return s_xdata, s_ydata
+
+        # except (TypeError, IndexError):
+        #     data = (np.arange(100), np.arange(100))
+        #     self.curves[0].setData(data[0], data[1])
+        #     return data
+
+    def update_wf(self):
+        """Updates data in 1D plot Frame
+        """
+        # self.setup_wf_pane()
+
+        print('display_frame_widget > update_wf: updating WF plot')
+        data = np.arange(100).reshape(10, 10)
+        rect = Qt.QtCore.QRect(1, 1, 1, 1)
+
+        mn, mx = np.nanpercentile(data, (5, 99.5))
+        self.wf.setImage(data.T[:, ::-1], levels=(mn, mx))
+        self.wf.setRect(rect)
+        apply_cmap(self.wf, 'viridis')
+
+        self.wf_histogram.setLevels(min=mn, max=mx)
+        return data
 
     def save_image(self):
         """Saves currently displayed image. Formats are automatically
@@ -425,8 +491,8 @@ def read_NRP(box, int_data):
     elif box.currentIndex() == 2:
         nzarr = int_data.pcount
     data = nzarr.data[()]
-    if data.ndim > 1:
-        data = data.T
+    # if data.ndim > 1:
+    #     data = data.T
     corners = nzarr.corners
 
     if data.size == 0:

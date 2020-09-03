@@ -8,6 +8,7 @@ from queue import Queue
 import multiprocessing as mp
 import copy
 import os
+from collections import OrderedDict
 
 # Qt imports
 from pyqtgraph import Qt
@@ -103,7 +104,7 @@ class staticWidget(QWidget):
                                   keep_in_memory=True)
         self.arch = EwaldArch()
         self.arch_ids = []
-        self.arches = []
+        self.arches = OrderedDict()
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -279,6 +280,10 @@ class staticWidget(QWidget):
                 with self.file_lock:
                     self.update_all()
 
+        self.h5viewer.activateWindow()
+        self.h5viewer.ui.listData.focusWidget()
+        self.h5viewer.ui.listData.setFocus()
+
     def enable_last(self, q):
         """
         Parameters
@@ -314,7 +319,8 @@ class staticWidget(QWidget):
 
             self.metawidget.update()
             self.integratorTree.update()
-            self.h5viewer.ui.listData.setFocus()
+
+        self.h5viewer.ui.listData.focusWidget()
 
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe

@@ -1,1 +1,0 @@
-from .static_scan_widget import staticWidget

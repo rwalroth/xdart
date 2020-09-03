@@ -57,7 +57,8 @@ class EwaldSphere():
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={},
-                 keep_in_memory=False, data_1d=pd.DataFrame(),
+                 keep_in_memory=False, data_1d={}, data_2d={},
+                 overall_raw=0, overall_norm=0,
                  ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
@@ -97,10 +98,13 @@ class EwaldSphere():
 
         self.keep_in_memory = keep_in_memory
         print(f'keep_in_memory: {self.keep_in_memory}')
-        if len(data_1d) == 0:
-            columns = ['raw', 'ttheta', 'q']
-            data_1d = pd.DataFrame(columns=columns)
+        # if len(data_1d) == 0:
+        #     columns = ['raw', 'ttheta', 'q']
+        #     data_1d = pd.DataFrame(columns=columns)
         self.data_1d = data_1d
+        self.data_2d = data_2d
+        self.overall_raw = overall_raw
+        self.overall_norm = overall_norm
         # print(f'data_1d: {self.data_1d}')
 
     def reset(self):
@@ -115,7 +119,11 @@ class EwaldSphere():
             self.mgi_1d = int_1d_data()
             self.mgi_2d = int_2d_data()
             self.arches = ArchSeries(self.data_file, self.file_lock)
-            self.data_1d = pd.DataFrame()
+            # self.data_1d = pd.DataFrame()
+            self.data_1d = {}
+            self.data_2d = {}
+            self.overall_raw = 0
+            self.overall_norm = 0
 
     def add_arch(self, arch=None, calculate=True, update=True, get_sd=True,
                  set_mg=True, **kwargs):
@@ -148,6 +156,7 @@ class EwaldSphere():
             arch.file_lock = self.file_lock
             self.arches = self.arches.append(pd.Series(arch, index=[arch.idx]))
             self.arches.sort_index(inplace=True)
+
             if arch.scan_info and get_sd:
                 ser = pd.Series(arch.scan_info, dtype='float64')
                 if list(self.scan_data.columns):
@@ -172,13 +181,23 @@ class EwaldSphere():
                     [a.integrator for a in self.arches], **self.mg_args
                 )
 
-            if self.keep_in_memory:
-                ds = pd.Series(dict(raw=arch.int_1d.raw,
-                                    ttheta=arch.int_1d.ttheta,
-                                    q=arch.int_1d.q),
-                               name=arch.idx)
-                self.data_1d = self.data_1d.append(ds)
-                print(self.data_1d.columns, self.data_1d.index)
+            self.data_1d[str(arch.idx)] = arch.int_1d
+            print(f'sphere > add_arch: added {arch.idx} to self.data_1d')
+            print(f'sphere > add_arch: self.data_1d.keys = {list(self.data_1d.keys())}')
+
+            self.overall_raw += arch.map_raw
+            self.overall_norm += arch.map_raw / arch.map_norm
+            print(f'sphere > add_arch: overall_raw.shape = {self.overall_raw.shape}')
+
+            # if self.keep_in_memory:
+            #     self.data_2d[str(arch.idx)] = arch
+            #     print(f'sphere > add_arch: self.data_2d.keys = {list(self.data_2d.keys())}')
+                # ds = pd.Series(dict(raw=arch.int_1d.raw,
+                #                     ttheta=arch.int_1d.ttheta,
+                #                     q=arch.int_1d.q),
+                #                name=arch.idx)
+                # self.data_1d = self.data_1d.append(ds)
+                # print(self.data_1d.columns, self.data_1d.index)
 
     def by_arch_integrate_1d(self, **args):
         """Integrates all arches individually, then sums the results for
@@ -367,12 +386,12 @@ class EwaldSphere():
 
             if data_only:
                 lst_attr = [
-                    "scan_data"
+                    "scan_data", "overall_raw", "overall_norm",
                 ]
             else:
                 lst_attr = [
                     "scan_data", "mg_args", "bai_1d_args",
-                    "bai_2d_args"
+                    "bai_2d_args", "overall_raw", "overall_norm",
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
@@ -414,13 +433,13 @@ class EwaldSphere():
 
                     if data_only:
                         lst_attr = [
-                            "scan_data",
+                            "scan_data", "overall_raw", "overall_norm",
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                     else:
                         lst_attr = [
                             "scan_data", "mg_args", "bai_1d_args",
-                            "bai_2d_args"
+                            "bai_2d_args", "overall_raw", "overall_norm",
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                         self._set_args(self.bai_1d_args)

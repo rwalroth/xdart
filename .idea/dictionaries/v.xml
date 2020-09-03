@@ -2,11 +2,14 @@
   <dictionary name="v">
     <words>
       <w>displayframe</w>
+      <w>idxs</w>
       <w>nzarr</w>
       <w>poni</w>
       <w>rebinned</w>
       <w>ttheta</w>
+      <w>viridis</w>
       <w>xdata</w>
+      <w>ydata</w>
     </words>
   </dictionary>
 </component>

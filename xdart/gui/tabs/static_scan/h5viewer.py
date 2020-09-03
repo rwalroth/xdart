@@ -153,7 +153,7 @@ class H5Viewer(QWidget):
         self.file_thread.sigUpdate.connect(self.sigUpdate.emit)
         self.file_thread.start(Qt.QtCore.QThread.LowPriority)
         
-        self.update()
+        # self.update()
         # self.show()
 
     def load_starting_defaults(self):
@@ -193,10 +193,13 @@ class H5Viewer(QWidget):
         previous_sel = self.ui.listData.selectedItems()
         self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
         print(f'h5viewer > update_data: previous_loc = {previous_loc}')
+        print(f'h5viewer > update_data: sphere.data_1d.keys = {self.sphere.data_1d.keys()}')
         if self.sphere.name != "null_main":
             with self.sphere.sphere_lock:
                 _idxs = list(self.sphere.arches.index)
-            if len(_idxs) > self.ui.listData.count() - 1:
+            print(f'h5viewer > update_data: len(_idxs) = {len(_idxs)}')
+            print(f'h5viewer > update_data: self.ui.listData.count() = {self.ui.listData.count()}')
+            if (len(_idxs) == 0) or (len(_idxs) > self.ui.listData.count() - 1):
                 self.ui.listData.clear()
                 self.ui.listData.addItem('Overall')
                 for idx in _idxs:
@@ -209,13 +212,15 @@ class H5Viewer(QWidget):
             self.ui.listData.setCurrentRow(previous_loc)
         else:
             for item in previous_sel:
-                print(f'h5viewer > update_data: item = {item}')
+                print(f'h5viewer > update_data: item = {item.text()}')
                 item.setSelected(True)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
 
         print(f'h5viewer > update_data: listitems (updated) = {self.ui.listData.count()}')
         print(f'h5viewer > update_data: currentRow (updated) = {self.ui.listData.currentRow()}')
 
+        self.activateWindow()
+        self.ui.listData.setFocus()
         self.ui.listData.focusWidget()
 
     def thread_finished(self, task):
@@ -267,36 +272,50 @@ class H5Viewer(QWidget):
                 traceback.print_exc()
                 return
 
-    def data_changed(self):#, current, previous):
+    def data_changed(self):
         """Connected to currentItemChanged signal of listData
-
-        current: QListItem, item selected
-        previous: QListItem, previous selection
         """
-        items = self.ui.listData.selectedItems()
         self.arch_ids.clear()
+        items = self.ui.listData.selectedItems()
         self.arch_ids += [str(item.text()) for item in items]
         self.arch_ids.sort()
-        print(f'h5viewer > data_changed - selected items: {self.arch_ids} ')
+        idxs = self.arch_ids
 
-        if len(self.arch_ids) == 0:
-            # self.sigUpdate.emit()
+        if (len(idxs) == 0) or (idxs[0] == 'No data'):
+            self.sigUpdate.emit()
             return
 
-        if not any(key in self.arch_ids for key in ['No data', 'Overall']):
-            self.arches.clear()
-            [self.arches.append(EwaldArch(idx=idx)) for idx in self.arch_ids]
-            # for ii, idx in enumerate(self.arch_ids):
-            #     emit = False
-            #     if idx == len(self.arch_ids)-1:
-            #         emit = True
-            #     self.arch.reset()
-            #     self.arch.idx = idx
-            #     self.file_thread.queue.put("load_arch")
-            #     self.arches[ii] = self.arch
+        # Put 'Overall' first in list
+        if 'Overall' in self.arch_ids:
+            self.arch_ids.remove('Overall')
+            self.arch_ids.insert(0, 'Overall')
+            idxs = self.sphere.arches.index
 
-            self.file_thread.queue.put("load_arches")
+        print(f'\n*************')
+        print(f'h5viewer > data_changed - selected items: {self.arch_ids} ')
+
+        if len(idxs) == 0:
+            self.sigUpdate.emit()
+            return
+
+        if 'No Data' not in self.arch_ids:
+            self.arches.clear()
+            self.arches.update({idx: EwaldArch(idx=idx) for idx in idxs})
+            # [self.arches.append(EwaldArch(idx=idx)) for idx in self.arch_ids
+            # if idx != 'Overall']
+
             print(f'h5viewer > data_changed: len(self.arches) = {len(self.arches)}')
+            if len(self.arches) > 0:
+                # self.file_thread.load_all = False
+                # if 'Overall' in self.arch_ids:
+                #     self.file_thread.load_all = True
+                self.file_thread.queue.put("load_arches")
+            else:
+                self.sigUpdate.emit()
+
+        self.activateWindow()
+        self.ui.listData.setFocus()
+        self.ui.listData.focusWidget()
 
     def data_clicked(self, current, previous):
         """Connected to currentItemChanged signal of listData

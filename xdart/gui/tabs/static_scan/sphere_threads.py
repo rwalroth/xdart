@@ -141,7 +141,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
     sigTaskDone = Qt.QtCore.Signal(str)
     
     def __init__(self, sphere, arch, file_lock,
-                 parent=None, arch_ids=[], arches=None):
+                 parent=None, arch_ids=[], arches=None,
+                 load_all=False):
         """
         Parameters
         ----------
@@ -160,6 +161,7 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.new_fname = None
         self.lock = Condition()
         self.running = False
+        self.load_all = load_all
         
     def run(self):
         while True:
@@ -197,19 +199,43 @@ class fileHandlerThread(Qt.QtCore.QThread):
     def load_arches(self):
         print(f'sphere_threads > load_arches: {self.arch_ids}')
         print(f'sphere_threads > load_arches: self.sphere.arches.index = {self.sphere.arches.index}')
-        # self.arches.clear()
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
-                # for idx in self.arch_ids:
-                for idx, arch in enumerate(self.arches):
-                    # arch = self.sphere.arches[int(idx)]
-                    print(f'sphere_threads > load_arches: [idx] = [{arch.idx}]')
-                    # self.arches.append(arch.load_from_h5(file['arches']))
-                    arch.load_from_h5(file['arches'])
+                for (idx, arch) in self.arches.items():
+                    print(f'sphere_threads > load_arches: [idx] = [{idx}]')
+                    try:
+                        arch = self.sphere.data_2d[idx]
+                        print(f'sphere_threads > load_arches: loaded arch{idx} from memory')
+                    except KeyError:
+                        arch.load_from_h5(file['arches'])
+                        print(f'sphere_threads > load_arches: loaded arch{idx} from file')
+                        self.sphere.data_2d[str(idx)] = arch
+                        self.sphere.data_1d[str(idx)] = arch.int_1d
+                    # self.arches[nn] = arch
                     self.arches[idx] = arch
-        print(f'sphere_threads > load_arches: len(self.arches) = {len(self.arches)}')
-        print(f'sphere_threads > load_arches: emitting signal')
-        self.sigUpdate.emit()
+            print(f'sphere_threads > load_arches: len(self.arches) = {len(self.arches)}')
+            self.sigUpdate.emit()
+
+        #     idxs = self.arch_ids
+        #         if 'Overall' in idxs:
+        #             idxs.remove('Overall')
+        #         if self.load_all:
+        #             idxs = list(self.sphere.arches.index)
+        #         # for nn, (idx, arch) in enumerate(zip(idxs, self.arches)):
+        #         for nn, (idx, arch) in enumerate(zip(idxs, self.arches)):
+        #             print(f'sphere_threads > load_arches: [idx] = [{arch.idx}]')
+        #             try:
+        #                 arch = self.sphere.data_2d[idx]
+        #                 print(f'sphere_threads > load_arches: loaded arch{idx} from memory')
+        #             except KeyError:
+        #                 arch.load_from_h5(file['arches'])
+        #                 print(f'sphere_threads > load_arches: loaded arch{idx} from file')
+        #                 self.sphere.data_2d[idx] = arch
+        #                 self.sphere.data_1d[idx] = arch.int_1d
+        #             # self.arches[nn] = arch
+        #             self.arches[idx] = arch
+        # print(f'sphere_threads > load_arches: len(self.arches) = {len(self.arches)}')
+        # self.sigUpdate.emit()
     
     def save_data_as(self):
         if self.new_fname is not None and self.new_fname != "":

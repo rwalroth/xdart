@@ -87,7 +87,6 @@ class Main(QMainWindow):
         except Exception as e:
             print(e)
 
-
     def set_tabs(self):
         for e in tabs.exp_list:
             self.ui.menuExperiments.addAction(e)
