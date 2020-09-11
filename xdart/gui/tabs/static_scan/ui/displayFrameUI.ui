@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>867</height>
+    <height>842</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -243,13 +243,13 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>85</width>
+              <width>80</width>
               <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>90</width>
+              <width>82</width>
               <height>16777215</height>
              </size>
             </property>
@@ -287,7 +287,27 @@
             </item>
             <item>
              <property name="text">
-              <string>Time</string>
+              <string>sec</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>bstop</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>I0</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>I1</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>I2</string>
              </property>
             </item>
            </widget>
@@ -302,7 +322,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>
@@ -352,7 +372,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>
@@ -384,7 +404,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>30</width>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>
@@ -416,7 +436,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>
@@ -430,6 +450,127 @@
             <property name="text">
              <string>Update 2D</string>
             </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_10">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Maximum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="setBkg">
+            <property name="text">
+             <string>Set Bkg</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_11">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Maximum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QComboBox" name="cmap">
+            <property name="minimumSize">
+             <size>
+              <width>75</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>80</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="focusPolicy">
+             <enum>Qt::ClickFocus</enum>
+            </property>
+            <item>
+             <property name="text">
+              <string>viridis</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>grey</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>plasma</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>inferno</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>magma</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>spectrum</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>thermal</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>flame</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>yellowy</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>bipolar</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>cyclic</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>greyclip</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
@@ -568,7 +709,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="plotScale">
+           <widget class="QComboBox" name="scale">
             <property name="maximumSize">
              <size>
               <width>100</width>
@@ -628,6 +769,11 @@
             </item>
             <item>
              <property name="text">
+              <string>Sum</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string>Waterfall</string>
              </property>
             </item>
@@ -639,7 +785,7 @@
              <enum>Qt::Horizontal</enum>
             </property>
             <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
+             <enum>QSizePolicy::Maximum</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -707,7 +853,7 @@
             </property>
             <property name="maximumSize">
              <size>
-              <width>120</width>
+              <width>100</width>
               <height>16777215</height>
              </size>
             </property>

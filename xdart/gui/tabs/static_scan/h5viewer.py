@@ -167,7 +167,6 @@ class H5Viewer(QWidget):
         default_path = os.path.join(self.local_path, "last_defaults.json")
         self.defaultWidget.save_defaults(fname=default_path)
 
-
     def update(self):
         """Calls both update_scans and update_data.
         """
@@ -219,7 +218,7 @@ class H5Viewer(QWidget):
         print(f'h5viewer > update_data: listitems (updated) = {self.ui.listData.count()}')
         print(f'h5viewer > update_data: currentRow (updated) = {self.ui.listData.currentRow()}')
 
-        self.activateWindow()
+        self.ui.listData.activateWindow()
         self.ui.listData.setFocus()
         self.ui.listData.focusWidget()
 
@@ -301,14 +300,9 @@ class H5Viewer(QWidget):
         if 'No Data' not in self.arch_ids:
             self.arches.clear()
             self.arches.update({idx: EwaldArch(idx=idx) for idx in idxs})
-            # [self.arches.append(EwaldArch(idx=idx)) for idx in self.arch_ids
-            # if idx != 'Overall']
 
             print(f'h5viewer > data_changed: len(self.arches) = {len(self.arches)}')
             if len(self.arches) > 0:
-                # self.file_thread.load_all = False
-                # if 'Overall' in self.arch_ids:
-                #     self.file_thread.load_all = True
                 self.file_thread.queue.put("load_arches")
             else:
                 self.sigUpdate.emit()

@@ -299,7 +299,8 @@ class staticWidget(QWidget):
         """
         if self.sphere.name != 'null_main':
             print(f'static_scan_widget > updating displayframe')
-            self.displayframe.update()
+            if len(self.sphere.data_1d.keys()) > 0:
+                self.displayframe.update()
 
             if self.arch.idx is None:
                 # self.displayframe.ui.imageIntRaw.setEnabled(False)
@@ -321,6 +322,7 @@ class staticWidget(QWidget):
             self.integratorTree.update()
 
         self.h5viewer.ui.listData.focusWidget()
+        self.h5viewer.ui.listData.setFocus()
 
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
@@ -457,6 +459,7 @@ class staticWidget(QWidget):
                 'bai_2d_args': self.sphere.bai_2d_args}
         self.wrangler.sphere_args = copy.deepcopy(args)
         self.wrangler.setup()
+        self.displayframe.auto_last = True
         self.wrangler.thread.start()
 
     def wrangler_finished(self):

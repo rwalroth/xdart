@@ -20,21 +20,22 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Now writing 1D integrated data into memory">
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/v.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/v.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/xdart.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/xdart.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/metadata.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/metadata.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/h5viewerUI.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/liveSpecUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/liveSpecUI.ui" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/integratorUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/integratorUI.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/widgets/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/widgets/__init__.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -59,7 +60,7 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/xdart/gui/tabs/time_scan" />
-    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
     <property name="two.files.diff.last.used.file" value="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/sphere_threads.py" />
   </component>
   <component name="RecentsManager">
@@ -275,42 +276,46 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="20" y="72" width="1409" height="700" key="DiffContextDialog/0.0.1440.900@0.0.1440.900" timestamp="1595024520281" />
-    <state width="1419" height="203" key="GridCell.Tab.0.bottom" timestamp="1599125038420">
+    <state x="507" y="212" key="FileChooserDialogImpl" timestamp="1599815355692">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="203" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1599125038420" />
+    <state x="507" y="212" key="FileChooserDialogImpl/0.0.1440.900@0.0.1440.900" timestamp="1599815355692" />
+    <state width="1419" height="224" key="GridCell.Tab.0.bottom" timestamp="1599828599349">
+      <screen x="0" y="0" width="1440" height="900" />
+    </state>
+    <state width="1419" height="224" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1599828599349" />
     <state width="2142" height="178" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596225581201" />
-    <state width="1419" height="203" key="GridCell.Tab.0.center" timestamp="1599125038419">
+    <state width="1419" height="224" key="GridCell.Tab.0.center" timestamp="1599828599348">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="203" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1599125038419" />
+    <state width="1419" height="224" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1599828599348" />
     <state width="2142" height="178" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596225581200" />
-    <state width="1419" height="203" key="GridCell.Tab.0.left" timestamp="1599125038419">
+    <state width="1419" height="224" key="GridCell.Tab.0.left" timestamp="1599828599348">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="203" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1599125038419" />
+    <state width="1419" height="224" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1599828599348" />
     <state width="2142" height="178" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596225581199" />
-    <state width="1419" height="203" key="GridCell.Tab.0.right" timestamp="1599125038419">
+    <state width="1419" height="224" key="GridCell.Tab.0.right" timestamp="1599828599349">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="203" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1599125038419" />
+    <state width="1419" height="224" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1599828599349" />
     <state width="2142" height="178" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596225581200" />
     <state x="512" y="266" key="MergeDialog" timestamp="1593031610349">
       <screen x="0" y="0" width="2560" height="1440" />
     </state>
     <state x="512" y="266" key="MergeDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031610349" />
-    <state x="229" y="89" key="SettingsEditor" timestamp="1599084997228">
+    <state x="229" y="89" key="SettingsEditor" timestamp="1599820333819">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1599084997228" />
+    <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1599820333819" />
     <state x="320" y="177" key="Vcs.Push.Dialog.v2" timestamp="1599109968367">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1599109968367" />
-    <state x="421" y="176" width="725" height="673" key="find.popup" timestamp="1599120106743">
+    <state x="421" y="176" width="725" height="673" key="find.popup" timestamp="1599822612243">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="421" y="176" width="725" height="673" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1599120106743" />
+    <state x="421" y="176" width="725" height="673" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1599822612243" />
     <state x="748" y="282" width="1064" height="877" key="find.popup/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1596218491230" />
     <state x="896" y="583" key="git4idea.branch.GitSmartOperationDialog" timestamp="1593031607553">
       <screen x="0" y="0" width="2560" height="1440" />

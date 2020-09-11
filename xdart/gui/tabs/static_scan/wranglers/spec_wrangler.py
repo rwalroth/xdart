@@ -10,6 +10,7 @@ import time
 
 # Qt imports
 from pyqtgraph import Qt
+from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
@@ -18,6 +19,9 @@ from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from xdart.utils import read_image_file, get_image_meta_data
+
+from ....widgets import commandLine
+from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
 img_fname = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0001.tif'
 poni = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
@@ -29,6 +33,8 @@ params = [
     # {'name': 'PONI File', 'type': 'str', 'default': poni},
     {'name': 'PONI File', 'type': 'str', 'value': poni},
     NamedActionParameter(name='poni_file_browse', title='Browse...'),
+    {'name': 'Grazing Incidence', 'type': 'bool', 'value': False},
+    {'name': 'Theta Motor', 'type': 'str', 'value': 'th'},
     {'name': 'Timeout', 'type': 'float', 'value': 1},
 ]
 
@@ -92,6 +98,19 @@ class specWrangler(wranglerWidget):
         self.ui.stopButton.clicked.connect(self.stop)
         self.ui.continueButton.clicked.connect(self.cont)
 
+        # SpecCommand Line
+        self.specCommandLine = commandLine(self)
+        self.specCommandLine.send_command = self.send_command
+        self.ui.commandLayout.addWidget(self.specCommandLine)
+        self.buttonSend = QtWidgets.QPushButton(self)
+        self.buttonSend.setText('Send')
+        self.buttonSend.clicked.connect(self.send_command)
+        self.ui.commandLayout.addWidget(self.buttonSend)
+        self.commands = ['']
+        self.current = -1
+        self.keep_trying = True
+        self.showLabel.connect(self.ui.specLabel.setText)
+
         # Setup parameter tree
         self.tree = ParameterTree()
         self.parameters = Parameter.create(
@@ -113,6 +132,8 @@ class specWrangler(wranglerWidget):
         # Set attributes
         self.poni_file = self.parameters.child('PONI File').value()
         self.timeout = self.parameters.child('Timeout').value()
+        self.gi = self.parameters.child('Grazing Incidence').value()
+        self.th_mtr = self.parameters.child('Theta Motor').value()
         self.parameters.sigTreeStateChanged.connect(self.setup)
 
         # Setup thread
@@ -126,6 +147,8 @@ class specWrangler(wranglerWidget):
             None,
             None,
             1,
+            False,
+            0.0,
             self
         )
         self.thread.showLabel.connect(self.ui.specLabel.setText)
@@ -155,10 +178,31 @@ class specWrangler(wranglerWidget):
         self.thread.fname = self.fname
 
         self.timeout = self.parameters.child('Timeout').value()
-        self.thread.timeout = self.parameters.child('Timeout').value()
+        self.thread.timeout = self.timeout
+
+        self.gi = self.parameters.child('Grazing Incidence').value()
+        self.thread.gi = self.gi
+
+        self.th_mtr = self.parameters.child('Theta Motor').value()
+        self.thread.th_mtr = self.th_mtr
 
         self.thread.file_lock = self.file_lock
         self.thread.sphere_args = self.sphere_args
+
+    def send_command(self):
+        """Sends command in command line to spec, and calls
+        commandLine send_command method to add command to list of
+        commands.
+        """
+        command = self.specCommandLine.text()
+        if not (command.isspace() or command == ''):
+            try:
+                specCommand(command, queue=True)
+            except Exception as e:
+                print(e)
+                print(f"Command '{command}' not sent")
+
+        commandLine.send_command(self.specCommandLine)
 
     def pause(self):
         if self.thread.isRunning():
@@ -252,6 +296,8 @@ class specThread(wranglerThread):
             img_dir,
             img_ext,
             timeout,
+            gi,
+            th_mtr,
             parent=None):
         """command_queue: mp.Queue, queue for commands sent from parent
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -264,6 +310,8 @@ class specThread(wranglerThread):
         img_ext : str, extension of image file
         timeout: float or int, how long to continue checking for new
             data.
+        gi: bool, grazing incidence flag to determine if pyGIX is to be used
+        th_mtr: float, incidence angle
         """
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
         self.scan_name = scan_name
@@ -271,6 +319,8 @@ class specThread(wranglerThread):
         self.img_dir = img_dir
         self.img_ext = img_ext
         self.timeout = timeout
+        self.gi = gi
+        self.th_mtr = th_mtr
 
     def run(self):
         """Initializes specProcess and watches for new commands from
@@ -286,7 +336,9 @@ class specThread(wranglerThread):
             self.poni_file,
             self.img_dir,
             self.img_ext,
-            self.timeout
+            self.timeout,
+            self.gi,
+            self.th_mtr,
         )
         process.start()
         last = False
@@ -359,7 +411,8 @@ class specProcess(wranglerProcess):
 
     def __init__(self, command_q, signal_q, sphere_args, scan_name,
                  fname, file_lock, poni_file,
-                 img_dir, img_ext, timeout, *args, **kwargs):
+                 img_dir, img_ext, timeout,
+                 gi, th_mtr, *args, **kwargs):
         """command_q: mp.Queue, queue for commands from parent thread.
         signal_q: queue to place signals back to parent thread.
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -380,6 +433,8 @@ class specProcess(wranglerProcess):
         self.img_ext = img_ext
         self.user = None
         self.timeout = timeout
+        self.gi = gi
+        self.th_mtr = th_mtr
 
     def _main(self):
         """Checks for commands in queue, sends back updates through
