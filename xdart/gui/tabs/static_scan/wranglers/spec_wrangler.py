@@ -446,8 +446,10 @@ class specProcess(wranglerProcess):
         print(f'spec_wrangler > self.scan_name: {self.scan_name}')
         sphere = EwaldSphere(self.scan_name,
                              data_file=self.fname,
-                             keep_in_memory=True,
+                             static=True,
+                             # keep_in_memory=True,
                              **self.sphere_args)
+        print(f'spec_wrangler: _main: sphere_args = {self.sphere_args}')
         with self.file_lock:
             sphere.save_to_h5(replace=True)
             self.signal_q.put(('new_scan', None))
@@ -490,18 +492,22 @@ class specProcess(wranglerProcess):
             if flag == 'image':
                 idx, map_raw, scan_info = data
                 arch = EwaldArch(
-                    idx, map_raw, poni_file=self.poni_file, scan_info=scan_info
+                    idx, map_raw, poni_file=self.poni_file,
+                    scan_info=scan_info, static=True
                 )
 
                 # integrate image to 1d and 2d arrays
                 arch.integrate_1d(**sphere.bai_1d_args)
                 arch.integrate_2d(**sphere.bai_2d_args)
 
+                print(f'spec_wrangler: _main: sphere_args = {sphere.bai_1d_args}')
+                print(f'spec_wrangler: _main: sphere_args = {sphere.bai_2d_args}')
+
                 # Add arch copy to sphere, save to file
                 with self.file_lock:
                     sphere.add_arch(
                         arch=arch.copy(), calculate=False, update=True,
-                        get_sd=True, set_mg=False
+                        get_sd=True, set_mg=False, static=True,
                     )
                     sphere.save_to_h5(data_only=True, replace=False)
 

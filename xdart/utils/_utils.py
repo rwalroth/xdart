@@ -415,10 +415,12 @@ def data_to_h5(data, grp, key, encoder='yaml', compression='lzf'):
     
     elif type(data) == pd.core.frame.DataFrame:
         dataframe_to_h5(data, grp, key, compression)
-    
+
     else:
+        # print(f'_utils > data_to_h5: grp, key, type(data) = {grp}, {key}, {type(data)}')
         try:
             if np.array(data).shape == ():
+                # print(f'_utils > to_hdf5: {type(data)}')
                 scalar_to_h5(data, grp, key)
             else:
                 arr_to_h5(data, grp, key, compression)
@@ -426,6 +428,7 @@ def data_to_h5(data, grp, key, encoder='yaml', compression='lzf'):
         except TypeError:
             print(f"TypeError, encoding {key} using {encoder}")
             try:
+                # print(f'_utils > to_hdf5: norm.shape = {data.shape}')
                 encoded_h5(data, grp, key, encoder)
             except Exception as e:
                 print(e)

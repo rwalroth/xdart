@@ -538,11 +538,6 @@
             </item>
             <item>
              <property name="text">
-              <string>spectrum</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
               <string>thermal</string>
              </property>
             </item>
@@ -559,11 +554,6 @@
             <item>
              <property name="text">
               <string>bipolar</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>cyclic</string>
              </property>
             </item>
             <item>
@@ -870,6 +860,32 @@
               <string>2 u\u03B8</string>
              </property>
             </item>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_12">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Maximum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>30</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showLegend">
+            <property name="text">
+             <string>Legend</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
           <item>

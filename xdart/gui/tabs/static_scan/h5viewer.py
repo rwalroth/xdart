@@ -54,15 +54,23 @@ class H5Viewer(QWidget):
     sigThreadFinished = Qt.QtCore.Signal()
 
     def __init__(self, file_lock, local_path, dirname, sphere,
-                 arch, arch_ids, arches, parent=None):
+                 arch, arch_ids, arches,
+                 data_1d={}, data_2d={},
+                 parent=None):
         super().__init__(parent)
         self.local_path = local_path
         self.file_lock = file_lock
         self.dirname = dirname
+
+        # Data Objects
         self.sphere = sphere
         self.arch = arch
         self.arch_ids = arch_ids
         self.arches = arches
+        self.data_1d = data_1d
+        self.data_2d = data_2d
+
+        # Link UI
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -147,7 +155,9 @@ class H5Viewer(QWidget):
         self.file_thread = fileHandlerThread(self.sphere, self.arch,
                                              self.file_lock,
                                              arch_ids=self.arch_ids,
-                                             arches=self.arches)
+                                             arches=self.arches,
+                                             data_1d=self.data_1d,
+                                             data_2d=self.data_2d)
         self.file_thread.sigTaskDone.connect(self.thread_finished)
         self.file_thread.sigNewFile.connect(self.sigNewFile.emit)
         self.file_thread.sigUpdate.connect(self.sigUpdate.emit)
@@ -192,10 +202,18 @@ class H5Viewer(QWidget):
         previous_sel = self.ui.listData.selectedItems()
         self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
         print(f'h5viewer > update_data: previous_loc = {previous_loc}')
-        print(f'h5viewer > update_data: sphere.data_1d.keys = {self.sphere.data_1d.keys()}')
+        print(f'h5viewer > update_data: data_1d.keys = {self.data_1d.keys()}')
+
         if self.sphere.name != "null_main":
             with self.sphere.sphere_lock:
                 _idxs = list(self.sphere.arches.index)
+
+            # Clear data 1d/1d objects if reintegrated
+            if len(_idxs) < len(self.data_2d.keys()):
+                print(f'h5viewer > update_data: clearing data_1d/2d objects')
+                self.data_2d.clear()
+                self.data_1d.clear()
+
             print(f'h5viewer > update_data: len(_idxs) = {len(_idxs)}')
             print(f'h5viewer > update_data: self.ui.listData.count() = {self.ui.listData.count()}')
             if (len(_idxs) == 0) or (len(_idxs) > self.ui.listData.count() - 1):
@@ -203,6 +221,7 @@ class H5Viewer(QWidget):
                 self.ui.listData.addItem('Overall')
                 for idx in _idxs:
                     self.ui.listData.addItem(str(idx))
+
         if previous_loc > self.ui.listData.count() - 1:
             previous_loc = self.ui.listData.count() - 1
 
@@ -299,10 +318,22 @@ class H5Viewer(QWidget):
 
         if 'No Data' not in self.arch_ids:
             self.arches.clear()
-            self.arches.update({idx: EwaldArch(idx=idx) for idx in idxs})
+            self.arches.update({str(idx): EwaldArch(idx=idx, static=True) for idx in idxs})
+
+            idxs_memory = []
+            for idx in idxs:
+                if str(idx) in self.data_2d.keys():
+                    self.arches[str(idx)] = self.data_2d[str(idx)]
+                    print(f'h5viewer > data_changed: loaded arch{idx} from memory')
+                    idxs_memory.append(str(idx))
+
+            self.file_thread.arch_ids = [str(idx) for idx in idxs
+                                         if str(idx) not in idxs_memory]
 
             print(f'h5viewer > data_changed: len(self.arches) = {len(self.arches)}')
-            if len(self.arches) > 0:
+            print(f'h5viewer > data_changed: file_thread.arch_ids = {self.file_thread.arch_ids}')
+            # if len(self.arches) > 0:
+            if len(self.file_thread.arch_ids) > 0:
                 self.file_thread.queue.put("load_arches")
             else:
                 self.sigUpdate.emit()

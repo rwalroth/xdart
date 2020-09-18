@@ -21,7 +21,6 @@ from .h5viewer import H5Viewer
 from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .metadata import metadataWidget
-# from .wranglers import specWrangler, liveSpecWrangler, wranglerWidget
 from .wranglers import specWrangler, wranglerWidget
 
 QWidget = QtWidgets.QWidget
@@ -66,6 +65,10 @@ class staticWidget(QWidget):
 
     attributes:
         arch: EwaldArch, currently loaded arch object
+        arch_ids: List of EwaldArch indices currently loaded
+        arches: Dictionary of currently loaded EwaldArches
+        data_1d: Dictionary object holding all 1D data in memory
+        data_2d: Dictionary object holding all 2D data in memory
         command_queue: Queue, used to send commands to wrangler
         dirname: str, absolute path of current directory for scan
         file_lock: mp.Condition, process safe lock
@@ -101,10 +104,13 @@ class staticWidget(QWidget):
         self.fname = os.path.join(self.dirname, 'default.hdf5')
         self.sphere = EwaldSphere('null_main',
                                   data_file=self.fname,
-                                  keep_in_memory=True)
-        self.arch = EwaldArch()
+                                  static=True)
+                                  # keep_in_memory=True)
+        self.arch = EwaldArch(static=True)
         self.arch_ids = []
         self.arches = OrderedDict()
+        self.data_1d = {}
+        self.data_2d = {}
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -112,6 +118,7 @@ class staticWidget(QWidget):
         # H5Viewer setup
         self.h5viewer = H5Viewer(self.file_lock, self.local_path, self.dirname,
                                  self.sphere, self.arch, self.arch_ids, self.arches,
+                                 self.data_1d, self.data_2d,
                                  self.ui.hdf5Frame)
         self.h5viewer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
@@ -127,6 +134,7 @@ class staticWidget(QWidget):
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(self.sphere, self.arch,
                                                self.arch_ids, self.arches,
+                                               self.data_1d, self.data_2d,
                                                parent=self.ui.middleFrame)
         self.ui.middleFrame.setLayout(self.displayframe.ui.layout)
 
@@ -299,7 +307,8 @@ class staticWidget(QWidget):
         """
         if self.sphere.name != 'null_main':
             print(f'static_scan_widget > updating displayframe')
-            if len(self.sphere.data_1d.keys()) > 0:
+            # if len(self.sphere.data_1d.keys()) > 0:
+            if len(self.arches.keys()) > 0:
                 self.displayframe.update()
 
             if self.arch.idx is None:
@@ -406,6 +415,7 @@ class staticWidget(QWidget):
             self.h5viewer.ui.listData.setCurrentRow(
                 self.h5viewer.ui.listData.count() - 1
             )
+            # self.displayframe.update()
         else:
             self.displayframe.update()
         self.metawidget.update()

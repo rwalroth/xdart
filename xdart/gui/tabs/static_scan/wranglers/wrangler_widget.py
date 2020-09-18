@@ -209,7 +209,8 @@ class wranglerProcess(mp.Process):
         """Treated like overriding run in a normal multiprocess Process.
         """
         sphere = EwaldSphere(data_file=self.fname,
-                             keep_in_memory=True,
+                             # keep_in_memory=True,
+                             static=True,
                              **self.sphere_args)
         while True:
             if not self.command_q.empty():

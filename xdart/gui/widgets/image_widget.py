@@ -143,7 +143,6 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
             self.imageItem.setImage(self.displayed_image, levels=levels, **kwargs)
 
             self.histogram.axis.setLogMode(True)
-            print(f'image_widget > update_image: CBar images levels = {self.histogram.images[0].levels}')
         elif scale == 'Sqrt':
             self.displayed_image += self.displayed_image.min()
             self.displayed_image = np.sqrt(self.displayed_image)
@@ -152,13 +151,11 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
             self.imageItem.setImage(self.displayed_image, levels=levels, **kwargs)
 
             self.histogram.axis.setLogMode(False)
-            print(f'image_widget > update_image: CBar images levels = {self.histogram.images[0].levels}')
         else:
             levels = np.nanpercentile(self.displayed_image, (1, 99))
             self.imageItem.setImage(self.displayed_image, levels=levels, **kwargs)
 
             self.histogram.axis.setLogMode(False)
-            print(f'image_widget > update_image: CBar images levels = {self.histogram.images[0].levels}')
 
         self.histogram.images[-1].levels = levels
         self.histogram.imageLevelsChanged(self.imageItem)

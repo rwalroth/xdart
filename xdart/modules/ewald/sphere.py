@@ -5,9 +5,10 @@ import pandas as pd
 import numpy as np
 from pyFAI.multi_geometry import MultiGeometry
 
-from .arch import EwaldArch, parse_unit
+from .arch import EwaldArch
 from .arch_series import ArchSeries
 from xdart.utils.containers import int_1d_data, int_2d_data
+from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 from xdart import utils
 
 
@@ -57,8 +58,8 @@ class EwaldSphere():
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={},
-                 keep_in_memory=False, data_1d={}, data_2d={},
-                 overall_raw=0, overall_norm=0,
+                 # keep_in_memory=False, data_1d={}, data_2d={},
+                 static=False, overall_raw=0, overall_norm=0,
                  ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
@@ -93,16 +94,24 @@ class EwaldSphere():
         self.mgi_1d = int_1d_data()
         self.mgi_2d = int_2d_data()
         self.sphere_lock = Condition(_PyRLock())
-        self.bai_1d = int_1d_data()
-        self.bai_2d = int_2d_data()
 
-        self.keep_in_memory = keep_in_memory
-        print(f'keep_in_memory: {self.keep_in_memory}')
+        self.static = static
+        print(f'sphere > __init__: self.static = {self.static}')
+        if self.static:
+            self.bai_1d = int_1d_data_static()
+            self.bai_2d = int_2d_data_static()
+        else:
+            self.bai_1d = int_1d_data()
+            self.bai_2d = int_2d_data()
+
+
+        # self.keep_in_memory = keep_in_memory
+        # print(f'keep_in_memory: {self.keep_in_memory}')
         # if len(data_1d) == 0:
         #     columns = ['raw', 'ttheta', 'q']
         #     data_1d = pd.DataFrame(columns=columns)
-        self.data_1d = data_1d
-        self.data_2d = data_2d
+        # self.data_1d = data_1d
+        # self.data_2d = data_2d
         self.overall_raw = overall_raw
         self.overall_norm = overall_norm
         # print(f'data_1d: {self.data_1d}')
@@ -114,14 +123,17 @@ class EwaldSphere():
         """
         with self.sphere_lock:
             self.scan_data = pd.DataFrame()
-            self.bai_1d = int_1d_data()
-            self.bai_2d = int_2d_data()
             self.mgi_1d = int_1d_data()
             self.mgi_2d = int_2d_data()
             self.arches = ArchSeries(self.data_file, self.file_lock)
-            # self.data_1d = pd.DataFrame()
-            self.data_1d = {}
-            self.data_2d = {}
+            if self.static:
+                self.bai_1d = int_1d_data_static()
+                self.bai_2d = int_2d_data_static()
+            else:
+                self.bai_1d = int_1d_data()
+                self.bai_2d = int_2d_data()
+            # self.data_1d = {}
+            # self.data_2d = {}
             self.overall_raw = 0
             self.overall_norm = 0
 
@@ -181,13 +193,13 @@ class EwaldSphere():
                     [a.integrator for a in self.arches], **self.mg_args
                 )
 
-            self.data_1d[str(arch.idx)] = arch.int_1d
-            print(f'sphere > add_arch: added {arch.idx} to self.data_1d')
-            print(f'sphere > add_arch: self.data_1d.keys = {list(self.data_1d.keys())}')
-
             self.overall_raw += arch.map_raw
             self.overall_norm += arch.map_raw / arch.map_norm
             print(f'sphere > add_arch: overall_raw.shape = {self.overall_raw.shape}')
+
+            # self.data_1d[str(arch.idx)] = arch.int_1d
+            # print(f'sphere > add_arch: added {arch.idx} to self.data_1d')
+            # print(f'sphere > add_arch: self.data_1d.keys = {list(self.data_1d.keys())}')
 
             # if self.keep_in_memory:
             #     self.data_2d[str(arch.idx)] = arch
@@ -212,7 +224,11 @@ class EwaldSphere():
         else:
             self.bai_1d_args = args.copy()
         with self.sphere_lock:
-            self.bai_1d = int_1d_data()
+            if self.static:
+                self.bai_1d = int_1d_data_static()
+            else:
+                self.bai_1d = int_1d_data()
+
             for arch in self.arches:
                 arch.integrate_1d(**args)
                 self.arches[arch.idx] = arch
@@ -231,7 +247,11 @@ class EwaldSphere():
         else:
             self.bai_2d_args = args.copy()
         with self.sphere_lock:
-            self.bai_2d = int_2d_data()
+            if self.static:
+                self.bai_2d = int_2d_data_static()
+            else:
+                self.bai_2d = int_2d_data()
+
             for arch in self.arches:
                 arch.integrate_2d(**args)
                 self.arches[arch.idx] = arch
@@ -244,10 +264,11 @@ class EwaldSphere():
             try:
                 self.bai_1d += arch.int_1d
             except (TypeError, AssertionError, AttributeError):
-                self.bai_1d.raw = np.zeros(arch.int_1d.raw.shape)
-                self.bai_1d.pcount = np.zeros(arch.int_1d.pcount.shape)
                 self.bai_1d.norm = np.zeros(arch.int_1d.norm.shape)
-                self.bai_1d += arch.int_1d
+                if not self.static:
+                    self.bai_1d.raw = np.zeros(arch.int_1d.raw.shape)
+                    self.bai_1d.pcount = np.zeros(arch.int_1d.pcount.shape)
+            self.bai_1d += arch.int_1d
             self.bai_1d.ttheta = arch.int_1d.ttheta
             self.bai_1d.q = arch.int_1d.q
             self.save_bai_1d()
@@ -257,11 +278,13 @@ class EwaldSphere():
         """
         with self.sphere_lock:
             try:
-                assert self.bai_2d.raw.shape == arch.int_2d.raw.shape
+                # assert self.bai_2d.raw.shape == arch.int_2d.raw.shape
+                assert self.bai_2d.norm.shape == arch.int_2d.norm.shape
             except (AssertionError, AttributeError):
-                self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
-                self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
                 self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
+                if not self.static:
+                    self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
+                    self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
             try:
                 self.bai_2d += arch.int_2d
                 self.bai_2d.ttheta = arch.int_2d.ttheta

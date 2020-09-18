@@ -14,6 +14,7 @@ import numpy as np
 
 from xdart import utils
 from xdart.utils.containers import PONI, int_1d_data, int_2d_data
+from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 
 
 def parse_unit(result, wavelength):
@@ -63,8 +64,8 @@ class EwaldArch():
         file_lock: Condition, lock to ensure only one writer to
             data file
         idx: int, integer name of arch
-        int_1d: int_1d_data object from containers
-        int_2d: int_2d_data object from containers
+        int_1d: int_1d_data/_static object from containers (for scanning/static detectors)
+        int_2d: int_2d_data/_static object from containers (for scanning/static detectors)
         integrator: AzimuthalIntegrator object from pyFAI
         map_raw: numpy 2d array of the unprocessed image data
         map_norm: float, normalization constant
@@ -92,7 +93,7 @@ class EwaldArch():
 
     def __init__(self, idx=None, map_raw=None, poni=None, mask=None,
                  scan_info={}, ai_args={}, file_lock=Condition(),
-                 poni_file=None):
+                 poni_file=None, static=False):
         # pylint: disable=too-many-arguments
         """idx: int, name of the arch.
         map_raw: numpy array, raw image data
@@ -135,8 +136,14 @@ class EwaldArch():
             )
         self.arch_lock = Condition()
         self.map_norm = 1
-        self.int_1d = int_1d_data()
-        self.int_2d = int_2d_data()
+        self.static = static
+        print(f'arch > __init__: self.static = {self.static}')
+        if self.static:
+            self.int_1d = int_1d_data_static()
+            self.int_2d = int_2d_data_static()
+        else:
+            self.int_1d = int_1d_data()
+            self.int_2d = int_2d_data()
     
     def reset(self):
         """Clears all data, resets to a default EwaldArch.
@@ -159,15 +166,20 @@ class EwaldArch():
             **self.ai_args
         )
         self.map_norm = 1
-        self.int_1d = int_1d_data()
-        self.int_2d = int_2d_data()
+        if self.static:
+            self.int_1d = int_1d_data_static()
+            self.int_2d = int_2d_data_static()
+        else:
+            self.int_1d = int_1d_data()
+            self.int_2d = int_2d_data()
 
     def get_mask(self):
         mask = np.zeros(self.map_raw.size, dtype=int)
         mask[self.mask] = 1
         return mask.reshape(self.map_raw.shape)
 
-    def integrate_1d(self, numpoints=10000, radial_range=[0, 180],
+    # def integrate_1d(self, numpoints=10000, radial_range=[0, 180],
+    def integrate_1d(self, numpoints=10000, radial_range=None,
                      monitor=None, unit=units.TTH_DEG, **kwargs):
         """Wrapper for integrate1d method of AzimuthalIntegrator from pyFAI.
         Returns result and also stores the data in the int_1d object.
@@ -183,6 +195,11 @@ class EwaldArch():
         returns:
             result: integrate1d result from pyFAI.
         """
+        print(f'arch > integrate_1d: radial_range = {radial_range}')
+        if (not self.static) and (radial_range is None):
+            print(f'arch > integrate_1d > setting radial_range: {radial_range}')
+            radial_range = [0, 180]
+
         with self.arch_lock:
             if monitor is not None:
                 self.map_norm = self.scan_info[monitor]
@@ -198,7 +215,8 @@ class EwaldArch():
         return result
 
     def integrate_2d(self, npt_rad=1000, npt_azim=1000, monitor=None,
-                     radial_range=[0,180], azimuth_range=[-180,180], 
+                     # radial_range=[0,180], azimuth_range=[-180,180],
+                     radial_range=None, azimuth_range=None,
                      unit=units.TTH_DEG, **kwargs):
         """Wrapper for integrate2d method of AzimuthalIntegrator from pyFAI.
         Returns result and also stores the data in the int_2d object.
@@ -219,6 +237,13 @@ class EwaldArch():
         returns:
             result: integrate2d result from pyFAI.
         """
+        print(f'arch > integrate_2d: radial_range = {radial_range}')
+        print(f'arch > integrate_2d: kwargs = {kwargs}')
+        if (not self.static) and (radial_range is None):
+            radial_range = [0, 180]
+        if (not self.static) and (azimuth_range is None):
+            azimuth_range = [-180, 180]
+
         with self.arch_lock:
             if monitor is not None:
                 self.map_norm = self.scan_info[monitor]

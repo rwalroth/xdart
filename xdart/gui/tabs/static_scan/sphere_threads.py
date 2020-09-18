@@ -141,7 +141,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
     sigTaskDone = Qt.QtCore.Signal(str)
     
     def __init__(self, sphere, arch, file_lock,
-                 parent=None, arch_ids=[], arches=None):
+                 parent=None, arch_ids=[], arches=None,
+                 data_1d={}, data_2d={}):
         """
         Parameters
         ----------
@@ -154,6 +155,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.arch = arch
         self.arch_ids = arch_ids
         self.arches = arches
+        self.data_1d = data_1d
+        self.data_2d = data_2d
         self.file_lock = file_lock
         self.queue = Queue()
         self.fname = sphere.data_file
@@ -199,16 +202,21 @@ class fileHandlerThread(Qt.QtCore.QThread):
         print(f'sphere_threads > load_arches: self.sphere.arches.index = {self.sphere.arches.index}')
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
-                for (idx, arch) in self.arches.items():
+                # for (idx, arch) in self.arches.items():
+                for idx in self.arch_ids:
                     print(f'sphere_threads > load_arches: [idx] = [{idx}]')
                     try:
-                        arch = self.sphere.data_2d[str(idx)]
+                        # arch = self.sphere.data_2d[str(idx)]
+                        arch = self.data_2d[str(idx)]
                         print(f'sphere_threads > load_arches: loaded arch{idx} from memory')
                     except KeyError:
+                        arch = self.arches[str(idx)]
                         arch.load_from_h5(file['arches'])
                         print(f'sphere_threads > load_arches: loaded arch{idx} from file')
-                        self.sphere.data_2d[str(idx)] = arch
-                        self.sphere.data_1d[str(idx)] = arch.int_1d
+                        # self.sphere.data_2d[str(idx)] = arch
+                        # self.sphere.data_1d[str(idx)] = arch.int_1d
+                        self.data_2d[str(idx)] = arch
+                        self.data_1d[str(idx)] = arch.int_1d
                     self.arches[idx] = arch
             print(f'sphere_threads > load_arches: len(self.arches) = {len(self.arches)}')
             self.sigUpdate.emit()
