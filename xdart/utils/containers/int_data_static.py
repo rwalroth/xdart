@@ -32,7 +32,7 @@ class int_1d_data_static:
         self.ttheta = ttheta
         self.q = q
 
-    def from_result(self, result, wavelength):
+    def from_result(self, result, wavelength, unit=None):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
 
         args:
@@ -40,11 +40,11 @@ class int_1d_data_static:
             wavelength: float, energy of the beam in meters
         """
         self.ttheta, self.q = self.parse_unit(
-            result, wavelength)
+            result, wavelength, unit=unit)
 
         self.norm = result.intensity
 
-    def parse_unit(self, result, wavelength):
+    def parse_unit(self, result, wavelength, unit=None):
         """Helper function to take integrator result and return a two
         theta and q array regardless of the unit used for integration.
 
@@ -59,13 +59,18 @@ class int_1d_data_static:
         if wavelength is None:
             return result.radial, None
 
-        if result.unit == units.TTH_DEG or str(result.unit) == '2th_deg':
+        if unit is None:
+            unit = result.unit
+
+        # if result.unit == units.TTH_DEG or str(result.unit) == '2th_deg':
+        if unit == units.TTH_DEG or str(unit) == '2th_deg':
             int_1d_2theta = result.radial
             int_1d_q = (
                     (4 * np.pi / (wavelength * 1e10)) *
                     np.sin(np.radians(int_1d_2theta / 2))
             )
-        elif result.unit == units.Q_A or str(result.unit) == 'q_A^-1':
+        # elif result.unit == units.Q_A or str(result.unit) == 'q_A^-1':
+        elif unit == units.Q_A or str(unit) == 'q_A^-1':
             int_1d_q = result.radial
             int_1d_2theta = (
                     2 * np.degrees(
@@ -146,21 +151,20 @@ class int_2d_data_static(int_1d_data_static):
         chi: numpy array, chi values
         """
         self.norm = norm
-        # self.raw = raw
-        # self.pcount = pcount
-        # self.norm = norm
         self.ttheta = ttheta
         self.q = q
         self.chi = chi
 
-    def from_result(self, result, wavelength):
+    def from_result(self, result, wavelength, unit=None):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
 
         args:
             result: object returned by AzimuthalIntegrator
             wavelength: float, energy of the beam in meters
         """
-        super(int_2d_data_static, self).from_result(result, wavelength)
+        if unit is None:
+            unit = result.unit
+        super(int_2d_data_static, self).from_result(result, wavelength, unit=unit)
         self.chi = result.azimuthal
 
     def from_hdf5(self, grp):
@@ -184,10 +188,6 @@ class int_2d_data_static(int_1d_data_static):
         utils.attributes_to_h5(self, grp, ['chi'], compression=compression)
 
     def __setattr__(self, name, value):
-        """Ensures raw, norm, and pcount are nzarray2d objects.
+        """Ensures all saved objects are np.ndarray objects.
         """
         self.__dict__[name] = np.asarray(value)
-        # if name in ['raw', 'norm', 'pcount']:
-        #     self.__dict__[name] = nzarray2d(value)
-        # else:
-        #     super().__setattr__(name, value)

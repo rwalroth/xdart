@@ -273,7 +273,7 @@
              </size>
             </property>
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <item>
              <property name="text">
@@ -303,11 +303,6 @@
             <item>
              <property name="text">
               <string>I1</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>I2</string>
              </property>
             </item>
            </widget>
@@ -343,7 +338,7 @@
              </size>
             </property>
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <item>
              <property name="text">
@@ -387,7 +382,7 @@
              </size>
             </property>
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <property name="text">
              <string>Share Axis</string>
@@ -419,7 +414,7 @@
              </size>
             </property>
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <property name="text">
              <string>Mask</string>
@@ -445,7 +440,7 @@
           <item>
            <widget class="QCheckBox" name="update2D">
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <property name="text">
              <string>Update 2D</string>
@@ -473,6 +468,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="setBkg">
+            <property name="focusPolicy">
+             <enum>Qt::StrongFocus</enum>
+            </property>
             <property name="text">
              <string>Set Bkg</string>
             </property>
@@ -509,7 +507,7 @@
              </size>
             </property>
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <item>
              <property name="text">
@@ -707,7 +705,7 @@
              </size>
             </property>
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <item>
              <property name="text">
@@ -745,7 +743,7 @@
           <item>
            <widget class="QComboBox" name="plotMethod">
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <item>
              <property name="text">
@@ -804,7 +802,7 @@
           <item>
            <widget class="QDoubleSpinBox" name="yOffset">
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <property name="decimals">
              <number>0</number>
@@ -848,7 +846,7 @@
              </size>
             </property>
             <property name="focusPolicy">
-             <enum>Qt::ClickFocus</enum>
+             <enum>Qt::StrongFocus</enum>
             </property>
             <item>
              <property name="text">
@@ -880,6 +878,9 @@
           </item>
           <item>
            <widget class="QCheckBox" name="showLegend">
+            <property name="focusPolicy">
+             <enum>Qt::StrongFocus</enum>
+            </property>
             <property name="text">
              <string>Legend</string>
             </property>

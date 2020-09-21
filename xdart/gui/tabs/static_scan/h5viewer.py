@@ -146,8 +146,6 @@ class H5Viewer(QWidget):
         
         self.ui.listScans.itemDoubleClicked.connect(self.scans_clicked)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
-        # self.ui.listData.currentItemChanged.connect(self.data_changed)
-        # self.ui.listData.currentItemChanged.connect(self.data_clicked)
         self.actionOpenFolder.triggered.connect(self.open_folder)
         self.actionSaveDataAs.triggered.connect(self.save_data_as)
         self.actionNewFile.triggered.connect(self.new_file)
@@ -338,9 +336,9 @@ class H5Viewer(QWidget):
             else:
                 self.sigUpdate.emit()
 
-        self.activateWindow()
-        self.ui.listData.setFocus()
-        self.ui.listData.focusWidget()
+        # self.activateWindow()
+        # self.ui.listData.setFocus()
+        # self.ui.listData.focusWidget()
 
     def data_clicked(self, current, previous):
         """Connected to currentItemChanged signal of listData

@@ -5,7 +5,7 @@
 
 # Standard library imports
 import os
-from collections import OrderedDict
+import copy
 import time
 
 # Qt imports
@@ -74,8 +74,8 @@ class specWrangler(wranglerWidget):
         sigStart: Tells tthetaWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
-        sigUpdateFile: (str, str), sends new scan_name and file name
-            to tthetaWidget.
+        sigUpdateFile: (str, str, str), sends new scan_name, file name
+            and gi variable (grazing incidence) to static_scan_Widget.
         showLabel: str, connected to thread showLabel signal, sets text
             in specLabel
     """
@@ -143,18 +143,23 @@ class specWrangler(wranglerWidget):
             self.fname,
             self.file_lock,
             self.scan_name,
-            None,
-            None,
-            None,
-            1,
-            False,
-            0.0,
+            self.poni_file,
+            self.img_dir,
+            self.img_ext,
+            self.timeout,
+            # None,
+            # None,
+            # None,
+            # 1,
+            self.gi,
+            self.th_mtr,
             self
         )
         self.thread.showLabel.connect(self.ui.specLabel.setText)
         self.thread.sigUpdateFile.connect(self.sigUpdateFile.emit)
         self.thread.finished.connect(self.finished.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
+        self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
         self.setup()
 
     def setup(self):
@@ -355,11 +360,13 @@ class specThread(wranglerThread):
                 signal, data = self.signal_q.get()
                 if signal == 'update':
                     self.sigUpdate.emit(data)
+                elif signal == 'updateArch':
+                    self.sigUpdateArch.emit(data)
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
                     print(f'\nspec_wrangler > news_scan: {self.scan_name}\n')
-                    self.sigUpdateFile.emit(self.scan_name, self.fname)
+                    self.sigUpdateFile.emit(self.scan_name, self.fname, self.gi)
                 elif signal == 'TERMINATE':
                     last = True
 
@@ -444,9 +451,11 @@ class specProcess(wranglerProcess):
         # Initialize sphere and save to disk, send update for new scan
         print(f'\nspec_wrangler > self.fname: {self.fname}')
         print(f'spec_wrangler > self.scan_name: {self.scan_name}')
+        print(f'spec_wrangler > self.gi: {self.gi}')
         sphere = EwaldSphere(self.scan_name,
                              data_file=self.fname,
                              static=True,
+                             gi=self.gi,
                              # keep_in_memory=True,
                              **self.sphere_args)
         print(f'spec_wrangler: _main: sphere_args = {self.sphere_args}')
@@ -493,7 +502,7 @@ class specProcess(wranglerProcess):
                 idx, map_raw, scan_info = data
                 arch = EwaldArch(
                     idx, map_raw, poni_file=self.poni_file,
-                    scan_info=scan_info, static=True
+                    scan_info=scan_info, static=True, gi=self.gi
                 )
 
                 # integrate image to 1d and 2d arrays
@@ -505,14 +514,28 @@ class specProcess(wranglerProcess):
 
                 # Add arch copy to sphere, save to file
                 with self.file_lock:
+                    arch_copy = arch.copy()
                     sphere.add_arch(
-                        arch=arch.copy(), calculate=False, update=True,
-                        get_sd=True, set_mg=False, static=True,
+                        arch=arch_copy, calculate=False, update=True,
+                        get_sd=True, set_mg=False, static=True, gi=self.gi
                     )
                     sphere.save_to_h5(data_only=True, replace=False)
 
                 self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
+
+                # arch_data = {
+                #     'idx': arch_copy.idx,
+                #     'map_raw': arch_copy.map_raw,
+                #     'mask': arch_copy.mask,
+                #     'scan_info': arch_copy.scan_info,
+                #     'poni_file': arch_copy.poni_file,
+                #     'map_norm': arch_copy.map_norm,
+                #     'int_1d': arch_copy.int_1d,
+                #     'int_2d': arch_copy.int_2d
+                # }
+                # self.signal_q.put(('updateArch', arch_data))
+
                 i += 1
 
             # Check if terminate signal sent

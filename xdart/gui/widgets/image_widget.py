@@ -115,7 +115,7 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
         self.image_plot.addItem(self.imageItem)
 
         self.histogram = self.image_win.addColorBar(image=self.imageItem)
-        self.histogram.layout.setContentsMargins(0, 20, 0, 40)
+        self.histogram.layout.setContentsMargins(0, 20, 0, 50)
 
         self.raw_image = np.zeros(0)
         self.displayed_image = np.zeros(0)
@@ -133,18 +133,22 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
         self.imageItem.setRect(rect)
 
     def update_image(self, scale='Linear', cmap='viridis', **kwargs):
-        self.displayed_image = np.copy(self.raw_image)
+        self.displayed_image = np.asarray(np.copy(self.raw_image), dtype=np.float)
         if scale == 'Log':
-            self.displayed_image[self.displayed_image < 0] = 0
-            minval = self.displayed_image[self.displayed_image > 0].min()
-            self.displayed_image = np.log10(self.displayed_image/minval + 1)
+            # self.displayed_image[self.displayed_image < 0] = 0
+            # minval = self.displayed_image[self.displayed_image > 0].min()
+            # self.displayed_image = np.log10(self.displayed_image/minval + 1)
+            minval = np.min(self.displayed_image) - 1
+            self.displayed_image -= (np.min(self.displayed_image) - 1.)
+            # self.displayed_image -= minval
+            self.displayed_image = np.log10(self.displayed_image)
 
             levels = np.nanpercentile(self.displayed_image, (0.1, 99.9))
             self.imageItem.setImage(self.displayed_image, levels=levels, **kwargs)
 
             self.histogram.axis.setLogMode(True)
         elif scale == 'Sqrt':
-            self.displayed_image += self.displayed_image.min()
+            self.displayed_image -= self.displayed_image.min()
             self.displayed_image = np.sqrt(self.displayed_image)
 
             levels = np.nanpercentile(self.displayed_image, (0.5, 99.5))

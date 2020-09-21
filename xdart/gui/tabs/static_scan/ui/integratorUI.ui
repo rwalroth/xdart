@@ -88,18 +88,30 @@
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <item>
           <widget class="QLabel" name="label1D">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>200</width>
+             <width>80</width>
              <height>16777215</height>
             </size>
            </property>
            <property name="font">
             <font>
-             <pointsize>15</pointsize>
+             <pointsize>17</pointsize>
              <weight>75</weight>
              <bold>true</bold>
             </font>
+           </property>
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgba(195, 195, 195, 99);</string>
            </property>
            <property name="text">
             <string>1-D</string>
@@ -108,6 +120,22 @@
             <set>Qt::AlignCenter</set>
            </property>
           </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Maximum</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
          </item>
          <item>
           <widget class="QComboBox" name="axis1D">
@@ -228,12 +256,12 @@
              </property>
              <item>
               <property name="text">
-               <string>2 u\u03B8</string>
+               <string>q (u\u212Bu\u207Bu\u00B9)</string>
               </property>
              </item>
              <item>
               <property name="text">
-               <string>q (u\u212Bu\u207Bu\u00B9)</string>
+               <string>2 u\u03B8</string>
               </property>
              </item>
             </widget>
@@ -347,11 +375,22 @@
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
            <item>
             <widget class="QPushButton" name="integrate1D">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>13</pointsize>
+              </font>
+             </property>
              <property name="focusPolicy">
               <enum>Qt::StrongFocus</enum>
              </property>
@@ -362,8 +401,17 @@
            </item>
            <item>
             <widget class="QPushButton" name="advanced1D">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="focusPolicy">
               <enum>Qt::StrongFocus</enum>
+             </property>
+             <property name="layoutDirection">
+              <enum>Qt::LeftToRight</enum>
              </property>
              <property name="text">
               <string>Advanced...</string>
@@ -372,6 +420,12 @@
            </item>
            <item>
             <widget class="QCheckBox" name="all1D">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="focusPolicy">
               <enum>Qt::StrongFocus</enum>
              </property>
@@ -420,18 +474,36 @@
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
             <widget class="QLabel" name="label2D">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>50</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
-               <width>200</width>
+               <width>80</width>
                <height>16777215</height>
               </size>
              </property>
              <property name="font">
               <font>
-               <pointsize>15</pointsize>
+               <pointsize>17</pointsize>
                <weight>75</weight>
                <bold>true</bold>
               </font>
+             </property>
+             <property name="autoFillBackground">
+              <bool>true</bool>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: rgba(195, 195, 195, 99);</string>
              </property>
              <property name="text">
               <string>2-D</string>
@@ -538,12 +610,12 @@
              </property>
              <item>
               <property name="text">
-               <string>2 u\u03B8</string>
+               <string>q (u\u212Bu\u207Bu\u00B9)</string>
               </property>
              </item>
              <item>
               <property name="text">
-               <string>q (u\u212Bu\u207Bu\u00B9)</string>
+               <string>2 u\u03B8</string>
               </property>
              </item>
             </widget>
@@ -713,6 +785,16 @@
   <tabstop>integrate1D</tabstop>
   <tabstop>advanced1D</tabstop>
   <tabstop>all1D</tabstop>
+  <tabstop>axis2D</tabstop>
+  <tabstop>npts_radial_2D</tabstop>
+  <tabstop>npts_azim_2D</tabstop>
+  <tabstop>unit_2D</tabstop>
+  <tabstop>radial_low_2D</tabstop>
+  <tabstop>radial_high_2D</tabstop>
+  <tabstop>radial_autoRange_2D</tabstop>
+  <tabstop>azim_low_2D</tabstop>
+  <tabstop>azim_high_2D</tabstop>
+  <tabstop>azim_autoRange_2D</tabstop>
  </tabstops>
  <resources/>
  <connections/>

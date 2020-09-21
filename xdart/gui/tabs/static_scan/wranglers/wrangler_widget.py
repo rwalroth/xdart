@@ -18,6 +18,7 @@ from pyqtgraph.parametertree import Parameter
 
 # This module imports
 from xdart.modules.ewald import EwaldSphere
+# from xdart.utils.containers.int_data_static import int_1d_data_static
 
 
 class wranglerWidget(Qt.QtWidgets.QWidget):
@@ -47,12 +48,13 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         sigStart: Tells tthetaWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
-        sigUpdateFile: (str, str), sends new scan_name and file name
-            to tthetaWidget.
+        sigUpdateFile: (str, str, gi), sends new scan_name, file name
+            and gi condition (grazing incidence) to static_scan_widget.
     """
     sigStart = Qt.QtCore.Signal()
     sigUpdateData = Qt.QtCore.Signal(int)
-    sigUpdateFile = Qt.QtCore.Signal(str, str)
+    sigUpdateArch = Qt.QtCore.Signal(dict)
+    sigUpdateFile = Qt.QtCore.Signal(str, str, bool)
     finished = Qt.QtCore.Signal()
     started = Qt.QtCore.Signal()
 
@@ -74,7 +76,8 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         self.thread.finished.connect(self.finished.emit)
         self.thread.started.connect(self.started.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
-    
+        self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
+
     def enabled(self, enable):
         """Use this function to control what is enabled and disabled
         during integration.
@@ -118,11 +121,12 @@ class wranglerThread(Qt.QtCore.QThread):
     
     signals:
         sigUpdate: int, signals a new arch has been added.
-        sigUpdateFile: (str, str), sends new scan_name and file name
-            to tthetaWidget.
+        sigUpdateFile: (str, str, gi), sends new scan_name, file name
+            and gi condition (grazing incidence) to static_scan_widget.
     """
     sigUpdate = Qt.QtCore.Signal(int)
-    sigUpdateFile = Qt.QtCore.Signal(str, str)
+    sigUpdateArch = Qt.QtCore.Signal(dict)
+    sigUpdateFile = Qt.QtCore.Signal(str, str, bool)
 
     def __init__(self, command_queue, sphere_args, fname, file_lock,
                  parent=None):

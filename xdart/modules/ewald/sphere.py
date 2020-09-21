@@ -59,7 +59,7 @@ class EwaldSphere():
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={},
                  # keep_in_memory=False, data_1d={}, data_2d={},
-                 static=False, overall_raw=0, overall_norm=0,
+                 static=False, gi=False, overall_raw=0, overall_norm=0,
                  ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
@@ -96,7 +96,9 @@ class EwaldSphere():
         self.sphere_lock = Condition(_PyRLock())
 
         self.static = static
+        self.gi = gi
         print(f'sphere > __init__: self.static = {self.static}')
+        print(f'sphere > __init__: self.gi = {self.gi}')
         if self.static:
             self.bai_1d = int_1d_data_static()
             self.bai_2d = int_2d_data_static()

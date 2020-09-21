@@ -215,6 +215,7 @@ class staticWidget(QWidget):
         self.wrangler.sigStart.connect(self.start_wrangler)
         self.wrangler.sigUpdateData.connect(self.update_data)
         self.wrangler.sigUpdateFile.connect(self.new_scan)
+        self.wrangler.sigUpdateArch.connect(self.new_arch)
         self.wrangler.started.connect(self.thread_state_changed)
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
@@ -330,8 +331,8 @@ class staticWidget(QWidget):
             self.metawidget.update()
             self.integratorTree.update()
 
-        self.h5viewer.ui.listData.focusWidget()
-        self.h5viewer.ui.listData.setFocus()
+        # self.h5viewer.ui.listData.focusWidget()
+        # self.h5viewer.ui.listData.setFocus()
 
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
@@ -367,6 +368,7 @@ class staticWidget(QWidget):
         """Advances to last arch in data list, updates displayframe, and
         set auto_last to True
         """
+        self.displayframe.auto_last = True
         if self.arch.idx is None:
             pass
 
@@ -421,7 +423,7 @@ class staticWidget(QWidget):
         self.metawidget.update()
 
         # self.h5viewer.ui.listData.setFocus()
-        self.h5viewer.ui.listData.focusWidget()
+        # self.h5viewer.ui.listData.focusWidget()
 
     def integrator_thread_update(self, idx):
         self.thread_state_changed()
@@ -446,7 +448,7 @@ class staticWidget(QWidget):
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
 
-    def new_scan(self, name, fname):
+    def new_scan(self, name, fname, gi):
         """Connected to sigUpdateFile from wrangler. Called when a new
         scan is started.
 
@@ -457,7 +459,27 @@ class staticWidget(QWidget):
         if self.sphere.name == name or self.sphere.name == 'null_main':
             self.h5viewer.dirname = os.path.dirname(fname)
             self.h5viewer.set_file(fname)
+            self.sphere.gi = gi
+        self.displayframe.auto_last = True
         self.h5viewer.update()
+
+    def new_arch(self, arch_data):
+        """Connected to sigUpdateFile from wrangler. Called when a new
+        scan is started.
+
+        args:
+            name: str, scan name
+            fname: str, path to data file for scan
+        """
+        arch = EwaldArch(idx=arch_data['idx'], map_raw=arch_data['map_raw'],
+                         mask=arch_data['mask'], scan_info=arch_data['scan_info'],
+                         poni_file=arch_data['poni_file'])
+        arch.int_1d = arch_data['int_1d']
+        arch.int_2d = arch_data['int_2d']
+        arch.map_norm = arch_data['map_norm']
+        # self.data_2d[str(arch.idx)] = arch
+        print(f'\n########static_scan_widget > new_arch: {arch}, {arch.idx}')
+        print(f'static_scan_widget > data_2d.keys: {self.data_2d.keys()}')
 
     def start_wrangler(self):
         """Sets up wrangler, ensures properly synced args, and starts
