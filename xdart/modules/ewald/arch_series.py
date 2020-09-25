@@ -13,8 +13,9 @@ from pandas import Series
 # xdart imports
 from xdart.utils import catch_h5py_file as catch
 
-## This module imports
+# This module imports
 from .arch import EwaldArch
+
 
 class ArchSeries():
     """Container for storing EwaldArch objects. Data is stored in an
@@ -33,7 +34,8 @@ class ArchSeries():
         iloc: Retrieve an arch by its absolute location not its id.
         sort_index: Sort the index by arch id.
     """
-    def __init__(self, data_file, file_lock, arches=[]):
+    def __init__(self, data_file, file_lock, arches=[],
+                 static=False, gi=False):
         """data_file: Path to hdf5 file for storing data.
         file_lock: Thread safe lock.
         arches: List of arches to initialize series with.
@@ -41,6 +43,8 @@ class ArchSeries():
         self.data_file = data_file
         self.file_lock = file_lock
         self.index = []
+        self.static = static
+        self.gi = gi
         if arches:
             for a in arches:
                 self.__setitem__(a.idx, a)
@@ -58,7 +62,8 @@ class ArchSeries():
         into it.
         """
         if idx in self.index:
-            arch = EwaldArch(idx)
+
+            arch = EwaldArch(idx, static=self.static, gi=self.gi)
             # invoke the lock to prevent conflicts
             with self.file_lock:
                 # use catch to avoid oserrors which will resolve with time.

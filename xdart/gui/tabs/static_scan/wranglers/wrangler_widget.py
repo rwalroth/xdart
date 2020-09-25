@@ -4,7 +4,7 @@
 """
 
 # Standard library imports
-import copy
+import inspect
 from queue import Queue
 import multiprocessing as mp
 import traceback
@@ -12,13 +12,13 @@ import traceback
 # Other imports
 
 # Qt imports
-import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
 from xdart.modules.ewald import EwaldSphere
-# from xdart.utils.containers.int_data_static import int_1d_data_static
+
+debug = True
 
 
 class wranglerWidget(Qt.QtWidgets.QWidget):
@@ -48,13 +48,13 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         sigStart: Tells tthetaWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
-        sigUpdateFile: (str, str, gi), sends new scan_name, file name
-            and gi condition (grazing incidence) to static_scan_widget.
+        sigUpdateFile: (str, str, bool, str), sends new scan_name, file name
+            gi condition (grazing incidence) and theta motor to static_scan_widget.
     """
     sigStart = Qt.QtCore.Signal()
     sigUpdateData = Qt.QtCore.Signal(int)
     sigUpdateArch = Qt.QtCore.Signal(dict)
-    sigUpdateFile = Qt.QtCore.Signal(str, str, bool)
+    sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str)
     finished = Qt.QtCore.Signal()
     started = Qt.QtCore.Signal()
 
@@ -62,6 +62,9 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         """fname: str, file path
         file_lock: mp.Condition, process safe lock
         """
+        if debug:
+            print(f'- wrangler_widget > wranglerWidget: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
         super().__init__(parent)
         self.file_lock = file_lock
         self.fname = fname
@@ -82,13 +85,19 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         """Use this function to control what is enabled and disabled
         during integration.
         """
+        if debug:
+            print(f'- wrangler_widget > wranglerWidget: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
         pass
 
     def setup(self):
         """Sets the thread child object. Called by tthetaWidget prior
         to starting thread.
         """
-        self.thread = wranglerThread(self.command_queue, self.sphere_args, 
+        if debug:
+            print(f'- wrangler_widget > wranglerWidget: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
+        self.thread = wranglerThread(self.command_queue, self.sphere_args,
                                      self.fname, self.file_lock, self)
     
     def set_fname(self, fname):
@@ -96,6 +105,9 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         args:
             fname: str, path for new file.
         """
+        if debug:
+            print(f'- wrangler_widget > wranglerWidget: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
         with self.file_lock:
             if not self.thread.isRunning():
                 self.fname = fname
@@ -121,12 +133,12 @@ class wranglerThread(Qt.QtCore.QThread):
     
     signals:
         sigUpdate: int, signals a new arch has been added.
-        sigUpdateFile: (str, str, gi), sends new scan_name, file name
-            and gi condition (grazing incidence) to static_scan_widget.
+        sigUpdateFile: (str, str, bool, str), sends new scan_name, file name
+            gi condition (grazing incidence), and theta motor, to static_scan_widget.
     """
     sigUpdate = Qt.QtCore.Signal(int)
     sigUpdateArch = Qt.QtCore.Signal(dict)
-    sigUpdateFile = Qt.QtCore.Signal(str, str, bool)
+    sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str)
 
     def __init__(self, command_queue, sphere_args, fname, file_lock,
                  parent=None):
@@ -136,6 +148,9 @@ class wranglerThread(Qt.QtCore.QThread):
         fname: str, path to data file.
         file_lock: mp.Condition, process safe lock for file access
         """
+        if debug:
+            print(f'- wrangler_widget > wranglerThread: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
         super().__init__(parent)
         self.input_q = command_queue # thread queue
         self.sphere_args = sphere_args
@@ -148,6 +163,9 @@ class wranglerThread(Qt.QtCore.QThread):
         """Main task. Should initialize child process here and listen
         to input and signal queues.
         """
+        if debug:
+            print(f'- wrangler_widget > wranglerThread: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
         process = wranglerProcess(
             self.command_q, 
             self.signal_q, 
@@ -163,6 +181,7 @@ class wranglerThread(Qt.QtCore.QThread):
                     self.command_q.put('stop')
                     break
         process.join()
+
 
 class wranglerProcess(mp.Process):
     """Base class for wrangler processes. Subclasses should extend
@@ -191,6 +210,9 @@ class wranglerProcess(mp.Process):
         fname: str, path to data file
         file_lock: mp.Condition, process safe lock for file access
         """
+        if debug:
+            print(f'- wrangler_widget > wranglerProcess: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
         super().__init__(*args, **kwargs)
         self.command_q = command_q
         self.signal_q = signal_q
@@ -202,6 +224,9 @@ class wranglerProcess(mp.Process):
         """Target of process, calls _main inside a try except clause to
         handle errors.
         """
+        if debug:
+            print(f'- wrangler_widget > wranglerProcess: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
         try:
             self._main()
         except:
@@ -212,6 +237,9 @@ class wranglerProcess(mp.Process):
     def _main(self):
         """Treated like overriding run in a normal multiprocess Process.
         """
+        if debug:
+            print(f'- wrangler_widget > wranglerProcess: {inspect.currentframe().f_code.co_name} -')
+            # print(f'  {inspect.stack()[1][3]}')
         sphere = EwaldSphere(data_file=self.fname,
                              # keep_in_memory=True,
                              static=True,

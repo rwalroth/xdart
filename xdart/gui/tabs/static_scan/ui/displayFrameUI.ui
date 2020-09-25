@@ -327,13 +327,13 @@
            <widget class="QComboBox" name="imageUnit">
             <property name="minimumSize">
              <size>
-              <width>60</width>
+              <width>90</width>
               <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>100</width>
+              <width>130</width>
               <height>16777215</height>
              </size>
             </property>
@@ -684,19 +684,6 @@
            <number>0</number>
           </property>
           <item>
-           <widget class="QLabel" name="scaleLabel">
-            <property name="maximumSize">
-             <size>
-              <width>40</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string>Scale</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <widget class="QComboBox" name="scale">
             <property name="maximumSize">
              <size>
@@ -734,7 +721,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>30</width>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>
@@ -777,7 +764,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>30</width>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>
@@ -795,7 +782,7 @@
              <string>y Offset for Overlay Mode</string>
             </property>
             <property name="text">
-             <string>y Offset</string>
+             <string>Offset</string>
             </property>
            </widget>
           </item>
@@ -825,7 +812,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>30</width>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>
@@ -858,6 +845,11 @@
               <string>2 u\u03B8</string>
              </property>
             </item>
+            <item>
+             <property name="text">
+              <string>Chi</string>
+             </property>
+            </item>
            </widget>
           </item>
           <item>
@@ -870,7 +862,123 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>30</width>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="slice_axis">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>20</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>20</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Chi</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="slice_center">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>70</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>70</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="minimum">
+             <double>-180.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>180.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.500000000000000</double>
+            </property>
+            <property name="value">
+             <double>0.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="slice_width">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>70</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>70</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="minimum">
+             <double>0.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>270.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.500000000000000</double>
+            </property>
+            <property name="value">
+             <double>5.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="slice">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_13">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Maximum</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
               <height>20</height>
              </size>
             </property>

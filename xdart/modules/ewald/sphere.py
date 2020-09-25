@@ -58,8 +58,8 @@ class EwaldSphere():
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={},
-                 # keep_in_memory=False, data_1d={}, data_2d={},
-                 static=False, gi=False, overall_raw=0, overall_norm=0,
+                 static=False, gi=False, th_mtr='th',
+                 overall_raw=0, overall_norm=0,
                  ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
@@ -82,10 +82,18 @@ class EwaldSphere():
             self.data_file = name + ".hdf5"
         else:
             self.data_file = data_file
+
+        self.static = static
+        self.gi = gi
+        self.th_mtr = th_mtr
+        print(f'sphere > __init__: self.static, self.gi, self.th_mtr = {self.static}, {self.gi}, {self.th_mtr}')
+
         if arches:
-            self.arches = ArchSeries(self.data_file, self.file_lock, arches)
+            self.arches = ArchSeries(self.data_file, self.file_lock, arches,
+                                     static=self.static, gi=self.gi)
         else:
-            self.arches = ArchSeries(self.data_file, self.file_lock)
+            self.arches = ArchSeries(self.data_file, self.file_lock,
+                                     static=self.static, gi=self.gi)
         self.scan_data = scan_data
         self.mg_args = mg_args
         self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
@@ -95,10 +103,6 @@ class EwaldSphere():
         self.mgi_2d = int_2d_data()
         self.sphere_lock = Condition(_PyRLock())
 
-        self.static = static
-        self.gi = gi
-        print(f'sphere > __init__: self.static = {self.static}')
-        print(f'sphere > __init__: self.gi = {self.gi}')
         if self.static:
             self.bai_1d = int_1d_data_static()
             self.bai_2d = int_2d_data_static()
@@ -106,17 +110,8 @@ class EwaldSphere():
             self.bai_1d = int_1d_data()
             self.bai_2d = int_2d_data()
 
-
-        # self.keep_in_memory = keep_in_memory
-        # print(f'keep_in_memory: {self.keep_in_memory}')
-        # if len(data_1d) == 0:
-        #     columns = ['raw', 'ttheta', 'q']
-        #     data_1d = pd.DataFrame(columns=columns)
-        # self.data_1d = data_1d
-        # self.data_2d = data_2d
         self.overall_raw = overall_raw
         self.overall_norm = overall_norm
-        # print(f'data_1d: {self.data_1d}')
 
     def reset(self):
         """Resets all held data objects to blank state, called when all
@@ -127,15 +122,14 @@ class EwaldSphere():
             self.scan_data = pd.DataFrame()
             self.mgi_1d = int_1d_data()
             self.mgi_2d = int_2d_data()
-            self.arches = ArchSeries(self.data_file, self.file_lock)
+            self.arches = ArchSeries(self.data_file, self.file_lock,
+                                     static=self.static, gi=self.gi)
             if self.static:
                 self.bai_1d = int_1d_data_static()
                 self.bai_2d = int_2d_data_static()
             else:
                 self.bai_1d = int_1d_data()
                 self.bai_2d = int_2d_data()
-            # self.data_1d = {}
-            # self.data_2d = {}
             self.overall_raw = 0
             self.overall_norm = 0
 
@@ -198,20 +192,6 @@ class EwaldSphere():
             self.overall_raw += arch.map_raw
             self.overall_norm += arch.map_raw / arch.map_norm
             print(f'sphere > add_arch: overall_raw.shape = {self.overall_raw.shape}')
-
-            # self.data_1d[str(arch.idx)] = arch.int_1d
-            # print(f'sphere > add_arch: added {arch.idx} to self.data_1d')
-            # print(f'sphere > add_arch: self.data_1d.keys = {list(self.data_1d.keys())}')
-
-            # if self.keep_in_memory:
-            #     self.data_2d[str(arch.idx)] = arch
-            #     print(f'sphere > add_arch: self.data_2d.keys = {list(self.data_2d.keys())}')
-                # ds = pd.Series(dict(raw=arch.int_1d.raw,
-                #                     ttheta=arch.int_1d.ttheta,
-                #                     q=arch.int_1d.q),
-                #                name=arch.idx)
-                # self.data_1d = self.data_1d.append(ds)
-                # print(self.data_1d.columns, self.data_1d.index)
 
     def by_arch_integrate_1d(self, **args):
         """Integrates all arches individually, then sums the results for
@@ -406,6 +386,7 @@ class EwaldSphere():
             holding the file_lock.
         """
         with self.sphere_lock:
+            print(f'sphere > _save_to_h5: self.static, self.gi = {self.static}, {self.gi}')
 
             grp.attrs['type'] = 'EwaldSphere'
 
@@ -417,6 +398,7 @@ class EwaldSphere():
                 lst_attr = [
                     "scan_data", "mg_args", "bai_1d_args",
                     "bai_2d_args", "overall_raw", "overall_norm",
+                    "static", "gi", "th_mtr"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
@@ -448,6 +430,7 @@ class EwaldSphere():
             holding the file_lock.
         """
         with self.sphere_lock:
+            print(f'sphere > _load_from_h5: self.static, self.gi = {self.static}, {self.gi}')
             if 'type' in grp.attrs:
                 if grp.attrs['type'] == 'EwaldSphere':
                     for arch in grp['arches']:
@@ -465,17 +448,20 @@ class EwaldSphere():
                         lst_attr = [
                             "scan_data", "mg_args", "bai_1d_args",
                             "bai_2d_args", "overall_raw", "overall_norm",
+                            "static", "gi", "th_mtr"
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                         self._set_args(self.bai_1d_args)
                         self._set_args(self.bai_2d_args)
-                        self._set_args(self.mg_args)
+                        if not self.static:
+                            self._set_args(self.mg_args)
                     self.bai_1d.from_hdf5(grp['bai_1d'])
                     self.bai_2d.from_hdf5(grp['bai_2d'])
-                    self.mgi_1d.from_hdf5(grp['mgi_1d'])
-                    self.mgi_2d.from_hdf5(grp['mgi_2d'])
-                    if set_mg:
-                        self.set_multi_geo(**self.mg_args)
+                    if not self.static:
+                        self.mgi_1d.from_hdf5(grp['mgi_1d'])
+                        self.mgi_2d.from_hdf5(grp['mgi_2d'])
+                        if set_mg:
+                            self.set_multi_geo(**self.mg_args)
 
     def set_datafile(self, fname, name=None, keep_current_data=False,
                      save_args={}, load_args={}):
@@ -503,6 +489,7 @@ class EwaldSphere():
                 self.save_to_h5(replace=True, **save_args)
             else:
                 if os.path.exists(fname):
+                    print(f'sphere > set_datafile: load_args, static, gi = {load_args}, {self.static}, {self.gi}')
                     self.load_from_h5(replace=True, **load_args)
                 else:
                     self.reset()

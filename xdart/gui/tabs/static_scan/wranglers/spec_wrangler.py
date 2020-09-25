@@ -7,6 +7,7 @@
 import os
 import copy
 import time
+import inspect
 
 # Qt imports
 from pyqtgraph import Qt
@@ -22,6 +23,8 @@ from xdart.utils import read_image_file, get_image_meta_data
 
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
+
+debug = True
 
 img_fname = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0001.tif'
 poni = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
@@ -85,6 +88,8 @@ class specWrangler(wranglerWidget):
         """fname: str, file path
         file_lock: mp.Condition, process safe lock
         """
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         super().__init__(fname, file_lock, parent)
         self.img_fname = ''
         self.img_dir = '.'
@@ -165,6 +170,8 @@ class specWrangler(wranglerWidget):
     def setup(self):
         """Sets up the child thread, syncs all parameters.
         """
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         self.img_fname = self.parameters.child('Image File').value()
         self.thread.img_fname = self.img_fname
         print(f'spec_wrangler > img_fname: {self.img_fname}')
@@ -199,6 +206,8 @@ class specWrangler(wranglerWidget):
         commandLine send_command method to add command to list of
         commands.
         """
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         command = self.specCommandLine.text()
         if not (command.isspace() or command == ''):
             try:
@@ -210,20 +219,28 @@ class specWrangler(wranglerWidget):
         commandLine.send_command(self.specCommandLine)
 
     def pause(self):
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         if self.thread.isRunning():
             self.command_queue.put('pause')
 
     def cont(self):
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         if self.thread.isRunning():
             self.command_queue.put('continue')
 
     def stop(self):
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         if self.thread.isRunning():
             self.command_queue.put('stop')
 
     def set_image_file(self):
         """Opens file dialogue and sets the spec data file
         """
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
         if fname != '':
             self.parameters.child('Image File').setValue(fname)
@@ -232,6 +249,8 @@ class specWrangler(wranglerWidget):
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
         """
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
         if fname != '':
             self.parameters.child('PONI File').setValue(fname)
@@ -243,6 +262,8 @@ class specWrangler(wranglerWidget):
         Arguments:
             fname {str} -- full image file name with path
         """
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         dir = os.path.dirname(self.img_fname)
         root, ext = os.path.splitext(os.path.basename(self.img_fname))
 
@@ -259,6 +280,8 @@ class specWrangler(wranglerWidget):
         args:
             enable: bool, True for enabled False for disabled.
         """
+        if debug:
+            print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
         self.tree.setEnabled(enable)
         self.ui.startButton.setEnabled(enable)
 
@@ -318,6 +341,8 @@ class specThread(wranglerThread):
         gi: bool, grazing incidence flag to determine if pyGIX is to be used
         th_mtr: float, incidence angle
         """
+        if debug:
+            print(f'- spec_wrangler > specThread: {inspect.currentframe().f_code.co_name} -')
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
         self.scan_name = scan_name
         self.poni_file = poni_file
@@ -331,6 +356,8 @@ class specThread(wranglerThread):
         """Initializes specProcess and watches for new commands from
         parent or signals from the process.
         """
+        if debug:
+            print(f'- spec_wrangler > specThread: {inspect.currentframe().f_code.co_name} -')
         process = specProcess(
             self.command_q,
             self.signal_q,
@@ -366,7 +393,7 @@ class specThread(wranglerThread):
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
                     print(f'\nspec_wrangler > news_scan: {self.scan_name}\n')
-                    self.sigUpdateFile.emit(self.scan_name, self.fname, self.gi)
+                    self.sigUpdateFile.emit(self.scan_name, self.fname, self.gi, self.th_mtr)
                 elif signal == 'TERMINATE':
                     last = True
 
@@ -384,6 +411,8 @@ class specThread(wranglerThread):
         args:
             q: Queue
         """
+        if debug:
+            print(f'- spec_wrangler > specThread: {inspect.currentframe().f_code.co_name} -')
         while not q.empty():
             _ = q.get()
 
@@ -432,6 +461,8 @@ class specProcess(wranglerProcess):
         timeout: float or int, how long to continue checking for new
             data.
         """
+        if debug:
+            print(f'- spec_wrangler > specProcess: {inspect.currentframe().f_code.co_name} -')
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
                          *args, **kwargs)
         self.poni_file = poni_file
@@ -448,6 +479,8 @@ class specProcess(wranglerProcess):
         signal queue, and catches errors. Calls wrangle method for
         reading in data, then performs integration.
         """
+        if debug:
+            print(f'- spec_wrangler > specProcess: {inspect.currentframe().f_code.co_name} -')
         # Initialize sphere and save to disk, send update for new scan
         print(f'\nspec_wrangler > self.fname: {self.fname}')
         print(f'spec_wrangler > self.scan_name: {self.scan_name}')
@@ -456,6 +489,7 @@ class specProcess(wranglerProcess):
                              data_file=self.fname,
                              static=True,
                              gi=self.gi,
+                             th_mtr=self.th_mtr,
                              # keep_in_memory=True,
                              **self.sphere_args)
         print(f'spec_wrangler: _main: sphere_args = {self.sphere_args}')
@@ -502,7 +536,8 @@ class specProcess(wranglerProcess):
                 idx, map_raw, scan_info = data
                 arch = EwaldArch(
                     idx, map_raw, poni_file=self.poni_file,
-                    scan_info=scan_info, static=True, gi=self.gi
+                    scan_info=scan_info, static=True, gi=self.gi,
+                    th_mtr=self.th_mtr,
                 )
 
                 # integrate image to 1d and 2d arrays
@@ -517,7 +552,8 @@ class specProcess(wranglerProcess):
                     arch_copy = arch.copy()
                     sphere.add_arch(
                         arch=arch_copy, calculate=False, update=True,
-                        get_sd=True, set_mg=False, static=True, gi=self.gi
+                        get_sd=True, set_mg=False, static=True, gi=self.gi,
+                        th_mtr=self.th_mtr
                     )
                     sphere.save_to_h5(data_only=True, replace=False)
 
@@ -558,6 +594,8 @@ class specProcess(wranglerProcess):
                 index of the data, raw image array, metadata
                 dict associated with the image.
         """
+        if debug:
+            print(f'- spec_wrangler > specProcess: {inspect.currentframe().f_code.co_name} -')
         self.signal_q.put(('message', f'Checking for {i}'))
 
         # Construct raw_file path from attributes and index
@@ -585,6 +623,8 @@ class specProcess(wranglerProcess):
         returns:
             image_file: str, absolute path to image file.
         """
+        if debug:
+            print(f'- spec_wrangler > specProcess: {inspect.currentframe().f_code.co_name} -')
         im_base = '_'.join([
             self.scan_name,
             str(i).zfill(4)

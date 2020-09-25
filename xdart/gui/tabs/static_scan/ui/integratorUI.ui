@@ -168,7 +168,7 @@
           </spacer>
          </item>
          <item>
-          <widget class="QLabel" name="label_npts">
+          <widget class="QLabel" name="label_npts_1D">
            <property name="maximumSize">
             <size>
              <width>40</width>
@@ -181,7 +181,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="npts">
+          <widget class="QLineEdit" name="npts_1D">
            <property name="maximumSize">
             <size>
              <width>55</width>
@@ -342,7 +342,7 @@
            <item row="0" column="3">
             <widget class="QLineEdit" name="radial_high_1D">
              <property name="text">
-              <string>60</string>
+              <string>5</string>
              </property>
             </widget>
            </item>
@@ -696,7 +696,7 @@
            <item row="0" column="3">
             <widget class="QLineEdit" name="radial_high_2D">
              <property name="text">
-              <string>60</string>
+              <string>5</string>
              </property>
             </widget>
            </item>
@@ -774,7 +774,7 @@
  </widget>
  <tabstops>
   <tabstop>axis1D</tabstop>
-  <tabstop>npts</tabstop>
+  <tabstop>npts_1D</tabstop>
   <tabstop>unit_1D</tabstop>
   <tabstop>radial_low_1D</tabstop>
   <tabstop>radial_high_1D</tabstop>

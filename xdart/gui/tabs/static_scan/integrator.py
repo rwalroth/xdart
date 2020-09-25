@@ -1,48 +1,53 @@
 # -*- coding: utf-8 -*-
 """
-@author: walroth
+@author: thampy
 """
 
 # Standard library imports
 
 # Other imports
+import inspect
 
 # Qt imports
 import pyqtgraph as pg
-from pyqtgraph import Qt, QtCore
+from pyqtgraph import Qt
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
 from .ui.integratorUI import Ui_Form
 from .sphere_threads import integratorThread
-from ...widgets import rangeWidget
 
 AA_inv = u'\u212B\u207B\u00B9'
 Th = u'\u03B8'
 Deg = u'\u00B0'
 Units = [f"Q ({AA_inv})", f"2{Th} ({Deg})"]
 Units_dict = {Units[0]: 'q_A^-1', Units[1]: '2th_deg'}
+# Units_dict_inv = {'q_A^-1': Units[0], '2th_deg': Units[1]}
+Units_dict_inv = {'q_A^-1': 0, '2th_deg': 1}
+
+debug = True
 
 params = [
     {'name': 'Default', 'type': 'group', 'children': [
             {'name': 'Integrate 1D', 'type': 'group', 'children': [
-                {'name': 'numpoints', 'type': 'int', 'value': 1000, 'visible': False},
-                {'name': 'unit', 'type': 'list', 'values': {
-                    # "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
-                    Units[0]: 'q_A^-1', Units[1]: '2th_deg',
-                    }, 'value': 'q_A^-1'}, # 2th_deg
-                    {'name': 'radial_range', 'type': 'group', 'children': [
-                        {'name': 'Low', 'type': 'float', 'value': 0.0, 'visible': False},
-                        {'name': 'High', 'type': 'float', 'value': 60.0, 'visible': False},
-                        {'name': 'Auto', 'type': 'bool', 'value': True, 'visible': False},
-                    ], 'visible': False,
-                 },
-                {'name': 'azimuth_range', 'type': 'group', 'children': [
-                        {'name': 'Low', 'type': 'float', 'value': -180.0, 'visible': False},
-                        {'name': 'High', 'type': 'float', 'value': 180.0, 'visible': False},
-                        {'name': 'Auto', 'type': 'bool', 'value': True, 'visible': False},
-                    ], 'visible': False,
-                 },
+                # {'name': 'numpoints', 'type': 'int', 'value': 1000, 'visible': False},
+                # {'name': 'unit', 'type': 'list', 'values': {
+                #     # "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
+                #     Units[0]: 'q_A^-1', Units[1]: '2th_deg',
+                #     }, 'value': 'q_A^-1', 'visible':False
+                #  },  # 2th_deg
+                # {'name': 'radial_range', 'type': 'group', 'children': [
+                #     {'name': 'Low', 'type': 'float', 'value': 0.0, 'visible': False},
+                #     {'name': 'High', 'type': 'float', 'value': 60.0, 'visible': False},
+                #     {'name': 'Auto', 'type': 'bool', 'value': True, 'visible': False},
+                #     ], 'visible': False,
+                #  },
+                # {'name': 'azimuth_range', 'type': 'group', 'children': [
+                #         {'name': 'Low', 'type': 'float', 'value': -180.0, 'visible': False},
+                #         {'name': 'High', 'type': 'float', 'value': 180.0, 'visible': False},
+                #         {'name': 'Auto', 'type': 'bool', 'value': True, 'visible': False},
+                #     ], 'visible': False,
+                #  },
                 {'name': 'monitor', 'type': 'str', 'value': 'I0'},
                 {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
                 {'name': 'dummy', 'type': 'float', 'value': -1.0},
@@ -53,32 +58,32 @@ params = [
                 {'name': 'method', 'type': 'list', 'values': [
                         "numpy", "cython", "BBox", "splitpixel", "lut", "csr",
                         "nosplit_csr", "full_csr", "lut_ocl", "csr_ocl"
-                    ], 'value':'cython'},
+                    ], 'value':'csr'},
                 {'name': 'safe', 'type': 'bool', 'value': True},
                 {'name': 'block_size', 'type': 'int', 'value': 32},
                 {'name': 'profile', 'type': 'bool', 'value': False},
                 ]
              },
             {'name': 'Integrate 2D', 'type': 'group', 'children': [
-                {'name': 'npt_rad', 'type': 'int', 'value': 1000, 'visible': False},
-                {'name': 'npt_azim', 'type': 'int', 'value': 1000, 'visible': False},
-                {'name': 'unit', 'type': 'list', 'values': {
-                    Units[0]: 'q_A^-1', Units[1]: '2th_deg',
-                    # "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
-                    }, 'value': 'q_A^-1', 'visible': False},
-                {'name': 'radial_range', 'type': 'group', 'children': [
-                        {'name': 'Low', 'type': 'float', 'value': 0.0},
-                        {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': True},
-                    ], 'visible': False,
-                 },
-                {'name': 'azimuth_range', 'type': 'group', 'children': [
-                        {'name': 'Low', 'type': 'float', 'value': -180.0},
-                        {'name': 'High', 'type': 'float', 'value': 180.0},
-                        {'name': 'Auto', 'type': 'bool', 'value': True,
-                         'visible': True},
-                    ], 'visible': False,
-                 },
+                # {'name': 'npt_rad', 'type': 'int', 'value': 1000, 'visible': False},
+                # {'name': 'npt_azim', 'type': 'int', 'value': 1000, 'visible': False},
+                # {'name': 'unit', 'type': 'list', 'values': {
+                #     Units[0]: 'q_A^-1', Units[1]: '2th_deg',
+                #     # "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
+                #     }, 'value': 'q_A^-1', 'visible': False},
+                # {'name': 'radial_range', 'type': 'group', 'children': [
+                #         {'name': 'Low', 'type': 'float', 'value': 0.0},
+                #         {'name': 'High', 'type': 'float', 'value': 180.0},
+                #         {'name': 'Auto', 'type': 'bool', 'value': True},
+                #     ], 'visible': False,
+                #  },
+                # {'name': 'azimuth_range', 'type': 'group', 'children': [
+                #         {'name': 'Low', 'type': 'float', 'value': -180.0},
+                #         {'name': 'High', 'type': 'float', 'value': 180.0},
+                #         {'name': 'Auto', 'type': 'bool', 'value': True,
+                #          'visible': True},
+                #     ], 'visible': False,
+                #  },
                 {'name': 'monitor', 'type': 'str', 'value': 'None'},
                 {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
                 {'name': 'dummy', 'type': 'float', 'value': -1.0},
@@ -89,7 +94,7 @@ params = [
                 {'name': 'method', 'type': 'list', 'values': [
                         "numpy", "cython", "BBox", "splitpixel", "lut",
                         "csr", "lut_ocl", "csr_ocl"
-                    ], 'value':'cython'},
+                    ], 'value':'csr'},
                 {'name': 'safe', 'type': 'bool', 'value': True}
                 ]
              }
@@ -126,6 +131,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
             to match.
     """
     def __init__(self, sphere, arch, file_lock, parent=None):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -148,6 +155,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.ui.unit_2D.setItemText(1, _translate("Form", Units[1]))
         self.ui.label_azim_2D.setText(f"Chi ({Deg})")
 
+        # Set constraints on range inputs
         self._validate_ranges()
 
         # Set AutoRange Flags
@@ -156,36 +164,14 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.radial_autoRange_2D = self.ui.radial_autoRange_2D.isChecked()
         self.azim_autoRange_2D = self.ui.azim_autoRange_2D.isChecked()
 
-        self.ui.npts.textChanged.connect(self._set_npts_1D)
-        # self.ui.unit_1D.currentIndexChanged.connect(self._set_radial_unit1D)
-        self.ui.unit_1D.currentTextChanged.connect(self._set_radial_unit1D)
-
-        self.ui.radial_low_1D.textChanged.connect(self._set_radial_range1D_low)
-        self.ui.radial_high_1D.textChanged.connect(self._set_radial_range1D_high)
-        self.ui.radial_autoRange_1D.stateChanged.connect(self.update_radial_autoRange_1D)
-
-        self.ui.azim_low_1D.textChanged.connect(self._set_azim_range1D_low)
-        self.ui.azim_high_1D.textChanged.connect(self._set_azim_range1D_high)
-        self.ui.azim_autoRange_1D.stateChanged.connect(self.update_azim_autoRange_1D)
-
-        self.ui.npts_radial_2D.textChanged.connect(self._set_npts_radial_2D)
-        self.ui.npts_azim_2D.textChanged.connect(self._set_npts_azim_2D)
-        # self.ui.unit_2D.currentIndexChanged.connect(self._set_radial_unit2D)
-        self.ui.unit_2D.currentTextChanged.connect(self._set_radial_unit1D)
-
-        self.ui.radial_low_2D.textChanged.connect(self._set_radial_range2D_low)
-        self.ui.radial_high_2D.textChanged.connect(self._set_radial_range2D_high)
-        self.ui.radial_autoRange_2D.stateChanged.connect(self.update_radial_autoRange_2D)
-
-        self.ui.azim_low_2D.textChanged.connect(self._set_azim_range2D_low)
-        self.ui.azim_high_2D.textChanged.connect(self._set_azim_range2D_high)
-        self.ui.azim_autoRange_2D.stateChanged.connect(self.update_azim_autoRange_2D)
-
+        # Setup advanced parameters tree widget
         self.advancedWidget1D = advancedParameters(self.bai_1d_pars, 'bai_1d')
-        self.advancedWidget1D.sigUpdateArgs.connect(self.get_args)
         self.advancedWidget2D = advancedParameters(self.bai_2d_pars, 'bai_2d')
-        self.advancedWidget2D.sigUpdateArgs.connect(self.get_args)
 
+        # Connect input parameter value signals
+        self._connect_inp_signals()
+
+        # Connect integrate and advanced button signals
         self.ui.advanced1D.clicked.connect(self.advancedWidget1D.show)
         self.ui.advanced2D.clicked.connect(self.advancedWidget2D.show)
 
@@ -194,7 +180,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
         self.integrator_thread = integratorThread(self.sphere, self.arch,
                                                   self.file_lock)
-
         self.setEnabled()
 
     def update(self):
@@ -204,7 +189,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
         args:
             sphere: EwaldSphere, object to get args from.
         """
-        # print(f'integrator > update')
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         self._update_params()
 
     def setEnabled(self, enable=True):
@@ -215,6 +201,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
             enable: bool, If True widgets are enabled. If False
                 they are disabled.
         """
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         self.ui.frame1D.setEnabled(enable)
         self.ui.frame2D.setEnabled(enable)
         self.advancedWidget1D.setEnabled(enable)
@@ -239,6 +227,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_radial_autoRange_1D(self):
         """Disable/Enable radial 1D widget if auto range is un/selected
         """
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         self.radial_autoRange_1D = self.ui.radial_autoRange_1D.isChecked()
         # self.setEnabled()
 
@@ -257,6 +247,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_azim_autoRange_1D(self):
         """Disable/Enable azim 1D widget if auto range is un/selected
         """
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         self.azim_autoRange_1D = self.ui.azim_autoRange_1D.isChecked()
 
         self.bai_1d_pars.child('azimuth_range', 'Auto').setValue(
@@ -275,6 +267,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_radial_autoRange_2D(self):
         """Disable/Enable radial 2D widget if auto range is un/selected
         """
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         self.radial_autoRange_2D = self.ui.radial_autoRange_2D.isChecked()
 
         self.bai_2d_pars.child('radial_range', 'Auto').setValue(
@@ -293,6 +287,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_azim_autoRange_2D(self):
         """Disable/Enable radial 2D widget if auto range is un/selected
         """
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         self.azim_autoRange_2D = self.ui.azim_autoRange_2D.isChecked()
 
         self.bai_2d_pars.child('azimuth_range', 'Auto').setValue(
@@ -309,15 +305,21 @@ class integratorTree(Qt.QtWidgets.QWidget):
         # print(f"integrator > update_azim_autoRange_2D: azimuth_range = {self.sphere.bai_2d_args['azimuth_range']}")
 
     def _validate_ranges(self):
-        self.ui.npts.setValidator(Qt.QtGui.QIntValidator(0, 50000))
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+        self.ui.npts_1D.setValidator(Qt.QtGui.QIntValidator(0, 50000))
         self.ui.npts_radial_2D.setValidator(Qt.QtGui.QIntValidator(0, 50000))
         self.ui.npts_azim_2D.setValidator(Qt.QtGui.QIntValidator(0, 50000))
 
         minmax = (0, 50)
-        if self.ui.unit_1D.currentIndex() == 0:
+        if self.ui.unit_1D.currentIndex() == 1:
             minmax = (-180, 180)
         self.ui.radial_low_1D.setValidator(Qt.QtGui.QDoubleValidator(minmax[0], minmax[1], 2))
         self.ui.radial_high_1D.setValidator(Qt.QtGui.QDoubleValidator(minmax[0], minmax[1], 2))
+
+        minmax = (0, 50)
+        if self.ui.unit_2D.currentIndex() == 1:
+            minmax = (-180, 180)
         self.ui.radial_low_2D.setValidator(Qt.QtGui.QDoubleValidator(minmax[0], minmax[1], 2))
         self.ui.radial_high_2D.setValidator(Qt.QtGui.QDoubleValidator(minmax[0], minmax[1], 2))
 
@@ -332,10 +334,14 @@ class integratorTree(Qt.QtWidgets.QWidget):
         args:
             sphere: EwaldSphere, object to get args from.
         """
-        # print(f'integrator > _update_params')
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        self._disconnect_inp_signals()
         with self.sphere.sphere_lock:
-            self._args_to_params(self.sphere.bai_1d_args, self.bai_1d_pars)
-            self._args_to_params(self.sphere.bai_2d_args, self.bai_2d_pars)
+            self._args_to_params(self.sphere.bai_1d_args, self.bai_1d_pars, dim='1D')
+            self._args_to_params(self.sphere.bai_2d_args, self.bai_2d_pars, dim='2D')
+        self._connect_inp_signals()
 
     def get_args(self, key):
         """Updates sphere with all parameters held in integrator.
@@ -344,18 +350,29 @@ class integratorTree(Qt.QtWidgets.QWidget):
             sphere: EwaldSphere, object to update
             key: str, which args to update.
         """
-        # print(f'integrator > get_args')
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         with self.sphere.sphere_lock:
             if key == 'bai_1d':
+                print(f'integrator > get_args: bai_1D_args before = {self.sphere.bai_1d_args}')
+                self._get_npts_1D()
+                self._get_unit_1D()
+                self._get_radial_range_1D()
+                self._get_azim_range_1D()
                 self._params_to_args(self.sphere.bai_1d_args, self.bai_1d_pars)
-                self.update_radial_autoRange_1D()
+                print(f'integrator > get_args: bai_1D_args after  = {self.sphere.bai_1d_args}')
 
             elif key == 'bai_2d':
+                print(f'integrator > get_args: bai_2D_args before = {self.sphere.bai_2d_args}')
+                self._get_npts_radial_2D()
+                self._get_npts_azim_2D()
+                self._get_unit_2D()
+                self._get_radial_range_2D()
+                self._get_azim_range_2D()
                 self._params_to_args(self.sphere.bai_2d_args, self.bai_2d_pars)
-                self.update_radial_autoRange_2D()
-                self.update_azim_autoRange_2D()
+                print(f'integrator > get_args: bai_2D_args after  = {self.sphere.bai_2d_args}')
 
-    def _args_to_params(self, args, tree):
+    def _args_to_params(self, args, tree, dim='1D'):
         """Takes in args dictionary and sets all parameters in tree
         to match the args.
 
@@ -363,19 +380,36 @@ class integratorTree(Qt.QtWidgets.QWidget):
             args: dict, values to use for updating tree
             tree: pyqtgraph Parameter, parameters to update
         """
-        # print(f'integrator > _args_to_param')
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        print(f'integrator> _args_to_params: args = {args}')
+        if len(args) == 0:
+            return
+
         with tree.treeChangeBlocker():
             for key, val in args.items():
-                if 'range' in key:
-                    _range = tree.child(key)
-                    # print(f'integrator> _args_to_params: args = {args}')
-                    # print(f'integrator> _args_to_params: key, val, _range = {key}, {val}, {_range}')
-                    if val is None:
-                        _range.child("Auto").setValue(True)
+                if key == 'radial_range':
+                    if dim == '1D':
+                        self._set_radial_range_1D()
                     else:
-                        _range.child("Low").setValue(val[0])
-                        _range.child("High").setValue(val[1])
-                        _range.child("Auto").setValue(False)
+                        self._set_radial_range_2D()
+                elif key == 'azimuth_range':
+                    if dim == '1D':
+                        self._set_azim_range_1D()
+                    else:
+                        self._set_azim_range_2D()
+                elif key == 'unit':
+                    if dim == '1D':
+                        self._set_unit_1D()
+                    else:
+                        self._set_unit_2D()
+                elif key == 'numpoints':
+                    self._set_npts_1D()
+                elif key == 'npt_rad':
+                    self._set_npts_radial_2D()
+                elif key == 'npt_azim':
+                    self._set_npts_azim_2D()
                 elif key == 'polarization_factor':
                     if val is None:
                         tree.child('Apply polarization factor').setValue(True)
@@ -401,11 +435,14 @@ class integratorTree(Qt.QtWidgets.QWidget):
             args: dict, values to be updates
             tree: pyqtgraph Parameter, parameters used to update args
         """
-        # print(f'integrator > _params_to_args')
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        print(f'integrator > _params_to_args: tree = {tree}')
+        print(f'integrator > _params_to_args: args at beginning = {args}')
         for child in tree.children():
+            # print(f'integrator > _params_to_args: child.name, value = {child.name()}, {child.value()}')
             if 'range' in child.name():
-                # print(f'****integrator > _params_to_args: args = {args}')
-                # print(f'integrator > _params_to_args: child.name, child.child.Auto = {child.name()}, {child.child("Auto").value()}')
                 if child.child("Auto").value():
                     args[child.name()] = None
                 else:
@@ -426,123 +463,400 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 else:
                     args[child.name()] = val
 
-    def _set_radial_range1D_low(self, low):
-        self.bai_1d_pars.child("radial_range", "Low").setValue(low)
-        self.get_args('bai_1d')
+    def _get_radial_range_1D(self):
+        """Sets Sphere 1D radial range in bai_1d_args from UI values"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
 
-    def _set_radial_range1D_high(self, high):
-        self.bai_1d_pars.child("radial_range", "High").setValue(high)
-        self.get_args('bai_1d')
-
-    def _set_radial_range1D_auto(self, auto):
-        auto = bool(auto)
+        auto = self.ui.radial_autoRange_1D.isChecked()
         self.radial_autoRange_1D = auto
-        self.bai_1d_pars.child("radial_range", "Auto").setValue(auto)
 
+        _range = None
         if not auto:
-            low = self.ui.radial_low_1D.text()
-            high = self.ui.radial_high_1D.text()
-            self.bai_1d_pars.child("radial_range", "Low").setValue(low)
-            self.bai_1d_pars.child("radial_range", "High").setValue(high)
+            _range = self._get_valid_range(self.ui.radial_low_1D,
+                                           self.ui.radial_high_1D)
+        self.sphere.bai_1d_args['radial_range'] = _range
 
         self.ui.radial_low_1D.setEnabled(not auto)
         self.ui.radial_high_1D.setEnabled(not auto)
-        self.get_args('bai_1d')
+        print(f'integrator > _get_radial_range_1D: range = {_range}')
 
-    def _set_azim_range1D_low(self, low):
-        self.bai_1d_pars.child("azimuth_range", "Low").setValue(low)
-        self.get_args('bai_1d')
+    def _set_radial_range_1D(self):
+        """Sets UI values from Sphere 1D radial range in bai_1d_args"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
 
-    def _set_azim_range1D_high(self, high):
-        self.bai_1d_pars.child("azimuth_range", "High").setValue(high)
-        self.get_args('bai_1d')
+        self._disconnect_radial_range_1D_signals()
 
-    def _set_azim_range1D_auto(self, auto):
-        auto = bool(auto)
-        self.bai_1d_pars.child("radial_range", "Auto").setValue(auto)
+        _range = self.sphere.bai_1d_args['radial_range']
+        print(f'integrator > _set_radial_range_1D: sphere args = {self.sphere.bai_1d_args}')
+        print(f'integrator > _set_radial_range_1D: _range = {_range}')
+        if _range is None:
+            self.ui.radial_autoRange_1D.setChecked(True)
+            auto = True
+        else:
+            self.ui.radial_low_1D.setText(str(_range[0]))
+            self.ui.radial_high_1D.setText(str(_range[0]))
+            auto = False
 
+        self.radial_autoRange_1D = auto
+        self.ui.radial_low_1D.setEnabled(not auto)
+        self.ui.radial_high_1D.setEnabled(not auto)
+
+        self._connect_radial_range_1D_signals()
+
+    def _get_azim_range_1D(self):
+        """Sets Sphere 1D azimuth range in bai_1d_args from UI values"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        auto = self.ui.azim_autoRange_1D.isChecked()
+        self.azim_autoRange_1D = auto
+
+        _range = None
         if not auto:
-            low = self.ui.azim_low_1D.text()
-            high = self.ui.azim_high_1D.text()
-            self.bai_1d_pars.child("azimuth_range", "Low").setValue(low)
-            self.bai_1d_pars.child("azimuth_range", "High").setValue(high)
+            _range = self._get_valid_range(self.ui.azim_low_1D,
+                                           self.ui.azim_high_1D)
+        self.sphere.bai_1d_args['azimuth_range'] = _range
 
         self.ui.azim_low_1D.setEnabled(not auto)
         self.ui.azim_high_1D.setEnabled(not auto)
-        self.get_args('bai_1d')
+        print(f'integrator > _get_azim_range_1D: range = {_range}')
 
-    def _set_radial_unit1D(self, val):
-        print(f'integrator > _Set_radial_unit1D: val, val_ = {val} {Units_dict[val]}')
-        # self.bai_1d_pars.child("unit").setIndex(val)
-        self.bai_1d_pars.child("unit").setValue(Units_dict[val])
-        self.get_args('bai_1d')
+    def _set_azim_range_1D(self):
+        """Sets UI values from Sphere 1D aazimuth range in bai_1d_args"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
 
-    def _set_npts_1D(self, val):
-        self.bai_1d_pars.child("numpoints").setValue(val)
-        self.get_args("bai_1d")
+        self._disconnect_azim_range_1D_signals()
 
-    def _set_npts_radial_2D(self, val):
-        self.bai_2d_pars.child("npt_rad").setValue(val)
-        self.get_args("bai_2d")
+        _range = self.sphere.bai_1d_args['azimuth_range']
+        print(f'integrator > _set_azim_range_1D: sphere args = {self.sphere.bai_1d_args}')
+        print(f'integrator > _set_azim_range_1D: _range = {_range}')
+        if _range is None:
+            self.ui.azim_autoRange_1D.setChecked(True)
+            auto = True
+        else:
+            self.ui.azim_low_1D.setText(str(_range[0]))
+            self.ui.azim_high_1D.setText(str(_range[0]))
+            auto = False
 
-    def _set_npts_azim_2D(self, val):
-        self.bai_2d_pars.child("npt_azim").setValue(val)
-        self.get_args("bai_2d")
+        self.azim_autoRange_1D = auto
+        self.ui.azim_low_1D.setEnabled(not auto)
+        self.ui.azim_high_1D.setEnabled(not auto)
 
-    def _set_radial_unit2D(self, val):
-        print(f'integrator > _Set_radial_unit2D: val = {val}')
-        # self.bai_2d_pars.child("unit").setIndex(val)
-        self.bai_2d_pars.child("unit").setValue(Units_dict[val])
-        self.get_args('bai_2d')
+        self._connect_azim_range_1D_signals()
 
-    def _set_radial_range2D_low(self, low):
-        self.bai_2d_pars.child("radial_range", "Low").setValue(low)
-        self.get_args('bai_2d')
+    def _get_radial_range_2D(self):
+        """Sets Sphere 2D radial range in bai_1d_args from UI values"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
 
-    def _set_radial_range2D_high(self, high):
-        self.bai_2d_pars.child("radial_range", "High").setValue(high)
-        self.get_args('bai_2d')
-
-    def _set_radial_range2D_auto(self, auto):
-        auto = bool(auto)
+        auto = self.ui.radial_autoRange_2D.isChecked()
         self.radial_autoRange_2D = auto
-        self.bai_2d_pars.child("radial_range", "Auto").setValue(auto)
 
+        _range = None
         if not auto:
-            low = self.ui.radial_low_2D.text()
-            high = self.ui.radial_high_2D.text()
-            self.bai_2d_pars.child("radial_range", "Low").setValue(low)
-            self.bai_2d_pars.child("radial_range", "High").setValue(high)
+            _range = self._get_valid_range(self.ui.radial_low_2D,
+                                           self.ui.radial_high_2D)
+        self.sphere.bai_2d_args['radial_range'] = _range
 
         self.ui.radial_low_2D.setEnabled(not auto)
         self.ui.radial_high_2D.setEnabled(not auto)
-        self.get_args('bai_2d')
+        print(f'integrator > _get_radial_range_2D: range = {_range}')
 
-    def _set_azim_range2D_low(self, low):
-        self.bai_2d_pars.child("azimuth_range", "Low").setValue(low)
-        self.get_args('bai_2d')
+    def _set_radial_range_2D(self):
+        """Sets UI values from Sphere 2D radial range in bai_2d_args"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
 
-    def _set_azim_range2D_high(self, high):
-        self.bai_2d_pars.child("azimuth_range", "High").setValue(high)
-        self.get_args('bai_2d')
+        self._disconnect_radial_range_2D_signals()
 
-    def _set_azim_range2D_auto(self, auto):
-        auto = bool(auto)
-        self.bai_2d_pars.child("radial_range", "Auto").setValue(auto)
+        _range = self.sphere.bai_2d_args['radial_range']
+        print(f'integrator > _set_radial_range_2D: sphere args = {self.sphere.bai_2d_args}')
+        print(f'integrator > _set_radial_range_2D: _range = {_range}')
+        if _range is None:
+            self.ui.radial_autoRange_2D.setChecked(True)
+            auto = True
+        else:
+            self.ui.radial_low_2D.setText(str(_range[0]))
+            self.ui.radial_high_2D.setText(str(_range[0]))
+            auto = False
 
+        self.radial_autoRange_2D = auto
+        self.ui.radial_low_2D.setEnabled(not auto)
+        self.ui.radial_high_2D.setEnabled(not auto)
+
+        self._connect_radial_range_2D_signals()
+
+    def _get_azim_range_2D(self):
+        """Sets Sphere 2D azimuth range in bai_1d_args from UI values"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        auto = self.ui.azim_autoRange_2D.isChecked()
+        self.azim_autoRange_2D = auto
+
+        _range = None
         if not auto:
-            low = self.ui.azim_low_2D.text()
-            high = self.ui.azim_high_2D.text()
-            self.bai_2d_pars.child("azimuth_range", "Low").setValue(low)
-            self.bai_2d_pars.child("azimuth_range", "High").setValue(high)
+            _range = self._get_valid_range(self.ui.azim_low_2D,
+                                           self.ui.azim_high_2D)
+        self.sphere.bai_2d_args['azimuth_range'] = _range
 
         self.ui.azim_low_2D.setEnabled(not auto)
         self.ui.azim_high_2D.setEnabled(not auto)
-        self.get_args('bai_2d')
+        print(f'integrator > _get_azim_range_2D: range = {_range}')
+
+    def _set_azim_range_2D(self):
+        """Sets UI values from Sphere 1D aazimuth range in bai_1d_args"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        self._disconnect_azim_range_2D_signals()
+
+        _range = self.sphere.bai_2d_args['azimuth_range']
+        print(f'integrator > _set_azim_range_2D: sphere args = {self.sphere.bai_2d_args}')
+        print(f'integrator > _set_azim_range_2D: _range = {_range}')
+        if _range is None:
+            self.ui.azim_autoRange_2D.setChecked(True)
+            auto = True
+        else:
+            self.ui.azim_low_2D.setText(str(_range[0]))
+            self.ui.azim_high_2D.setText(str(_range[0]))
+            auto = False
+
+        self.azim_autoRange_1D = auto
+        self.ui.azim_low_2D.setEnabled(not auto)
+        self.ui.azim_high_2D.setEnabled(not auto)
+
+        self._connect_azim_range_2D_signals()
+
+    @staticmethod
+    def _get_valid_range(low, high):
+        """Validate range to return float values"""
+
+        low, high = low.text(), high.text()
+        try:
+            low = float(low)
+        except ValueError:
+            low = 0.
+        try:
+            high = float(high)
+        except ValueError:
+            high = 0.
+        return [low, high]
+
+    def _get_unit_1D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        val = self.ui.unit_1D.currentText()
+        print(f'integrator > _get_unit_1D: val, val_ = {val} {Units_dict[val]}')
+        self.sphere.bai_1d_args['unit'] = Units_dict[val]
+        self._validate_ranges()
+
+    def _set_unit_1D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        self.ui.unit_1D.currentTextChanged.disconnect(self._get_unit_1D)
+        val = self.sphere.bai_1d_args['unit']
+        print(f'integrator > _set_unit_1D: val = {val} {type(val)}, {Units_dict_inv[val]}')
+        self.ui.unit_1D.setCurrentIndex(Units_dict_inv[val])
+        self.ui.unit_1D.currentTextChanged.connect(self._get_unit_1D)
+
+    def _get_unit_2D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        val = self.ui.unit_2D.currentText()
+        print(f'integrator > _get_unit_1D: val, val_ = {val} {Units_dict[val]}')
+        self.sphere.bai_2d_args['unit'] = Units_dict[val]
+        self._validate_ranges()
+
+    def _set_unit_2D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        self.ui.unit_2D.currentTextChanged.disconnect(self._get_unit_2D)
+        val = self.sphere.bai_2d_args['unit']
+        print(f'integrator > _set_unit_2D: val = {val} {type(val)}, {Units_dict_inv[val]}')
+        self.ui.unit_2D.setCurrentIndex(Units_dict_inv[val])
+        # self.ui.unit_2D.setCurrentText(Units_dict_inv[val])
+        self.ui.unit_2D.currentTextChanged.connect(self._get_unit_2D)
+
+    def _get_npts_1D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        val = self.ui.npts_1D.text()
+        val = 500 if (not val) else int(val)
+        print(f'integrator > _get_npts_1D: val = {val}')
+        self.sphere.bai_1d_args['numpoints'] = val
+
+    def _set_npts_1D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        self.ui.npts_1D.textChanged.disconnect(self._get_npts_1D)
+        val = str(self.sphere.bai_1d_args['numpoints'])
+        print(f'integrator > _set_npts_1d: val, dtype = {val} {type(val)}')
+        self.ui.npts_1D.setText(val)
+        self.ui.npts_1D.textChanged.connect(self._get_npts_1D)
+
+    def _get_npts_radial_2D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        val = self.ui.npts_radial_2D.text()
+        val = 500 if (not val) else int(val)
+        print(f'integrator > _get_npts_radial_2D: val = {val}')
+        self.sphere.bai_2d_args['npt_rad'] = val
+
+    def _set_npts_radial_2D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        self.ui.npts_radial_2D.textChanged.disconnect(self._get_npts_radial_2D)
+        val = str(self.sphere.bai_2d_args['npt_rad'])
+        print(f'integrator > _set_npts_radial_2D: val, dtype = {val} {type(val)}')
+        self.ui.npts_radial_2D.setText(val)
+        self.ui.npts_radial_2D.textChanged.connect(self._get_npts_radial_2D)
+
+    def _get_npts_azim_2D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        val = self.ui.npts_azim_2D.text()
+        val = 500 if (not val) else int(val)
+        print(f'integrator > _get_azim_unit2D: val = {val}')
+        self.sphere.bai_2d_args['npt_azim'] = val
+
+    def _set_npts_azim_2D(self):
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        self.ui.npts_azim_2D.textChanged.disconnect(self._get_npts_azim_2D)
+        val = str(self.sphere.bai_2d_args['npt_azim'])
+        print(f'integrator > _set_azim_unit2D: val, dtype = {val} {type(val)}')
+        self.ui.npts_azim_2D.setText(val)
+        self.ui.npts_azim_2D.textChanged.connect(self._get_npts_azim_2D)
+
+    def _connect_inp_signals(self):
+        """Connect signals for all input sphere bai parameters"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        # Connect points and units signals
+        self.ui.npts_1D.textChanged.connect(self._get_npts_1D)
+        self.ui.unit_1D.currentTextChanged.connect(self._get_unit_1D)
+
+        self.ui.npts_radial_2D.textChanged.connect(self._get_npts_radial_2D)
+        self.ui.npts_azim_2D.textChanged.connect(self._get_npts_azim_2D)
+        self.ui.unit_2D.currentTextChanged.connect(self._get_unit_2D)
+
+        # Connect range signals
+        self._connect_radial_range_1D_signals()
+        self._connect_azim_range_1D_signals()
+        self._connect_radial_range_2D_signals()
+        self._connect_azim_range_2D_signals()
+
+        # Connect advanced parameters signals
+        self.advancedWidget1D.sigUpdateArgs.connect(self.get_args)
+        self.advancedWidget2D.sigUpdateArgs.connect(self.get_args)
+
+    def _disconnect_inp_signals(self):
+        """Disconnect signals for all input sphere bai parameters"""
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+
+        # Disconnect points and units signals
+        self.ui.npts_1D.textChanged.disconnect(self._get_npts_1D)
+        self.ui.unit_1D.currentTextChanged.disconnect(self._get_unit_1D)
+        self.ui.npts_radial_2D.textChanged.disconnect(self._get_npts_radial_2D)
+        self.ui.npts_azim_2D.textChanged.disconnect(self._get_npts_azim_2D)
+        self.ui.unit_2D.currentTextChanged.disconnect(self._get_unit_2D)
+
+        # Disconnect range signals
+        self._disconnect_radial_range_1D_signals()
+        self._disconnect_azim_range_1D_signals()
+        self._disconnect_radial_range_2D_signals()
+        self._disconnect_azim_range_2D_signals()
+
+        # Disconnect advanced parameters signals
+        self.advancedWidget1D.sigUpdateArgs.disconnect(self.get_args)
+        self.advancedWidget2D.sigUpdateArgs.disconnect(self.get_args)
+
+    def _connect_radial_range_1D_signals(self):
+        """Connect signals for radial 1D range"""
+        self.ui.radial_low_1D.textChanged.connect(self._get_radial_range_1D)
+        self.ui.radial_high_1D.textChanged.connect(self._get_radial_range_1D)
+        self.ui.radial_autoRange_1D.stateChanged.connect(self._get_radial_range_1D)
+        # self.ui.radial_low_1D.textChanged.connect(self._set_radial_range1D_low)
+        # self.ui.radial_high_1D.textChanged.connect(self._set_radial_range_high_1D)
+        # self.ui.radial_autoRange_1D.stateChanged.connect(self.update_radial_autoRange_1D)
+
+    def _disconnect_radial_range_1D_signals(self):
+        """Disconnect signals for radial 1D range"""
+        self.ui.radial_low_1D.textChanged.disconnect(self._get_radial_range_1D)
+        self.ui.radial_high_1D.textChanged.disconnect(self._get_radial_range_1D)
+        self.ui.radial_autoRange_1D.stateChanged.disconnect(self._get_radial_range_1D)
+
+    def _connect_azim_range_1D_signals(self):
+        """Connect signals for azimuth 1D range"""
+        self.ui.azim_low_1D.textChanged.connect(self._get_azim_range_1D)
+        self.ui.azim_high_1D.textChanged.connect(self._get_azim_range_1D)
+        self.ui.azim_autoRange_1D.stateChanged.connect(self._get_azim_range_1D)
+        # self.ui.azim_low_1D.textChanged.connect(self._set_azim_range_low_1D)
+        # self.ui.azim_high_1D.textChanged.connect(self._set_azim_range_high_1D)
+        # self.ui.azim_autoRange_1D.stateChanged.connect(self._set_azim_range_auto_1D)
+        # self.ui.azim_autoRange_1D.stateChanged.connect(self.update_azim_autoRange_1D)
+
+    def _disconnect_azim_range_1D_signals(self):
+        """Disconnect signals for azimuth 1D range"""
+        self.ui.azim_low_1D.textChanged.disconnect(self._get_azim_range_1D)
+        self.ui.azim_high_1D.textChanged.disconnect(self._get_azim_range_1D)
+        self.ui.azim_autoRange_1D.stateChanged.disconnect(self._get_azim_range_1D)
+        # self.ui.azim_autoRange_2D.stateChanged.disconnect(self.update_azim_autoRange_2D)
+
+    def _connect_radial_range_2D_signals(self):
+        """Connect signals for radial 2D range"""
+        self.ui.radial_low_2D.textChanged.connect(self._get_radial_range_2D)
+        self.ui.radial_high_2D.textChanged.connect(self._get_radial_range_2D)
+        self.ui.radial_autoRange_2D.stateChanged.connect(self._get_radial_range_2D)
+        # self.ui.radial_low_2D.textChanged.connect(self._set_radial_range_low_2D)
+        # self.ui.radial_high_2D.textChanged.connect(self._set_radial_range_high_2D)
+        # self.ui.radial_autoRange_2D.stateChanged.connect(self._set_radial_range2D_auto)
+        # self.ui.radial_autoRange_2D.stateChanged.connect(self.update_radial_autoRange_2D)
+
+    def _disconnect_radial_range_2D_signals(self):
+        """Disconnect signals for radial 2D range"""
+        self.ui.radial_low_2D.textChanged.disconnect(self._get_radial_range_2D)
+        self.ui.radial_high_2D.textChanged.disconnect(self._get_radial_range_2D)
+        self.ui.radial_autoRange_2D.stateChanged.disconnect(self._get_radial_range_2D)
+        # self.ui.radial_autoRange_2D.stateChanged.disconnect(self.update_radial_autoRange_2D)
+
+    def _connect_azim_range_2D_signals(self):
+        """Connect signals for azimuth 2D range"""
+        self.ui.azim_low_2D.textChanged.connect(self._get_azim_range_2D)
+        self.ui.azim_high_2D.textChanged.connect(self._get_azim_range_2D)
+        self.ui.azim_autoRange_2D.stateChanged.connect(self._get_azim_range_2D)
+        # self.ui.azim_low_2D.textChanged.connect(self._set_azim_range_low_2D)
+        # self.ui.azim_high_2D.textChanged.connect(self._set_azim_range_high_2D)
+        # self.ui.azim_autoRange_2D.stateChanged.connect(self._set_azim_range_auto_2D)
+        # self.ui.azim_autoRange_2D.stateChanged.connect(self.update_azim_autoRange_2D)
+
+    def _disconnect_azim_range_2D_signals(self):
+        """Disconnect signals for azimuth 2D range"""
+        self.ui.azim_low_2D.textChanged.disconnect(self._get_azim_range_2D)
+        self.ui.azim_high_2D.textChanged.disconnect(self._get_azim_range_2D)
+        self.ui.azim_autoRange_2D.stateChanged.disconnect(self._get_azim_range_2D)
 
     def bai_1d(self, q):
         """Uses the integrator_thread attribute to call bai_1d
         """
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         with self.integrator_thread.lock:
             if self.ui.all1D.isChecked() or type(self.arch.idx) != int:
                 self.integrator_thread.method = 'bai_1d_all'
@@ -554,6 +868,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def bai_2d(self, q):
         """Uses the integrator_thread attribute to call bai_2d
         """
+        if debug:
+            print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         with self.integrator_thread.lock:
             if self.ui.all2D.isChecked() or type(self.arch.idx) != int:
                 self.integrator_thread.method = 'bai_2d_all'
@@ -581,6 +897,8 @@ class advancedParameters(Qt.QtWidgets.QWidget):
     sigUpdateArgs = Qt.QtCore.Signal(str)
 
     def __init__(self, parameter, name, parent=None):
+        if debug:
+            print(f'- integrator > advancedParameters: {inspect.currentframe().f_code.co_name} -')
         super().__init__(parent)
         self.name = name
         self.parameter = parameter
@@ -592,4 +910,6 @@ class advancedParameters(Qt.QtWidgets.QWidget):
         self.layout.addWidget(self.tree)
 
     def process_change(self, tree, changes):
+        if debug:
+            print(f'- integrator > advancedParameters: {inspect.currentframe().f_code.co_name} -')
         self.sigUpdateArgs.emit(self.name)
