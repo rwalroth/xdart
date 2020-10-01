@@ -19,28 +19,7 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="PyGIX Q-Chi/Qz-Qxy conversion working. Can now apply ranges to get integrated intensities from slices.">
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/v.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/v.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/staticUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/ui/specUI.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/widgets/image_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/widgets/image_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/utils/_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/_utils.py" afterDir="false" />
-    </list>
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Saving data to both tiff/jpg/png/... files, and also to npy arrays (2D) and xye+csv format (1D). Slice boundaries now visible." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -285,7 +264,14 @@
       <option name="project" value="LOCAL" />
       <updated>1601076230715</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Saving data to both tiff/jpg/png/... files, and also to npy arrays (2D) and xye+csv format (1D). Slice boundaries now visible.">
+      <created>1601561916790</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1601561916796</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -311,7 +297,8 @@
     <MESSAGE value="Redesigned Integrator Window to allow for pyGIX options" />
     <MESSAGE value="PyGIX initial Q-Chi conversion working. Normalization implemented." />
     <MESSAGE value="PyGIX Q-Chi/Qz-Qxy conversion working. Can now apply ranges to get integrated intensities from slices." />
-    <option name="LAST_COMMIT_MESSAGE" value="PyGIX Q-Chi/Qz-Qxy conversion working. Can now apply ranges to get integrated intensities from slices." />
+    <MESSAGE value="Saving data to both tiff/jpg/png/... files, and also to npy arrays (2D) and xye+csv format (1D). Slice boundaries now visible." />
+    <option name="LAST_COMMIT_MESSAGE" value="Saving data to both tiff/jpg/png/... files, and also to npy arrays (2D) and xye+csv format (1D). Slice boundaries now visible." />
   </component>
   <component name="WindowStateProjectService">
     <state x="419" y="121" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1600434284375">
@@ -327,25 +314,25 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="507" y="212" key="FileChooserDialogImpl/0.0.1440.900@0.0.1440.900" timestamp="1599832162340" />
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom" timestamp="1601561632259">
+    <state width="1419" height="234" key="GridCell.Tab.0.bottom" timestamp="1601562032235">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1601561632259" />
+    <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1601562032235" />
     <state width="2055" height="406" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055217" />
-    <state width="1419" height="234" key="GridCell.Tab.0.center" timestamp="1601561632255">
+    <state width="1419" height="234" key="GridCell.Tab.0.center" timestamp="1601562032234">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1601561632255" />
+    <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1601562032234" />
     <state width="2055" height="406" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055216" />
-    <state width="1419" height="234" key="GridCell.Tab.0.left" timestamp="1601561632255">
+    <state width="1419" height="234" key="GridCell.Tab.0.left" timestamp="1601562032234">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1601561632255" />
+    <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1601562032234" />
     <state width="2055" height="406" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055215" />
-    <state width="1419" height="234" key="GridCell.Tab.0.right" timestamp="1601561632258">
+    <state width="1419" height="234" key="GridCell.Tab.0.right" timestamp="1601562032234">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1601561632258" />
+    <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1601562032234" />
     <state width="2055" height="406" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055216" />
     <state x="512" y="266" key="MergeDialog" timestamp="1593031610349">
       <screen x="0" y="0" width="2560" height="1440" />
@@ -355,10 +342,10 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1600663373568" />
-    <state x="569" y="283" key="Vcs.Push.Dialog.v2" timestamp="1601076234562">
-      <screen x="0" y="0" width="2560" height="1440" />
+    <state x="320" y="177" key="Vcs.Push.Dialog.v2" timestamp="1601561922957">
+      <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1600716137807" />
+    <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1601561922957" />
     <state x="569" y="283" key="Vcs.Push.Dialog.v2/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076234562" />
     <state x="421" y="176" width="725" height="673" key="find.popup" timestamp="1601545291644">
       <screen x="0" y="0" width="1440" height="900" />
