@@ -430,7 +430,6 @@ class EwaldSphere():
             holding the file_lock.
         """
         with self.sphere_lock:
-            print(f'sphere > _load_from_h5: self.static, self.gi = {self.static}, {self.gi}')
             if 'type' in grp.attrs:
                 if grp.attrs['type'] == 'EwaldSphere':
                     for arch in grp['arches']:
@@ -462,6 +461,7 @@ class EwaldSphere():
                         self.mgi_2d.from_hdf5(grp['mgi_2d'])
                         if set_mg:
                             self.set_multi_geo(**self.mg_args)
+            print(f'sphere > _load_from_h5: self.static, self.gi = {self.static}, {self.gi}')
 
     def set_datafile(self, fname, name=None, keep_current_data=False,
                      save_args={}, load_args={}):

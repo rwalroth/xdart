@@ -55,6 +55,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     sigUpdateData = Qt.QtCore.Signal(int)
     sigUpdateArch = Qt.QtCore.Signal(dict)
     sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str)
+    sigUpdateGI = Qt.QtCore.Signal(bool)
     finished = Qt.QtCore.Signal()
     started = Qt.QtCore.Signal()
 
@@ -80,6 +81,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         self.thread.started.connect(self.started.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
         self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
+        self.thread.sigUpdateGI.connect(self.sigUpdateGI.emit)
 
     def enabled(self, enable):
         """Use this function to control what is enabled and disabled
@@ -135,10 +137,12 @@ class wranglerThread(Qt.QtCore.QThread):
         sigUpdate: int, signals a new arch has been added.
         sigUpdateFile: (str, str, bool, str), sends new scan_name, file name
             gi condition (grazing incidence), and theta motor, to static_scan_widget.
+        sigUpdateGI: bool, signals the grazing incidence condition has changed.
     """
     sigUpdate = Qt.QtCore.Signal(int)
     sigUpdateArch = Qt.QtCore.Signal(dict)
     sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str)
+    sigUpdateGI = Qt.QtCore.Signal(bool)
 
     def __init__(self, command_queue, sphere_args, fname, file_lock,
                  parent=None):

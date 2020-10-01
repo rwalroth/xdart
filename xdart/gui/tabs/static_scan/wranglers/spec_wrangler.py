@@ -79,6 +79,7 @@ class specWrangler(wranglerWidget):
         sigUpdateData: int, signals a new arch has been added.
         sigUpdateFile: (str, str, str), sends new scan_name, file name
             and gi variable (grazing incidence) to static_scan_Widget.
+        sigUpdateGI: bool, signals the grazing incidence condition has changed.
         showLabel: str, connected to thread showLabel signal, sets text
             in specLabel
     """
@@ -152,10 +153,6 @@ class specWrangler(wranglerWidget):
             self.img_dir,
             self.img_ext,
             self.timeout,
-            # None,
-            # None,
-            # None,
-            # 1,
             self.gi,
             self.th_mtr,
             self
@@ -165,6 +162,7 @@ class specWrangler(wranglerWidget):
         self.thread.finished.connect(self.finished.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
         self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
+        self.thread.sigUpdateGI.connect(self.sigUpdateGI.emit)
         self.setup()
 
     def setup(self):
@@ -264,7 +262,7 @@ class specWrangler(wranglerWidget):
         """
         if debug:
             print(f'- spec_wrangler > specWrangler: {inspect.currentframe().f_code.co_name} -')
-        dir = os.path.dirname(self.img_fname)
+        directory = os.path.dirname(self.img_fname)
         root, ext = os.path.splitext(os.path.basename(self.img_fname))
 
         try:
@@ -272,7 +270,7 @@ class specWrangler(wranglerWidget):
         except:
             pass
 
-        return dir, root, ext
+        return directory, root, ext
 
     def enabled(self, enable):
         """Sets tree and start button to enable.

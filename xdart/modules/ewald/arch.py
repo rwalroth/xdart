@@ -242,6 +242,7 @@ class EwaldArch():
 
     def integrate_2d(self, npt_rad=1000, npt_azim=1000, monitor=None,
                      radial_range=None, azimuth_range=None,
+                     x_range=None, y_range=None,
                      unit=units.TTH_DEG, **kwargs):
         """Wrapper for integrate2d method of AzimuthalIntegrator from pyFAI.
         Returns result and also stores the data in the int_2d object.
@@ -326,7 +327,7 @@ class EwaldArch():
                 result = Integrate2dResult(i_qchi, Q, Chi)
 
                 # Transform to reciprocal (Qz-Qxy) coordinates
-                x_range, y_range = None, None
+                print(f'arch > integrate1D: x_range, y_range = {x_range}, {y_range}')
                 i_q, qxy, qz = self.integrator.transform_image(
                     self.map_raw, process='reciprocal', npt=(npt_rad, npt_azim),
                     x_range=x_range, y_range=y_range, unit='q_A^-1',

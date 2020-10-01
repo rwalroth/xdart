@@ -14,6 +14,7 @@
       <w>nzarr</w>
       <w>pcount</w>
       <w>poni</w>
+      <w>pyfai</w>
       <w>qchi</w>
       <w>rebinned</w>
       <w>ttheta</w>
@@ -21,6 +22,7 @@
       <w>xdata</w>
       <w>xlabels</w>
       <w>ydata</w>
+      <w>ylabel</w>
     </words>
   </dictionary>
 </component>

@@ -6,6 +6,7 @@
 # Standard library imports
 import time
 import sys
+import os
 
 # Other imports
 import numpy as np
@@ -103,6 +104,22 @@ def find_between_r( s, first, last ):
         return s[start:end]
     except ValueError:
         return ""
+
+
+def split_file_name(fname):
+    """Splits filename to get directory, file root and extension
+
+    Arguments:
+        fname {str} -- full image file name with path
+    """
+    directory = os.path.dirname(fname)
+    root, ext = os.path.splitext(os.path.basename(fname))
+
+    if len(ext) > 0:
+        if ext[0] == '.':
+            ext = ext[1:]
+
+    return directory, root, ext
 
 
 def query(question):

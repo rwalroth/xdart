@@ -67,7 +67,6 @@ class XDImageWidget(Qt.QtWidgets.QWidget):
         self.raw_image = image[()]
         self.norm_image = normalize(self.raw_image)
         self.displayed_image = self.norm_image[()]
-        #self.rangeSlider.setValue(99)
         self.update_image()
         if rect is not None:
             self.imageItem.setRect(rect)
@@ -84,11 +83,9 @@ class XDImageWidget(Qt.QtWidgets.QWidget):
             self.imageItem.setImage(self.displayed_image)
             self.histogram.item.axis.setScale(self.raw_image.max() /
                                               self.displayed_image.max())
-            #self.histogram.item.axis.setLogMode(True)
         else:
             self.imageItem.setImage(self.displayed_image)
             self.histogram.item.axis.setScale(None)
-            #self.histogram.item.axis.setLogMode(False)
 
     def set_cmap(self, index):
         self.histogram.item.gradient.loadPreset(

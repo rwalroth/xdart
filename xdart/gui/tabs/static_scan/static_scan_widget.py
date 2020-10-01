@@ -26,13 +26,11 @@ from .wranglers import specWrangler, wranglerWidget
 
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
-QFileDialog = QtWidgets.QFileDialog
 
 wranglers = {
     'SPEC': specWrangler
 }
 debug = True
-curr, prev = ['inspect.currentframe().f_code.co_name', 'inspect.stack()[1][3]']
 
 
 def spherelocked(func):
@@ -224,10 +222,13 @@ class staticWidget(QWidget):
         self.wrangler.sigUpdateData.connect(self.update_data)
         self.wrangler.sigUpdateFile.connect(self.new_scan)
         self.wrangler.sigUpdateArch.connect(self.new_arch)
+        self.wrangler.sigUpdateGI.connect(self.update_scattering_geometry)
         self.wrangler.started.connect(self.thread_state_changed)
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
         self.h5viewer.sigNewFile.connect(self.wrangler.set_fname)
+        self.h5viewer.sigNewFile.connect(self.displayframe.set_image_units)
+        self.h5viewer.sigNewFile.connect(self.h5viewer.data_reset)
 
     def disconnect_wrangler(self):
         """Disconnects all signals attached the the current wrangler
@@ -288,6 +289,10 @@ class staticWidget(QWidget):
             self.h5viewer.set_open_enabled(True)
             self.integratorTree.setEnabled(True)
             self.wrangler.enabled(True)
+            print(f'static_scan_widget > thread_state_changed: {len(self.data_2d)}, {len(self.sphere.arches.index)}')
+            if (len(self.data_2d) == 0) and (len(self.sphere.arches.index) > 0):
+                self.h5viewer.ui.listData.setCurrentRow(-1)
+                self.h5viewer.ui.listData.setCurrentRow(0)
 
     def update_data(self, q):
         """Called by signal from wrangler. If the current scan name
@@ -326,13 +331,12 @@ class staticWidget(QWidget):
             print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
         if self.sphere.name != 'null_main':
             print(f'static_scan_widget > updating displayframe')
-            # if len(self.sphere.data_1d.keys()) > 0:
-            if len(self.arches.keys()) > 0:
+            if (len(self.arches.keys()) > 0) and (len(self.sphere.arches.index) > 0):
                 self.displayframe.update()
 
             if self.arch.idx is None:
-                # self.displayframe.ui.imageIntRaw.setEnabled(False)
-                self.displayframe.ui.imageMask.setEnabled(False)
+                # self.displayframe.ui.imageMask.setEnabled(False)
+                self.integratorTree.ui.apply_mask.setEnabled(False)
 
                 self.integratorTree.ui.all1D.setChecked(True)
                 self.integratorTree.ui.all1D.setEnabled(False)
@@ -340,17 +344,14 @@ class staticWidget(QWidget):
                 self.integratorTree.ui.all2D.setEnabled(False)
 
             else:
-                # self.displayframe.ui.imageIntRaw.setEnabled(True)
-                self.displayframe.ui.imageMask.setEnabled(True)
+                # self.displayframe.ui.imageMask.setEnabled(True)
+                self.integratorTree.ui.apply_mask.setEnabled(True)
 
                 self.integratorTree.ui.all1D.setEnabled(True)
                 self.integratorTree.ui.all2D.setEnabled(True)
 
             self.metawidget.update()
             # self.integratorTree.update()
-
-        # self.h5viewer.ui.listData.focusWidget()
-        # self.h5viewer.ui.listData.setFocus()
 
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
@@ -509,6 +510,17 @@ class staticWidget(QWidget):
         self.displayframe.set_image_units()
         self.displayframe.auto_last = True
         self.h5viewer.update()
+
+    def update_scattering_geometry(self, gi):
+        """Connected to sigUpdateGI from wrangler. Called when scattering
+        geometry changes between transmission and GI
+
+        args:
+            gi: bool, flag for determining if in Grazing incidence
+        """
+        if debug:
+            print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
+        self.sphere.gi = gi
 
     def new_arch(self, arch_data):
         """Connected to sigUpdateFile from wrangler. Called when a new

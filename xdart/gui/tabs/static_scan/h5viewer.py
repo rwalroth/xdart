@@ -319,6 +319,7 @@ class H5Viewer(QWidget):
         self.arch_ids += [str(item.text()) for item in items]
         self.arch_ids.sort()
         idxs = self.arch_ids
+        print(f'h5viewer > data_changed: idxs = {idxs}')
 
         if (len(idxs) == 0) or (idxs[0] == 'No data'):
             self.sigUpdate.emit()
@@ -359,6 +360,17 @@ class H5Viewer(QWidget):
                 self.file_thread.queue.put("load_arches")
             else:
                 self.sigUpdate.emit()
+
+    def data_reset(self):
+        """Resets data in memory (self.arches, self.arch_ids, self.data_..
+        """
+        self.arches.clear()
+        self.arch_ids.clear()
+        self.data_1d.clear()
+        self.data_2d.clear()
+
+        if self.ui.listData.count() > 1:
+            self.ui.listData.setCurrentRow(0)
 
     def data_clicked(self, current, previous):
         """Connected to currentItemChanged signal of listData

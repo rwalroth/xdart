@@ -4,6 +4,7 @@
 """
 
 # Standard library imports
+import subprocess
 
 # Other imports
 import inspect
@@ -16,6 +17,8 @@ from pyqtgraph.parametertree import Parameter
 # This module imports
 from .ui.integratorUI import Ui_Form
 from .sphere_threads import integratorThread
+
+_translate = Qt.QtCore.QCoreApplication.translate
 
 AA_inv = u'\u212B\u207B\u00B9'
 Th = u'\u03B8'
@@ -180,7 +183,16 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
         self.integrator_thread = integratorThread(self.sphere, self.arch,
                                                   self.file_lock)
+
+        # Connect Calibrate and Mask Buttons
+        self.ui.pyfai_calib.clicked.connect(self.run_pyfai_calib)
+        # self.ui.get_mask.clicked.connect(self.advancedWidget2D.show)
+
         self.setEnabled()
+        # self.set_image_units()
+
+        # Connect Axis 2D signal
+        self.ui.axis2D.currentIndexChanged.connect(self._update_axes)
 
     def update(self):
         """Grabs args from sphere and uses _sync_ranges and
@@ -223,6 +235,9 @@ class integratorTree(Qt.QtWidgets.QWidget):
         if self.azim_autoRange_2D:
             self.ui.azim_low_2D.setEnabled(False)
             self.ui.azim_high_2D.setEnabled(False)
+
+        self.ui.integrate1D.setEnabled(False)
+        self.ui.integrate2D.setEnabled(False)
 
     def update_radial_autoRange_1D(self):
         """Disable/Enable radial 1D widget if auto range is un/selected
@@ -559,7 +574,11 @@ class integratorTree(Qt.QtWidgets.QWidget):
         if not auto:
             _range = self._get_valid_range(self.ui.radial_low_2D,
                                            self.ui.radial_high_2D)
-        self.sphere.bai_2d_args['radial_range'] = _range
+
+        if self.ui.axis2D.currentIndex() == 1:
+            self.sphere.bai_2d_args['x_range'] = _range
+        else:
+            self.sphere.bai_2d_args['radial_range'] = _range
 
         self.ui.radial_low_2D.setEnabled(not auto)
         self.ui.radial_high_2D.setEnabled(not auto)
@@ -601,7 +620,11 @@ class integratorTree(Qt.QtWidgets.QWidget):
         if not auto:
             _range = self._get_valid_range(self.ui.azim_low_2D,
                                            self.ui.azim_high_2D)
-        self.sphere.bai_2d_args['azimuth_range'] = _range
+
+        if self.ui.axis2D.currentIndex() == 1:
+            self.sphere.bai_2d_args['y_range'] = _range
+        else:
+            self.sphere.bai_2d_args['azimuth_range'] = _range
 
         self.ui.azim_low_2D.setEnabled(not auto)
         self.ui.azim_high_2D.setEnabled(not auto)
@@ -877,6 +900,27 @@ class integratorTree(Qt.QtWidgets.QWidget):
                 self.integrator_thread.method = 'bai_2d_SI'
         self.setEnabled(False)
         self.integrator_thread.start()
+
+    @staticmethod
+    def run_pyfai_calib():
+        # os.system("pyFAI-calib2")
+        # subprocess.run("pyFAI-calib2", shell=True)
+        process = subprocess.run(['pyFAI-calib2'], check=True, stdout=subprocess.PIPE, universal_newlines=True)
+        output = process.stdout
+
+    def set_image_units(self):
+        """Disable/Enable Qz-Qxy option if we are/are not in GI mode"""
+        if not self.sphere.gi:
+            self.ui.axis2D.removeItem(1)
+        else:
+            if self.ui.axis2D.count() == 1:
+                self.ui.axis2D.addItem(_translate("Form", 'Qz-Qxy'))
+
+    def _update_axes(self, n):
+        """Updates axes to allow user to set Qz-Qxy integration ranges in GI mode"""
+        pass
+        # if n == 1:
+        #     if self.ui.unit_2D
 
 
 class advancedParameters(Qt.QtWidgets.QWidget):

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>842</height>
+    <height>369</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -78,17 +78,17 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <widget class="QWidget" name="horizontalLayoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>10</y>
-        <width>160</width>
-        <height>80</height>
-       </rect>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="topMargin">
+       <number>2</number>
       </property>
-      <layout class="QHBoxLayout" name="commandLayout"/>
-     </widget>
+      <property name="bottomMargin">
+       <number>2</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="commandLayout"/>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>

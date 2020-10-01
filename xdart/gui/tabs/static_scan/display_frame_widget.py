@@ -5,6 +5,7 @@
 
 # Standard library imports
 import traceback
+import os, subprocess
 
 # Other imports
 import numpy as np
@@ -13,15 +14,18 @@ from matplotlib import cm
 
 # Qt imports
 import pyqtgraph as pg
-from pyqtgraph import Qt
+from pyqtgraph import Qt, QtCore
 from pyqtgraph.Qt import QtWidgets
 import pyqtgraph_extensions as pgx
+import pyqtgraph.exporters
+from pyqtgraph import ROI
 
 # This module imports
 from .ui.displayFrameUI import Ui_Form
 from ...gui_utils import RectViewBox, get_rect
 import xdart.utils as ut
 from ...widgets import pgxImageWidget
+from xdart.utils import split_file_name
 
 QFileDialog = QtWidgets.QFileDialog
 _translate = Qt.QtCore.QCoreApplication.translate
@@ -127,6 +131,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.bkg_1d = 0.
         self.bkg_2d = 0.
         self.bkg_map_raw = 0.
+        self.normChannel = None
+        self.overlay = None
 
         # Image and Binned 2D Data
         self.image_data = (None, None)
@@ -158,7 +164,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # 1D Plot pane setup
         self.plot_win = pg.GraphicsLayoutWidget()
         self.plot_layout.addWidget(self.plot_win)
-        self.plot = self.plot_win.addPlot(viewBox=RectViewBox())
+        self.plot_viewBox = RectViewBox()
+        self.plot = self.plot_win.addPlot(viewBox=self.plot_viewBox)
         self.legend = self.plot.addLegend()
         self.curves = []
 
@@ -185,8 +192,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # 2D Window Signal connections
         self.ui.imageUnit.activated.connect(self.update_image)
         self.ui.imageUnit.activated.connect(self.update_binned)
-        self.ui.imageMask.stateChanged.connect(self.update_image)
-        self.ui.imageMask.stateChanged.connect(self.update_binned)
+        # self.ui.imageMask.stateChanged.connect(self.update_image)
+        # self.ui.imageMask.stateChanged.connect(self.update_binned)
 
         # 1D Window Signal connections
         self.ui.plotMethod.currentIndexChanged.connect(self.update_plot_view)
@@ -197,8 +204,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.slice_center.valueChanged.connect(self.update_plot_range)
         self.ui.slice_width.valueChanged.connect(self.update_plot_range)
 
+        # Save Image/Data Buttons
+        self.ui.save_2D.clicked.connect(self.save_image)
+        self.ui.save_1D.clicked.connect(self.save_array)
+
+        # Initialize image units
         self.set_image_units()
-        # self.ui.imageUnit.setItemText(2, _translate("Form", imageUnits[2]))
+        self._set_range()
 
     def update_plot_range(self):
         if self.ui.slice.isChecked():
@@ -225,7 +237,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         pass
 
     def set_image_units(self):
-        """Disable buttons if update 2D is unchecked"""
+        """Disable/Enable Qz-Qxy option if we are/are not in GI mode"""
         if self.sphere.gi:
             if self.ui.imageUnit.count() == 2:
                 self.ui.imageUnit.addItem(_translate("Form", imageUnits[2]))
@@ -314,7 +326,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         print(f'display_frame_widget > update_image: data_2d.keys = {self.data_2d.keys()}')
         if 'Overall' in self.arch_ids:
-            print(f'display_frame_widget > update_image: sphere.overall_raw = {self.sphere.overall_raw}')
             print('display_frame_widget > update_image: getting sphere')
             data = self.get_sphere_map_raw()
         else:
@@ -396,7 +407,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
     def _set_range(self):
         if self.ui.plotUnit.currentIndex() == 2:
-            self.ui.slice_axis.setText('Q')
+            self.ui.slice_axis.setText('Q Range')
             self.ui.slice_center.setRange(0, 10)
             self.ui.slice_width.setRange(0, 180)
             self.ui.slice_center.setValue(2)
@@ -404,7 +415,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.ui.slice_center.setSingleStep(0.1)
             self.ui.slice_width.setSingleStep(0.1)
         else:
-            self.ui.slice_axis.setText(Chi)
+            self.ui.slice_axis.setText(f'{Chi} Range')
             self.ui.slice_center.setMinimum(-180)
             self.ui.slice_center.setMaximum(180)
             self.ui.slice_width.setMinimum(0)
@@ -464,18 +475,22 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ydata_, xdata_ = self.plot_data
         ydata, s_xdata = ydata_.copy(), xdata_.copy()
 
+        int_label = 'I'
+        if self.normChannel:
+            int_label = f'I / {self.normChannel}'
+
         self.plot.getAxis("left").setLogMode(False)
-        ylabel = 'I (a.u.)'
+        ylabel = f'{int_label} (a.u.)'
         if self.scale == 'Log':
             ydata -= (ydata.min() - 1.)
             ydata = np.log10(ydata)
             self.plot.getAxis("left").setLogMode(True)
-            ylabel = 'Log I (a.u.)'
+            ylabel = 'Log {int_label}(a.u.)'
         elif self.scale == 'Sqrt':
             if ydata.min() < 0.:
                 ydata -= ydata.min()
             ydata = np.sqrt(ydata)
-            ylabel = '<math>&radic;</math>I (a.u.)'
+            ylabel = '<math>&radic;</math>{int_label} (a.u.)'
 
         idxs = list(self.arches.keys())
 
@@ -504,7 +519,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         plotUnit = self.ui.plotUnit.currentIndex()
         self.plot.setLabel("bottom", x_labels_1D[plotUnit], units=x_units_1D[plotUnit])
         self.plot.setLabel("left", ylabel)
-
 
         return s_xdata, s_ydata
 
@@ -542,7 +556,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             intensity += self.normalize(arch.map_raw, arch.scan_info)
 
         intensity /= (nn + 1)
-        print(f'display_frame_widget > get_arches_data_2d: intensity.shapes, nn, idxs:'
+        print(f'display_frame_widget > get_arches_map_raw: intensity.shapes, nn, idxs:'
               f' {intensity.shape}, {nn}, {idxs}')
 
         return np.asarray(intensity, dtype=np.float)
@@ -583,7 +597,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def get_sphere_data_2d(self):
         """Returns data and QRect for data in sphere
         """
-        if self.ui.normChannel.currentText() != 'None':
+        if (self.ui.normChannel.currentText() != 'None') \
+                or (self.ui.imageUnit.currentIndex() == 2):
             return self.get_arches_data_2d()
 
         with self.sphere.sphere_lock:
@@ -639,6 +654,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Returns the appropriate 2D data depending on the chosen axes
         I(Q, Chi) or I(Qz, Qxy)
         """
+        if self.overlay is not None:
+            self.binned_widget.imageViewBox.removeItem(self.overlay)
+
         if self.ui.plotUnit.currentIndex() != 2:
             if not self.ui.slice.isChecked():
                 int_1d = arch.int_1d.norm
@@ -652,14 +670,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         xdata_list = [q, tth, chi]
         xdata = xdata_list[self.ui.plotUnit.currentIndex()]
 
-        overlay = pgx.ImageItem()
-        self.binned_widget.imageViewBox.addItem(overlay)
-
         print(f'display_frame_widget > get_int_1d: int_2d.shape: ({int_2d.shape})')
 
         center = self.ui.slice_center.value()
         width = self.ui.slice_width.value()
         _range = [center - width, center + width]
+
+        binned_data, rect = self.binned_data
 
         _inds = None
         if self.ui.plotUnit.currentIndex() < 2:
@@ -673,14 +690,24 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if slice_axis == Chi:
             ydata = np.mean(int_2d[_inds, :], axis=0)
-            # overlay.setImage(int_2d[_inds, :])
-            # scale = len(_inds)/int_2d.shape[0]
-            # overlay.setOpacity(0.8)
-            # overlay.setScale(scale)
-            self.ui.slice_axis.setText(slice_axis)
+
+            self.overlay = ROI(
+                [rect.left(), _range[0]], [rect.width(), 2*width],
+                pen=(255, 255, 255),
+                maxBounds=rect
+            )
+            self.binned_widget.imageViewBox.addItem(self.overlay)
         else:
             ydata = np.mean(int_2d[:, _inds], axis=1)
-            self.ui.slice_axis.setText(slice_axis)
+            if self.ui.slice.isChecked():
+                self.overlay = ROI(
+                    [_range[0], rect.top()], [2*width, rect.height()],
+                    pen=(255, 255, 255),
+                    maxBounds=rect
+                )
+                self.binned_widget.imageViewBox.addItem(self.overlay)
+
+        self.ui.slice_axis.setText(f'{slice_axis} Range')
 
         ydata = self.normalize(ydata, arch.scan_info)
         return xdata, ydata
@@ -765,6 +792,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         normChannel = self.ui.normChannel.currentText()
         if normChannel in scan_info.keys():
             intensity /= scan_info[normChannel]
+            self.normChannel = normChannel
+        else:
+            self.normChannel = None
 
         return intensity
 
@@ -834,36 +864,74 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         for f in formats:
             ext_filter += "*." + f + " "
 
-        ext_filter += "*.tiff)"
-
-        fname, _ = QFileDialog.getSaveFileName(filter=ext_filter)
+        dialog = QFileDialog()
+        fname, _ = dialog.getSaveFileName(
+            dialog,
+            filter=ext_filter,
+            caption='Save as...',
+            options=QFileDialog.DontUseNativeDialog
+        )
         if fname == '':
             return
 
-        _, ext = fname.split('.')
-        if ext.lower() in formats:
-            self.image.save(fname)
+        # Save as image
+        data, rect = self.binned_data
+        scene = self.binned_widget.imageViewBox.scene()
+        exporter = pyqtgraph.exporters.ImageExporter(scene)
+        h = exporter.params.param('height').value()
+        w = exporter.params.param('width').value()
+        h_new = 2000
+        w_new = int(np.round(w/h * h_new, 0))
+        exporter.params.param('height').setValue(h_new)
+        exporter.params.param('width').setValue(w_new)
+        exporter.export(fname)
 
-        elif ext.lower() == 'tiff':
-            data = self.update_image()
-            plt.imsave(fname, data.T, cmap='gray')
+        # Save as Numpy array as well
+        directory, base_name, ext = split_file_name(fname)
+        save_fname = os.path.join(directory, base_name)
+        print(f'display_frame_widget > save_image: {directory}, {base_name}, {ext}')
+        np.save(f'{save_fname}.npy', data)
 
     def save_array(self):
         """Saves currently displayed data. Currently supports .xye
         and .csv.
         """
-        fname, _ = QFileDialog.getSaveFileName(
-            filter="XRD Files (*.xye *.csv)"
+        path = QFileDialog().getExistingDirectory(
+            caption='Choose Save Directory',
+            directory='',
+            options=(QFileDialog.ShowDirsOnly | QFileDialog.DontUseNativeDialog)
         )
-        if fname == '':
+
+        inp_dialog = QtWidgets.QInputDialog()
+        suffix, ok = inp_dialog.getText(inp_dialog, 'Enter Suffix to be added to File Name', 'Suffix', text='')
+        print(f'display_frame_widget > save_array: {suffix}, {ok}')
+        if not ok:
             return
 
-        xdata, ydata = self.update_plot()
+        fname = f'{self.sphere.name}'
+        if suffix != '':
+            fname += f'_{suffix}'
+        fname = os.path.join(path, fname)
 
-        _, ext = fname.split('.')
-        if ext.lower() == 'xye':
-            ut.write_xye(fname, xdata, ydata)
+        ydata, xdata = self.plot_data
+        idxs = list(self.arches.keys())
+        for nn, (s_ydata, idx) in enumerate(zip(ydata, idxs)):
+            # Write to xye
+            xye_fname = f'{fname}_{idx.zfill(4)}.xye'
+            ut.write_xye(xye_fname, xdata, s_ydata)
 
-        elif ext.lower() == 'csv':
-            ut.write_csv(fname, xdata, ydata)
+            # Write to csv
+            csv_fname = f'{fname}_{idx.zfill(4)}.csv'
+            ut.write_csv(csv_fname, xdata, s_ydata)
+
+        scene = self.plot_viewBox.scene()
+        exporter = pyqtgraph.exporters.ImageExporter(scene)
+        h = exporter.params.param('height').value()
+        w = exporter.params.param('width').value()
+        h_new = 500
+        w_new = int(np.round(w/h * h_new, 0))
+        exporter.params.param('height').setValue(h_new)
+        exporter.params.param('width').setValue(w_new)
+        exporter.export(fname + '.tif')
+
 
