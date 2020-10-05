@@ -1,8 +1,9 @@
 name: xdart_env
 channels:
-  - conda-forge
   - defaults
+  - conda-forge
 dependencies:
+  - python[version='>=3.8']
   - h5py[version='>=2.10']
   - scikit-learn
   - silx
@@ -19,4 +20,3 @@ dependencies:
   - pillow
   - scikit-image
   - lmfit
-prefix: C:\Users\walroth\.conda\envs\xdart_env
