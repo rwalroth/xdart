@@ -19,7 +19,22 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Saving data to both tiff/jpg/png/... files, and also to npy arrays (2D) and xye+csv format (1D). Slice boundaries now visible." />
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Saving data to both tiff/jpg/png/... files, and also to npy arrays (2D) and xye+csv format (1D). Slice boundaries now visible.">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/displayFrameUI.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.ui" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/ui/integratorUI.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/utils/_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/utils/containers/int_data_static.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/containers/int_data_static.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -51,7 +66,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="GitIgnore" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/xdart/gui/tabs/time_scan" />
-    <property name="settings.editor.selected.configurable" value="editor.preferences.tabs" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
     <property name="two.files.diff.last.used.file" value="$PROJECT_DIR$/xdart/gui/tabs/ttheta_scan/sphere_threads.py" />
   </component>
   <component name="RecentsManager">
@@ -271,7 +286,14 @@
       <option name="project" value="LOCAL" />
       <updated>1601561916796</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Saving data to both tiff/jpg/png/... files, and also to npy arrays (2D) and xye+csv format (1D). Slice boundaries now visible.">
+      <created>1601562227357</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1601562227357</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -314,48 +336,40 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="507" y="212" key="FileChooserDialogImpl/0.0.1440.900@0.0.1440.900" timestamp="1599832162340" />
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom" timestamp="1601562032235">
+    <state width="1419" height="242" key="GridCell.Tab.0.bottom" timestamp="1601939291986">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1601562032235" />
+    <state width="1419" height="242" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1601939291986" />
     <state width="2055" height="406" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055217" />
-    <state width="1419" height="234" key="GridCell.Tab.0.center" timestamp="1601562032234">
+    <state width="1419" height="242" key="GridCell.Tab.0.center" timestamp="1601939291985">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1601562032234" />
+    <state width="1419" height="242" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1601939291985" />
     <state width="2055" height="406" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055216" />
-    <state width="1419" height="234" key="GridCell.Tab.0.left" timestamp="1601562032234">
+    <state width="1419" height="242" key="GridCell.Tab.0.left" timestamp="1601939291985">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1601562032234" />
+    <state width="1419" height="242" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1601939291985" />
     <state width="2055" height="406" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055215" />
-    <state width="1419" height="234" key="GridCell.Tab.0.right" timestamp="1601562032234">
+    <state width="1419" height="242" key="GridCell.Tab.0.right" timestamp="1601939291986">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="234" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1601562032234" />
+    <state width="1419" height="242" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1601939291986" />
     <state width="2055" height="406" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055216" />
-    <state x="512" y="266" key="MergeDialog" timestamp="1593031610349">
-      <screen x="0" y="0" width="2560" height="1440" />
-    </state>
-    <state x="512" y="266" key="MergeDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031610349" />
-    <state x="229" y="89" key="SettingsEditor" timestamp="1600663373568">
+    <state x="229" y="89" key="SettingsEditor" timestamp="1601842023443">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1600663373568" />
-    <state x="320" y="177" key="Vcs.Push.Dialog.v2" timestamp="1601561922957">
+    <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1601842023443" />
+    <state x="320" y="177" key="Vcs.Push.Dialog.v2" timestamp="1601562232401">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1601561922957" />
+    <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1601562232401" />
     <state x="569" y="283" key="Vcs.Push.Dialog.v2/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076234562" />
-    <state x="421" y="176" width="725" height="673" key="find.popup" timestamp="1601545291644">
+    <state x="421" y="176" width="725" height="673" key="find.popup" timestamp="1601937842215">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="421" y="176" width="725" height="673" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1601545291644" />
+    <state x="421" y="176" width="725" height="673" key="find.popup/0.0.1440.900@0.0.1440.900" timestamp="1601937842215" />
     <state x="748" y="282" width="1064" height="877" key="find.popup/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601075565433" />
-    <state x="896" y="583" key="git4idea.branch.GitSmartOperationDialog" timestamp="1593031607553">
-      <screen x="0" y="0" width="2560" height="1440" />
-    </state>
-    <state x="896" y="583" key="git4idea.branch.GitSmartOperationDialog/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1593031607553" />
     <state width="600" height="428" key="javadoc.popup" timestamp="1597699387669">
       <screen x="0" y="0" width="1440" height="900" />
     </state>

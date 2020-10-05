@@ -141,10 +141,10 @@ class staticWidget(QWidget):
         self.ui.middleFrame.setLayout(self.displayframe.ui.layout)
 
         # DisplayFrame signal connections
-        self.displayframe.ui.pushRight.clicked.connect(self.next_arch)
-        self.displayframe.ui.pushLeft.clicked.connect(self.prev_arch)
-        self.displayframe.ui.pushRightLast.clicked.connect(self.last_arch)
-        self.displayframe.ui.pushLeftLast.clicked.connect(self.first_arch)
+        # self.displayframe.ui.pushRight.clicked.connect(self.next_arch)
+        # self.displayframe.ui.pushLeft.clicked.connect(self.prev_arch)
+        # self.displayframe.ui.pushRightLast.clicked.connect(self.last_arch)
+        # self.displayframe.ui.pushLeftLast.clicked.connect(self.first_arch)
         self.h5viewer.actionSaveImage.triggered.connect(
             self.displayframe.save_image
         )
@@ -153,8 +153,9 @@ class staticWidget(QWidget):
         )
 
         # IntegratorFrame setup
-        self.integratorTree = integratorTree(self.sphere, self.arch,
-                                             self.file_lock)
+        self.integratorTree = integratorTree(
+            self.sphere, self.arch, self.file_lock,
+            self.arches, self.arch_ids, self.data_2d)
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
         if len(self.sphere.arches.index) > 0:
             self.integratorTree.update()
@@ -321,7 +322,7 @@ class staticWidget(QWidget):
         if debug:
             print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
         self.displayframe.auto_last = False
-        self.displayframe.ui.pushRightLast.setEnabled(True)
+        # self.displayframe.ui.pushRightLast.setEnabled(True)
 
     def set_data(self):
         """Connected to h5viewer, sets the data in displayframe based
@@ -334,21 +335,15 @@ class staticWidget(QWidget):
             if (len(self.arches.keys()) > 0) and (len(self.sphere.arches.index) > 0):
                 self.displayframe.update()
 
-            if self.arch.idx is None:
-                # self.displayframe.ui.imageMask.setEnabled(False)
+            # if self.arch.idx is None:
+            if len(self.arches) == 0:
                 self.integratorTree.ui.apply_mask.setEnabled(False)
-
-                self.integratorTree.ui.all1D.setChecked(True)
-                self.integratorTree.ui.all1D.setEnabled(False)
-                self.integratorTree.ui.all2D.setChecked(True)
-                self.integratorTree.ui.all2D.setEnabled(False)
-
+                # self.integratorTree.ui.all1D.setEnabled(False)
+                # self.integratorTree.ui.all2D.setEnabled(False)
             else:
-                # self.displayframe.ui.imageMask.setEnabled(True)
                 self.integratorTree.ui.apply_mask.setEnabled(True)
-
-                self.integratorTree.ui.all1D.setEnabled(True)
-                self.integratorTree.ui.all2D.setEnabled(True)
+                # self.integratorTree.ui.all1D.setEnabled(True)
+                # self.integratorTree.ui.all2D.setEnabled(True)
 
             self.metawidget.update()
             # self.integratorTree.update()
@@ -358,10 +353,16 @@ class staticWidget(QWidget):
         """
         if debug:
             print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
-        if (self.arch == self.sphere.arches.iloc(-1).idx or
-                self.arch is None or
-                self.h5viewer.ui.listData.currentRow() == \
-                self.h5viewer.ui.listData.count() - 1):
+        # if (self.arch == self.sphere.arches.iloc(-1).idx or
+        #         self.arch is None or
+        #         self.h5viewer.ui.listData.currentRow() == \
+        #         self.h5viewer.ui.listData.count() - 1):
+        if (len(self.arches) == 0 or
+                self.h5viewer.ui.listData.currentRow() > \
+                self.h5viewer.ui.listData.count() - 2):
+            self.h5viewer.ui.listData.setCurrentRow(
+                self.h5viewer.ui.listData.count() - 1
+            )
             self.displayframe.auto_last = True
             # pass
         else:
@@ -369,23 +370,27 @@ class staticWidget(QWidget):
                 self.h5viewer.ui.listData.currentRow() + 1
             )
             self.displayframe.auto_last = False
-            self.displayframe.ui.pushRightLast.setEnabled(True)
+            # self.displayframe.ui.pushRightLast.setEnabled(True)
 
     def prev_arch(self):
         """Goes back one arch in data list, updates displayframe
         """
         if debug:
             print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
-        if (self.arch == self.sphere.arches.iloc(0).idx or
-                self.arch.idx is None or
-                self.h5viewer.ui.listData.currentRow() == 1):
+        # if (self.arch == self.sphere.arches.iloc(0).idx or
+        #         self.arch.idx is None or
+        #         self.h5viewer.ui.listData.currentRow() == 1):
+        #     pass
+        if (len(self.arches) == 0) or (self.h5viewer.ui.listData.currentRow() == 1):
             pass
         else:
             self.h5viewer.ui.listData.setCurrentRow(
                 self.h5viewer.ui.listData.currentRow() - 1
             )
+            selected_items = self.ui.listData.selectedItems()
+            selected_items[0].setSelected(True)
             self.displayframe.auto_last = False
-            self.displayframe.ui.pushRightLast.setEnabled(True)
+            # self.displayframe.ui.pushRightLast.setEnabled(True)
 
     def last_arch(self):
         """Advances to last arch in data list, updates displayframe, and
@@ -394,32 +399,34 @@ class staticWidget(QWidget):
         if debug:
             print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
         self.displayframe.auto_last = True
-        if self.arch.idx is None:
+        # if self.arch.idx is None:
+        if len(self.arches) == 0:
             pass
 
         else:
-            if self.arch.idx == self.sphere.arches.index[-1]:
-                pass
-
-            else:
-                self.h5viewer.ui.listData.setCurrentRow(
-                    self.h5viewer.ui.listData.count() - 1
-                )
+            # if self.arch.idx == self.sphere.arches.index[-1]:
+            #     pass
+            #
+            # else:
+            self.h5viewer.ui.listData.setCurrentRow(
+                self.h5viewer.ui.listData.count() - 1
+            )
 
             self.displayframe.auto_last = True
-            self.displayframe.ui.pushRightLast.setEnabled(False)
+            # self.displayframe.ui.pushRightLast.setEnabled(False)
 
     def first_arch(self):
         """Goes to first arch in data list, updates displayframe
         """
         if debug:
             print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
-        if self.arch == self.sphere.arches.iloc(0).idx or self.arch.idx is None:
+        # if self.arch == self.sphere.arches.iloc(0).idx or self.arch.idx is None:
+        if len(self.arches) == 0:
             pass
         else:
             self.h5viewer.ui.listData.setCurrentRow(1)
             self.displayframe.auto_last = False
-            self.displayframe.ui.pushRightLast.setEnabled(True)
+            # self.displayframe.ui.pushRightLast.setEnabled(True)
 
     def close(self):
         """Tries a graceful close.
@@ -462,7 +469,7 @@ class staticWidget(QWidget):
         if debug:
             print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
         self.thread_state_changed()
-        if self.displayframe.auto_last:
+        if (len(self.data_2d) <= 1) or self.displayframe.auto_last:
             items = self.h5viewer.ui.listData.findItems(str(idx),
                                                         QtCore.Qt.MatchExactly)
             for item in items:

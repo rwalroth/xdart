@@ -1,6 +1,7 @@
 from threading import Condition, _PyRLock
 import time
 import os
+import inspect
 import pandas as pd
 import numpy as np
 from pyFAI.multi_geometry import MultiGeometry
@@ -10,6 +11,8 @@ from .arch_series import ArchSeries
 from xdart.utils.containers import int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 from xdart import utils
+
+debug = True
 
 
 class EwaldSphere():
@@ -72,6 +75,8 @@ class EwaldSphere():
         bai_2d_args: dict, arguments for the integrate2d method of pyFAI
             AzimuthalIntegrator
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         super().__init__()
         self.file_lock = Condition()
         if name is None:
@@ -118,6 +123,8 @@ class EwaldSphere():
         new data is going to be loaded or when a sphere needs to be
         purged of old data.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             self.scan_data = pd.DataFrame()
             self.mgi_1d = int_1d_data()
@@ -155,6 +162,8 @@ class EwaldSphere():
 
         returns None
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             if arch is None:
                 arch = EwaldArch(**kwargs)
@@ -201,6 +210,8 @@ class EwaldSphere():
             bai_1d_args dictionary is also updated with the new args.
             If no args are passed, uses bai_1d_args attribute.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         if not args:
             args = self.bai_1d_args
         else:
@@ -224,6 +235,8 @@ class EwaldSphere():
             bai_2d_args dictionary is also updated with the new args.
             If no args are passed, uses bai_2d_args attribute.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         if not args:
             args = self.bai_2d_args
         else:
@@ -242,6 +255,8 @@ class EwaldSphere():
     def _update_bai_1d(self, arch):
         """helper function to update overall bai variables.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             try:
                 self.bai_1d += arch.int_1d
@@ -258,6 +273,8 @@ class EwaldSphere():
     def _update_bai_2d(self, arch):
         """helper function to update overall bai variables.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             try:
                 # assert self.bai_2d.raw.shape == arch.int_2d.raw.shape
@@ -283,6 +300,8 @@ class EwaldSphere():
             passed, uses mg_args attribute. Otherwise, updates
             mg_args and uses passed arguments.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         self.mg_args.update(args)
         with self.sphere_lock:
             self.multi_geo = MultiGeometry(
@@ -299,6 +318,8 @@ class EwaldSphere():
         returns:
             result: result from MultiGeometry.integrate1d
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             lst_mask = [a.get_mask() for a in self.arches]
             if monitor is None:
@@ -334,6 +355,8 @@ class EwaldSphere():
         returns:
             result: result from MultiGeometry.integrate1d
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             lst_mask = [a.get_mask() for a in self.arches]
             if monitor is None:
@@ -372,6 +395,8 @@ class EwaldSphere():
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         if replace:
             mode = 'w'
         else:
@@ -385,6 +410,8 @@ class EwaldSphere():
         """Actual function for saving data, run with the file open and
             holding the file_lock.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             print(f'sphere > _save_to_h5: self.static, self.gi = {self.static}, {self.gi}')
 
@@ -419,6 +446,8 @@ class EwaldSphere():
             set_mg: bool, if True instantiates the Multigeometry
                 object.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.file_lock:
             if replace:
                 self.reset()
@@ -429,6 +458,8 @@ class EwaldSphere():
         """Actual function for loading data, run with the file open and
             holding the file_lock.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             if 'type' in grp.attrs:
                 if grp.attrs['type'] == 'EwaldSphere':
@@ -479,6 +510,8 @@ class EwaldSphere():
             save_args: dict, arguments to be passed to save_to_h5
             load_args: dict, arguments to be passed to load_from_h5
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.sphere_lock:
             self.data_file = fname
             if name is None:
@@ -503,6 +536,8 @@ class EwaldSphere():
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_1d.to_hdf5(file['bai_1d'], compression=compression)
@@ -515,6 +550,8 @@ class EwaldSphere():
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_2d.to_hdf5(file['bai_2d'], compression=compression)
@@ -522,6 +559,8 @@ class EwaldSphere():
     def _set_args(self, args):
         """Ensures any range args are lists.
         """
+        if debug:
+            print(f'- sphere > EwaldSphere: {inspect.currentframe().f_code.co_name} -')
         for arg in args:
             if 'range' in arg:
                 if args[arg] is not None:

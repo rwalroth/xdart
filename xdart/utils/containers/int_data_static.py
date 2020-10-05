@@ -78,7 +78,7 @@ class int_1d_data_static:
             )
 
         # TODO: implement other unit options for unit
-        return int_1d_2theta, int_1d_q
+        return np.asarray(int_1d_2theta, dtype=np.float32), np.asarray(int_1d_q, dtype=np.float32)
 
     def to_hdf5(self, grp, compression=None):
         """Saves data to hdf5 file.

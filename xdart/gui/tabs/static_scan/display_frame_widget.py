@@ -485,12 +485,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             ydata -= (ydata.min() - 1.)
             ydata = np.log10(ydata)
             self.plot.getAxis("left").setLogMode(True)
-            ylabel = 'Log {int_label}(a.u.)'
+            ylabel = f'Log {int_label}(a.u.)'
         elif self.scale == 'Sqrt':
             if ydata.min() < 0.:
                 ydata -= ydata.min()
             ydata = np.sqrt(ydata)
-            ylabel = '<math>&radic;</math>{int_label} (a.u.)'
+            ylabel = f'<math>&radic;</math>{int_label} (a.u.)'
 
         idxs = list(self.arches.keys())
 
@@ -581,10 +581,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         for nn, idx in enumerate(idxs):
             print(f'display_frame_widget > get_arches_data_2d: idx, idxs: {idx} {idxs}')
             arch = self.arches[idx]
-            # int_data = arch.int_2d
-            # int_2d = self.get_int_2d(arch)
-            # intensity += self.normalize(int_data.norm, arch.scan_info)
-            # intensity += self.normalize(int_2d, arch.scan_info)
             intensity += self.get_int_2d(arch)
 
         intensity /= (nn + 1)
@@ -618,14 +614,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ydata = 0.
         for nn, idx in enumerate(idxs):
             print(f'display_frame_widget > get_arches_data_1d: idx, idxs: {idx} {idxs}')
-            # int_data = self.arches[idx].int_1d
-            # s_ydata = self.normalize(int_data.norm, self.arches[idx].scan_info)
             arch = self.arches[idx]
-            # s_ydata = self.get_int_1d(arch)
             xdata, s_ydata = self.get_int_1d(arch)
             if nn == 0:
                 ydata = s_ydata
-                # xdata = self.get_xdata(arch.int_1d)  # int_data)
             else:
                 ydata = np.vstack((ydata, s_ydata))
             print(f'display_frame_widget > get_arches_data_1d: data, s_ydata.shapes: {ydata.shape} {s_ydata.shape}')

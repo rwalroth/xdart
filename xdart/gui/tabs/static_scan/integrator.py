@@ -133,7 +133,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
         update: Grabs args from EwaldSphere object and sets all params
             to match.
     """
-    def __init__(self, sphere, arch, file_lock, parent=None):
+    def __init__(self, sphere, arch, file_lock,
+                 arches, arch_ids, data_2d, parent=None):
         if debug:
             print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
         super().__init__(parent)
@@ -142,6 +143,9 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.sphere = sphere
         self.arch = arch
         self.file_lock = file_lock
+        self.arches = arches
+        self.arch_ids = arch_ids
+        self.data_2d = data_2d
         self.parameters = Parameter.create(
             name='integrator', type='group', children=params
         )
@@ -181,8 +185,10 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.ui.integrate1D.clicked.connect(self.bai_1d)
         self.ui.integrate2D.clicked.connect(self.bai_2d)
 
-        self.integrator_thread = integratorThread(self.sphere, self.arch,
-                                                  self.file_lock)
+        self.integrator_thread = integratorThread(
+            self.sphere, self.arch, self.file_lock,
+            self.arches, self.arch_ids
+        )
 
         # Connect Calibrate and Mask Buttons
         self.ui.pyfai_calib.clicked.connect(self.run_pyfai_calib)
@@ -236,8 +242,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
             self.ui.azim_low_2D.setEnabled(False)
             self.ui.azim_high_2D.setEnabled(False)
 
-        self.ui.integrate1D.setEnabled(False)
-        self.ui.integrate2D.setEnabled(False)
+        # self.ui.integrate1D.setEnabled(False)
+        # self.ui.integrate2D.setEnabled(False)
 
     def update_radial_autoRange_1D(self):
         """Disable/Enable radial 1D widget if auto range is un/selected
@@ -815,9 +821,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.ui.radial_low_1D.textChanged.connect(self._get_radial_range_1D)
         self.ui.radial_high_1D.textChanged.connect(self._get_radial_range_1D)
         self.ui.radial_autoRange_1D.stateChanged.connect(self._get_radial_range_1D)
-        # self.ui.radial_low_1D.textChanged.connect(self._set_radial_range1D_low)
-        # self.ui.radial_high_1D.textChanged.connect(self._set_radial_range_high_1D)
-        # self.ui.radial_autoRange_1D.stateChanged.connect(self.update_radial_autoRange_1D)
 
     def _disconnect_radial_range_1D_signals(self):
         """Disconnect signals for radial 1D range"""
@@ -830,44 +833,30 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.ui.azim_low_1D.textChanged.connect(self._get_azim_range_1D)
         self.ui.azim_high_1D.textChanged.connect(self._get_azim_range_1D)
         self.ui.azim_autoRange_1D.stateChanged.connect(self._get_azim_range_1D)
-        # self.ui.azim_low_1D.textChanged.connect(self._set_azim_range_low_1D)
-        # self.ui.azim_high_1D.textChanged.connect(self._set_azim_range_high_1D)
-        # self.ui.azim_autoRange_1D.stateChanged.connect(self._set_azim_range_auto_1D)
-        # self.ui.azim_autoRange_1D.stateChanged.connect(self.update_azim_autoRange_1D)
 
     def _disconnect_azim_range_1D_signals(self):
         """Disconnect signals for azimuth 1D range"""
         self.ui.azim_low_1D.textChanged.disconnect(self._get_azim_range_1D)
         self.ui.azim_high_1D.textChanged.disconnect(self._get_azim_range_1D)
         self.ui.azim_autoRange_1D.stateChanged.disconnect(self._get_azim_range_1D)
-        # self.ui.azim_autoRange_2D.stateChanged.disconnect(self.update_azim_autoRange_2D)
 
     def _connect_radial_range_2D_signals(self):
         """Connect signals for radial 2D range"""
         self.ui.radial_low_2D.textChanged.connect(self._get_radial_range_2D)
         self.ui.radial_high_2D.textChanged.connect(self._get_radial_range_2D)
         self.ui.radial_autoRange_2D.stateChanged.connect(self._get_radial_range_2D)
-        # self.ui.radial_low_2D.textChanged.connect(self._set_radial_range_low_2D)
-        # self.ui.radial_high_2D.textChanged.connect(self._set_radial_range_high_2D)
-        # self.ui.radial_autoRange_2D.stateChanged.connect(self._set_radial_range2D_auto)
-        # self.ui.radial_autoRange_2D.stateChanged.connect(self.update_radial_autoRange_2D)
 
     def _disconnect_radial_range_2D_signals(self):
         """Disconnect signals for radial 2D range"""
         self.ui.radial_low_2D.textChanged.disconnect(self._get_radial_range_2D)
         self.ui.radial_high_2D.textChanged.disconnect(self._get_radial_range_2D)
         self.ui.radial_autoRange_2D.stateChanged.disconnect(self._get_radial_range_2D)
-        # self.ui.radial_autoRange_2D.stateChanged.disconnect(self.update_radial_autoRange_2D)
 
     def _connect_azim_range_2D_signals(self):
         """Connect signals for azimuth 2D range"""
         self.ui.azim_low_2D.textChanged.connect(self._get_azim_range_2D)
         self.ui.azim_high_2D.textChanged.connect(self._get_azim_range_2D)
         self.ui.azim_autoRange_2D.stateChanged.connect(self._get_azim_range_2D)
-        # self.ui.azim_low_2D.textChanged.connect(self._set_azim_range_low_2D)
-        # self.ui.azim_high_2D.textChanged.connect(self._set_azim_range_high_2D)
-        # self.ui.azim_autoRange_2D.stateChanged.connect(self._set_azim_range_auto_2D)
-        # self.ui.azim_autoRange_2D.stateChanged.connect(self.update_azim_autoRange_2D)
 
     def _disconnect_azim_range_2D_signals(self):
         """Disconnect signals for azimuth 2D range"""
@@ -880,11 +869,17 @@ class integratorTree(Qt.QtWidgets.QWidget):
         """
         if debug:
             print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+        print(f'integrator > bai_1d: self.sphere.idxs = {self.sphere.arches.index}')
+        print(f'integrator > bai_1d: self.arch_idxs = {list(self.arches.keys())}')
         with self.integrator_thread.lock:
-            if self.ui.all1D.isChecked() or type(self.arch.idx) != int:
+            if len(self.sphere.arches.index) > 0:
                 self.integrator_thread.method = 'bai_1d_all'
-            else:
-                self.integrator_thread.method = 'bai_1d_SI'
+            # # if self.ui.all1D.isChecked() or type(self.arch.idx) != int:
+            # if self.ui.all1D.isChecked() or ('Overall' in self.arch_ids):
+            #     self.integrator_thread.method = 'bai_1d_all'
+            # else:
+            #     self.integrator_thread.method = 'bai_1d_SI'
+        self.data_2d.clear()
         self.setEnabled(False)
         self.integrator_thread.start()
 
@@ -893,18 +888,22 @@ class integratorTree(Qt.QtWidgets.QWidget):
         """
         if debug:
             print(f'- integrator > integratorTree: {inspect.currentframe().f_code.co_name} -')
+        print(f'integrator > bai_1d: self.sphere.idxs = {self.sphere.arches.index}')
+        print(f'integrator > bai_2d: self.arch_idxs = {list(self.arches.keys())}')
         with self.integrator_thread.lock:
-            if self.ui.all2D.isChecked() or type(self.arch.idx) != int:
+            if len(self.sphere.arches.index) > 0:
                 self.integrator_thread.method = 'bai_2d_all'
-            else:
-                self.integrator_thread.method = 'bai_2d_SI'
+            # if self.ui.all2D.isChecked() or type(self.arch.idx) != int:
+            # if self.ui.all2D.isChecked() or ('Overall' in self.arch_ids):
+            #     self.integrator_thread.method = 'bai_2d_all'
+            # else:
+            #     self.integrator_thread.method = 'bai_2d_SI'
+        self.data_2d.clear()
         self.setEnabled(False)
         self.integrator_thread.start()
 
     @staticmethod
     def run_pyfai_calib():
-        # os.system("pyFAI-calib2")
-        # subprocess.run("pyFAI-calib2", shell=True)
         process = subprocess.run(['pyFAI-calib2'], check=True, stdout=subprocess.PIPE, universal_newlines=True)
         output = process.stdout
 

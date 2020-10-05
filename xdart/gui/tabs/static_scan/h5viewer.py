@@ -341,21 +341,26 @@ class H5Viewer(QWidget):
 
         if 'No Data' not in self.arch_ids:
             self.arches.clear()
-            self.arches.update({str(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi) for idx in idxs})
+            # self.arches.update({str(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi) for idx in idxs})
+            self.arches.update({int(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi) for idx in idxs})
 
             idxs_memory = []
             for idx in idxs:
-                if str(idx) in self.data_2d.keys():
-                    self.arches[str(idx)] = self.data_2d[str(idx)]
+                # if str(idx) in self.data_2d.keys():
+                if int(idx) in self.data_2d.keys():
+                    # self.arches[str(idx)] = self.data_2d[str(idx)]
+                    self.arches[int(idx)] = self.data_2d[int(idx)]
                     print(f'h5viewer > data_changed: loaded arch{idx} from memory')
-                    idxs_memory.append(str(idx))
+                    # idxs_memory.append(str(idx))
+                    idxs_memory.append(int(idx))
 
-            self.file_thread.arch_ids = [str(idx) for idx in idxs
-                                         if str(idx) not in idxs_memory]
+            # self.file_thread.arch_ids = [str(idx) for idx in idxs
+            #                              if str(idx) not in idxs_memory]
+            self.file_thread.arch_ids = [int(idx) for idx in idxs
+                                         if int(idx) not in idxs_memory]
 
             print(f'h5viewer > data_changed: len(self.arches) = {len(self.arches)}')
             print(f'h5viewer > data_changed: file_thread.arch_ids = {self.file_thread.arch_ids}')
-            # if len(self.arches) > 0:
             if len(self.file_thread.arch_ids) > 0:
                 self.file_thread.queue.put("load_arches")
             else:
@@ -372,37 +377,6 @@ class H5Viewer(QWidget):
         if self.ui.listData.count() > 1:
             self.ui.listData.setCurrentRow(0)
 
-    def data_clicked(self, current, previous):
-        """Connected to currentItemChanged signal of listData
-        
-        current: QListItem, item selected
-        previous: QListItem, previous selection
-        """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
-        items = self.ui.listData.selectedItems()
-        arch_ids = [str(item.text()) for item in items]
-        print(f'h5viewer > data_clicked - selected items: {arch_ids} ')
-
-        if current is not None and previous is not None:
-            print(f'h5viewer > data_clicked: {current.data(0)}, {previous.data(0)}')
-            nochange = (current.data(0) == previous.data(0))
-        else:
-            nochange = False
-        if (current is not None and 
-                current.data(0) not in ('No data', "Loading...") and not
-                nochange):
-            self.arch.reset()
-            if current.data(0) != 'Overall' and 'scan' not in current.data(0):
-                try:
-                    idx = int(current.data(0))
-                except ValueError:
-                    return
-                self.arch.idx = idx
-                self.file_thread.queue.put("load_arch")
-            else:
-                self.sigUpdate.emit()
-    
     def open_folder(self):
         """Changes the directory being displayed in the file explorer.
         """

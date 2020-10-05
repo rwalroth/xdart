@@ -5,6 +5,7 @@ Created on Mon Aug 26 14:21:58 2019
 @author: walroth
 """
 import copy
+import inspect
 from threading import Condition
 
 import pyFAI
@@ -17,6 +18,8 @@ import numpy as np
 from xdart import utils
 from xdart.utils.containers import PONI, int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
+
+debug = True
 
 
 class EwaldArch():
@@ -65,7 +68,8 @@ class EwaldArch():
     def __init__(self, idx=None, map_raw=None, poni=None, mask=None,
                  scan_info={}, ai_args={}, file_lock=Condition(),
                  poni_file=None, static=False,
-                 gi=False, th_mtr='th', tilt_angle=0):
+                 gi=False, th_mtr='th', tilt_angle=0
+                 ):
         # pylint: disable=too-many-arguments
         """idx: int, name of the arch.
         map_raw: numpy array, raw image data
@@ -75,6 +79,8 @@ class EwaldArch():
         ai_args: dict, args to be fed to azimuthalIntegrator constructor
         file_lock: Condition, lock for file access.
         """
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         super(EwaldArch, self).__init__()
         self.idx = idx
         self.map_raw = map_raw
@@ -111,6 +117,8 @@ class EwaldArch():
 
     def setup_integrator(self):
         """Sets up integrator object"""
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         if self.poni_file is not None:
             if not self.gi:
                 integrator = pyFAI.load(self.poni_file)
@@ -142,6 +150,8 @@ class EwaldArch():
     def reset(self):
         """Clears all data, resets to a default EwaldArch.
         """
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         self.idx = None
         self.map_raw = None
         self.poni = PONI()
@@ -159,6 +169,8 @@ class EwaldArch():
             self.int_2d = int_2d_data()
 
     def get_mask(self):
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         mask = np.zeros(self.map_raw.size, dtype=int)
         mask[self.mask] = 1
         return mask.reshape(self.map_raw.shape)
@@ -179,12 +191,13 @@ class EwaldArch():
         returns:
             result: integrate1d result from pyFAI.
         """
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         if (not self.static) and (radial_range is None):
             radial_range = [0, 180]
 
         print(f'\n**** arch > integrate_1d: radial_range, unit, numpoints, th_mtr ='
               f' {radial_range}, {unit}, {numpoints}, {self.th_mtr}')
-        print(f'arch > integrate_1d: kwargs = {kwargs}')
         print(f'arch > integrate_1d: static, gi = {self.static}, {self.gi}')
 
         with self.arch_lock:
@@ -200,9 +213,13 @@ class EwaldArch():
                 self.mask = np.arange(self.map_raw.size)[self.map_raw.flatten() < 0]
 
             if not self.gi:
+                print(f'arch > integrate_1d: self.integrator = {self.integrator}')
+                print(f'arch > integrate_1d: kwargs = {kwargs}')
+                print(f'arch > integrate_1d: self.map_norm = {self.map_norm}')
                 result = self.integrator.integrate1d(
-                    self.map_raw/self.map_norm, numpoints, unit=unit, radial_range=radial_range,
-                    mask=self.get_mask(), **kwargs
+                    self.map_raw/self.map_norm, numpoints, unit=unit,
+                    radial_range=radial_range, mask=self.get_mask(),
+                    **kwargs
                 )
 
                 wavelength = self.poni.wavelength
@@ -263,6 +280,8 @@ class EwaldArch():
         returns:
             result: integrate2d result from pyFAI.
         """
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
 
         if (not self.static) and (radial_range is None):
             radial_range = [0, 180]
@@ -358,32 +377,44 @@ class EwaldArch():
         returns:
             None
         """
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
 
         with self.arch_lock:
             self.ai_args = args
             self.integrator = self.setup_integrator()
 
     def set_map_raw(self, new_data):
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         with self.arch_lock:
             self.map_raw = new_data
             if self.mask is None:
                 self.mask = np.arange(new_data.size)[new_data.flatten() < 0]
 
     def set_poni(self, new_data):
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         with self.arch_lock:
             self.poni = new_data
 
     def set_mask(self, new_data):
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         with self.arch_lock:
             self.mask = new_data
 
     def set_scan_info(self, new_data):
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         with self.arch_lock:
             self.scan_info = new_data
 
     @staticmethod
     def convert_radial_range(radial_range, wavelength):
         """Convert radial range from Q (AA-1) to 2Th (deg)"""
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         if radial_range is None:
             return None
 
@@ -402,18 +433,25 @@ class EwaldArch():
         returns:
             None
         """
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         with self.file_lock:
             if str(self.idx) in file:
+                print(f'- arch > EwaldArch: self.idx = {self.idx}')
                 grp = file[str(self.idx)]
             else:
+                print(f'- arch > EwaldArch: creating group')
                 grp = file.create_group(str(self.idx))
+                print(f'- arch > EwaldArch: created group')
             grp.attrs['type'] = 'EwaldArch'
             lst_attr = [
                 "map_raw", "mask", "map_norm", "scan_info", "ai_args",
-                "gi", "static"
+                "poni_file", "gi", "static",
             ]
-            utils.attributes_to_h5(self, grp, lst_attr, 
-                                       compression=compression)
+            print(f'- arch > EwaldArch: attributes to h5')
+            utils.attributes_to_h5(self, grp, lst_attr,
+                                   compression=compression)
+            print(f'- arch > EwaldArch: attributes to h5 - done')
             if 'int_1d' not in grp:
                 grp.create_group('int_1d')
             self.int_1d.to_hdf5(grp['int_1d'], compression)
@@ -422,6 +460,7 @@ class EwaldArch():
             self.int_2d.to_hdf5(grp['int_2d'], compression)
             if 'poni' not in grp:
                 grp.create_group('poni')
+            print(f'- arch > EwaldArch: created groups')
             utils.dict_to_h5(self.poni.to_dict(), grp, 'poni')
 
     def load_from_h5(self, file):
@@ -430,6 +469,8 @@ class EwaldArch():
         args:
             file: h5py file or group object
         """
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         with self.file_lock:
             with self.arch_lock:
                 if str(self.idx) not in file:
@@ -439,8 +480,8 @@ class EwaldArch():
                     if 'type' in grp.attrs:
                         if grp.attrs['type'] == 'EwaldArch':
                             lst_attr = [
-                                "map_raw", "mask", "map_norm", "scan_info", 
-                                "ai_args", "gi", "static"
+                                "map_raw", "mask", "map_norm", "scan_info", "ai_args",
+                                "poni_file", "gi", "static",
                             ]
                             utils.h5_to_attributes(self, grp, lst_attr)
                             self.int_1d.from_hdf5(grp['int_1d'])
@@ -451,10 +492,10 @@ class EwaldArch():
 
                             if self.poni_file is not None:
                                 if not self.gi:
-                                    self.integrator = pyFAI.load(poni_file)
+                                    self.integrator = pyFAI.load(self.poni_file)
                                     self.integrator._rot3 -= np.deg2rad(90)
                                 else:
-                                    pFAI = pyFAI.load(poni_file)
+                                    pFAI = pyFAI.load(self.poni_file)
                                     calib_pars = dict(
                                         dist=pFAI.dist, poni1=pFAI.poni1, poni2=pFAI.poni2,
                                         rot1=pFAI.rot1, rot2=pFAI.rot2, rot3=pFAI.rot3,
@@ -481,11 +522,13 @@ class EwaldArch():
     def copy(self):
         """Returns a copy of self.
         """
+        if debug:
+            print(f'- arch > EwaldArch: {inspect.currentframe().f_code.co_name} -')
         arch_copy = EwaldArch(
             copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
             copy.deepcopy(self.poni), copy.deepcopy(self.mask),
             copy.deepcopy(self.scan_info), copy.deepcopy(self.ai_args),
-            self.file_lock, copy.deepcopy(self.poni_file),
+            self.file_lock, poni_file=copy.deepcopy(self.poni_file),
             static=copy.deepcopy(self.static), gi=copy.deepcopy(self.gi),
             th_mtr=copy.deepcopy(self.th_mtr)
         )

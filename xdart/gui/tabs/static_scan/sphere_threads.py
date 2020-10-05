@@ -51,13 +51,16 @@ class integratorThread(Qt.QtCore.QThread):
     """
     update = Qt.QtCore.Signal(int)
 
-    def __init__(self, sphere, arch, file_lock, parent=None):
+    def __init__(self, sphere, arch, file_lock,
+                 arches, arch_ids, parent=None):
         if debug:
             print(f'- sphere_threads > integratorThread: {inspect.currentframe().f_code.co_name} -')
         super().__init__(parent)
         self.sphere = sphere
         self.arch = arch
         self.file_lock = file_lock
+        self.arches = arches
+        self.arch_ids = arch_ids
         self.method = None
         self.lock = Condition()
         self.mg_1d_args = {}
@@ -83,6 +86,8 @@ class integratorThread(Qt.QtCore.QThread):
         """
         if debug:
             print(f'- sphere_threads > integratorThread: {inspect.currentframe().f_code.co_name} -')
+        print(f'sphere_threads > bai_2d_all: self.sphere.index = {list(self.sphere.arches.index)}')
+        print(f'sphere_threads > bai_2d_all: self.arch_idxs = {list(self.arches.keys())}')
         with self.sphere.sphere_lock:
             if self.sphere.static:
                 self.sphere.bai_2d = int_2d_data_static()
@@ -91,6 +96,8 @@ class integratorThread(Qt.QtCore.QThread):
         for arch in self.sphere.arches:
             if self.sphere.static:
                 arch.static = True
+            if self.sphere.gi:
+                arch.gi = True
             arch.integrate_2d(**self.sphere.bai_2d_args)
             self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_2d(arch)
@@ -99,13 +106,6 @@ class integratorThread(Qt.QtCore.QThread):
             with catch(self.sphere.data_file, 'a') as file:
                 ut.dict_to_h5(self.sphere.bai_2d_args, file, 'bai_2d_args')
 
-    def bai_2d_SI(self):
-        """Integrate the current arch, 2d
-        """
-        if debug:
-            print(f'- sphere_threads > integratorThread: {inspect.currentframe().f_code.co_name} -')
-        self.sphere.arches[self.arch].integrate_2d(**self.sphere.bai_2d_args)
-
     def bai_1d_all(self):
         """Integrates all arches 1d. Note, does not call sphere method
         directly, handles same functions but broken up for updates
@@ -113,12 +113,18 @@ class integratorThread(Qt.QtCore.QThread):
         """
         if debug:
             print(f'- sphere_threads > integratorThread: {inspect.currentframe().f_code.co_name} -')
+        print(f'sphere_threads > bai_1d_all: self.sphere.index = {list(self.sphere.arches.index)}')
+        print(f'sphere_threads > bai_1d_all: self.arch_idxs = {list(self.arches.keys())}')
         with self.sphere.sphere_lock:
             if self.sphere.static:
                 self.sphere.bai_1d = int_1d_data_static()
             else:
                 self.sphere.bai_1d = int_1d_data()
         for arch in self.sphere.arches:
+            if self.sphere.static:
+                arch.static = True
+            if self.sphere.gi:
+                arch.gi = True
             arch.integrate_1d(**self.sphere.bai_1d_args)
             self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_1d(arch)
@@ -127,13 +133,32 @@ class integratorThread(Qt.QtCore.QThread):
             with catch(self.sphere.data_file, 'a') as file:
                 ut.dict_to_h5(self.sphere.bai_1d_args, file, 'bai_1d_args')
 
+    def bai_2d_SI(self):
+        """Integrate the current arch, 2d
+        """
+        if debug:
+            print(f'- sphere_threads > integratorThread: {inspect.currentframe().f_code.co_name} -')
+        # self.sphere.arches[self.arch].integrate_2d(**self.sphere.bai_2d_args)
+        print(f'sphere_threads > bai_2d_SI: self.arch_idxs = {list(self.arches.keys())}')
+        for idx in self.arches.keys():
+            # self.sphere.arches[arch].integrate_2d(**self.sphere.bai_2d_args)
+            self.sphere.arches[int(idx)].integrate_2d(**self.sphere.bai_2d_args)
+            # arch.integrate_2d(**self.sphere.bai_2d_args)
+
     def bai_1d_SI(self):
         """Integrate the current arch, 1d.
         """
         if debug:
             print(f'- sphere_threads > integratorThread: {inspect.currentframe().f_code.co_name} -')
-        self.sphere.arches[self.arch].integrate_1d(**self.sphere.bai_1d_args)
-    
+        # self.sphere.arches[self.arch].integrate_1d(**self.sphere.bai_1d_args)
+        print(f'sphere_threads > bai_1d_SI: self.sphere.idxs = {self.sphere.arches.index}')
+        print(f'sphere_threads > bai_1d_SI: self.arch_idxs = {list(self.arches.keys())}')
+        for arch in self.sphere.arches:
+            print(f'sphere_threads > bai_1d_SI: arch.idx = {arch.idx}')
+        for (idx, arch) in self.arches.items():
+            # self.sphere.arches[arch].integrate_1d(**self.sphere.bai_1d_args)
+            self.sphere.arches[int(idx)].integrate_1d(**self.sphere.bai_1d_args)
+
     def load(self):
         """Load data.
         """
@@ -227,19 +252,21 @@ class fileHandlerThread(Qt.QtCore.QThread):
         print(f'sphere_threads > load_arches: self.sphere.arches.index = {self.sphere.arches.index}')
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
-                # for (idx, arch) in self.arches.items():
                 for idx in self.arch_ids:
                     print(f'sphere_threads > load_arches: [idx] = [{idx}]')
                     try:
-                        # arch = self.sphere.data_2d[str(idx)]
-                        arch = self.data_2d[str(idx)]
+                        # arch = self.data_2d[str(idx)]
+                        arch = self.data_2d[int(idx)]
                         print(f'sphere_threads > load_arches: loaded arch{idx} from memory')
                     except KeyError:
-                        arch = self.arches[str(idx)]
+                        # arch = self.arches[str(idx)]
+                        arch = self.arches[int(idx)]
                         arch.load_from_h5(file['arches'])
                         print(f'sphere_threads > load_arches: loaded arch{idx} from file')
-                        self.data_2d[str(idx)] = arch
-                        self.data_1d[str(idx)] = arch.int_1d
+                        # self.data_2d[str(idx)] = arch.copy()
+                        # self.data_1d[str(idx)] = arch.int_1d
+                        self.data_2d[int(idx)] = arch.copy()
+                        self.data_1d[int(idx)] = arch.int_1d
                     self.arches[idx] = arch
             print(f'sphere_threads > load_arches: len(self.arches) = {len(self.arches)}')
             self.sigUpdate.emit()
