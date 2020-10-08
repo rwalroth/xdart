@@ -19,9 +19,9 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Re-integrate working. Removed re-integrate individual image option. Also removed left right push buttons.">
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Updated xdart_yml file">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart_env.yml" beforeDir="false" afterPath="$PROJECT_DIR$/xdart_env.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -288,7 +288,14 @@
       <option name="project" value="LOCAL" />
       <updated>1601939916536</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Updated xdart_yml file">
+      <created>1601940607471</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1601940607471</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -316,7 +323,8 @@
     <MESSAGE value="PyGIX Q-Chi/Qz-Qxy conversion working. Can now apply ranges to get integrated intensities from slices." />
     <MESSAGE value="Saving data to both tiff/jpg/png/... files, and also to npy arrays (2D) and xye+csv format (1D). Slice boundaries now visible." />
     <MESSAGE value="Re-integrate working. Removed re-integrate individual image option. Also removed left right push buttons." />
-    <option name="LAST_COMMIT_MESSAGE" value="Re-integrate working. Removed re-integrate individual image option. Also removed left right push buttons." />
+    <MESSAGE value="Updated xdart_yml file" />
+    <option name="LAST_COMMIT_MESSAGE" value="Updated xdart_yml file" />
   </component>
   <component name="WindowStateProjectService">
     <state x="419" y="121" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1600434284375">
@@ -332,34 +340,34 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="507" y="212" key="FileChooserDialogImpl/0.0.1440.900@0.0.1440.900" timestamp="1599832162340" />
-    <state width="1419" height="242" key="GridCell.Tab.0.bottom" timestamp="1601939760456">
+    <state width="1419" height="242" key="GridCell.Tab.0.bottom" timestamp="1602190567614">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="242" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1601939760456" />
+    <state width="1419" height="242" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1602190567614" />
     <state width="2055" height="406" key="GridCell.Tab.0.bottom/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055217" />
-    <state width="1419" height="242" key="GridCell.Tab.0.center" timestamp="1601939760455">
+    <state width="1419" height="242" key="GridCell.Tab.0.center" timestamp="1602190567613">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="242" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1601939760455" />
+    <state width="1419" height="242" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1602190567613" />
     <state width="2055" height="406" key="GridCell.Tab.0.center/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055216" />
-    <state width="1419" height="242" key="GridCell.Tab.0.left" timestamp="1601939760455">
+    <state width="1419" height="242" key="GridCell.Tab.0.left" timestamp="1602190567612">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="242" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1601939760455" />
+    <state width="1419" height="242" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1602190567612" />
     <state width="2055" height="406" key="GridCell.Tab.0.left/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055215" />
-    <state width="1419" height="242" key="GridCell.Tab.0.right" timestamp="1601939760455">
+    <state width="1419" height="242" key="GridCell.Tab.0.right" timestamp="1602190567613">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="242" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1601939760455" />
+    <state width="1419" height="242" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1602190567613" />
     <state width="2055" height="406" key="GridCell.Tab.0.right/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076055216" />
     <state x="229" y="89" key="SettingsEditor" timestamp="1601842023443">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="229" y="89" key="SettingsEditor/0.0.1440.900@0.0.1440.900" timestamp="1601842023443" />
-    <state x="320" y="177" key="Vcs.Push.Dialog.v2" timestamp="1601939921240">
+    <state x="320" y="177" key="Vcs.Push.Dialog.v2" timestamp="1601940609777">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1601939921240" />
+    <state x="320" y="177" key="Vcs.Push.Dialog.v2/0.0.1440.900@0.0.1440.900" timestamp="1601940609777" />
     <state x="569" y="283" key="Vcs.Push.Dialog.v2/0.0.2560.1440/2560.0.1440.900@0.0.2560.1440" timestamp="1601076234562" />
     <state x="421" y="176" width="725" height="673" key="find.popup" timestamp="1601937842215">
       <screen x="0" y="0" width="1440" height="900" />

@@ -552,7 +552,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         intensity = 0.
         for nn, idx in enumerate(idxs):
             print(f'display_frame_widget > get_arches_map_raw: idx, idxs: {idx} {idxs}')
-            arch = self.arches[idx]
+            arch = self.arches[int(idx)]
             intensity += self.normalize(arch.map_raw, arch.scan_info)
 
         intensity /= (nn + 1)
@@ -580,7 +580,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         intensity = 0.
         for nn, idx in enumerate(idxs):
             print(f'display_frame_widget > get_arches_data_2d: idx, idxs: {idx} {idxs}')
-            arch = self.arches[idx]
+            arch = self.arches[int(idx)]
             intensity += self.get_int_2d(arch)
 
         intensity /= (nn + 1)
@@ -602,7 +602,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         intensity = np.asarray(int_data.norm, dtype=np.float)
         idxs = list(self.arches.keys())
-        xdata, ydata = self.get_xydata(self.arches[idxs[0]])
+        xdata, ydata = self.get_xydata(self.arches[int(idxs[0])])
 
         return intensity/len(idxs), xdata, ydata
 
@@ -614,7 +614,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ydata = 0.
         for nn, idx in enumerate(idxs):
             print(f'display_frame_widget > get_arches_data_1d: idx, idxs: {idx} {idxs}')
-            arch = self.arches[idx]
+            arch = self.arches[int(idx)]
             xdata, s_ydata = self.get_int_1d(arch)
             if nn == 0:
                 ydata = s_ydata
@@ -909,11 +909,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         idxs = list(self.arches.keys())
         for nn, (s_ydata, idx) in enumerate(zip(ydata, idxs)):
             # Write to xye
-            xye_fname = f'{fname}_{idx.zfill(4)}.xye'
+            xye_fname = f'{fname}_{str(idx).zfill(4)}.xye'
             ut.write_xye(xye_fname, xdata, s_ydata)
 
             # Write to csv
-            csv_fname = f'{fname}_{idx.zfill(4)}.csv'
+            csv_fname = f'{fname}_{str(idx).zfill(4)}.csv'
             ut.write_csv(csv_fname, xdata, s_ydata)
 
         scene = self.plot_viewBox.scene()
