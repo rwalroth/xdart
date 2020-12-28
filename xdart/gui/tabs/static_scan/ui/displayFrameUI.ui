@@ -850,30 +850,27 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="slice_axis">
+           <widget class="QCheckBox" name="slice">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="MinimumExpanding">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="minimumSize">
              <size>
-              <width>50</width>
+              <width>80</width>
               <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
              <size>
-              <width>50</width>
+              <width>80</width>
               <height>16777215</height>
              </size>
             </property>
             <property name="text">
-             <string>Chi</string>
-            </property>
-            <property name="buddy">
-             <cstring>slice_center</cstring>
+             <string>X Range</string>
             </property>
            </widget>
           </item>
@@ -942,13 +939,6 @@
             </property>
             <property name="value">
              <double>5.000000000000000</double>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="slice">
-            <property name="text">
-             <string/>
             </property>
            </widget>
           </item>
@@ -1132,7 +1122,6 @@
   <tabstop>plotUnit</tabstop>
   <tabstop>slice_center</tabstop>
   <tabstop>slice_width</tabstop>
-  <tabstop>slice</tabstop>
   <tabstop>plotMethod</tabstop>
   <tabstop>yOffset</tabstop>
   <tabstop>showLegend</tabstop>

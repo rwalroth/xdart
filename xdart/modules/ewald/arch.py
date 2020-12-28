@@ -201,12 +201,11 @@ class EwaldArch():
         print(f'arch > integrate_1d: static, gi = {self.static}, {self.gi}')
 
         with self.arch_lock:
-            if monitor is not None:
-                self.map_norm = self.scan_info[monitor]
-
-            # TODO Take care of Monitor
             if self.static:
                 self.map_norm = 1
+            elif monitor is not None:
+                self.map_norm = self.scan_info[monitor]
+
             print(f'arch > integrate_1d: monitor = {self.map_norm}')
 
             if self.mask is None:

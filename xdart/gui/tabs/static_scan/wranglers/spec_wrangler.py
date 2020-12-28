@@ -26,14 +26,15 @@ from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
 debug = True
 
-img_fname = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0001.tif'
+def_img_fname = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0001.tif'
 poni = '/Users/v/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
 
 params = [
     # {'name': 'Image File', 'type': 'str', 'default': img_fname},
-    {'name': 'Image File', 'type': 'str', 'value': img_fname},
+    {'name': 'Image File', 'type': 'str', 'value': def_img_fname},
     NamedActionParameter(name='image_file_browse', title='Browse...'),
     # {'name': 'PONI File', 'type': 'str', 'default': poni},
+    {'name': 'Single Image', 'type': 'bool', 'value': False},
     {'name': 'PONI File', 'type': 'str', 'value': poni},
     NamedActionParameter(name='poni_file_browse', title='Browse...'),
     {'name': 'Grazing Incidence', 'type': 'bool', 'value': False},
@@ -77,8 +78,9 @@ class specWrangler(wranglerWidget):
         sigStart: Tells tthetaWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
-        sigUpdateFile: (str, str, str), sends new scan_name, file name
-            and gi variable (grazing incidence) to static_scan_Widget.
+        sigUpdateFile: (str, str, bool, str, bool), sends new scan_name, file name
+            GI flag (grazing incidence), theta motor for GI, and
+             single_image flag to static_scan_Widget.
         sigUpdateGI: bool, signals the grazing incidence condition has changed.
         showLabel: str, connected to thread showLabel signal, sets text
             in specLabel
@@ -95,6 +97,7 @@ class specWrangler(wranglerWidget):
         self.img_fname = ''
         self.img_dir = '.'
         self.img_ext = 'tif'
+        self.first_img = 1
 
         # Setup gui elements
         self.ui = Ui_Form()
@@ -136,6 +139,7 @@ class specWrangler(wranglerWidget):
         )
 
         # Set attributes
+        self.single_img = self.parameters.child('Single Image').value()
         self.poni_file = self.parameters.child('PONI File').value()
         self.timeout = self.parameters.child('Timeout').value()
         self.gi = self.parameters.child('Grazing Incidence').value()
@@ -149,9 +153,12 @@ class specWrangler(wranglerWidget):
             self.fname,
             self.file_lock,
             self.scan_name,
+            self.single_img,
             self.poni_file,
+            self.img_fname,
             self.img_dir,
             self.img_ext,
+            self.first_img,
             self.timeout,
             self.gi,
             self.th_mtr,
@@ -174,15 +181,21 @@ class specWrangler(wranglerWidget):
         self.thread.img_fname = self.img_fname
         print(f'spec_wrangler > img_fname: {self.img_fname}')
 
-        img_dir, scan_name, img_ext = self.split_image_name()
+        img_dir, scan_name, img_ext, first_img = self.split_image_name()
         self.img_dir, self.scan_name, self.img_ext = img_dir, scan_name, img_ext
         self.thread.img_dir, self.thread.scan_name, self.thread.img_ext = img_dir, scan_name, img_ext
-        print(f'spec_wrangler > img_dir, scan_name, ing_ext : {self.img_dir} {self.scan_name} {self.img_ext}')
+        self.thread.first_img = self.first_img = first_img
+        print(f'spec_wrangler > img_dir, scan_name, img_ext : {self.img_dir} {self.scan_name} {self.img_ext}')
 
         self.poni_file = self.parameters.child('PONI File').value()
         self.thread.poni_file = self.poni_file
 
         self.thread.scan_name = self.scan_name
+        self.single_img = self.parameters.child('Single Image').value()
+        print(f'spec_wrangler > setup: first_img = {self.first_img}')
+        if (self.first_img is None) and (self.img_ext not in ['.h5', 'hdf5']):
+            self.single_img = True
+        self.thread.single_img = self.single_img
 
         self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
         self.thread.fname = self.fname
@@ -266,11 +279,13 @@ class specWrangler(wranglerWidget):
         root, ext = os.path.splitext(os.path.basename(self.img_fname))
 
         try:
+            first_img = root[root.rindex('_')+1:]
+            first_img = int(first_img)
             root = root[:root.rindex('_')]
-        except:
-            pass
+        except ValueError:
+            first_img = None
 
-        return directory, root, ext
+        return directory, root, ext, first_img
 
     def enabled(self, enable):
         """Sets tree and start button to enable.
@@ -287,15 +302,17 @@ class specWrangler(wranglerWidget):
 class specThread(wranglerThread):
     """Thread for controlling the specProcessor process. Receives
     manages a command and signal queue to pass commands from the main
-    thread and communicate back relevant signals.
+    thread and communicate back relevant sisingle_img=self.single_img,
 
     attributes:
         command_q: mp.Queue, queue to send commands to process
         file_lock: mp.Condition, process safe lock for file access
-        fname: str, path to data file.
-        img_dir: str, path to image directory
-        poni_file: str, Poni File name
         scan_name: str, name of current scan
+        fname: str, path to data file.
+        img_fname: str, path to image file
+        img_dir: str, path to image directory
+        img_ext : str, extension of image file
+        poni_file: str, Poni File name
         input_q: mp.Queue, queue for commands sent from parent
         signal_q: mp.Queue, queue for commands sent from process
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -318,9 +335,12 @@ class specThread(wranglerThread):
             fname,
             file_lock,
             scan_name,
+            single_img,
             poni_file,
+            img_fname,
             img_dir,
             img_ext,
+            first_img,
             timeout,
             gi,
             th_mtr,
@@ -331,7 +351,9 @@ class specThread(wranglerThread):
         fname: str, path to data file.
         file_lock: mp.Condition, process safe lock for file access
         scan_name: str, name of current scan
+        single_img: bool, True if there is only one image
         poni_file: str, poni file name
+        img_fname: str, path to input image file
         img_dir: str, path to image directory
         img_ext : str, extension of image file
         timeout: float or int, how long to continue checking for new
@@ -343,9 +365,12 @@ class specThread(wranglerThread):
             print(f'- spec_wrangler > specThread: {inspect.currentframe().f_code.co_name} -')
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
         self.scan_name = scan_name
+        self.single_img = single_img
         self.poni_file = poni_file
+        self.img_fname = img_fname
         self.img_dir = img_dir
         self.img_ext = img_ext
+        self.first_img = first_img
         self.timeout = timeout
         self.gi = gi
         self.th_mtr = th_mtr
@@ -361,11 +386,14 @@ class specThread(wranglerThread):
             self.signal_q,
             self.sphere_args,
             self.scan_name,
+            self.single_img,
             self.fname,
             self.file_lock,
             self.poni_file,
+            self.img_fname,
             self.img_dir,
             self.img_ext,
+            self.first_img,
             self.timeout,
             self.gi,
             self.th_mtr,
@@ -390,8 +418,10 @@ class specThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
-                    print(f'\nspec_wrangler > news_scan: {self.scan_name}\n')
-                    self.sigUpdateFile.emit(self.scan_name, self.fname, self.gi, self.th_mtr)
+                    print(f'\nspec_wrangler > news_scan, single_img: {self.scan_name}, {self.single_img}\n')
+                    self.sigUpdateFile.emit(self.scan_name, self.fname,
+                                            self.gi, self.th_mtr,
+                                            self.single_img)
                 elif signal == 'TERMINATE':
                     last = True
 
@@ -424,11 +454,15 @@ class specProcess(wranglerProcess):
     attributes:
         command_q: mp.Queue, queue for commands from parent thread.
         file_lock: mp.Condition, process safe lock for file access
-        fname: str, path to data file
-        img_dir: str, path to image directory
-        poni_file: str, poni file name
         scan_name: str, name of current scan
+        img_ext : str, extension of image file
         signal_q: queue to place signals back to parent thread.
+        fname: str, path to data file
+        single_img: bool, True if there is only one image
+        poni_file: str, poni file name
+        img_fname: str, path to input image file
+        img_dir: str, path to image directory
+        img_ext : str, extension of image file
         sphere_args: dict, used as **kwargs in sphere initialization.
             see EwaldSphere.
         timeout: float or int, how long to continue checking for new
@@ -443,15 +477,17 @@ class specProcess(wranglerProcess):
         wrangle: Method which handles data loading from files.
     """
 
-    def __init__(self, command_q, signal_q, sphere_args, scan_name,
+    def __init__(self, command_q, signal_q, sphere_args,
+                 scan_name, single_img,
                  fname, file_lock, poni_file,
-                 img_dir, img_ext, timeout,
+                 img_fname, img_dir, img_ext, first_img, timeout,
                  gi, th_mtr, *args, **kwargs):
         """command_q: mp.Queue, queue for commands from parent thread.
         signal_q: queue to place signals back to parent thread.
         sphere_args: dict, used as **kwargs in sphere initialization.
             see EwaldSphere.
         scan_name: str, name of current scan
+        single_img: bool, True if there is only one image
         fname: str, path to data file
         file_lock: mp.Condition, process safe lock for file access
         poni_file: str, poni file name
@@ -465,8 +501,11 @@ class specProcess(wranglerProcess):
                          *args, **kwargs)
         self.poni_file = poni_file
         self.scan_name = scan_name
+        self.single_img = single_img
+        self.img_fname = img_fname
         self.img_dir = img_dir
         self.img_ext = img_ext
+        self.first_img = first_img
         self.user = None
         self.timeout = timeout
         self.gi = gi
@@ -479,16 +518,20 @@ class specProcess(wranglerProcess):
         """
         if debug:
             print(f'- spec_wrangler > specProcess: {inspect.currentframe().f_code.co_name} -')
+
+        print(f'spec_wrangler > _main: first_img = {self.first_img}')
+        if (self.first_img is None) and (self.img_ext not in ['.h5', 'hdf5']):
+            self.single_img = True
+
         # Initialize sphere and save to disk, send update for new scan
-        print(f'\nspec_wrangler > self.fname: {self.fname}')
-        print(f'spec_wrangler > self.scan_name: {self.scan_name}')
-        print(f'spec_wrangler > self.gi: {self.gi}')
+        print(f'\nspec_wrangler > self.fname, self.scan_name: {self.fname}, {self.scan_name}')
+        print(f'spec_wrangler > self.single_img, self.gi: {self.single_img}, {self.gi}')
         sphere = EwaldSphere(self.scan_name,
                              data_file=self.fname,
                              static=True,
                              gi=self.gi,
                              th_mtr=self.th_mtr,
-                             # keep_in_memory=True,
+                             single_img=self.single_img,
                              **self.sphere_args)
         print(f'spec_wrangler: _main: sphere_args = {self.sphere_args}')
         with self.file_lock:
@@ -498,6 +541,8 @@ class specProcess(wranglerProcess):
 
         # Enter main loop
         i = 1
+        if not self.single_img:
+            i = self.first_img
         pause = False
         start = time.time()
         while True:
@@ -512,6 +557,10 @@ class specProcess(wranglerProcess):
                 elif command == 'pause':
                     pause = True
                     continue
+
+            # if self.single_img and (i > 1):
+            #     self.signal_q.put(('TERMINATE', None))
+            #     break
 
             # Get result from wrangle
             try:
@@ -557,6 +606,10 @@ class specProcess(wranglerProcess):
 
                 self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
+                if self.single_img:
+                    self.signal_q.put(('TERMINATE', None))
+                    print(f'spec_wrangler: _main: Breaking')
+                    break
 
                 # arch_data = {
                 #     'idx': arch_copy.idx,
@@ -597,14 +650,21 @@ class specProcess(wranglerProcess):
         self.signal_q.put(('message', f'Checking for {i}'))
 
         # Construct raw_file path from attributes and index
-        image_file = self._get_image_path(i)
+        # if self.img_ext not in ['.h5', '.hdf5', '.mar3450']:
+        if (not self.single_img) and (self.img_ext not in ['.h5', '.hdf5']):
+            image_file = self._get_image_path(i)
+        else:
+            image_file = self.img_fname
         print(f'\nspec_wrangler > Image File Name: {image_file}')
 
         # Read raw file into numpy array
-        arr = read_image_file(image_file)
+        arr = read_image_file(image_file, im=i-1)
 
         meta_file = image_file[:-3] + 'txt'
-        image_meta = get_image_meta_data(meta_file, BL='11-3')
+        if os.path.exists(meta_file):
+            image_meta = get_image_meta_data(meta_file, BL='11-3')
+        else:
+            image_meta = {}
         print(f'spec_wrangler > Image Meta Data: {image_meta}')
 
         self.signal_q.put(('message', f'Image {i} wrangled'))

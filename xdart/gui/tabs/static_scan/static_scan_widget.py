@@ -492,7 +492,7 @@ class staticWidget(QWidget):
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
 
-    def new_scan(self, name, fname, gi, th_mtr):
+    def new_scan(self, name, fname, gi, th_mtr, single_img):
         """Connected to sigUpdateFile from wrangler. Called when a new
         scan is started.
 
@@ -503,10 +503,12 @@ class staticWidget(QWidget):
         if debug:
             print(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
         # if self.sphere.name != name or self.sphere.name == 'null_main':
+        print(f'static_scan_widget > new_scan: name, sphere.name = {name}, {self.sphere.name}')
         self.h5viewer.dirname = os.path.dirname(fname)
         self.h5viewer.set_file(fname)
         self.sphere.gi = gi
         self.sphere.th_mtr = th_mtr
+        self.sphere.single_img = single_img
 
         # Clear data objects
         self.data_1d.clear()

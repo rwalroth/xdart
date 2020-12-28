@@ -114,7 +114,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.plotUnit.setItemText(1, _translate("Form", plotUnits[1]))
         self.ui.plotUnit.setItemText(2, _translate("Form", plotUnits[2]))
 
-        self.ui.slice_axis.setText(Chi)
+        self.ui.slice.setText(Chi)
 
         # Plotting parameters
         self.cmap = self.ui.cmap.currentText()
@@ -190,17 +190,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.update2D.stateChanged.connect(self.enable_2D_buttons)
 
         # 2D Window Signal connections
-        self.ui.imageUnit.activated.connect(self.update_image)
+        # self.ui.imageUnit.activated.connect(self.update_image)
         self.ui.imageUnit.activated.connect(self.update_binned)
+        self.ui.imageUnit.activated.connect(self._update_slice_range)
         # self.ui.imageMask.stateChanged.connect(self.update_image)
         # self.ui.imageMask.stateChanged.connect(self.update_binned)
 
         # 1D Window Signal connections
         self.ui.plotMethod.currentIndexChanged.connect(self.update_plot_view)
         self.ui.yOffset.valueChanged.connect(self.update_plot_view)
-        self.ui.plotUnit.activated.connect(self._set_range)
+        self.ui.plotUnit.activated.connect(self._set_slice_range)
+        self.ui.plotUnit.activated.connect(self.update_plot)
         self.ui.showLegend.stateChanged.connect(self.update_plot_view)
-        self.ui.slice.stateChanged.connect(self._set_range)
+        # self.ui.slice.stateChanged.connect(self._set_slice_range)
+        self.ui.slice.stateChanged.connect(self.update_plot)
         self.ui.slice_center.valueChanged.connect(self.update_plot_range)
         self.ui.slice_width.valueChanged.connect(self.update_plot_range)
 
@@ -210,7 +213,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # Initialize image units
         self.set_image_units()
-        self._set_range()
+        self._set_slice_range(initialize=True)
 
     def update_plot_range(self):
         if self.ui.slice.isChecked():
@@ -272,7 +275,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         print(f'display_frame_widget > update: self.arch_ids = {self.arch_ids}')
 
         # Sets title text
-        if 'Overall' in self.arch_ids:
+        if ('Overall' in self.arch_ids) or self.sphere.single_img:
             self.ui.labelCurrent.setText(self.sphere.name)
         else:
             self.ui.labelCurrent.setText("Image " + (self.arch_ids[0]))
@@ -403,29 +406,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             "left", y_labels_2D[imageUnit], units=y_units_2D[imageUnit]
         )
 
+        self.show_slice_overlay()
         return data
-
-    def _set_range(self):
-        if self.ui.plotUnit.currentIndex() == 2:
-            self.ui.slice_axis.setText('Q Range')
-            self.ui.slice_center.setRange(0, 10)
-            self.ui.slice_width.setRange(0, 180)
-            self.ui.slice_center.setValue(2)
-            self.ui.slice_width.setValue(0.5)
-            self.ui.slice_center.setSingleStep(0.1)
-            self.ui.slice_width.setSingleStep(0.1)
-        else:
-            self.ui.slice_axis.setText(f'{Chi} Range')
-            self.ui.slice_center.setMinimum(-180)
-            self.ui.slice_center.setMaximum(180)
-            self.ui.slice_width.setMinimum(0)
-            self.ui.slice_width.setMaximum(270)
-            self.ui.slice_center.setProperty("value", 0)
-            self.ui.slice_width.setProperty("value", 10)
-            self.ui.slice_center.setSingleStep(1)
-            self.ui.slice_width.setSingleStep(1)
-
-        self.update_plot()
 
     def update_plot(self):
         """Updates data in plot frame
@@ -482,14 +464,18 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.plot.getAxis("left").setLogMode(False)
         ylabel = f'{int_label} (a.u.)'
         if self.scale == 'Log':
-            ydata -= (ydata.min() - 1.)
+            if ydata.min() < 1:
+                ydata -= (ydata.min() - 1.)
             ydata = np.log10(ydata)
             self.plot.getAxis("left").setLogMode(True)
             ylabel = f'Log {int_label}(a.u.)'
         elif self.scale == 'Sqrt':
             if ydata.min() < 0.:
-                ydata -= ydata.min()
-            ydata = np.sqrt(ydata)
+                ydata_ = np.sqrt(np.abs(ydata))
+                ydata_[ydata < 0] *= -1
+                ydata = ydata_
+            else:
+                ydata = np.sqrt(ydata)
             ylabel = f'<math>&radic;</math>{int_label} (a.u.)'
 
         idxs = list(self.arches.keys())
@@ -643,11 +629,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         return self.normalize(int_2d, arch.scan_info)
 
     def get_int_1d(self, arch):
-        """Returns the appropriate 2D data depending on the chosen axes
-        I(Q, Chi) or I(Qz, Qxy)
+        """Returns 1D integrated data for arch. If range is specified,
+        it returns integrated data over that range
         """
-        if self.overlay is not None:
-            self.binned_widget.imageViewBox.removeItem(self.overlay)
+        # if self.overlay is not None:
+        #     self.binned_widget.imageViewBox.removeItem(self.overlay)
 
         if self.ui.plotUnit.currentIndex() != 2:
             if not self.ui.slice.isChecked():
@@ -675,31 +661,42 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             slice_axis = Chi
             if self.ui.slice.isChecked():
                 _inds = (_range[0] <= chi) & (chi <= _range[1])
-        else:
-            slice_axis = 'Q'
-            if self.ui.slice.isChecked():
-                _inds = (_range[0] <= q) & (q <= _range[1])
-
-        if slice_axis == Chi:
             ydata = np.mean(int_2d[_inds, :], axis=0)
-
-            self.overlay = ROI(
-                [rect.left(), _range[0]], [rect.width(), 2*width],
-                pen=(255, 255, 255),
-                maxBounds=rect
-            )
-            self.binned_widget.imageViewBox.addItem(self.overlay)
         else:
+            # if self.ui.imageUnit.currentIndex() == 2:
+            #     self.ui.imageUnit.setCurrentIndex(0)
+            if self.ui.imageUnit.currentIndex() != 1:
+                slice_axis = 'Q'
+                if self.ui.slice.isChecked():
+                    _inds = (_range[0] <= q) & (q <= _range[1])
+            else:
+                # elif self.ui.imageUnit.currentIndex() == 1:
+                slice_axis = f'2{Th}'
+                if self.ui.slice.isChecked():
+                    _inds = (_range[0] <= tth) & (tth <= _range[1])
             ydata = np.mean(int_2d[:, _inds], axis=1)
-            if self.ui.slice.isChecked():
-                self.overlay = ROI(
-                    [_range[0], rect.top()], [2*width, rect.height()],
-                    pen=(255, 255, 255),
-                    maxBounds=rect
-                )
-                self.binned_widget.imageViewBox.addItem(self.overlay)
 
-        self.ui.slice_axis.setText(f'{slice_axis} Range')
+        # if slice_axis == Chi:
+        #     ydata = np.mean(int_2d[_inds, :], axis=0)
+        #
+        #     self.overlay = ROI(
+        #         [rect.left(), _range[0]], [rect.width(), 2*width],
+        #         pen=(255, 255, 255),
+        #         maxBounds=rect
+        #     )
+        #     self.binned_widget.imageViewBox.addItem(self.overlay)
+        # else:
+        #     ydata = np.mean(int_2d[:, _inds], axis=1)
+        #     if self.ui.slice.isChecked():
+        #         self.overlay = ROI(
+        #             [_range[0], rect.top()], [2*width, rect.height()],
+        #             pen=(255, 255, 255),
+        #             maxBounds=rect
+        #         )
+        #         self.binned_widget.imageViewBox.addItem(self.overlay)
+
+        self.ui.slice.setText(f'{slice_axis} Range')
+        self.show_slice_overlay()
 
         ydata = self.normalize(ydata, arch.scan_info)
         return xdata, ydata
@@ -743,28 +740,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             xdata = self.get_chi_1d()
         return xdata
-
-    def get_profile_chi(self, arch):
-        """
-        Args:
-            arch (EwaldArch Object):
-
-        Returns:
-            intensity (ndarray): Intensity integrated along Chi
-                                 over a range of Q specified by UI
-        """
-        pass
-
-    def get_chi_1d(self, arch):
-        """
-        Args:
-            arch (EwaldArch Object):
-
-        Returns:
-            intensity (ndarray): Intensity integrated along Chi
-                                 over a range of Q specified by UI
-        """
-        pass
 
     def normalize(self, int_data, scan_info):
         """Reads the norm, raw, pcount option box and returns
@@ -811,8 +786,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.bkg_2d = 0.
             self.bkg_map_raw = 0.
             self.ui.setBkg.setText('Set Bkg')
-        # print(f'display_frame_widget > setBkg: {self.ui.setBkg.text()}')
-        # print(f'display_frame_widget > setBkg: self.bkg_1d = {self.bkg_1d}')
 
         self.update()
         return
@@ -847,6 +820,111 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if not self.ui.showLegend.isChecked():
             self.legend.clear()
+
+    def _set_slice_range(self, initialize=False):
+        if self.ui.plotUnit.currentIndex() == 2:
+            if self.ui.imageUnit.currentIndex() != 1:
+                self.ui.slice.setText('Q Range')
+                self.ui.slice_center.setRange(0, 10)
+                self.ui.slice_width.setRange(0, 30)
+                self.ui.slice_center.setSingleStep(0.1)
+                self.ui.slice_width.setSingleStep(0.1)
+                if initialize:
+                    self.ui.slice_center.setValue(2)
+                    self.ui.slice_width.setValue(0.5)
+            else:
+                self.ui.slice.setText(f'2{Th} Range')
+                self.ui.slice_center.setRange(-180, 180)
+                self.ui.slice_width.setRange(0, 180)
+                self.ui.slice_center.setValue(10)
+                self.ui.slice_width.setValue(5)
+                self.ui.slice_center.setSingleStep(1)
+                self.ui.slice_width.setSingleStep(1)
+                if initialize:
+                    self.ui.slice_center.setValue(10)
+                    self.ui.slice_width.setValue(5)
+        else:
+            self.ui.slice.setText(f'{Chi} Range')
+            self.ui.slice_center.setMinimum(-180)
+            self.ui.slice_center.setMaximum(180)
+            self.ui.slice_width.setMinimum(0)
+            self.ui.slice_width.setMaximum(270)
+            self.ui.slice_center.setSingleStep(1)
+            self.ui.slice_width.setSingleStep(1)
+            if initialize:
+                self.ui.slice_center.setProperty("value", 0)
+                self.ui.slice_width.setProperty("value", 10)
+
+        # self.update_plot()
+
+    def _update_slice_range(self):
+        imageUnit = self.ui.imageUnit.currentIndex()
+        plotUnit = self.ui.plotUnit.currentIndex()
+        if (not self.ui.slice.isChecked()) or (plotUnit != 2) or (imageUnit == 2):
+            # self.update_plot()
+            return
+
+        cen = self.ui.slice_center.value()
+        wid = self.ui.slice_width.value()
+        _range = np.array([cen - wid, cen + wid])
+        print(f'display_frame_widget > _update_slice_range: cen, wid, range = {cen}, {wid}, {_range}')
+        self._set_slice_range()
+
+        cen = self.ui.slice_center.value()
+        wid = self.ui.slice_width.value()
+        _range = np.array([cen - wid, cen + wid])
+        wavelength = self.arches[list(self.arches.keys())[0]].integrator.wavelength
+        print(f'display_frame_widget > _update_slice_range: cen, wid, range, wave = {cen}, {wid}, {_range}, {wavelength}')
+
+        if imageUnit == 0:
+            if self.ui.slice.text() == f'2{Th} Range':
+                self.ui.slice.setText('Q Range')
+                _range = ((4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(_range / 2)))
+                # cen = ((4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(cen / 2)))
+                # wid = ((4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(wid / 2)))
+        else:
+            if self.ui.slice.text() == f'Q Range':
+                self.ui.slice.setText(f'2{Th} Range')
+                _range = (2 * np.degrees(np.arcsin(_range * (wavelength * 1e10) / (4 * np.pi))))
+                # cen = (2 * np.degrees(np.arcsin(cen * (wavelength * 1e10) / (4 * np.pi))))
+                # wid = (2 * np.degrees(np.arcsin(wid * (wavelength * 1e10) / (4 * np.pi))))
+
+        cen = (_range[-1] + _range[0]) / 2.
+        wid = (_range[-1] - _range[0]) / 2.
+        print(f'display_frame_widget > _update_slice_range: cen, wid, range = {cen}, {wid}, {_range}')
+        self.ui.slice_center.setValue(cen)
+        self.ui.slice_width.setValue(wid)
+
+        self.show_slice_overlay()
+
+    def show_slice_overlay(self):
+        if self.overlay is not None:
+            self.binned_widget.imageViewBox.removeItem(self.overlay)
+            self.overlay = None
+
+        if (not self.ui.slice.isChecked()) or (self.ui.imageUnit.currentIndex() == 2):
+            return
+
+        center = self.ui.slice_center.value()
+        width = self.ui.slice_width.value()
+        _range = [center-width, center+width]
+
+        binned_data, rect = self.binned_data
+
+        if self.ui.plotUnit.currentIndex() < 2:
+            self.overlay = ROI(
+                [rect.left(), _range[0]], [rect.width(), 2*width],
+                pen=(255, 255, 255),
+                maxBounds=rect
+            )
+        else:
+            self.overlay = ROI(
+                [_range[0], rect.top()], [2*width, rect.height()],
+                pen=(255, 255, 255),
+                maxBounds=rect
+            )
+
+        self.binned_widget.imageViewBox.addItem(self.overlay)
 
     def save_image(self):
         """Saves currently displayed image. Formats are automatically
@@ -926,4 +1004,24 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         exporter.params.param('width').setValue(w_new)
         exporter.export(fname + '.tif')
 
+    def get_profile_chi(self, arch):
+        """
+        Args:
+            arch (EwaldArch Object):
 
+        Returns:
+            intensity (ndarray): Intensity integrated along Chi
+                                 over a range of Q specified by UI
+        """
+        pass
+
+    def get_chi_1d(self, arch):
+        """
+        Args:
+            arch (EwaldArch Object):
+
+        Returns:
+            intensity (ndarray): Intensity integrated along Chi
+                                 over a range of Q specified by UI
+        """
+        pass

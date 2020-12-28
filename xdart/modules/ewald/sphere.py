@@ -62,7 +62,7 @@ class EwaldSphere():
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={},
                  static=False, gi=False, th_mtr='th',
-                 overall_raw=0, overall_norm=0,
+                 overall_raw=0, overall_norm=0, single_img=False,
                  ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
@@ -91,7 +91,9 @@ class EwaldSphere():
         self.static = static
         self.gi = gi
         self.th_mtr = th_mtr
-        print(f'sphere > __init__: self.static, self.gi, self.th_mtr = {self.static}, {self.gi}, {self.th_mtr}')
+        self.single_img = single_img
+        print(f'sphere > __init__: self.static, self.gi, self.th_mtr, self.single_img = '
+              f'{self.static}, {self.gi}, {self.th_mtr}, {self.single_img}')
 
         if arches:
             self.arches = ArchSeries(self.data_file, self.file_lock, arches,
@@ -425,7 +427,7 @@ class EwaldSphere():
                 lst_attr = [
                     "scan_data", "mg_args", "bai_1d_args",
                     "bai_2d_args", "overall_raw", "overall_norm",
-                    "static", "gi", "th_mtr"
+                    "static", "gi", "th_mtr", "single_img"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
@@ -478,7 +480,7 @@ class EwaldSphere():
                         lst_attr = [
                             "scan_data", "mg_args", "bai_1d_args",
                             "bai_2d_args", "overall_raw", "overall_norm",
-                            "static", "gi", "th_mtr"
+                            "static", "gi", "th_mtr", "single_img"
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                         self._set_args(self.bai_1d_args)

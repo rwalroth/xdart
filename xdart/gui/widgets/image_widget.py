@@ -135,9 +135,10 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
             # self.displayed_image[self.displayed_image < 0] = 0
             # minval = self.displayed_image[self.displayed_image > 0].min()
             # self.displayed_image = np.log10(self.displayed_image/minval + 1)
-            minval = np.min(self.displayed_image) - 1
-            self.displayed_image -= (np.min(self.displayed_image) - 1.)
-            # self.displayed_image -= minval
+            min_val = np.min(self.displayed_image)
+            if min_val < 1:
+                # self.displayed_image -= (np.min(self.displayed_image) - 1.)
+                self.displayed_image -= (min_val - 1)
             self.displayed_image = np.log10(self.displayed_image)
 
             levels = np.nanpercentile(self.displayed_image, (0.1, 99.9))
@@ -145,8 +146,14 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
 
             self.histogram.axis.setLogMode(True)
         elif scale == 'Sqrt':
-            self.displayed_image -= self.displayed_image.min()
-            self.displayed_image = np.sqrt(self.displayed_image)
+            min_val = np.min(self.displayed_image)
+            if min_val < 0:
+                img = np.sqrt(np.abs(self.displayed_image))
+                img[self.displayed_image < 0] *= -1
+                self.displayed_image = img
+                # self.displayed_image -= min_val
+            else:
+                self.displayed_image = np.sqrt(self.displayed_image)
 
             levels = np.nanpercentile(self.displayed_image, (0.5, 99.5))
             self.imageItem.setImage(self.displayed_image, levels=levels, **kwargs)

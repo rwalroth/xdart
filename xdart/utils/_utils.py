@@ -22,7 +22,8 @@ import pandas as pd
 import yaml
 import json
 import h5py
-
+import hdf5plugin
+import fabio
 
 # This module imports
 from lmfit.models import LinearModel, GaussianModel, ParabolicModel
@@ -246,7 +247,7 @@ def get_motor_val(pdi_file, motor):
 def read_image_file(fname, orientation='horizontal',
                     flip=False, fliplr=False, transpose=False,
                     shape_100K=(195, 487), shape_300K=(195, 1475),
-                    return_float=False, verbose=False):
+                    return_float=False, im=0, verbose=False):
     """Read image file and return numpy array
 
     Args:
@@ -258,6 +259,7 @@ def read_image_file(fname, orientation='horizontal',
         shape_100K (tuple, optional): Shape of numpy array for Pilatus 100K. Defaults to (195, 487).
         shape_300K (tuple, optional): Shape of numpy array for Pilatus 300K. Defaults to (195,1475).
         return_float (bool, optional): Convert array to float. Defaults to False.
+        im (integer, optional): image number if input is h5 file from Eiger. Defaults to 0
         verbose (bool, optional): Print debug messages. Defaults to False.
 
     Returns:
@@ -268,6 +270,12 @@ def read_image_file(fname, orientation='horizontal',
 
     if 'tif' in fname[-5:]:
         img = np.asarray(io.imread(fname))
+    elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
+        with h5py.File(fname, mode='r') as f:
+            img = f['entry']['data']['data'][im]
+            img[514:551, :] = np.nan
+    elif 'mar3450' in fname[-9:]:
+        img = fabio.open(fname).data
     else:
         try:
             img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))
