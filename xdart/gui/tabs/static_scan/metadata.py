@@ -14,6 +14,7 @@ from pyqtgraph import Qt, QtCore
 # This module imports
 from ...gui_utils import DFTableModel
 
+
 class metadataWidget(Qt.QtWidgets.QWidget):
     """Widget for displaying metadata.
     

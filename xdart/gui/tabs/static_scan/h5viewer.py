@@ -3,7 +3,6 @@
 @author: walroth
 """
 # Standard library imorts
-import inspect
 import os
 import traceback
 
@@ -18,13 +17,14 @@ from ...widgets import defaultWidget
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets, QtCore, QtGui
 
+from icecream import ic
+ic.configureOutput(prefix='', includeContext=True)
+
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
 QWidget = QtWidgets.QWidget
 QFileDialog = QtWidgets.QFileDialog
 QItemSelectionModel = QtCore.QItemSelectionModel
-
-debug = True
 
 
 class H5Viewer(QWidget):
@@ -59,8 +59,7 @@ class H5Viewer(QWidget):
                  arch, arch_ids, arches,
                  data_1d={}, data_2d={},
                  parent=None):
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         super().__init__(parent)
         self.local_path = local_path
         self.file_lock = file_lock
@@ -169,8 +168,7 @@ class H5Viewer(QWidget):
         # self.show()
 
     def load_starting_defaults(self):
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         default_path = os.path.join(self.local_path, "last_defaults.json")
         if os.path.exists(default_path):
             self.defaultWidget.load_defaults(fname=default_path)
@@ -178,24 +176,21 @@ class H5Viewer(QWidget):
             self.defaultWidget.save_defaults(fname=default_path)
 
     def set_user_defaults(self):
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         default_path = os.path.join(self.local_path, "last_defaults.json")
         self.defaultWidget.save_defaults(fname=default_path)
 
     def update(self):
         """Calls both update_scans and update_data.
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         self.update_scans()
         self.update_data()
         
     def update_scans(self):
         """Takes in directory path and adds files in path to listScans
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         self.ui.listScans.clear()
         self.ui.listScans.addItem('..')
 
@@ -209,13 +204,11 @@ class H5Viewer(QWidget):
     def update_data(self):
         """Updates list with all arch ids.
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         previous_loc = self.ui.listData.currentRow()
         previous_sel = self.ui.listData.selectedItems()
         self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
-        print(f'h5viewer > update_data: previous_loc = {previous_loc}')
-        print(f'h5viewer > update_data: data_2d.keys = {self.data_2d.keys()}')
+        ic(previous_loc, self.data_2d.keys())
 
         if self.sphere.name != "null_main":
             with self.sphere.sphere_lock:
@@ -223,12 +216,11 @@ class H5Viewer(QWidget):
 
             # Clear data 1d/1d objects if reintegrated
             if len(_idxs) < len(self.data_2d.keys()):
-                print(f'h5viewer > update_data: clearing data_1d/2d objects')
+                ic('clearing data_1d/2d objects')
                 self.data_2d.clear()
                 self.data_1d.clear()
 
-            print(f'h5viewer > update_data: len(_idxs) = {len(_idxs)}')
-            print(f'h5viewer > update_data: self.ui.listData.count() = {self.ui.listData.count()}')
+            ic(len(_idxs), self.ui.listData.count())
             if (len(_idxs) == 0) or (len(_idxs) > self.ui.listData.count() - 1):
                 self.ui.listData.clear()
                 self.ui.listData.addItem('Overall')
@@ -238,25 +230,23 @@ class H5Viewer(QWidget):
         if previous_loc > self.ui.listData.count() - 1:
             previous_loc = self.ui.listData.count() - 1
 
-        print(f'h5viewer > update_data: resetting selection = {len(previous_sel)}')
+        ic('resetting selection', len(previous_sel))
         if len(previous_sel) < 2:
             self.ui.listData.setCurrentRow(previous_loc)
         else:
             for item in previous_sel:
-                print(f'h5viewer > update_data: item = {item.text()}')
+                ic(item.text())
                 item.setSelected(True)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
 
-        print(f'h5viewer > update_data: listitems (updated) = {self.ui.listData.count()}')
-        print(f'h5viewer > update_data: currentRow (updated) = {self.ui.listData.currentRow()}')
+        ic('listItems (updated)', self.ui.listData.count(), self.ui.listData.currentRow())
 
         # self.ui.listData.activateWindow()
         self.ui.listData.setFocus()
         self.ui.listData.focusWidget()
 
     def thread_finished(self, task):
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         if task != "load_arch":
             self.update()
         self.sigThreadFinished.emit()
@@ -267,8 +257,7 @@ class H5Viewer(QWidget):
         
         q: QListItem, item selected in h5viewer.
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         if q.data(0) == '..':
             if self.dirname[-1] in ['/', '\\']:
                 up = os.path.dirname(self.dirname[:-1])
@@ -292,8 +281,7 @@ class H5Viewer(QWidget):
         args:
             fname: str, absolute path for data file
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         if fname != '':
             try:
                 with self.file_lock:
@@ -312,14 +300,13 @@ class H5Viewer(QWidget):
     def data_changed(self):
         """Connected to currentItemChanged signal of listData
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         self.arch_ids.clear()
         items = self.ui.listData.selectedItems()
         self.arch_ids += [str(item.text()) for item in items]
         self.arch_ids.sort()
         idxs = self.arch_ids
-        print(f'h5viewer > data_changed: idxs = {idxs}')
+        ic(idxs)
 
         if (len(idxs) == 0) or (idxs[0] == 'No data'):
             self.sigUpdate.emit()
@@ -332,8 +319,7 @@ class H5Viewer(QWidget):
             idxs = self.sphere.arches.index
 
         print(f'\n*************')
-        print(f'h5viewer > data_changed - selected items: {self.arch_ids} ')
-        print(f'h5viewer > data_changed - sphere.gi, sphere.static: {self.sphere.gi}, {self.sphere.gi} ')
+        ic('selected items', self.arch_ids, self.sphere.gi, self.sphere.static)
 
         if len(idxs) == 0:
             self.sigUpdate.emit()
@@ -350,7 +336,7 @@ class H5Viewer(QWidget):
                 if int(idx) in self.data_2d.keys():
                     # self.arches[str(idx)] = self.data_2d[str(idx)]
                     self.arches[int(idx)] = self.data_2d[int(idx)]
-                    print(f'h5viewer > data_changed: loaded arch{idx} from memory')
+                    ic('loaded arch from memory', idx)
                     # idxs_memory.append(str(idx))
                     idxs_memory.append(int(idx))
 
@@ -359,8 +345,7 @@ class H5Viewer(QWidget):
             self.file_thread.arch_ids = [int(idx) for idx in idxs
                                          if int(idx) not in idxs_memory]
 
-            print(f'h5viewer > data_changed: len(self.arches) = {len(self.arches)}')
-            print(f'h5viewer > data_changed: file_thread.arch_ids = {self.file_thread.arch_ids}')
+            ic(len(self.arches), self.file_thread.arch_ids)
             if len(self.file_thread.arch_ids) > 0:
                 self.file_thread.queue.put("load_arches")
             else:
@@ -380,8 +365,7 @@ class H5Viewer(QWidget):
     def open_folder(self):
         """Changes the directory being displayed in the file explorer.
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         self.dirname = QFileDialog().getExistingDirectory()
         self.arches.clear()
         self.data_2d.clear()
@@ -394,8 +378,7 @@ class H5Viewer(QWidget):
         args:
             enable: bool, if True actions are enabled
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         self.actionSaveDataAs.setEnabled(enable)
         self.paramMenu.setEnabled(enable)
         self.actionOpenFolder.setEnabled(enable)
@@ -406,8 +389,7 @@ class H5Viewer(QWidget):
         """Saves all data to hdf5 file. Also sets fname to be the
         selected file.
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         fname, _ = QFileDialog.getSaveFileName()
         with self.file_thread.lock:
             self.file_thread.new_fname = fname
@@ -417,7 +399,6 @@ class H5Viewer(QWidget):
     def new_file(self):
         """Calls file dialog and sets the file name.
         """
-        if debug:
-            print(f'- h5viewer > H5Viewer: {inspect.currentframe().f_code.co_name} -')
+        ic()
         fname, _ = QFileDialog.getSaveFileName()
         self.set_file(fname)

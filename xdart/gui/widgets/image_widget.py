@@ -10,18 +10,21 @@ import traceback
 import numpy as np
 from matplotlib import cm
 
+# This module imports
+from ..gui_utils import RectViewBox
+from .imageWidgetUI import Ui_Form
+import pyqtgraph_extensions as pgx
+from icecream import ic
+
 # Qt imports
 import pyqtgraph as pg
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
+
 QFileDialog = QtWidgets.QFileDialog
 
-# This module imports
-from ..gui_utils import RectViewBox
-from ..widgets import RangeSliderWidget
-import xdart.utils as ut
-from .imageWidgetUI import Ui_Form
-import pyqtgraph_extensions as pgx
+ic.configureOutput(prefix='', includeContext=True)
+ic.enable()
 
 
 class XDImageWidget(Qt.QtWidgets.QWidget):
@@ -93,11 +96,43 @@ class XDImageWidget(Qt.QtWidgets.QWidget):
         )
 
 
+class XDImageItem(pgx.ImageItem):
+    def __init__(self, parent=None, raw_image=False):
+        super().__init__(parent)
+
+        self.pos_label = pg.LabelItem(justify='right')
+        self.raw_image = raw_image
+
+    def hoverEvent(self, ev):
+        """Show the position, pixel, and value under the mouse cursor.
+        """
+        if ev.isExit():
+            self.pos_label.setText('')
+            return
+
+        data = self.image
+        pos = ev.pos()
+        # i, j = pos.y(), pos.x()
+        i, j = pos.x(), pos.y()
+        i = int(np.clip(i, 0, data.shape[0] - 1))
+        j = int(np.clip(j, 0, data.shape[1] - 1))
+        val = data[i, j]
+        ppos = self.mapToParent(pos)
+        x, y = ppos.x(), ppos.y()
+        if self.raw_image:
+            self.pos_label.setText(f'{x:0.0f}, {y:0.0f} [{val:.2e}]')
+        else:
+            self.pos_label.setText(f'{x:0.2f}, {y:0.2f} [{val:.2e}]')
+
+
 class pgxImageWidget(Qt.QtWidgets.QWidget):
-    def __init__(self, parent=None, lockAspect=False):
+    def __init__(self, parent=None, lockAspect=False, raw_image=False):
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+
+        # Some options for Raw Images
+        self.raw_image = raw_image
 
         # Image pane setup
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
@@ -108,8 +143,12 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
         self.image_layout.addWidget(self.image_win)
         self.imageViewBox = RectViewBox(lockAspect=lockAspect)
         self.image_plot = self.image_win.addPlot(viewBox=self.imageViewBox)
-        self.imageItem = pgx.ImageItem()
+        # self.imageItem = pgx.ImageItem()
+        self.imageItem = XDImageItem(raw_image=self.raw_image)
         self.image_plot.addItem(self.imageItem)
+
+        # Make Label Item for showing position
+        self.make_pos_label()
 
         self.histogram = self.image_win.addColorBar(image=self.imageItem)
         self.histogram.layout.setContentsMargins(0, 20, 0, 50)
@@ -117,6 +156,11 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
         self.raw_image = np.zeros(0)
         self.displayed_image = np.zeros(0)
         self.show()
+
+    def make_pos_label(self, itemPos=(1, 0), parentPos=(1, 1), offset=(0, -20)):
+        self.image_win.addItem(self.imageItem.pos_label)
+        self.imageItem.pos_label.anchor(itemPos=itemPos, parentPos=parentPos, offset=offset)
+        self.imageItem.pos_label.setFixedWidth(1)
 
     def setImage(self, image, rect=None,
                  scale='Linear', cmap='viridis',
@@ -171,6 +215,26 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
 
     def set_cmap(self, cmap):
         self.imageItem.setLookupTable(pgx.get_colormap_lut(cmap))
+
+
+class XDPlotWidget(pg.GraphicsLayoutWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.pos_label = pg.LabelItem(justify='right')
+        self.plot_viewBox = RectViewBox()
+        self.plot = self.plot_win.addPlot(viewBox=self.plot_viewBox)
+        self.legend = self.plot.addLegend()
+        self.curves = []
+
+        self.make_pos_label()
+
+    def make_pos_label(self):
+        self.addItem(self.pos_label)
+        self.pos_label.anchor(itemPos=(1, 0), parentPos=(1, 0), offset=(-20, 10))
+        self.pos_label.setFixedWidth(1)
+        self.setup_crosshair()
+
 
 
 def normalize(arr):
