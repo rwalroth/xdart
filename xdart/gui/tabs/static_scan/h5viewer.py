@@ -72,6 +72,7 @@ class H5Viewer(QWidget):
         self.arches = arches
         self.data_1d = data_1d
         self.data_2d = data_2d
+        self.new_scan = True
 
         # Link UI
         self.ui = Ui_Form()
@@ -207,8 +208,8 @@ class H5Viewer(QWidget):
         ic()
         previous_loc = self.ui.listData.currentRow()
         previous_sel = self.ui.listData.selectedItems()
-        self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
         ic(previous_loc, self.data_2d.keys())
+        self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
 
         if self.sphere.name != "null_main":
             with self.sphere.sphere_lock:
@@ -308,6 +309,13 @@ class H5Viewer(QWidget):
         idxs = self.arch_ids
         ic(idxs)
 
+        if len(idxs) == 0:
+            return
+
+        if self.new_scan and (idxs[0] == 'Overall') and (len(self.data_1d) == 0):
+            self.new_scan = False
+            return
+
         if (len(idxs) == 0) or (idxs[0] == 'No data'):
             self.sigUpdate.emit()
             return
@@ -354,13 +362,16 @@ class H5Viewer(QWidget):
     def data_reset(self):
         """Resets data in memory (self.arches, self.arch_ids, self.data_..
         """
+        ic()
         self.arches.clear()
         self.arch_ids.clear()
         self.data_1d.clear()
         self.data_2d.clear()
 
-        if self.ui.listData.count() > 1:
-            self.ui.listData.setCurrentRow(0)
+        self.new_scan = True
+
+        # if self.ui.listData.count() > 1:
+        #     self.ui.listData.setCurrentRow(-1)
 
     def open_folder(self):
         """Changes the directory being displayed in the file explorer.

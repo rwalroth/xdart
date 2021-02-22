@@ -125,6 +125,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.arch = arch
         self.arch_ids = arch_ids
         self.arches = arches
+        self.arch_names = []
+        self.sphere_name = None
         self.data_1d = data_1d
         self.data_2d = data_2d
         self.bkg_1d = 0.
@@ -265,6 +267,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             return False
         if (len(self.sphere.arches.index) == 1) and (self.arch_ids[0] == 'Overall'):
             return False
+        if (self.arch_ids == 'Overall') and (self.sphere_name != self.sphere.name):
+            self.sphere_name = self.sphere.name
+            return False
 
         return True
 
@@ -272,12 +277,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates image and plot frames based on toolbar options
         """
         ic()
-        ic(self.sphere.static)
-        ic(self.sphere.gi)
+        ic(self.sphere.static, self.sphere.gi, self.arch_ids)
         if not self._updated():
             return True
-
-        ic(self.arch_ids)
 
         # Sets title text
         if ('Overall' in self.arch_ids) or self.sphere.single_img:
@@ -338,7 +340,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             ic(self.arches.keys(), self.arch_ids)
             data = self.get_arches_map_raw()
 
-        data = np.asarray(data, dtype=np.float)
+        data = np.asarray(data, dtype=float)
         ic('Subtracting BG', self.bkg_map_raw)
         # Subtract background
         data -= self.bkg_map_raw
@@ -420,15 +422,33 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # Get 1D data for all arches
         ydata, xdata = self.get_arches_data_1d()
+        arch_names = [f'{self.sphere.name}_{i}' for i in self.arches.keys()]
+        ic(ydata.shape, xdata.shape)
 
         # Subtract background
         ydata -= self.bkg_1d
         if ydata.ndim == 1:
             ydata = ydata[np.newaxis, :]
 
-        self.plot_data = (ydata, xdata)
+        ic(ydata.shape, xdata.shape, self.plot_data[0].shape)
+        if ((self.plot_data[0].shape == xdata.shape) and
+                (self.plotMethod in ['Overlay', 'Waterfall'])):
+            for (arch_name, data) in zip(arch_names, ydata):
+                if arch_name not in self.arch_names:
+                    self.plot_data[1] = np.vstack((self.plot_data[1], data))
+                    self.arch_names.append(arch_name)
+
+            ic(self.plot_data[1].shape)
+        else:
+            self.plot_data = [xdata, ydata]
+            self.arch_names.clear()
+            self.arch_names = arch_names
+
+        xdata, ydata = self.plot_data
         self.plot_data_range = [[xdata.min(), xdata.max()], [ydata.min(), ydata.max()]]
         self.update_plot_view()
+
+        self.save_array(auto=True)
 
     def update_plot_view(self):
         """Updates 1D view of data in plot frame
@@ -440,8 +460,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.curves.clear()
 
         self.plotMethod = self.ui.plotMethod.currentText()
+        self.ui.yOffset.setEnabled(False)
+        if (self.plotMethod in ['Overall', 'Single']) and (len(self.plot_data[1]) > 1):
+            self.ui.yOffset.setEnabled(True)
+
         ic(self.plotMethod)
-        if (self.plotMethod == 'Waterfall') and (len(self.arches) > 3):
+        # if (self.plotMethod == 'Waterfall') and (len(self.arches) > 3):
+        if (self.plotMethod == 'Waterfall') and (len(self.plot_data[1]) > 3):
             self.update_wf()
         else:
             self.update_1d_view()
@@ -451,8 +476,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """
         ic()
         self.setup_1d_layout()
-        ydata_, xdata_ = self.plot_data
-        ydata, s_xdata = ydata_.copy(), xdata_.copy()
+        xdata_, ydata_ = self.plot_data
+        # ydata, s_xdata = ydata_.copy(), xdata_.copy()
+        s_xdata, ydata = xdata_.copy(), ydata_.copy()
+        ic(ydata.shape)
 
         int_label = 'I'
         if self.normChannel:
@@ -475,32 +502,38 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 ydata = np.sqrt(ydata)
             ylabel = f'<math>&radic;</math>{int_label} (a.u.)'
 
-        idxs = list(self.arches.keys())
+        # idxs = list(self.arches.keys())
 
-        if self.plotMethod in ['Overlay', 'Waterfall']:
-            self.setup_curves(len(idxs))
+        if ((self.plotMethod in ['Overlay', 'Waterfall']) or
+                ((self.plotMethod == 'Single') and (ydata.shape[0] > 1))):
+            # self.setup_curves(len(idxs))
+            self.setup_curves()
 
             offset = self.ui.yOffset.value()
-            y_offset = 0
-            for nn, (curve, s_ydata, idx) in enumerate(zip(self.curves, ydata, idxs)):
-                ic(idx)
+            # y_offset = 0
+            y_offset = offset / 100 * (self.plot_data_range[1][1] - self.plot_data_range[1][0])
+            ic(self.plot_data_range)
+            # for nn, (curve, s_ydata, idx) in enumerate(zip(self.curves, ydata, idxs)):
+            for nn, (curve, s_ydata) in enumerate(zip(self.curves, ydata)):
+                ic(nn)
 
-                if nn == 0:
-                    y_offset = offset / 100 * (s_ydata.max() - s_ydata.min())
+                # y_r = self.plot_data_range[1]
+                # y_offset = offset / 100 * (y_r[1] - y_r[0])
+
+                # if nn == 0:
+                #     y_offset = offset / 100 * (s_ydata.max() - s_ydata.min())
                 curve.setData(s_xdata, s_ydata + y_offset*nn)
-                ymax = curve.dataBounds(1)[1]
-                self.plot_data_range[1][1] = max(self.plot_data_range[1][1], ymax)
-                ic(self.plot_data_range)
 
         else:
             self.setup_curves()
             s_ydata = ydata
+            ic(s_xdata.shape, s_ydata.shape)
             if self.plotMethod == 'Average':
                 s_ydata = np.nanmean(s_ydata, 0)
             elif self.plotMethod == 'Sum':
                 s_ydata = np.nansum(s_ydata, 0)
 
-            self.curves[0].setData(s_xdata, s_ydata)
+            self.curves[0].setData(s_xdata, s_ydata.squeeze())
 
         # Apply labels to plot
         plotUnit = self.ui.plotUnit.currentIndex()
@@ -516,8 +549,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         self.setup_wf_layout()
 
-        data_, xdata_ = self.plot_data
-        data, s_xdata = data_.copy(), xdata_.copy()
+        xdata_, data_ = self.plot_data
+        # data, s_xdata = data_.copy(), xdata_.copy()
+        s_xdata, data = xdata_.copy(), data_.copy()
         rect = get_rect(s_xdata, np.arange(data.shape[0]))
 
         ic(self.scale)
@@ -547,7 +581,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         intensity /= (nn + 1)
         ic(intensity.shape, nn, idxs)
 
-        return np.asarray(intensity, dtype=np.float)
+        return np.asarray(intensity, dtype=float)
 
     def get_sphere_map_raw(self):
         """Returns data and QRect for data in sphere
@@ -557,7 +591,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             return self.get_arches_map_raw()
 
         with self.sphere.sphere_lock:
-            map_raw = np.asarray(self.sphere.overall_raw, dtype=np.float)
+            map_raw = np.asarray(self.sphere.overall_raw, dtype=float)
             return map_raw/len(self.arches)
 
     def get_arches_data_2d(self, idxs=None):
@@ -576,7 +610,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ic(intensity.shape, nn, idxs)
 
         xdata, ydata = self.get_xydata(arch)
-        return np.asarray(intensity, dtype=np.float), xdata, ydata
+        return np.asarray(intensity, dtype=float), xdata, ydata
 
     def get_sphere_data_2d(self):
         """Returns data and QRect for data in sphere
@@ -589,7 +623,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         with self.sphere.sphere_lock:
             int_data = self.sphere.bai_2d
 
-        intensity = np.asarray(int_data.norm, dtype=np.float)
+        intensity = np.asarray(int_data.norm, dtype=float)
         idxs = list(self.arches.keys())
         xdata, ydata = self.get_xydata(self.arches[int(idxs[0])])
 
@@ -622,16 +656,22 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         return ydata, xdata
 
-    def get_int_2d(self, arch):
+    def get_int_2d(self, arch, normalize=True):
         """Returns the appropriate 2D data depending on the chosen axes
         I(Q, Chi) or I(Qz, Qxy)
         """
         ic()
-        if self.ui.imageUnit.currentIndex() == 2:
-            int_2d = arch.int_2d.i_q
+        if self.ui.imageUnit.currentIndex() == 0:
+            int_2d = arch.int_2d.i_qChi
+        elif self.ui.imageUnit.currentIndex() == 1:
+            int_2d = arch.int_2d.i_tthChi
         else:
-            int_2d = arch.int_2d.norm
-        return self.normalize(int_2d, arch.scan_info)
+            int_2d = arch.int_2d.i_QxyQz
+
+        if normalize:
+            int_2d = self.normalize(int_2d, arch.scan_info)
+        return int_2d
+        # return self.normalize(int_2d, arch.scan_info)
 
     def get_int_1d(self, arch):
         """Returns 1D integrated data for arch. If range is specified,
@@ -648,13 +688,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 xdata = self.get_xdata(arch.int_1d)
                 return xdata, ydata
 
-        _int_2d = arch.int_2d
+        # _int_2d = arch.int_2d
+        int_2d = self.get_int_2d(arch, normalize=False)
+        q, tth, chi = arch.int_2d.q, arch.int_2d.ttheta, arch.int_2d.chi
 
-        int_2d, q, tth, chi = _int_2d.norm, _int_2d.q, _int_2d.ttheta, _int_2d.chi
+        # int_2d, q, tth, chi = _int_2d.norm, _int_2d.q, _int_2d.ttheta, _int_2d.chi
         xdata_list = [q, tth, chi]
         xdata = xdata_list[self.ui.plotUnit.currentIndex()]
-
-        ic(int_2d.shape)
 
         center = self.ui.slice_center.value()
         width = self.ui.slice_width.value()
@@ -747,10 +787,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 dataset
         """
         ic()
-        intensity = np.asarray(int_data.copy(), dtype=np.float)
+        intensity = np.asarray(int_data.copy(), dtype=float)
         normChannel = self.ui.normChannel.currentText()
-        if normChannel in scan_info.keys():
-            intensity /= scan_info[normChannel]
+        if normChannel.upper() in scan_info.keys():
+            intensity /= scan_info[normChannel.upper()]
+            self.normChannel = normChannel
+        elif normChannel.lower() in scan_info.keys():
+            intensity /= scan_info[normChannel.lower()]
             self.normChannel = normChannel
         else:
             self.normChannel = None
@@ -783,27 +826,23 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.update()
         return
 
-    def setup_curves(self, idxs=1):
+    def setup_curves(self):
         """Initialize curves for line plots
         """
         ic()
         self.curves.clear()
         self.legend.clear()
 
-        arch_ids = list(self.arches.keys())
-        if self.plotMethod in ['Sum', 'Average']:
-            arch_ids = [self.plotMethod]
+        # arch_ids = list(self.arches.keys())
+        arch_ids = self.arch_names
+        ic(arch_ids)
+        if (self.plotMethod in ['Sum', 'Average']) and (len(self.arch_names) > 1):
+            arch_ids = f'{self.plotMethod} [{self.arch_names[0]}'
+            for arch_name in self.arch_names[1:]:
+                arch_ids += f', {arch_name}'
+            arch_ids = [arch_ids + ']']
 
-        # Define color tuples
-        try:
-            colors_tuples = cm.get_cmap(self.cmap, 256)
-        except ValueError:
-            colors_tuples = cm.get_cmap('jet', 256)
-
-        colors = colors_tuples(np.linspace(0, 1, idxs))
-        colors = np.round(colors * [255, 255, 255, 1]).astype(int)
-        colors = [tuple(color[:3]) for color in colors]
-
+        colors = self.get_colors()
         self.curves = [self.plot.plot(
             pen=color,
             symbolBrush=color,
@@ -983,30 +1022,34 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ic(directory, base_name, ext)
         np.save(f'{save_fname}.npy', data)
 
-    def save_array(self):
+    def save_array(self, auto=False):
         """Saves currently displayed data. Currently supports .xye
         and .csv.
         """
         ic()
-        path = QFileDialog().getExistingDirectory(
-            caption='Choose Save Directory',
-            directory='',
-            options=(QFileDialog.ShowDirsOnly | QFileDialog.DontUseNativeDialog)
-        )
-
-        inp_dialog = QtWidgets.QInputDialog()
-        suffix, ok = inp_dialog.getText(inp_dialog, 'Enter Suffix to be added to File Name', 'Suffix', text='')
-        ic(suffix, ok)
-        if not ok:
-            return
-
         fname = f'{self.sphere.name}'
-        if suffix != '':
-            fname += f'_{suffix}'
+        if not auto:
+            path = QFileDialog().getExistingDirectory(
+                caption='Choose Save Directory',
+                directory='',
+                options=(QFileDialog.ShowDirsOnly | QFileDialog.DontUseNativeDialog)
+            )
+
+            inp_dialog = QtWidgets.QInputDialog()
+            suffix, ok = inp_dialog.getText(inp_dialog, 'Enter Suffix to be added to File Name', 'Suffix', text='')
+            ic(suffix, ok)
+            if not ok:
+                return
+            if suffix != '':
+                fname += f'_{suffix}'
+        else:
+            path = os.path.dirname(self.sphere.data_file)
+
         fname = os.path.join(path, fname)
 
-        ydata, xdata = self.plot_data
-        idxs = list(self.arches.keys())
+        xdata, ydata = self.plot_data
+        # idxs = list(self.arches.keys())
+        idxs = [arch.replace(f'{self.sphere.name}_', '') for arch in self.arch_names]
         for nn, (s_ydata, idx) in enumerate(zip(ydata, idxs)):
             # Write to xye
             xye_fname = f'{fname}_{str(idx).zfill(4)}.xye'
@@ -1020,11 +1063,40 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         exporter = pyqtgraph.exporters.ImageExporter(scene)
         h = exporter.params.param('height').value()
         w = exporter.params.param('width').value()
-        h_new = 500
+        h_new = 800
         w_new = int(np.round(w/h * h_new, 0))
         exporter.params.param('height').setValue(h_new)
         exporter.params.param('width').setValue(w_new)
         exporter.export(fname + '.tif')
+
+    def get_colors(self):
+        # Define color tuples
+
+        colors = (1, 1, 1)
+        if self.cmap == 'Default':
+            colors_tuples = [cm.get_cmap('tab10'), cm.get_cmap('Set3'), cm.get_cmap('tab20b', 5)]
+            for nn, color_tuples in enumerate(colors_tuples):
+                if nn == 0:
+                    colors = np.asarray(color_tuples.colors)
+                else:
+                    colors = np.vstack((colors, np.asarray(color_tuples.colors)[:, 0:3]))
+
+            colors_tuples = cm.get_cmap('jet')
+            more_colors = colors_tuples(np.linspace(0, 1, len(self.arch_names)))
+            colors = np.vstack((colors, more_colors[:, 0:3]))
+
+        else:
+            try:
+                colors_tuples = cm.get_cmap(self.cmap)
+            except ValueError:
+                colors_tuples = cm.get_cmap('jet', 256)
+            colors = colors_tuples(np.linspace(0, 1, len(self.arch_names)))[:, 0:3]
+
+        # colors = np.round(colors * [255, 255, 255, 1]).astype(int)
+        colors = np.round(colors * [255, 255, 255]).astype(int)
+        colors = [tuple(color[:3]) for color in colors]
+
+        return colors
 
     def get_profile_chi(self, arch):
         """

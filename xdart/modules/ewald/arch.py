@@ -204,7 +204,7 @@ class EwaldArch():
                 self.mask = np.arange(self.map_raw.size)[self.map_raw.flatten() < 0]
 
             if not self.gi:
-                ic(self.integrator, kwargs, self.map_norm)
+                ic(self.integrator, kwargs, self.map_norm, unit)
                 result = self.integrator.integrate1d(
                     self.map_raw/self.map_norm, numpoints, unit=unit,
                     radial_range=radial_range, mask=self.get_mask(),
@@ -330,13 +330,13 @@ class EwaldArch():
 
                 # Transform to reciprocal (Qz-Qxy) coordinates
                 ic(x_range, y_range)
-                i_q, qxy, qz = self.integrator.transform_image(
+                i_QxyQz, qxy, qz = self.integrator.transform_image(
                     self.map_raw, process='reciprocal', npt=(npt_rad, npt_azim),
                     x_range=x_range, y_range=y_range, unit='q_A^-1',
                     mask=self.get_mask(), all=False, **pg_args)
 
                 self.int_2d.from_result(result, self.integrator.wavelength, unit=unit,
-                                        i_q=np.flipud(i_q), qz=qz, qxy=qxy)
+                                        i_QxyQz=np.flipud(i_QxyQz), qz=qz, qxy=qxy)
 
         ii = result.intensity
         lt0 = np.sum(ii < 0)

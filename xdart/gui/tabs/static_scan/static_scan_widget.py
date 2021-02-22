@@ -232,6 +232,7 @@ class staticWidget(QWidget):
         self.h5viewer.sigNewFile.connect(self.wrangler.set_fname)
         self.h5viewer.sigNewFile.connect(self.displayframe.set_image_units)
         self.h5viewer.sigNewFile.connect(self.h5viewer.data_reset)
+        # self.h5viewer.sigNewFile.connect(self.disable_displayframe_update)
 
     def disconnect_wrangler(self):
         """Disconnects all signals attached the the current wrangler
@@ -327,6 +328,7 @@ class staticWidget(QWidget):
         on the selected image or overall data.
         """
         ic()
+
         if self.sphere.name != 'null_main':
             ic('updating displayframe')
             if (len(self.arches.keys()) > 0) and (len(self.sphere.arches.index) > 0):

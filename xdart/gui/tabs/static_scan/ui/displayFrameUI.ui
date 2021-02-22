@@ -428,6 +428,11 @@
                  </property>
                  <item>
                   <property name="text">
+                   <string>Default</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
                    <string>viridis</string>
                   </property>
                  </item>
@@ -965,6 +970,11 @@
             </property>
             <item>
              <property name="text">
+              <string>Single</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
               <string>Overlay</string>
              </property>
             </item>
@@ -984,22 +994,6 @@
              </property>
             </item>
            </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_7">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Maximum</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
           </item>
           <item>
            <widget class="QLabel" name="yOffsetLabel">

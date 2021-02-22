@@ -6,7 +6,7 @@
 # Standard library imports
 import os
 import time
-import inspect
+import glob
 
 # Qt imports
 from pyqtgraph import Qt
@@ -18,27 +18,60 @@ from xdart.modules.ewald import EwaldArch, EwaldSphere
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
-from xdart.utils import read_image_file, get_image_meta_data
+from xdart.utils import read_image_file, get_image_meta_data, split_file_name, get_scan_name, get_img_number
 
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
 from icecream import ic
+
 ic.configureOutput(prefix='', includeContext=True)
+
+QFileDialog = QtWidgets.QFileDialog
 
 def_img_fname = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0001.tif'
 poni = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
 
+# def_img_fname = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/RxnE_201902_0_exp0_0001.tif'
+# poni = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/AgBe.poni'
+
+bg_fname = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/RxnE_201902_0_bgexp0_0001.tif'
+bg_dir = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/'
+
 params = [
-    # {'name': 'Image File', 'type': 'str', 'default': img_fname},
-    {'name': 'Image File', 'type': 'str', 'value': def_img_fname},
-    NamedActionParameter(name='image_file_browse', title='Browse...'),
-    # {'name': 'PONI File', 'type': 'str', 'default': poni},
-    {'name': 'Single Image', 'type': 'bool', 'value': False},
-    {'name': 'PONI File', 'type': 'str', 'value': poni},
-    NamedActionParameter(name='poni_file_browse', title='Browse...'),
-    {'name': 'Grazing Incidence', 'type': 'bool', 'value': False},
-    {'name': 'Theta Motor', 'type': 'str', 'value': 'th'},
+    {'name': 'Calibration', 'type': 'group', 'children': [
+        {'name': 'PONI File', 'title': 'PONI   ', 'type': 'str', 'value': poni},
+        NamedActionParameter(name='poni_file_browse', title='Browse...'),
+    ], 'expanded': True},
+    {'name': 'Signal', 'type': 'group', 'children': [
+        {'name': 'inp_type', 'title': '', 'type': 'list',
+         'values': ['Image Series', 'Directory', 'Single Image'], 'value': 'Image Series'},
+        {'name': 'File', 'title': 'Image File   ', 'type': 'str', 'value': def_img_fname},
+        NamedActionParameter(name='img_file_browse', title='Browse...'),
+        {'name': 'img_dir', 'title': 'Directory', 'type': 'str', 'value': '', 'visible': False},
+        NamedActionParameter(name='img_dir_browse', title='Browse...', visible=False),
+        {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
+        {'name': 'img_ext', 'title': 'File Type  ', 'type': 'list',
+         'values': ['tif', 'raw', 'h5'], 'value':'tif', 'visible': False},
+    ], 'expanded': True},
+    {'name': 'BG', 'title': 'Background', 'type': 'group', 'children': [
+        {'name': 'bg_type', 'title': '', 'type': 'list',
+         'values': ['Single Bkg File', 'Bkg Directory'], 'value': 'Single Bkg'},
+        {'name': 'File', 'title': 'Bkg File', 'type': 'str', 'value': bg_fname},
+        NamedActionParameter(name='bg_file_browse', title='Browse...'),
+        {'name': 'Match', 'title': 'Match Parameter', 'type': 'group', 'children': [
+            {'name': 'Parameter', 'type': 'list', 'values': ['File Root'], 'value': 'File Root'},
+            {'name': 'bg_dir', 'title': 'Directory', 'type': 'str', 'value': bg_dir},
+            NamedActionParameter(name='bg_dir_browse', title='Browse...'),
+            {'name': 'Filter', 'type': 'str', 'value': ''},
+        ], 'expanded': True, 'visible': False},
+        {'name': 'Scale', 'type': 'float', 'value': 1},
+        {'name': 'norm_channel', 'title': 'Normalize', 'type': 'list', 'values': ['bstop'], 'value': 'bstop'},
+    ], 'expanded': False},
+    {'name': 'GI', 'title': 'Grazing Incidence', 'type': 'group', 'children': [
+        {'name': 'Grazing', 'type': 'bool', 'value': False},
+        {'name': 'th_motor', 'title': 'Theta Motor', 'type': 'list', 'values': ['th'], 'value': 'th'},
+    ], 'expanded': False},
     {'name': 'Timeout', 'type': 'float', 'value': 1},
 ]
 
@@ -47,7 +80,7 @@ class specWrangler(wranglerWidget):
     """Widget for integrating data associated with spec file. Can be
     used "live", will continue to poll data folders until image data
     and corresponding spec data are available.
-    
+
     attributes:
         command_queue: Queue, used to send commands to thread
         file_lock, mp.Condition, process safe lock for file access
@@ -62,17 +95,17 @@ class specWrangler(wranglerWidget):
             data.
         tree: pyqtgraph ParameterTree, stores and organizes parameters
         ui: Ui_Form from qtdesigner
-    
+
     methods:
         cont, pause, stop: functions to pass continue, pause, and stop
-            commands to thread via command_queue 
+            commands to thread via command_queue
         enabled: Enables or disables interactivity
         set_image_dir: sets the image directory
         set_poni_file: sets the calibration poni file
         set_spec_file: sets the spec data file
         set_fname: Method to safely change file name
         setup: Syncs thread parameters prior to starting
-    
+
     signals:
         finished: Connected to thread.finished signal
         sigStart: Tells tthetaWidget to start the thread and prepare
@@ -93,10 +126,11 @@ class specWrangler(wranglerWidget):
         """
         ic()
         super().__init__(fname, file_lock, parent)
-        self.img_fname = ''
-        self.img_dir = '.'
-        self.img_ext = 'tif'
-        self.first_img = 1
+
+        # Scan Parameters
+        self.scan_parameters = []
+        self.counters = {}
+        self.motors = {}
 
         # Setup gui elements
         self.ui = Ui_Form()
@@ -121,48 +155,104 @@ class specWrangler(wranglerWidget):
 
         # Setup parameter tree
         self.tree = ParameterTree()
+        self.stylize_ParameterTree()
         self.parameters = Parameter.create(
             name='spec_wrangler', type='group', children=params
         )
         self.tree.setParameters(self.parameters, showTop=False)
         self.layout = Qt.QtWidgets.QVBoxLayout(self.ui.paramFrame)
-        self.layout.setContentsMargins(0,0,0,0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.tree)
 
+        # Set attributes from Parameter Tree and a couple more
+        # Calibration
+        self.poni_file = self.parameters.child('Calibration').child('PONI File').value()
+
+        # Signal
+        self.inp_type = self.parameters.child('Signal').child('inp_type').value()
+        self.img_fname = self.parameters.child('Signal').child('File').value()
+        self.img_dir = self.parameters.child('Signal').child('img_dir').value()
+        self.img_ext = self.parameters.child('Signal').child('img_ext').value()
+        self.single_img = True if self.inp_type == 'Single Image' else False
+        self.file_filter = self.parameters.child('Signal').child('Filter').value()
+
+        # Background
+        self.bg_type = self.parameters.child('BG').child('bg_type').value()
+        self.bg_file = self.parameters.child('BG').child('File').value()
+        self.bg_dir = self.parameters.child('BG').child('Match').child('bg_dir').value()
+        self.bg_matching_par = self.parameters.child('BG').child('Match').child('Parameter').value()
+        self.bg_file_filter = self.parameters.child('BG').child('Match').child('Filter').value()
+        self.bg_scale = self.parameters.child('BG').child('Scale').value()
+        self.bg_norm_channel = self.parameters.child('BG').child('norm_channel').value()
+
+        # Grazing Incidence
+        self.gi = self.parameters.child('GI').child('Grazing').value()
+        self.th_mtr = self.parameters.child('GI').child('th_motor').value()
+
+        # Timeout
+        self.timeout = self.parameters.child('Timeout').value()
+
         # Wire signals from parameter tree based buttons
-        self.parameters.child('image_file_browse').sigActivated.connect(
-            self.set_image_file
-        )
-        self.parameters.child('poni_file_browse').sigActivated.connect(
+        self.parameters.sigTreeStateChanged.connect(self.setup)
+
+        self.parameters.child('Calibration').child('poni_file_browse').sigActivated.connect(
             self.set_poni_file
         )
-
-        # Set attributes
-        self.single_img = self.parameters.child('Single Image').value()
-        self.poni_file = self.parameters.child('PONI File').value()
-        self.timeout = self.parameters.child('Timeout').value()
-        self.gi = self.parameters.child('Grazing Incidence').value()
-        self.th_mtr = self.parameters.child('Theta Motor').value()
-        self.parameters.sigTreeStateChanged.connect(self.setup)
+        self.parameters.child('Signal').child('inp_type').sigValueChanged.connect(
+            self.set_inp_type
+        )
+        self.parameters.child('Signal').child('img_file_browse').sigActivated.connect(
+            self.set_img_file
+        )
+        self.parameters.child('Signal').child('img_dir_browse').sigActivated.connect(
+            self.set_img_dir
+        )
+        self.parameters.child('BG').child('bg_type').sigValueChanged.connect(
+            self.set_bg_type
+        )
+        self.parameters.child('BG').child('bg_file_browse').sigActivated.connect(
+            self.set_bg_file
+        )
+        self.parameters.child('BG').child('Match').child('bg_dir_browse').sigActivated.connect(
+            self.set_bg_dir
+        )
+        self.parameters.child('BG').child('Match').child('Parameter').sigValueChanged.connect(
+            self.set_bg_matching_par
+        )
+        self.parameters.child('BG').child('norm_channel').sigValueChanged.connect(
+            self.set_bg_norm_channel
+        )
+        self.parameters.child('GI').child('th_motor').sigValueChanged.connect(
+            self.set_gi_th_motor
+        )
 
         # Setup thread
         self.thread = specThread(
             self.command_queue,
             self.sphere_args,
-            self.fname,
             self.file_lock,
+            self.fname,
             self.scan_name,
             self.single_img,
             self.poni_file,
+            self.inp_type,
             self.img_fname,
             self.img_dir,
             self.img_ext,
-            self.first_img,
-            self.timeout,
+            self.file_filter,
+            self.bg_type,
+            self.bg_file,
+            self.bg_dir,
+            self.bg_matching_par,
+            self.bg_file_filter,
+            self.bg_scale,
+            self.bg_norm_channel,
             self.gi,
             self.th_mtr,
+            self.timeout,
             self
         )
+
         self.thread.showLabel.connect(self.ui.specLabel.setText)
         self.thread.sigUpdateFile.connect(self.sigUpdateFile.emit)
         self.thread.finished.connect(self.finished.emit)
@@ -175,40 +265,67 @@ class specWrangler(wranglerWidget):
         """Sets up the child thread, syncs all parameters.
         """
         ic()
-        self.img_fname = self.parameters.child('Image File').value()
-        self.thread.img_fname = self.img_fname
-        # print(f'spec_wrangler > img_fname: {self.img_fname}')
-        ic(self.img_fname)
-
-        img_dir, scan_name, img_ext, first_img = self.split_image_name()
-        self.img_dir, self.scan_name, self.img_ext = img_dir, scan_name, img_ext
-        self.thread.img_dir, self.thread.scan_name, self.thread.img_ext = img_dir, scan_name, img_ext
-        self.thread.first_img = self.first_img = first_img
-        # print(f'spec_wrangler > img_dir, scan_name, img_ext : {self.img_dir} {self.scan_name} {self.img_ext}')
-        ic(self.img_dir, self.scan_name, self.img_ext)
-
-        self.poni_file = self.parameters.child('PONI File').value()
+        # Calibration
+        self.poni_file = self.parameters.child('Calibration').child('PONI File').value()
         self.thread.poni_file = self.poni_file
 
-        self.thread.scan_name = self.scan_name
-        self.single_img = self.parameters.child('Single Image').value()
-        # print(f'spec_wrangler > setup: first_img = {self.first_img}')
-        ic(self.first_img)
-        if (self.first_img is None) and (self.img_ext not in ['.h5', 'hdf5']):
-            self.single_img = True
+        # Signal
+        self.inp_type = self.parameters.child('Signal').child('inp_type').value()
+        self.get_img_fname()
+        self.thread.img_fname = self.img_fname
+        ic(self.img_fname)
+
         self.thread.single_img = self.single_img
+
+        self.img_dir, _, self.img_ext = split_file_name(self.img_fname)
+        self.thread.img_dir, self.thread.img_ext = self.img_dir, self.img_ext
+
+        self.scan_name = get_scan_name(self.img_fname)
+        self.thread.scan_name = self.scan_name
+        ic(self.img_dir, self.scan_name, self.img_ext)
+
+        self.thread.file_filter = self.file_filter
+        self.get_scan_parameters()
 
         self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
         self.thread.fname = self.fname
 
-        self.timeout = self.parameters.child('Timeout').value()
-        self.thread.timeout = self.timeout
+        # Background
+        self.bg_type = self.parameters.child('BG').child('bg_type').value()
+        self.thread.bg_type = self.bg_type
 
-        self.gi = self.parameters.child('Grazing Incidence').value()
+        self.bg_file = self.parameters.child('BG').child('File').value()
+        self.thread.bg_file = self.bg_file
+
+        # self.set_bg_matching_options()
+
+        self.bg_matching_par = self.parameters.child('BG').child('Match').child('Parameter').value()
+        self.thread.bg_matching_par = self.bg_matching_par
+
+        self.bg_dir = self.parameters.child('BG').child('Match').child('bg_dir').value()
+        self.thread.bg_dir = self.bg_dir
+
+        self.bg_file_filter = self.parameters.child('BG').child('Match').child('Filter').value()
+        self.thread.bg_file_filter = self.bg_file_filter
+
+        self.bg_scale = self.parameters.child('BG').child('Scale').value()
+        self.thread.bg_scale = self.bg_scale
+
+        self.bg_norm_channel = self.parameters.child('BG').child('norm_channel').value()
+        self.thread.bg_norm_channel = self.bg_norm_channel
+
+        # Grazing Incidence
+        self.gi = self.parameters.child('GI').child('Grazing').value()
         self.thread.gi = self.gi
 
-        self.th_mtr = self.parameters.child('Theta Motor').value()
+        # self.set_gi_motor_options()
+
+        self.th_mtr = self.parameters.child('GI').child('th_motor').value()
         self.thread.th_mtr = self.th_mtr
+
+        # Timeout
+        self.timeout = self.parameters.child('Timeout').value()
+        self.thread.timeout = self.timeout
 
         self.thread.file_lock = self.file_lock
         self.thread.sphere_args = self.sphere_args
@@ -244,42 +361,218 @@ class specWrangler(wranglerWidget):
         if self.thread.isRunning():
             self.command_queue.put('stop')
 
-    def set_image_file(self):
-        """Opens file dialogue and sets the spec data file
-        """
-        ic()
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
-        if fname != '':
-            self.parameters.child('Image File').setValue(fname)
-        self.img_fname = fname
-
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
         """
         ic()
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
         if fname != '':
-            self.parameters.child('PONI File').setValue(fname)
+            self.parameters.child('Calibration').child('PONI File').setValue(fname)
         self.poni_file = fname
 
-    def split_image_name(self):
-        """Splits image filename to get directory, file root and extension
+    def set_inp_type(self):
+        """Change Parameter Names depending on Input Type
+        """
+        self.single_img = False
+        self.parameters.child('Signal').child('File').show()
+        self.parameters.child('Signal').child('img_file_browse').show()
+        self.parameters.child('Signal').child('img_dir').hide()
+        self.parameters.child('Signal').child('img_dir_browse').hide()
+        self.parameters.child('Signal').child('Filter').hide()
+        self.parameters.child('Signal').child('img_ext').hide()
 
-        Arguments:
-            fname {str} -- full image file name with path
+        inp_type = self.parameters.child('Signal').child('inp_type').value()
+        if inp_type == 'Directory':
+            self.parameters.child('Signal').child('File').hide()
+            self.parameters.child('Signal').child('img_file_browse').hide()
+            self.parameters.child('Signal').child('img_dir').show()
+            self.parameters.child('Signal').child('img_dir_browse').show()
+            self.parameters.child('Signal').child('Filter').show()
+            self.parameters.child('Signal').child('img_ext').show()
+
+        if inp_type == 'Single Image':
+            self.single_img = True
+
+        self.inp_type = inp_type
+        self.get_img_fname()
+        ic(self.single_img)
+
+    def set_img_file(self):
+        """Opens file dialogue and sets the spec data file
         """
         ic()
-        directory = os.path.dirname(self.img_fname)
-        root, ext = os.path.splitext(os.path.basename(self.img_fname))
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        if fname != '':
+            self.parameters.child('Signal').child('File').setValue(fname)
+            # self.get_scan_parameters()
+            # self.set_bg_matching_options()
+        self.img_fname = fname
 
-        try:
-            first_img = root[root.rindex('_')+1:]
-            first_img = int(first_img)
-            root = root[:root.rindex('_')]
-        except ValueError:
-            first_img = None
+    def set_img_dir(self):
+        """Opens file dialogue and sets the signal data folder
+        """
+        ic()
+        path = QFileDialog().getExistingDirectory(
+            caption='Choose Bkg Directory',
+            directory='',
+            options=(QFileDialog.ShowDirsOnly)
+        )
+        if path != '':
+            self.parameters.child('Signal').child('img_dir').setValue(path)
+        self.img_dir = path
 
-        return directory, root, ext, first_img
+    def get_img_fname(self):
+        """Sets file name based on chosen options
+        """
+        ic()
+        old_fname = self.img_fname
+        if self.inp_type != 'Directory':
+            self.img_fname = self.parameters.child('Signal').child('File').value()
+        else:
+            img_ext = self.parameters.child('Signal').child('img_ext').value()
+            img_dir = self.parameters.child('Signal').child('img_dir').value()
+            filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+            f_names = sorted(glob.glob(os.path.join(
+                img_dir, f'{filters}.{img_ext}')))
+            if len(f_names) > 0:
+                self.img_fname = f_names[0]
+            else:
+                self.img_fname = ''
+            ic(img_ext, img_dir, self.img_fname, f_names)
+
+        ic(old_fname, self.img_fname)
+        if (self.img_fname != old_fname) or (self.img_fname and (len(self.scan_parameters) < 1)):
+            self.get_scan_parameters()
+            self.set_bg_matching_options()
+            self.set_gi_motor_options()
+            self.set_bg_norm_options()
+
+    def set_bg_type(self):
+        """Change Parameter Names depending on BG Type
+        """
+        ic()
+        self.parameters.child('BG').child('File').show()
+        self.parameters.child('BG').child('bg_file_browse').show()
+        self.parameters.child('BG').child('Match').hide()
+
+        self.bg_type = self.parameters.child('BG').child('bg_type').value()
+        if self.bg_type != 'Single Bkg File':
+            self.parameters.child('BG').child('File').hide()
+            self.parameters.child('BG').child('bg_file_browse').hide()
+            self.parameters.child('BG').child('Match').show()
+
+    def set_bg_file(self):
+        """Opens file dialogue and sets the background file
+        """
+        ic()
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        if fname != '':
+            self.parameters.child('BG').child('File').setValue(fname)
+        self.bg_file = fname
+
+    def set_bg_dir(self):
+        """Opens file dialogue and sets the background folder
+        """
+        ic()
+        path = QFileDialog().getExistingDirectory(
+            caption='Choose Bkg Directory',
+            directory='',
+            options=(QFileDialog.ShowDirsOnly)
+            # options = (QFileDialog.ShowDirsOnly | QFileDialog.DontUseNativeDialog)
+        )
+        if path != '':
+            self.parameters.child('BG').child('Match').child('bg_dir').setValue(path)
+        self.bg_dir = path
+
+    def set_bg_matching_options(self):
+        """Reads image metadata to populate matching parameters
+        """
+        ic()
+        pars = [p for p in self.scan_parameters if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
+        pars.insert(0, 'File Root')
+        if 'TEMP' in pars:
+            pars.insert(1, pars.pop(pars.index('TEMP')))
+
+        value = 'TEMP' if 'TEMP' in pars else 'File Root'
+        opts = {'values': pars, 'limits': pars, 'value': value}
+        # opts = {'values': pars, 'limits': pars}
+        self.parameters.child('BG').child('Match').child('Parameter').setOpts(**opts)
+
+    def set_bg_matching_par(self):
+        """Changes bg matching parameter
+        """
+        ic()
+        self.bg_matching_par = self.parameters.child('BG').child('Match').child('Parameter').value()
+        ic(self.bg_matching_par)
+
+    def set_bg_norm_options(self):
+        """Counter Values used to normalize and subtract background
+        """
+        ic()
+        pars = self.counters
+        pars.insert(0, 'None')
+
+        opts = {'values': pars, 'limits': pars, 'value': 'None'}
+        self.parameters.child('BG').child('norm_channel').setOpts(**opts)
+
+    def set_bg_norm_channel(self):
+        """Changes bg matching parameter
+        """
+        self.bg_norm_channel = self.parameters.child('BG').child('norm_channel').value()
+
+    def set_gi_motor_options(self):
+        """Reads image metadata to populate possible GI theta motor
+        """
+        ic()
+        pars = [p for p in self.scan_parameters if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
+        if 'th' in pars:
+            pars.insert(0, pars.pop(pars.index('th')))
+            value = 'th'
+        elif 'theta' in pars:
+            pars.insert(0, pars.pop(pars.index('theta')))
+            value = 'theta'
+
+        opts = {'values': pars, 'limits': pars, 'value': value}
+        self.parameters.child('GI').child('th_motor').setOpts(**opts)
+
+    def set_gi_th_motor(self):
+        """Update Grazing theta motor"""
+        self.th_mtr = self.parameters.child('GI').child('th_motor').value()
+
+    def get_scan_parameters(self):
+        """Reads image metadata to populate matching parameters
+        """
+        ic()
+        if not self.img_fname:
+            return
+        meta_file = os.path.splitext(self.img_fname)[0] + '.txt'
+        image_meta_data = get_image_meta_data(meta_file, BL='11-3')
+        self.scan_parameters = list(image_meta_data.keys())
+
+        counters = get_image_meta_data(meta_file, BL='11-3', rv='Counters')
+        self.counters = list(counters.keys())
+
+        motors = get_image_meta_data(meta_file, BL='11-3', rv='Motors')
+        self.motors = list(motors.keys())
+    #
+    # def split_image_name(self):
+    #     """Splits image filename to get directory, file root and extension
+    #
+    #     Arguments:
+    #         fname {str} -- full image file name with path
+    #     """
+    #     ic()
+    #     directory = os.path.dirname(self.img_fname)
+    #     root, ext = os.path.splitext(os.path.basename(self.img_fname))
+    #
+    #     try:
+    #         first_img = root[root.rindex('_') + 1:]
+    #         first_img = int(first_img)
+    #         root = root[:root.rindex('_')]
+    #     except ValueError:
+    #         first_img = None
+    #
+    #     return directory, root, ext, first_img
 
     def enabled(self, enable):
         """Sets tree and start button to enable.
@@ -291,11 +584,19 @@ class specWrangler(wranglerWidget):
         self.tree.setEnabled(enable)
         self.ui.startButton.setEnabled(enable)
 
+    def stylize_ParameterTree(self):
+        self.tree.setStyleSheet("""
+        QTreeView::item:has-children {
+            background-color: rgb(230, 230, 230); 
+            color: rgb(30, 30, 30);
+        }
+            """)
+
 
 class specThread(wranglerThread):
     """Thread for controlling the specProcessor process. Receives
     manages a command and signal queue to pass commands from the main
-    thread and communicate back relevant sisingle_img=self.single_img,
+    thread and communicate back relevant signals
 
     attributes:
         command_q: mp.Queue, queue to send commands to process
@@ -325,19 +626,49 @@ class specThread(wranglerThread):
             self,
             command_queue,
             sphere_args,
-            fname,
             file_lock,
+            fname,
             scan_name,
             single_img,
             poni_file,
+            inp_type,
             img_fname,
             img_dir,
             img_ext,
-            first_img,
-            timeout,
+            file_filter,
+            bg_type,
+            bg_file,
+            bg_dir,
+            bg_matching_par,
+            bg_file_filter,
+            bg_scale,
+            bg_norm_channel,
             gi,
             th_mtr,
+            timeout,
             parent=None):
+
+    # def __init__(
+    #         self,
+    #         command_queue,
+    #         sphere_args,
+    #         fname,
+    #         file_lock,
+    #         scan_name,
+    #         single_img,
+    #         poni_file,
+    #         img_fname,
+    #         img_dir,
+    #         img_ext,
+    #         first_img,
+    #         file_filter,
+    #         bg_file,
+    #         bg_dir,
+    #         bg_matching_par,
+    #         timeout,
+    #         gi,
+    #         th_mtr,
+    #         parent=None):
         """command_queue: mp.Queue, queue for commands sent from parent
         sphere_args: dict, used as **kwargs in sphere initialization.
             see EwaldSphere.
@@ -356,39 +687,91 @@ class specThread(wranglerThread):
         """
         ic()
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
+        # self.scan_name = scan_name
+        # self.single_img = single_img
+        # self.poni_file = poni_file
+        # self.img_fname = img_fname
+        # self.img_dir = img_dir
+        # self.img_ext = img_ext
+        # self.file_filter = file_filter
+        # self.bg_file = bg_file
+        # self.bg_dir = bg_dir
+        # self.bg_matching_par = bg_matching_par
+        # self.timeout = timeout
+        # self.gi = gi
+        # self.th_mtr = th_mtr
+
         self.scan_name = scan_name
         self.single_img = single_img
         self.poni_file = poni_file
+        self.inp_type = inp_type
         self.img_fname = img_fname
         self.img_dir = img_dir
         self.img_ext = img_ext
-        self.first_img = first_img
-        self.timeout = timeout
+        self.file_filter = file_filter
+        self.bg_type = bg_type
+        self.bg_file = bg_file
+        self.bg_dir = bg_dir
+        self.bg_matching_par = bg_matching_par
+        self.bg_file_filter = bg_file_filter
+        self.bg_scale = bg_scale
+        self.bg_norm_channel = bg_norm_channel
         self.gi = gi
         self.th_mtr = th_mtr
+        self.timeout = timeout
 
     def run(self):
         """Initializes specProcess and watches for new commands from
         parent or signals from the process.
         """
         ic()
+        # process = specProcess(
+        #     self.command_q,
+        #     self.signal_q,
+        #     self.sphere_args,
+        #     self.scan_name,
+        #     self.single_img,
+        #     self.fname,
+        #     self.file_lock,
+        #     self.poni_file,
+        #     self.img_fname,
+        #     self.img_dir,
+        #     self.img_ext,
+        #     self.file_filter,
+        #     self.bg_file,
+        #     self.bg_dir,
+        #     self.bg_matching_par,
+        #     self.timeout,
+        #     self.gi,
+        #     self.th_mtr,
+        # )
+
         process = specProcess(
             self.command_q,
             self.signal_q,
             self.sphere_args,
+            self.file_lock,
+            self.fname,
             self.scan_name,
             self.single_img,
-            self.fname,
-            self.file_lock,
             self.poni_file,
+            self.inp_type,
             self.img_fname,
             self.img_dir,
             self.img_ext,
-            self.first_img,
-            self.timeout,
+            self.file_filter,
+            self.bg_type,
+            self.bg_file,
+            self.bg_dir,
+            self.bg_matching_par,
+            self.bg_file_filter,
+            self.bg_scale,
+            self.bg_norm_channel,
             self.gi,
             self.th_mtr,
+            self.timeout
         )
+
         process.start()
         last = False
         # Main loop
@@ -409,7 +792,7 @@ class specThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
-                    ic(self.scan_name, self.single_img, '\n')
+                    ic(self.scan_name, self.single_img)
                     self.sigUpdateFile.emit(self.scan_name, self.fname,
                                             self.gi, self.th_mtr,
                                             self.single_img)
@@ -467,11 +850,52 @@ class specProcess(wranglerProcess):
         wrangle: Method which handles data loading from files.
     """
 
-    def __init__(self, command_q, signal_q, sphere_args,
-                 scan_name, single_img,
-                 fname, file_lock, poni_file,
-                 img_fname, img_dir, img_ext, first_img, timeout,
-                 gi, th_mtr, *args, **kwargs):
+    def __init__(
+            self,
+            command_q,
+            signal_q,
+            sphere_args,
+            file_lock,
+            fname,
+            scan_name,
+            single_img,
+            poni_file,
+            inp_type,
+            img_fname,
+            img_dir,
+            img_ext,
+            file_filter,
+            bg_type,
+            bg_file,
+            bg_dir,
+            bg_matching_par,
+            bg_file_filter,
+            bg_scale,
+            bg_norm_channel,
+            gi,
+            th_mtr,
+            timeout,
+            *args, ** kwargs):
+
+            # command_q,
+            # signal_q,
+            # sphere_args,
+            # scan_name,
+            # single_img,
+            # fname,
+            # file_lock,
+            # poni_file,
+            # img_fname,
+            # img_dir,
+            # img_ext,
+            # file_filter,
+            # bg_file,
+            # bg_dir,
+            # bg_matching_par,
+            # timeout,
+            # gi,
+            # th_mtr,
+            # *args, **kwargs):
         """command_q: mp.Queue, queue for commands from parent thread.
         signal_q: queue to place signals back to parent thread.
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -488,17 +912,40 @@ class specProcess(wranglerProcess):
         ic()
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
                          *args, **kwargs)
-        self.poni_file = poni_file
+        # self.poni_file = poni_file
+        # self.scan_name = scan_name
+        # self.single_img = single_img
+        # self.img_fname = img_fname
+        # self.img_dir = img_dir
+        # self.img_ext = img_ext
+        # self.file_filter = file_filter
+        # self.bg_file = bg_file
+        # self.bg_dir = bg_dir
+        # self.bg_matching_par = bg_matching_par
+        # self.timeout = timeout
+        # self.gi = gi
+        # self.th_mtr = th_mtr
+
         self.scan_name = scan_name
         self.single_img = single_img
+        self.poni_file = poni_file
+        self.inp_type = inp_type
         self.img_fname = img_fname
         self.img_dir = img_dir
         self.img_ext = img_ext
-        self.first_img = first_img
-        self.user = None
-        self.timeout = timeout
+        self.file_filter = file_filter
+        self.bg_type = bg_type
+        self.bg_file = bg_file
+        self.bg_dir = bg_dir
+        self.bg_matching_par = bg_matching_par
+        self.bg_file_filter = bg_file_filter
+        self.bg_scale = bg_scale
+        self.bg_norm_channel = bg_norm_channel
         self.gi = gi
         self.th_mtr = th_mtr
+        self.timeout = timeout
+
+        self.user = None
 
     def _main(self):
         """Checks for commands in queue, sends back updates through
@@ -507,8 +954,11 @@ class specProcess(wranglerProcess):
         """
         ic()
 
-        ic(self.first_img)
-        if (self.first_img is None) and (self.img_ext not in ['.h5', 'hdf5']):
+        # scan_name, first_img = get_root_and_img_number(self.img_fname)
+        first_img = get_img_number(self.img_fname)
+
+        ic(first_img, self.single_img)
+        if (first_img is None) and (self.img_ext not in ['.h5', 'hdf5']):
             self.single_img = True
 
         # Initialize sphere and save to disk, send update for new scan
@@ -524,12 +974,12 @@ class specProcess(wranglerProcess):
         with self.file_lock:
             sphere.save_to_h5(replace=True)
             self.signal_q.put(('new_scan', None))
-        ic(sphere.name, '\n')
+        ic(sphere.name)
 
         # Enter main loop
         i = 1
         if not self.single_img:
-            i = self.first_img
+            i = first_img
         pause = False
         start = time.time()
         while True:
@@ -596,18 +1046,6 @@ class specProcess(wranglerProcess):
                     self.signal_q.put(('TERMINATE', None))
                     break
 
-                # arch_data = {
-                #     'idx': arch_copy.idx,
-                #     'map_raw': arch_copy.map_raw,
-                #     'mask': arch_copy.mask,
-                #     'scan_info': arch_copy.scan_info,
-                #     'poni_file': arch_copy.poni_file,
-                #     'map_norm': arch_copy.map_norm,
-                #     'int_1d': arch_copy.int_1d,
-                #     'int_2d': arch_copy.int_2d
-                # }
-                # self.signal_q.put(('updateArch', arch_data))
-
                 i += 1
 
             # Check if terminate signal sent
@@ -634,23 +1072,25 @@ class specProcess(wranglerProcess):
         self.signal_q.put(('message', f'Checking for {i}'))
 
         # Construct raw_file path from attributes and index
-        # if self.img_ext not in ['.h5', '.hdf5', '.mar3450']:
         if (not self.single_img) and (self.img_ext not in ['.h5', '.hdf5']):
             image_file = self._get_image_path(i)
         else:
             image_file = self.img_fname
-        # print(f'\nspec_wrangler > Image File Name: {image_file}')
-        ic('\n', image_file)
+        ic(image_file)
 
         # Read raw file into numpy array
-        arr = read_image_file(image_file, im=i-1)
+        arr = read_image_file(image_file, im=i-1, return_float=True)
 
-        meta_file = image_file[:-3] + 'txt'
+        meta_file = os.path.splitext(image_file)[0] + '.txt'
         if os.path.exists(meta_file):
             image_meta = get_image_meta_data(meta_file, BL='11-3')
         else:
             image_meta = {}
         # ic(image_meta)
+
+        # Subtract background if any
+        bg = self.get_background(image_meta)
+        arr -= bg
 
         self.signal_q.put(('message', f'Image {i} wrangled'))
 
@@ -671,4 +1111,52 @@ class specProcess(wranglerProcess):
             self.scan_name,
             str(i).zfill(4)
         ])
-        return os.path.join(self.img_dir, im_base + self.img_ext)
+        return os.path.join(self.img_dir, f'{im_base}.{self.img_ext}')
+
+    def get_background(self, image_meta):
+        """Subtract background image if bg_file or bg_dir specified
+        """
+        ic()
+        bg, bg_file, bg_meta = 0, None, None
+        ic(self.bg_type, self.bg_file, self.bg_dir, self.bg_matching_par)
+        if self.bg_type == 'Single Bkg File':
+            if self.bg_file:
+                ic(self.bg_file)
+                bg_file = self.bg_file
+                # bg = read_image_file(self.bg_file, return_float=True)
+        else:
+            if self.bg_dir:
+                meta_files = sorted(glob.glob(f'{self.bg_dir}/*bg*.txt'))
+                ic(meta_files)
+                for meta_file in meta_files:
+                    bg_meta = get_image_meta_data(meta_file, BL='11-3')
+                    if bg_meta[self.bg_matching_par] == image_meta[self.bg_matching_par]:
+                        bg_file = f'{os.path.splitext(meta_file)[0]}.{self.img_ext}'
+                        ic(meta_file, bg_file)
+                        ic(bg_meta[self.bg_matching_par], image_meta[self.bg_matching_par])
+                        break
+
+        if not bg_file:
+            return 0.
+
+        ic(bg_file)
+        bg = read_image_file(self.bg_file, return_float=True)
+        bg_meta_file = f'{os.path.splitext(self.bg_file)[0]}.txt'
+        bg_meta = get_image_meta_data(bg_meta_file, BL='11-3')
+
+        bg *= self.bg_scale
+        if self.bg_norm_channel != 'None':
+            bg *= (image_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
+        # ic(image_meta[self.bg_norm_channel], bg_meta[self.bg_norm_channel])
+
+        # bg *= (image_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel]) * self.bg_scale
+
+        # Scale by constant factor and normalize to chosen monitor
+        # norm = float(self.bg_scale)
+        # ic(norm, self.bg_norm_channel)
+        # if (bg_meta is not None) and (self.bg_norm_channel != 'None'):
+        #     ic(bg, '***************')
+        #     norm *= (image_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
+        # ic(self.bg_scale, norm)
+
+        return bg

@@ -87,6 +87,7 @@ def find_between( s, first, last ):
     except ValueError:
         return ""
 
+
 def find_between_r( s, first, last ):
     """find last occurence of substring in string s
      between two substrings (first and last)
@@ -100,8 +101,8 @@ def find_between_r( s, first, last ):
         str: substring between first and last
     """
     try:
-        start = s.rindex( first ) + len( first )
-        end = s.rindex( last, start )
+        start = s.rindex(first) + len(first)
+        end = s.rindex(last, start)
         return s[start:end]
     except ValueError:
         return ""
@@ -123,6 +124,45 @@ def split_file_name(fname):
     return directory, root, ext
 
 
+def get_scan_name(fname):
+    """Splits filename to get scan name
+
+    Arguments:
+        fname {str} -- full image file name with path
+    Returns:
+        scan_name {str}
+        nImage {int}
+    """
+    directory, root, ext = split_file_name(fname)
+    try:
+        first_img = root[root.rindex('_') + 1:]
+        first_img = int(first_img)
+        root = root[:root.rindex('_')]
+    except ValueError:
+        pass
+
+    return root
+
+
+def get_img_number(fname):
+    """Splits filename to get scan name and image number
+
+    Arguments:
+        fname {str} -- full image file name with path
+    Returns:
+        scan_name {str}
+        nImage {int}
+    """
+    directory, root, ext = split_file_name(fname)
+    try:
+        first_img = root[root.rindex('_') + 1:]
+        first_img = int(first_img)
+    except ValueError:
+        first_img = None
+
+    return first_img
+
+
 def query(question):
     """Ask a question with allowed options via input()
     and return their answer.
@@ -131,12 +171,13 @@ def query(question):
     return input()
 
     
-def get_image_meta_data(meta_file, BL='2-1'):
+def get_image_meta_data(meta_file, BL='2-1', rv='all'):
     """Get image meta data from pdi/txt files for different beamlines
 
     Args:
         meta_file (str): Meta file name with path
         BL (str, optional): Beamline. Defaults to '2-1'.
+        rv (str, optional): Return values (Counters, motors or all)
 
     Returns:
         [dict]: Dictionary with all the meta data
@@ -169,7 +210,7 @@ def get_image_meta_data(meta_file, BL='2-1'):
         
         image_meta_data['epoch'] = data[data.rindex(';')+1:]
 
-    elif BL == '11-3':
+    else:  # if BL == '11-3':
 
         counters = re.search('# Counters\n(.*)\n', data).group(1)
         cts = re.split(',|=', counters)
@@ -189,7 +230,12 @@ def get_image_meta_data(meta_file, BL='2-1'):
 
     image_meta_data.update(Counters)
     image_meta_data.update(Motors)
-    
+
+    if rv == 'Counters':
+        return Counters
+    elif rv == 'Motors':
+        return Motors
+
     return image_meta_data
 
 
@@ -283,7 +329,7 @@ def read_image_file(fname, orientation='horizontal',
             img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_300K))
             
     if return_float:
-        img = np.asarray(img, np.float)
+        img = np.asarray(img, dtype=float)
         
     if (orientation == 'vertical') or transpose:
         img = img.T

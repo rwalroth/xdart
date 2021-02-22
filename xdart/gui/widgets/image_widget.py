@@ -174,7 +174,7 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
         self.imageItem.setRect(rect)
 
     def update_image(self, scale='Linear', cmap='viridis', **kwargs):
-        self.displayed_image = np.asarray(np.copy(self.raw_image), dtype=np.float)
+        self.displayed_image = np.asarray(np.copy(self.raw_image), dtype=float)
         if scale == 'Log':
             # self.displayed_image[self.displayed_image < 0] = 0
             # minval = self.displayed_image[self.displayed_image > 0].min()
@@ -214,6 +214,8 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
         self.set_cmap(cmap)
 
     def set_cmap(self, cmap):
+        if cmap == 'Default':
+            cmap = 'viridis'
         self.imageItem.setLookupTable(pgx.get_colormap_lut(cmap))
 
 
@@ -234,7 +236,6 @@ class XDPlotWidget(pg.GraphicsLayoutWidget):
         self.pos_label.anchor(itemPos=(1, 0), parentPos=(1, 0), offset=(-20, 10))
         self.pos_label.setFixedWidth(1)
         self.setup_crosshair()
-
 
 
 def normalize(arr):

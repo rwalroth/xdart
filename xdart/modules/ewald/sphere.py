@@ -271,10 +271,16 @@ class EwaldSphere():
         with self.sphere_lock:
             try:
                 # assert self.bai_2d.raw.shape == arch.int_2d.raw.shape
-                assert self.bai_2d.norm.shape == arch.int_2d.norm.shape
+                if self.static:
+                    assert self.bai_2d.i_qChi.shape == arch.int_2d.i_qChi.shape
+                else:
+                    assert self.bai_2d.norm.shape == arch.int_2d.norm.shape
             except (AssertionError, AttributeError):
-                self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
+                if self.static:
+                    self.bai_2d.i_qChi = np.zeros(arch.int_2d.i_qChi.shape)
+                    self.bai_2d.i_tthChi = np.zeros(arch.int_2d.i_tthChi.shape)
                 if not self.static:
+                    self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
                     self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
                     self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
             try:

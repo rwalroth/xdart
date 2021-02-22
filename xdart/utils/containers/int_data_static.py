@@ -2,9 +2,13 @@ import copy
 
 import numpy as np
 from pyFAI import units
+from scipy.interpolate import RectBivariateSpline
 
 from .nzarrays import nzarray2d
 from .. import _utils as utils
+
+from icecream import ic
+ic.configureOutput(prefix='', includeContext=True)
 
 
 class int_1d_data_static:
@@ -120,8 +124,6 @@ class int_2d_data_static(int_1d_data_static):
     """Container for 2-dimensional integration data returned by pyFAI.
 
     attributes:
-        raw: nzarray2d, raw integrated signal
-        pcount: nzarray2d, how many pixels in each bin
         norm: nzarray2d, integrated signal normalized by number of
             pixels
         ttheta: numpy array, two-theta angle
@@ -135,8 +137,9 @@ class int_2d_data_static(int_1d_data_static):
         to_hdf5: Saves data to hdf5 file
     """
 
-    def __init__(self, norm=None, ttheta=0, q=0, chi=0,
-                 i_q=0, qz=0, qxy=0):
+    # def __init__(self, norm=None, ttheta=0, q=0, chi=0,
+    def __init__(self, i_tthChi=np.zeros(0), i_qChi=np.zeros(0), ttheta=0, q=0, chi=0,
+                 i_QxyQz=0, qz=0, qxy=0):
         """
         raw: nzarray2d, raw integrated signal
         pcount: nzarray2d, how many pixels in each bin
@@ -146,16 +149,32 @@ class int_2d_data_static(int_1d_data_static):
         q: numpy array, q values
         chi: numpy array, chi values
         """
-        self.norm = norm
+        # self.norm = norm
+        self.i_tthChi = i_tthChi
+        self.i_qChi = i_qChi
         self.ttheta = ttheta
         self.q = q
         self.chi = chi
-        self.i_q = i_q
+        self.i_QxyQz = i_QxyQz
         self.qz = qz
         self.qxy = qxy
+        self.q_from_tth = False
+        self.tth_from_q = False
+
+    # def from_result(self, result, wavelength, unit=None):
+    #     """Parses out result obtained by pyFAI AzimuthalIntegrator.
+    #
+    #     args:
+    #         result: object returned by AzimuthalIntegrator
+    #         wavelength: float, energy of the beam in meters
+    #     """
+    #     self.ttheta, self.q = self.parse_unit(
+    #         result, wavelength, unit=unit)
+    #
+    #     self.norm = result.intensity
 
     def from_result(self, result, wavelength, unit=None,
-                    i_q=0, qz=0, qxy=0):
+                    i_QxyQz=0, qz=0, qxy=0):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
 
         args:
@@ -164,11 +183,74 @@ class int_2d_data_static(int_1d_data_static):
         """
         if unit is None:
             unit = result.unit
-        super(int_2d_data_static, self).from_result(result, wavelength, unit=unit)
-        self.chi = result.azimuthal
-        self.i_q = i_q
+
+        # self.ttheta, self.q = self.parse_unit(
+        #     result, wavelength, unit=unit)
+        self.parse_unit(result, wavelength, unit=unit)
+
+        # self.norm = result.intensity
+
+        # super(int_2d_data_static, self).from_result(result, wavelength, unit=unit)
+        # self.chi = result.azimuthal
+        self.i_QxyQz = i_QxyQz
         self.qz = qz
         self.qxy = qxy
+
+    def parse_unit(self, result, wavelength, unit=None):
+        """Helper function to take integrator result and return a two
+        theta and q array regardless of the unit used for integration.
+
+        args:
+            result: result from 1d integrator
+            wavelength: wavelength for conversion in meters
+
+        returns:
+            int_1d_2theta: two theta array
+            int_1d_q: q array
+        """
+        if wavelength is None:
+            return result.radial, None
+
+        if unit is None:
+            unit = result.unit
+
+        self.chi = chi = result.azimuthal
+
+        if unit == units.TTH_DEG or str(unit) == '2th_deg':
+            self.i_tthChi = result.intensity
+            self.ttheta = tth = result.radial
+            self.tth_from_q = False
+            if (self.i_qChi is None) or self.q_from_tth:
+                tth_range = np.asarray([tth[0], tth[-1]])
+                q_range = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth_range / 2))
+                qtth = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth / 2))
+                self.q = q = np.linspace(q_range[0], q_range[1], len(tth))
+
+                spline = RectBivariateSpline(chi, qtth, result.intensity)
+                self.i_qChi = spline(chi, q)
+                self.q_from_tth = True
+
+        elif unit == units.Q_A or str(unit) == 'q_A^-1':
+            self.i_qChi = result.intensity
+            self.q = q = result.radial
+            self.q_from_tth = False
+            ic(self.i_tthChi, self.tth_from_q, len(q), wavelength)
+            if (len(self.i_tthChi) == 0) or self.tth_from_q:
+                q_range = np.array([q[0], q[-1]])
+                ic(q_range)
+                tth_range = 2 * np.degrees(np.arcsin(q_range * (wavelength * 1e10) / (4 * np.pi)))
+                ic(q_range, tth_range)
+
+                tthq = 2 * np.degrees(np.arcsin(q * (wavelength * 1e10) / (4 * np.pi)))
+                self.ttheta = tth = np.linspace(tth_range[0], tth_range[1], len(q))
+                ic(len(tthq), len(self.ttheta))
+
+                spline = RectBivariateSpline(chi, tthq, result.intensity)
+                self.i_tthChi = spline(chi, tth)
+                self.tth_from_q = True
+
+        # TODO: implement other unit options for unit
+        # return np.asarray(int_1d_2theta, dtype=np.float32), np.asarray(int_1d_q, dtype=np.float32)
 
     def from_hdf5(self, grp):
         """Loads in data from hdf5 file.
@@ -177,7 +259,9 @@ class int_2d_data_static(int_1d_data_static):
             grp: h5py Group or File, object to load data from.
         """
         super().from_hdf5(grp)
-        utils.h5_to_attributes(self, grp, ['chi', 'i_q', 'qz', 'qxy'])
+        utils.h5_to_attributes(
+            self, grp, ['chi', 'i_QxyQz', 'qz', 'qxy', 'q_from_tth', 'tth_from_q']
+        )
 
     def to_hdf5(self, grp, compression=None):
         """Saves data to hdf5 file.
@@ -188,8 +272,10 @@ class int_2d_data_static(int_1d_data_static):
                 documentation.
         """
         super().to_hdf5(grp, compression)
-        utils.attributes_to_h5(self, grp, ['chi', 'i_q', 'qz', 'qxy'],
-                               compression=compression)
+        utils.attributes_to_h5(
+            self, grp, ['chi', 'i_QxyQz', 'qz', 'qxy', 'q_from_tth', 'tth_from_q'],
+            compression=compression
+        )
 
     def __setattr__(self, name, value):
         """Ensures all saved objects are np.ndarray objects.
