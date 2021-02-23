@@ -309,16 +309,14 @@ class H5Viewer(QWidget):
         idxs = self.arch_ids
         ic(idxs)
 
-        if len(idxs) == 0:
-            return
-
-        if self.new_scan and (idxs[0] == 'Overall') and (len(self.data_1d) == 0):
-            self.new_scan = False
-            return
-
         if (len(idxs) == 0) or (idxs[0] == 'No data'):
+            self.new_scan = False
             self.sigUpdate.emit()
             return
+
+        # if self.new_scan and (idxs[0] == 'Overall') and (len(self.data_1d) == 0):
+        #     self.new_scan = False
+        #     return
 
         # Put 'Overall' first in list
         if 'Overall' in self.arch_ids:

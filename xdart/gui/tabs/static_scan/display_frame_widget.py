@@ -461,10 +461,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         self.plotMethod = self.ui.plotMethod.currentText()
         self.ui.yOffset.setEnabled(False)
-        if (self.plotMethod in ['Overall', 'Single']) and (len(self.plot_data[1]) > 1):
+        if (self.plotMethod in ['Overlay', 'Single']) and (len(self.arch_names) > 1):
             self.ui.yOffset.setEnabled(True)
 
-        ic(self.plotMethod)
+        ic(self.plotMethod, self.arch_names, self.plot_data[1].shape)
         # if (self.plotMethod == 'Waterfall') and (len(self.arches) > 3):
         if (self.plotMethod == 'Waterfall') and (len(self.plot_data[1]) > 3):
             self.update_wf()
@@ -510,18 +510,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.setup_curves()
 
             offset = self.ui.yOffset.value()
-            # y_offset = 0
             y_offset = offset / 100 * (self.plot_data_range[1][1] - self.plot_data_range[1][0])
             ic(self.plot_data_range)
             # for nn, (curve, s_ydata, idx) in enumerate(zip(self.curves, ydata, idxs)):
             for nn, (curve, s_ydata) in enumerate(zip(self.curves, ydata)):
-                ic(nn)
-
-                # y_r = self.plot_data_range[1]
-                # y_offset = offset / 100 * (y_r[1] - y_r[0])
-
-                # if nn == 0:
-                #     y_offset = offset / 100 * (s_ydata.max() - s_ydata.min())
                 curve.setData(s_xdata, s_ydata + y_offset*nn)
 
         else:
@@ -1059,15 +1051,16 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             csv_fname = f'{fname}_{str(idx).zfill(4)}.csv'
             ut.write_csv(csv_fname, xdata, s_ydata)
 
-        scene = self.plot_viewBox.scene()
-        exporter = pyqtgraph.exporters.ImageExporter(scene)
-        h = exporter.params.param('height').value()
-        w = exporter.params.param('width').value()
-        h_new = 800
-        w_new = int(np.round(w/h * h_new, 0))
-        exporter.params.param('height').setValue(h_new)
-        exporter.params.param('width').setValue(w_new)
-        exporter.export(fname + '.tif')
+        if not auto:
+            scene = self.plot_viewBox.scene()
+            exporter = pyqtgraph.exporters.ImageExporter(scene)
+            h = exporter.params.param('height').value()
+            w = exporter.params.param('width').value()
+            h_new = 800
+            w_new = int(np.round(w/h * h_new, 0))
+            exporter.params.param('height').setValue(h_new)
+            exporter.params.param('width').setValue(w_new)
+            exporter.export(fname + '.tif')
 
     def get_colors(self):
         # Define color tuples
