@@ -136,7 +136,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>20</pointsize>
+                 <pointsize>13</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
@@ -269,7 +269,7 @@
            <item>
             <layout class="QGridLayout" name="gridLayout_1D">
              <property name="horizontalSpacing">
-              <number>-1</number>
+              <number>6</number>
              </property>
              <item row="0" column="4">
               <widget class="QCheckBox" name="radial_autoRange_1D">
@@ -416,7 +416,7 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <property name="spacing">
-              <number>-1</number>
+              <number>6</number>
              </property>
              <item>
               <widget class="QPushButton" name="integrate1D">
@@ -428,7 +428,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>13</pointsize>
+                 <pointsize>8</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -566,7 +566,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>20</pointsize>
+                 <pointsize>13</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
@@ -720,7 +720,7 @@
            <item>
             <layout class="QGridLayout" name="gridLayout_2D">
              <property name="horizontalSpacing">
-              <number>-1</number>
+              <number>6</number>
              </property>
              <item row="0" column="4">
               <widget class="QCheckBox" name="radial_autoRange_2D">
@@ -867,7 +867,7 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_11">
              <property name="spacing">
-              <number>-1</number>
+              <number>6</number>
              </property>
              <item>
               <widget class="QPushButton" name="integrate2D">
@@ -879,7 +879,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>13</pointsize>
+                 <pointsize>8</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -955,7 +955,7 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_13">
         <property name="spacing">
-         <number>-1</number>
+         <number>6</number>
         </property>
         <item>
          <widget class="QPushButton" name="pyfai_calib">
