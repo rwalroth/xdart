@@ -428,7 +428,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>8</pointsize>
+                 <pointsize>13</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -446,6 +446,11 @@
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
                </property>
                <property name="focusPolicy">
                 <enum>Qt::StrongFocus</enum>
@@ -879,7 +884,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>8</pointsize>
+                 <pointsize>13</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -897,6 +902,11 @@
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>13</pointsize>
+                </font>
                </property>
                <property name="focusPolicy">
                 <enum>Qt::StrongFocus</enum>

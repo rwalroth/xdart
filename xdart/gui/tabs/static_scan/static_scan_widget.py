@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-@author: walroth
+@author: walroth, thampy
 """
 
 # Standard library imports
 from queue import Queue
 import multiprocessing as mp
 import copy
-import os, sys
+import os
 from collections import OrderedDict
-import inspect
 
 # Qt imports
 from pyqtgraph import Qt

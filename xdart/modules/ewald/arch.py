@@ -338,8 +338,6 @@ class EwaldArch():
                 self.int_2d.from_result(result, self.integrator.wavelength, unit=unit,
                                         i_QxyQz=np.flipud(i_QxyQz), qz=qz, qxy=qxy)
 
-        ii = result.intensity
-        lt0 = np.sum(ii < 0)
         q, chi = result.radial, result.azimuthal
         ic(q.min(), q.max(), q.shape, result.__dict__.keys(), self.integrator.wavelength)
 

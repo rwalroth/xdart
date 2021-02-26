@@ -599,7 +599,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             intensity += self.get_int_2d(arch)
 
         intensity /= (nn + 1)
-        ic(intensity.shape, nn, idxs)
+        ic(intensity.shape, nn, idxs, arch.int_2d.q.shape, arch.int_2d.ttheta.shape, arch.int_2d.chi.shape)
 
         xdata, ydata = self.get_xydata(arch)
         return np.asarray(intensity, dtype=float), xdata, ydata

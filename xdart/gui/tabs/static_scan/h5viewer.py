@@ -314,9 +314,9 @@ class H5Viewer(QWidget):
             self.sigUpdate.emit()
             return
 
-        # if self.new_scan and (idxs[0] == 'Overall') and (len(self.data_1d) == 0):
-        #     self.new_scan = False
-        #     return
+        if self.new_scan and (idxs[0] == 'Overall') and (len(self.data_1d) == 0):
+            self.new_scan = False
+            return
 
         # Put 'Overall' first in list
         if 'Overall' in self.arch_ids:
@@ -333,21 +333,15 @@ class H5Viewer(QWidget):
 
         if 'No Data' not in self.arch_ids:
             self.arches.clear()
-            # self.arches.update({str(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi) for idx in idxs})
             self.arches.update({int(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi) for idx in idxs})
 
             idxs_memory = []
             for idx in idxs:
-                # if str(idx) in self.data_2d.keys():
                 if int(idx) in self.data_2d.keys():
-                    # self.arches[str(idx)] = self.data_2d[str(idx)]
                     self.arches[int(idx)] = self.data_2d[int(idx)]
                     ic('loaded arch from memory', idx)
-                    # idxs_memory.append(str(idx))
                     idxs_memory.append(int(idx))
 
-            # self.file_thread.arch_ids = [str(idx) for idx in idxs
-            #                              if str(idx) not in idxs_memory]
             self.file_thread.arch_ids = [int(idx) for idx in idxs
                                          if int(idx) not in idxs_memory]
 

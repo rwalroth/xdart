@@ -7,7 +7,8 @@
 from queue import Queue
 from threading import Condition
 import traceback
-import inspect
+import numpy as np
+from scipy.interpolate import RectBivariateSpline
 
 # Other imports
 from xdart.utils.containers import int_1d_data, int_2d_data
@@ -239,21 +240,49 @@ class fileHandlerThread(Qt.QtCore.QThread):
                 for idx in self.arch_ids:
                     ic(idx)
                     try:
-                        # arch = self.data_2d[str(idx)]
-                        arch = self.data_2d[int(idx)]
+                        self.arch = self.data_2d[int(idx)]
                         ic('loaded arch from memory', idx)
                     except KeyError:
-                        # arch = self.arches[str(idx)]
-                        arch = self.arches[int(idx)]
-                        arch.load_from_h5(file['arches'])
+                        self.arch = self.arches[int(idx)]
+                        self.arch.load_from_h5(file['arches'])
                         ic('loaded arch from file', idx)
-                        # self.data_2d[str(idx)] = arch.copy()
-                        # self.data_1d[str(idx)] = arch.int_1d
-                        self.data_2d[int(idx)] = arch.copy()
-                        self.data_1d[int(idx)] = arch.int_1d
-                    self.arches[idx] = arch
+                        self.parse_unit()
+                        self.data_2d[int(idx)] = self.arch.copy()
+                        self.data_1d[int(idx)] = self.arch.int_1d
+                    self.arches[idx] = self.arch
             ic(len(self.arches))
             self.sigUpdate.emit()
+
+    def parse_unit(self):
+        """ Returns EwaldArch Object updated with missing q/tth interpolated data
+        """
+        ic()
+        int_2d = self.arch.int_2d
+        wavelength = self.arch.poni.wavelength
+
+        if len(int_2d.i_qChi) == 0:
+            i_tthChi, tth, chi = int_2d.i_tthChi, int_2d.ttheta, int_2d.chi
+            tth_range = np.asarray([tth[0], tth[-1]])
+            q_range = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth_range / 2))
+            qtth = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth / 2))
+            self.arch.int_2d.q = q = np.linspace(q_range[0], q_range[1], len(tth))
+
+            spline = RectBivariateSpline(chi, qtth, i_tthChi)
+            self.arch.int_2d.i_qChi = spline(chi, q)
+            ic(self.arch.int_2d.i_tthChi.shape, self.arch.int_2d.i_qChi.shape,
+               self.arch.int_2d.q.shape, self.arch.int_2d.tth.shape, self.arch.int_2d.chi.shape)
+
+        elif len(int_2d.i_tthChi) == 0:
+            i_qChi, q, chi = int_2d.i_qChi, int_2d.q, int_2d.chi
+            q_range = np.array([q[0], q[-1]])
+            tth_range = 2 * np.degrees(np.arcsin(q_range * (wavelength * 1e10) / (4 * np.pi)))
+            tthq = 2 * np.degrees(np.arcsin(q * (wavelength * 1e10) / (4 * np.pi)))
+            self.arch.int_2d.ttheta = tth = np.linspace(tth_range[0], tth_range[1], len(q))
+
+            spline = RectBivariateSpline(chi, tthq, i_qChi)
+            self.arch.int_2d.i_tthChi = spline(chi, tth)
+            ic(self.arch.int_2d.i_tthChi.shape, self.arch.int_2d.i_qChi.shape,
+               self.arch.int_2d.q.shape, self.arch.int_2d.ttheta.shape, self.arch.int_2d.chi.shape)
 
     def save_data_as(self):
         ic()

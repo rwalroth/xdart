@@ -29,15 +29,18 @@ ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 
+def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
+def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
+
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
-        {'name': 'PONI File', 'title': 'PONI   ', 'type': 'str', 'value': ''},
+        {'name': 'PONI File', 'title': 'PONI   ', 'type': 'str', 'value': def_poni_file},
         NamedActionParameter(name='poni_file_browse', title='Browse...'),
     ], 'expanded': True},
     {'name': 'Signal', 'type': 'group', 'children': [
         {'name': 'inp_type', 'title': '', 'type': 'list',
          'values': ['Image Series', 'Image Directory', 'Single Image'], 'value': 'Image Series'},
-        {'name': 'File', 'title': 'Image File   ', 'type': 'str', 'value': ''},
+        {'name': 'File', 'title': 'Image File   ', 'type': 'str', 'value': def_img_file},
         NamedActionParameter(name='img_file_browse', title='Browse...'),
         {'name': 'img_dir', 'title': 'Directory', 'type': 'str', 'value': '', 'visible': False},
         NamedActionParameter(name='img_dir_browse', title='Browse...', visible=False),
