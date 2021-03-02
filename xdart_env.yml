@@ -1,7 +1,7 @@
 name: xdart_env
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
   - python[version='>=3.8']
   - h5py[version='>=2.10']

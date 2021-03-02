@@ -984,6 +984,7 @@ class specProcess(wranglerProcess):
                     self.signal_q.put(('TERMINATE', None))
                     break
 
+                # time.sleep(1)
                 i += 1
 
             # Check if terminate signal sent

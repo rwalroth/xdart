@@ -11,10 +11,11 @@ from aiohttp import web
 import functools
 from time import gmtime, strftime
 
-from bServer.bl_communication import *
-from bServer.bl_command import *
-from bServer.BL_Error import *
-from bServer.bl_interaction import *
+sys.path.append('C:\\Users\\Public\\repos\\xdart')
+from xdart.modules.pySSRL_bServer.bServer.bl_communication import *
+from xdart.modules.pySSRL_bServer.bServer.bl_command import *
+from xdart.modules.pySSRL_bServer.bServer.BL_Error import *
+from xdart.modules.pySSRL_bServer.bServer.bl_interaction import *
 
 
 async def handleGET_motor_position(request):
@@ -23,7 +24,6 @@ async def handleGET_motor_position(request):
 
     motor_name = request.match_info.get('motor_name', None)
     print("getting motor variable '{}' ".format(motor_name))
-
 
     bi = request.app['bi']
 
@@ -61,7 +61,6 @@ async def handleGET_tt(request):
     cmd = cmd1 + cmd2 + cmd3
     await cmd.execute()
 
-
     #response = cmd.response
     print(cmd)
 
@@ -70,7 +69,6 @@ async def handleGET_tt(request):
 
     convertedResults = {'hi': 'there', 'position': cmd}
     return web.json_response(convertedResults)
-
 
 
 async def handleGET_test(request):
@@ -106,7 +104,6 @@ async def handleGET_test(request):
     return web.json_response(convertedResults)
 
 
-
 async def handleGET_directSISinteraction(request):
     """Quick routine to test reading the motor position from SPEC"""
     t0 = time.time()
@@ -131,9 +128,6 @@ async def handleGET_directSISinteraction(request):
         else:
             command_params[key] = val
 
-
-
-
     response = {}
     try:
 
@@ -148,7 +142,6 @@ async def handleGET_directSISinteraction(request):
         response = {'error': sys.exc_info()[0]}
 
 #        raise
-
 
     print("Response: '{}'".format(response))
     print("\n\n\nRequest took: {}s\n\n".format(time.time() - t0))
@@ -169,7 +162,7 @@ asyncio.set_event_loop(loop)
 
 
 #Initialize the connection to SPEC
-temp_bi = BL_Interaction(loop=loop, beamline_name='bl2-1_testConfig')
+temp_bi = BL_Interaction(loop=loop, beamline_name='bl11-3_testConfig')
 
 #Initialize the http web application and register routes
 app = web.Application()

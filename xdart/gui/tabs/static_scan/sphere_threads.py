@@ -246,7 +246,7 @@ class fileHandlerThread(Qt.QtCore.QThread):
                         self.arch = self.arches[int(idx)]
                         self.arch.load_from_h5(file['arches'])
                         ic('loaded arch from file', idx)
-                        self.parse_unit()
+                        # self.parse_unit()
                         self.data_2d[int(idx)] = self.arch.copy()
                         self.data_1d[int(idx)] = self.arch.int_1d
                     self.arches[idx] = self.arch

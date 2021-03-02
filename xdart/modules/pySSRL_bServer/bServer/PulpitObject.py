@@ -1,5 +1,7 @@
-import asyncio
-from bServer.BL_Error import *
+import asyncio, sys
+sys.path.append('C:\\Users\\Public\\repos\\xdart')
+
+from xdart.modules.pySSRL_bServer.bServer.BL_Error import *
 
 class PulpitObject():
     """The pulpit object handles the first in, first out queueing of frame objects. The concept is simple enoguh - only
