@@ -18,7 +18,8 @@ from xdart.modules.ewald import EwaldArch, EwaldSphere
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
-from xdart.utils import read_image_file, get_image_meta_data, split_file_name, get_scan_name, get_img_number
+from xdart.utils import read_image_file, get_image_meta_data
+from xdart.utils import split_file_name, get_scan_name, get_img_number, get_fname_dir
 
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
@@ -26,11 +27,12 @@ from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 from icecream import ic
 
 ic.configureOutput(prefix='', includeContext=True)
+ic.disable()
 
 QFileDialog = QtWidgets.QFileDialog
 
-def_poni_file = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
-def_img_file = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
+def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
+def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
 
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
@@ -284,7 +286,9 @@ class specWrangler(wranglerWidget):
         self.thread.scan_name = self.scan_name
         ic(self.img_dir, self.scan_name, self.img_ext)
 
-        self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
+        # self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
+        fname_dir = get_fname_dir(self.scan_name)
+        self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
         self.thread.fname = self.fname
 
         # Background
@@ -1087,7 +1091,9 @@ class specProcess(wranglerProcess):
             self.img_dir, f'{self.scan_name}_[0-9][0-9][0-9][0-9].{self.img_ext}')))
 
         self.img_fname = f_names[0]
-        self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
+        # self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
+        fname_dir = get_fname_dir(self.scan_name)
+        self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
 
         return self.scan_name, self.img_fname, self.fname
 

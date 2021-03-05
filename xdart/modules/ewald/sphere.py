@@ -12,6 +12,7 @@ from xdart import utils
 
 from icecream import ic
 ic.configureOutput(prefix='', includeContext=True)
+ic.disable()
 
 
 class EwaldSphere():

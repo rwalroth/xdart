@@ -9,6 +9,7 @@ from .. import _utils as utils
 
 from icecream import ic
 ic.configureOutput(prefix='', includeContext=True)
+ic.disable()
 
 
 class int_1d_data_static:

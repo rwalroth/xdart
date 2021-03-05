@@ -19,6 +19,7 @@ from pyqtgraph.Qt import QtWidgets, QtCore, QtGui
 
 from icecream import ic
 ic.configureOutput(prefix='', includeContext=True)
+ic.enable()
 
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
@@ -320,8 +321,9 @@ class H5Viewer(QWidget):
 
         # Put 'Overall' first in list
         if 'Overall' in self.arch_ids:
-            self.arch_ids.remove('Overall')
-            self.arch_ids.insert(0, 'Overall')
+            # self.arch_ids.remove('Overall')
+            # self.arch_ids.insert(0, 'Overall')
+            self.arch_ids.insert(0, self.arch_ids.pop(self.arch_ids.index('Overall')))
             idxs = self.sphere.arches.index
 
         print(f'\n*************')

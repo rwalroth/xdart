@@ -20,6 +20,7 @@ from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 
 from icecream import ic
 ic.configureOutput(prefix='', includeContext=True)
+ic.disable()
 
 
 class EwaldArch():

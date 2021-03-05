@@ -281,12 +281,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if not self._updated():
             return True
 
-        # Sets title text
-        if ('Overall' in self.arch_ids) or self.sphere.single_img:
-            self.ui.labelCurrent.setText(self.sphere.name)
-        else:
-            self.ui.labelCurrent.setText("Image " + (self.arch_ids[0]))
-
         if self.ui.shareAxis.isChecked() and (self.ui.imageUnit.currentIndex() < 2):
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
             self.ui.plotUnit.setEnabled(False)
@@ -308,6 +302,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.update_plot()
         except TypeError:
             return False
+
+        # Sets title text
+        if ('Overall' in self.arch_ids) or self.sphere.single_img:
+            self.ui.labelCurrent.setText(self.sphere.name)
+        elif len(self.arch_ids) > 1:
+            self.ui.labelCurrent.setText(f'{self.sphere.name} [Average]')
+        else:
+            self.ui.labelCurrent.setText(f'{self.sphere.name}_{self.arch_ids[0]}')
 
         return True
 
@@ -465,7 +467,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.ui.yOffset.setEnabled(True)
 
         ic(self.plotMethod, self.arch_names, self.plot_data[1].shape)
-        # if (self.plotMethod == 'Waterfall') and (len(self.arches) > 3):
         if (self.plotMethod == 'Waterfall') and (len(self.plot_data[1]) > 3):
             self.update_wf()
         else:
@@ -477,7 +478,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ic()
         self.setup_1d_layout()
         xdata_, ydata_ = self.plot_data
-        # ydata, s_xdata = ydata_.copy(), xdata_.copy()
         s_xdata, ydata = xdata_.copy(), ydata_.copy()
         ic(ydata.shape)
 
@@ -502,11 +502,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 ydata = np.sqrt(ydata)
             ylabel = f'<math>&radic;</math>{int_label} (a.u.)'
 
-        # idxs = list(self.arches.keys())
-
         if ((self.plotMethod in ['Overlay', 'Waterfall']) or
                 ((self.plotMethod == 'Single') and (ydata.shape[0] > 1))):
-            # self.setup_curves(len(idxs))
             self.setup_curves()
 
             offset = self.ui.yOffset.value()

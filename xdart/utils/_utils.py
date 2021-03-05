@@ -12,6 +12,7 @@ import os
 import numpy as np
 import re
 from datetime import datetime
+from pathlib import Path
 
 from skimage import io
 import scipy
@@ -106,6 +107,26 @@ def find_between_r( s, first, last ):
         return s[start:end]
     except ValueError:
         return ""
+
+
+def get_fname_dir(fname):
+    """
+    Returns directory on local drive to save temporary h5 files in
+
+    Args:
+        fname: {str} Name of scan name used to create subdirectory
+
+    Returns:
+        path: {str} Path where h5 file is saved
+    """
+    home_path = str(Path.home())
+    today = datetime.today()
+    date = str(today.date())
+
+    path = os.path.join(home_path, 'xdart_processed_data', date, fname)
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+    return path
 
 
 def split_file_name(fname):
