@@ -1,6 +1,6 @@
 import numpy as np
 from lmfit import Model
-from lmfit.models import index_of, fwhm_expr, _validate_1d, update_param_vals
+from lmfit.models import fwhm_expr, _validate_1d, update_param_vals
 from lmfit.models import gaussian, lorentzian
 from scipy.special import erf
 
