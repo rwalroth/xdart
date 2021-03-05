@@ -1038,6 +1038,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         xdata, ydata = self.plot_data
         # idxs = list(self.arches.keys())
+        if self.plotMethod in ['Average', 'Sum']:
+            if self.plotMethod == 'Average':
+                s_ydata = np.nanmean(ydata, 0)
+            else:
+                s_ydata = np.nansum(ydata, 0)
+
+            # Write to xye
+            xye_fname = f'{fname}.xye'
+            ut.write_xye(xye_fname, xdata, s_ydata)
+
+            # Write to csv
+            csv_fname = f'{fname}.csv'
+            ut.write_csv(csv_fname, xdata, s_ydata)
+
         idxs = [arch.replace(f'{self.sphere.name}_', '') for arch in self.arch_names]
         for nn, (s_ydata, idx) in enumerate(zip(ydata, idxs)):
             # Write to xye
