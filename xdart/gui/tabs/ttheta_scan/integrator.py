@@ -54,7 +54,7 @@ params = [
                         "poisson", "azimuthal"
                     ], 'value': 'poisson'},
                 {'name': 'safe', 'type': 'bool', 'value': True},
-                {'name': 'block_size', 'type': 'int', 'value': 32},
+                # {'name': 'block_size', 'type': 'int', 'value': 32},
                 {'name': 'profile', 'type': 'bool', 'value': False},
                 ]
             },
