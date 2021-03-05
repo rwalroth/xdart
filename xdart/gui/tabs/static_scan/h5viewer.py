@@ -19,7 +19,7 @@ from pyqtgraph.Qt import QtWidgets, QtCore, QtGui
 
 from icecream import ic
 ic.configureOutput(prefix='', includeContext=True)
-ic.enable()
+ic.disable()
 
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem

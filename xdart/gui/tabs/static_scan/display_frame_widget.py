@@ -27,7 +27,7 @@ from xdart.utils import split_file_name
 
 from icecream import ic
 ic.configureOutput(prefix='', includeContext=True)
-ic.enable()
+ic.disable()
 
 QFileDialog = QtWidgets.QFileDialog
 _translate = Qt.QtCore.QCoreApplication.translate

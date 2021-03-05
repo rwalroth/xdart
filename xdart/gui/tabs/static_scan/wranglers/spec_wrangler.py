@@ -27,12 +27,12 @@ from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 from icecream import ic
 
 ic.configureOutput(prefix='', includeContext=True)
-ic.disable()
+ic.enable()
 
 QFileDialog = QtWidgets.QFileDialog
 
-def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
-def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
+def_poni_file = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
+def_img_file = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
 
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
@@ -910,7 +910,7 @@ class specProcess(wranglerProcess):
                              **self.sphere_args)
         ic(self.sphere_args)
         with self.file_lock:
-            sphere.save_to_h5(replace=True)
+            sphere.save_to_h5(replace=False)
             # self.signal_q.put(('new_scan', None))
             self.signal_q.put(('new_scan',
                                (self.scan_name, self.fname,
