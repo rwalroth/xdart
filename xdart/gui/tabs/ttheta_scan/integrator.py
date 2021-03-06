@@ -55,7 +55,7 @@ params = [
                     ], 'value': 'poisson'},
                 {'name': 'safe', 'type': 'bool', 'value': True},
                 # {'name': 'block_size', 'type': 'int', 'value': 32},
-                {'name': 'profile', 'type': 'bool', 'value': False},
+                # {'name': 'profile', 'type': 'bool', 'value': False},
                 ]
             },
             {'name': 'Integrate 2D', 'type': 'group', 'children': [
