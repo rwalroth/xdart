@@ -19,19 +19,8 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Fixed saving of xye and csv files when averaging/summing over scans">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" afterDir="false" />
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="First attempt at limiting memory usage">
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/utils/_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/utils/containers/int_data_static.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/containers/int_data_static.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -333,7 +322,14 @@
       <option name="project" value="LOCAL" />
       <updated>1614979632347</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="First attempt at limiting memory usage">
+      <created>1616484776075</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1616484776075</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -366,6 +362,7 @@
     <MESSAGE value="Initial changes to save H5 File to local drive" />
     <MESSAGE value="Remove hardcoded test file names" />
     <MESSAGE value="Fixed saving of xye and csv files when averaging/summing over scans" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed saving of xye and csv files when averaging/summing over scans" />
+    <MESSAGE value="First attempt at limiting memory usage" />
+    <option name="LAST_COMMIT_MESSAGE" value="First attempt at limiting memory usage" />
   </component>
 </project>
