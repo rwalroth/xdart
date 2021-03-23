@@ -29,7 +29,7 @@ from xdart.utils._utils import FixSizeOrderedDict
 
 from icecream import install, ic
 ic.configureOutput(prefix='', includeContext=True)
-ic.enable()
+ic.disable()
 install()
 
 QWidget = QtWidgets.QWidget
