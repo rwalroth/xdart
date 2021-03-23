@@ -18,8 +18,6 @@ from .ui.integratorUI import Ui_Form
 from .sphere_threads import integratorThread
 
 from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
-ic.disable()
 
 _translate = Qt.QtCore.QCoreApplication.translate
 

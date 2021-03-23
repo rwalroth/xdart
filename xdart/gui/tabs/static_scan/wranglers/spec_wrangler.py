@@ -7,6 +7,8 @@
 import os
 import time
 import glob
+import numpy as np
+from multiprocessing import shared_memory
 
 # Qt imports
 from pyqtgraph import Qt
@@ -26,13 +28,10 @@ from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
 from icecream import ic
 
-ic.configureOutput(prefix='', includeContext=True)
-ic.enable()
-
 QFileDialog = QtWidgets.QFileDialog
 
-def_poni_file = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
-def_img_file = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
+def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
+def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
 
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
@@ -120,13 +119,14 @@ class specWrangler(wranglerWidget):
         """fname: str, file path
         file_lock: mp.Condition, process safe lock
         """
+
         ic()
         super().__init__(fname, file_lock, parent)
 
         # Scan Parameters
         self.scan_parameters = []
-        self.counters = {}
-        self.motors = {}
+        self.counters = []
+        self.motors = []
 
         # Setup gui elements
         self.ui = Ui_Form()
@@ -718,9 +718,6 @@ class specThread(wranglerThread):
                     ic(data)
                     self.sigUpdateFile.emit(*data)
                     ic(self.scan_name, self.single_img)
-                    # self.sigUpdateFile.emit(self.scan_name, self.fname,
-                    #                         self.gi, self.th_mtr,
-                    #                         self.single_img)
                 elif signal == 'TERMINATE':
                     last = True
 
@@ -841,6 +838,7 @@ class specProcess(wranglerProcess):
         self.meta_ext = 'txt'
         self.user = None
         self.processed = []
+        self.a_rr = np.zeros(0)
 
     def _main(self):
         """Checks for commands in queue, sends back updates through
@@ -848,8 +846,11 @@ class specProcess(wranglerProcess):
         reading in data, then performs integration.
         """
         ic()
-
         ic(self.inp_type)
+
+        # existing_shm = shared_memory.SharedMemory(name='arch_2d_data')
+        # self.a_rr = np.ndarray((1000, 1000), dtype=float, buffer=existing_shm.buf)
+
         if self.inp_type != 'Image Directory':
             self.process_scan()
         else:
@@ -862,6 +863,7 @@ class specProcess(wranglerProcess):
                     print(command)
                     if command == 'stop':
                         self.signal_q.put(('TERMINATE', None))
+                        existing_shm.close()
                         break
                     elif command == 'continue':
                         pause = False
@@ -877,12 +879,14 @@ class specProcess(wranglerProcess):
                     rv = self.process_scan()
                     if rv == 'Stop':
                         self.signal_q.put(('TERMINATE', None))
+                        existing_shm.close()
                         break
                 else:
                     elapsed = time.time() - start
                     if elapsed > self.timeout:
                         self.signal_q.put(('message', "Timeout occurred"))
                         self.signal_q.put(('TERMINATE', None))
+                        existing_shm.close()
                         break
                     else:
                         continue
@@ -890,6 +894,7 @@ class specProcess(wranglerProcess):
 
             # If loop ends, signal terminate to parent thread.
             self.signal_q.put(('TERMINATE', None))
+            existing_shm.close()
 
     def process_scan(self):
         """Go through series of images in a scan and process them individually
@@ -901,6 +906,11 @@ class specProcess(wranglerProcess):
 
         # Initialize sphere and save to disk, send update for new scan
         ic(self.fname, self.scan_name, self.single_img, self.gi)
+        ic(os.path.exists(self.fname))
+
+        new_file = False
+        if os.path.exists(self.fname):
+            new_file = True
         sphere = EwaldSphere(self.scan_name,
                              data_file=self.fname,
                              static=True,
@@ -910,7 +920,13 @@ class specProcess(wranglerProcess):
                              **self.sphere_args)
         ic(self.sphere_args)
         with self.file_lock:
-            sphere.save_to_h5(replace=False)
+            # reprocess = False
+            ic(os.path.exists(self.fname))
+            sphere.save_to_h5(replace=True)
+            # if new_file:
+            #     sphere.load_from_h5(replace=False, mode='a')
+            # else:
+            #     sphere.save_to_h5(replace=True)
             # self.signal_q.put(('new_scan', None))
             self.signal_q.put(('new_scan',
                                (self.scan_name, self.fname,
@@ -919,9 +935,10 @@ class specProcess(wranglerProcess):
         ic(sphere.name)
 
         # Enter main loop
-        i = 1
-        if not self.single_img:
-            i = first_img
+        # i = 1
+        # if not self.single_img:
+        i = first_img
+
         pause = False
         start = time.time()
         while True:
@@ -939,6 +956,11 @@ class specProcess(wranglerProcess):
                     pause = True
                     continue
 
+            ic(sphere.arches.index, list(sphere.arches.index))
+            if i in list(sphere.arches.index):
+                i += 1
+                continue
+
             # Get result from wrangle
             try:
                 print(f'wrangle: {i}')
@@ -946,6 +968,7 @@ class specProcess(wranglerProcess):
 
             # Errors associated with image not yet taken
             except (KeyError, FileNotFoundError, AttributeError, ValueError):
+                time.sleep(0.2)
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
                     if self.inp_type != 'Image Directory':
@@ -967,10 +990,13 @@ class specProcess(wranglerProcess):
                 )
 
                 # integrate image to 1d and 2d arrays
+                ic(sphere.bai_1d_args, sphere.bai_2d_args)
                 arch.integrate_1d(**sphere.bai_1d_args)
                 arch.integrate_2d(**sphere.bai_2d_args)
 
-                ic(sphere.bai_1d_args, sphere.bai_2d_args)
+                arch_2d_data = arch.int_2d.i_qChi
+                # self.a_rr[:] = arch_2d_data[:]
+                # ic(self.a_rr)
 
                 # Add arch copy to sphere, save to file
                 with self.file_lock:

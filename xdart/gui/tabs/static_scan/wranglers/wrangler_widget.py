@@ -96,9 +96,8 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         to starting thread.
         """
         ic()
-        self.thread = wranglerThread(self.command_queue, self.sphere_args,
-                                     self.fname, self.file_lock, self)
-    
+        self.thread = wranglerThread(self.command_queue, self.sphere_args, self.fname, self.file_lock, self)
+
     def set_fname(self, fname):
         """Changes fname attribute of self and thread.
         args:
@@ -167,7 +166,7 @@ class wranglerThread(Qt.QtCore.QThread):
             self.signal_q, 
             self.sphere_args,
             self.fname,
-            self.file_lock
+            self.file_lock,
         )
         process.start()
         while True:

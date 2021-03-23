@@ -17,6 +17,7 @@ from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
 import pyqtgraph.exporters
 from pyqtgraph import ROI
+from multiprocessing import shared_memory
 
 # This module imports
 from .ui.displayFrameUI import Ui_Form
@@ -26,8 +27,6 @@ from ...widgets import pgxImageWidget
 from xdart.utils import split_file_name
 
 from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
-ic.disable()
 
 QFileDialog = QtWidgets.QFileDialog
 _translate = Qt.QtCore.QCoreApplication.translate
@@ -303,17 +302,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         except TypeError:
             return False
 
-        # Sets title text
-        if ('Overall' in self.arch_ids) or self.sphere.single_img:
-            self.ui.labelCurrent.setText(self.sphere.name)
-        elif len(self.arch_ids) > 1:
-            self.ui.labelCurrent.setText(f'{self.sphere.name} [Average]')
-        else:
-            self.ui.labelCurrent.setText(f'{self.sphere.name}_{self.arch_ids[0]}')
-
         return True
 
     def update_views(self):
+        """Updates 2D (if flag is selected) and 1D views
+        """
         ic()
         if not self._updated():
             return True
@@ -325,6 +318,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if self.ui.update2D.isChecked():
             self.update_image_view()
             self.update_binned_view()
+            self.update_2d_label()
         self.update_plot_view()
 
     def update_image(self):
@@ -410,6 +404,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         self.show_slice_overlay()
         return data
+
+    def update_2d_label(self):
+        """Updates 2D Label
+        """
+        # Sets title text
+        if ('Overall' in self.arch_ids) or self.sphere.single_img:
+            self.ui.labelCurrent.setText(self.sphere.name)
+        elif len(self.arch_ids) > 1:
+            self.ui.labelCurrent.setText(f'{self.sphere.name} [Average]')
+        else:
+            self.ui.labelCurrent.setText(f'{self.sphere.name}_{self.arch_ids[0]}')
 
     def update_plot(self):
         """Updates data in plot frame
@@ -539,7 +544,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.setup_wf_layout()
 
         xdata_, data_ = self.plot_data
-        # data, s_xdata = data_.copy(), xdata_.copy()
         s_xdata, data = xdata_.copy(), data_.copy()
         rect = get_rect(s_xdata, np.arange(data.shape[0]))
 
@@ -628,7 +632,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         for nn, idx in enumerate(idxs):
             ic(idx, idxs)
             arch = self.arches[int(idx)]
-            xdata, s_ydata = self.get_int_1d(arch)
+            xdata, s_ydata = self.get_int_1d(arch, idx)
             if nn == 0:
                 ydata = s_ydata
             else:
@@ -662,7 +666,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         return int_2d
         # return self.normalize(int_2d, arch.scan_info)
 
-    def get_int_1d(self, arch):
+    def get_int_1d(self, arch, idx):
         """Returns 1D integrated data for arch. If range is specified,
         it returns integrated data over that range
         """
@@ -672,9 +676,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if self.ui.plotUnit.currentIndex() != 2:
             if not self.ui.slice.isChecked():
-                int_1d = arch.int_1d.norm
-                ydata = self.normalize(int_1d, arch.scan_info)
-                xdata = self.get_xdata(arch.int_1d)
+                int_1d = self.data_1d[int(idx)]
+                # intensity = arch.int_1d.norm
+                intensity = int_1d.norm
+                ydata = self.normalize(intensity, arch.scan_info)
+                # xdata = self.get_xdata(arch.int_1d)
+                xdata = self.get_xdata(int_1d)
                 return xdata, ydata
 
         # _int_2d = arch.int_2d

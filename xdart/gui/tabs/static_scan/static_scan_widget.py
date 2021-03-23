@@ -8,7 +8,10 @@ from queue import Queue
 import multiprocessing as mp
 import copy
 import os
+import numpy as np
 from collections import OrderedDict
+from multiprocessing import shared_memory
+from multiprocessing.managers import SharedMemoryManager
 
 # Qt imports
 from pyqtgraph import Qt
@@ -22,10 +25,12 @@ from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .metadata import metadataWidget
 from .wranglers import specWrangler, wranglerWidget
+from xdart.utils._utils import FixSizeOrderedDict
 
-from icecream import ic
+from icecream import install, ic
 ic.configureOutput(prefix='', includeContext=True)
 ic.enable()
+install()
 
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
@@ -33,6 +38,8 @@ QSizePolicy = QtWidgets.QSizePolicy
 wranglers = {
     'SPEC': specWrangler
 }
+
+smm = SharedMemoryManager()
 
 
 def spherelocked(func):
@@ -113,8 +120,12 @@ class staticWidget(QWidget):
         self.arch = EwaldArch(static=True, gi=self.sphere.gi)
         self.arch_ids = []
         self.arches = OrderedDict()
-        self.data_1d = {}
-        self.data_2d = {}
+        self.data_1d = OrderedDict()
+        self.data_2d = FixSizeOrderedDict(max=10)
+        self.arch_2d = np.zeros(0)
+        # self.shm = shared_memory.SharedMemory()
+        self.shm = None
+        # self.data_2d_ = np.zeros(0)
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -143,6 +154,7 @@ class staticWidget(QWidget):
         self.ui.middleFrame.setLayout(self.displayframe.ui.layout)
 
         # DisplayFrame signal connections
+        self.displayframe.ui.update2D.stateChanged.connect(self.update_h5_options)
         # self.displayframe.ui.pushRight.clicked.connect(self.next_arch)
         # self.displayframe.ui.pushLeft.clicked.connect(self.prev_arch)
         # self.displayframe.ui.pushRightLast.clicked.connect(self.last_arch)
@@ -173,12 +185,14 @@ class staticWidget(QWidget):
         self.ui.metaFrame.setLayout(self.metawidget.layout)
 
         # Wrangler frame setup
+        # self.wrangler = wranglerWidget("uninitialized", mp.Condition(), self.data_2d_)
         self.wrangler = wranglerWidget("uninitialized", mp.Condition())
         for name, w in wranglers.items():
             self.ui.wranglerStack.addWidget(
                 w(
                     self.fname,
-                    self.file_lock
+                    self.file_lock,
+                    # self.data_2d_,
                 )
             )
             self.ui.wranglerBox.addItem(name)
@@ -301,16 +315,14 @@ class staticWidget(QWidget):
         memory.
         """
         ic()
+        # ic(self.data_2d_, self.arch_2d)
+        ic(self.arch_2d)
         with self.sphere.sphere_lock:
             if self.sphere.name == self.wrangler.scan_name:
                 self.h5viewer.file_thread.queue.put("update_sphere")
 
                 with self.file_lock:
                     self.update_all()
-
-        # self.h5viewer.activateWindow()
-        # self.h5viewer.ui.listData.focusWidget()
-        # self.h5viewer.ui.listData.setFocus()
 
     def enable_last(self, q):
         """
@@ -345,82 +357,6 @@ class staticWidget(QWidget):
 
             self.metawidget.update()
             # self.integratorTree.update()
-
-    def next_arch(self):
-        """Advances to next arch in data list, updates displayframe
-        """
-        ic()
-        # if (self.arch == self.sphere.arches.iloc(-1).idx or
-        #         self.arch is None or
-        #         self.h5viewer.ui.listData.currentRow() == \
-        #         self.h5viewer.ui.listData.count() - 1):
-        if (len(self.arches) == 0 or
-                self.h5viewer.ui.listData.currentRow() > \
-                self.h5viewer.ui.listData.count() - 2):
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.count() - 1
-            )
-            self.displayframe.auto_last = True
-            # pass
-        else:
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.currentRow() + 1
-            )
-            self.displayframe.auto_last = False
-            # self.displayframe.ui.pushRightLast.setEnabled(True)
-
-    def prev_arch(self):
-        """Goes back one arch in data list, updates displayframe
-        """
-        ic()
-        # if (self.arch == self.sphere.arches.iloc(0).idx or
-        #         self.arch.idx is None or
-        #         self.h5viewer.ui.listData.currentRow() == 1):
-        #     pass
-        if (len(self.arches) == 0) or (self.h5viewer.ui.listData.currentRow() == 1):
-            pass
-        else:
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.currentRow() - 1
-            )
-            selected_items = self.ui.listData.selectedItems()
-            selected_items[0].setSelected(True)
-            self.displayframe.auto_last = False
-            # self.displayframe.ui.pushRightLast.setEnabled(True)
-
-    def last_arch(self):
-        """Advances to last arch in data list, updates displayframe, and
-        set auto_last to True
-        """
-        ic()
-        self.displayframe.auto_last = True
-        # if self.arch.idx is None:
-        if len(self.arches) == 0:
-            pass
-
-        else:
-            # if self.arch.idx == self.sphere.arches.index[-1]:
-            #     pass
-            #
-            # else:
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.count() - 1
-            )
-
-            self.displayframe.auto_last = True
-            # self.displayframe.ui.pushRightLast.setEnabled(False)
-
-    def first_arch(self):
-        """Goes to first arch in data list, updates displayframe
-        """
-        ic()
-        # if self.arch == self.sphere.arches.iloc(0).idx or self.arch.idx is None:
-        if len(self.arches) == 0:
-            pass
-        else:
-            self.h5viewer.ui.listData.setCurrentRow(1)
-            self.displayframe.auto_last = False
-            # self.displayframe.ui.pushRightLast.setEnabled(True)
 
     def close(self):
         """Tries a graceful close.
@@ -491,6 +427,7 @@ class staticWidget(QWidget):
         """
         ic()
         # if self.sphere.name != name or self.sphere.name == 'null_main':
+        # ic(name, self.sphere.name, self.arch_2d)
         ic(name, self.sphere.name)
         self.h5viewer.dirname = os.path.dirname(fname)
         self.h5viewer.set_file(fname)
@@ -542,6 +479,13 @@ class staticWidget(QWidget):
         the wrangler.thread main method.
         """
         ic()
+
+        i_qChi = np.zeros((1000, 1000), dtype=float)
+        self.shm = shared_memory.SharedMemory(name='arch_2d_data', create=True, size=i_qChi.nbytes)
+        self.arch_2d = np.ndarray(i_qChi.shape, dtype=i_qChi.dtype, buffer=self.shm.buf)
+        self.arch_2d[:] = i_qChi[:]
+        # ic(arch_2d)
+
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
         args = {'bai_1d_args': self.sphere.bai_1d_args,
@@ -563,3 +507,87 @@ class staticWidget(QWidget):
         else:
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
+
+        self.shm.close()
+        self.shm.unlink()
+
+    def update_h5_options(self, state):
+        """Changes H5Widget Option to update only 1D or both views
+        """
+        self.h5viewer.update_2d = state
+
+    def next_arch(self):
+        """Advances to next arch in data list, updates displayframe
+        """
+        ic()
+        # if (self.arch == self.sphere.arches.iloc(-1).idx or
+        #         self.arch is None or
+        #         self.h5viewer.ui.listData.currentRow() == \
+        #         self.h5viewer.ui.listData.count() - 1):
+        if (len(self.arches) == 0 or
+                self.h5viewer.ui.listData.currentRow() > \
+                self.h5viewer.ui.listData.count() - 2):
+            self.h5viewer.ui.listData.setCurrentRow(
+                self.h5viewer.ui.listData.count() - 1
+            )
+            self.displayframe.auto_last = True
+            # pass
+        else:
+            self.h5viewer.ui.listData.setCurrentRow(
+                self.h5viewer.ui.listData.currentRow() + 1
+            )
+            self.displayframe.auto_last = False
+            # self.displayframe.ui.pushRightLast.setEnabled(True)
+
+    def prev_arch(self):
+        """Goes back one arch in data list, updates displayframe
+        """
+        ic()
+        # if (self.arch == self.sphere.arches.iloc(0).idx or
+        #         self.arch.idx is None or
+        #         self.h5viewer.ui.listData.currentRow() == 1):
+        #     pass
+        if (len(self.arches) == 0) or (self.h5viewer.ui.listData.currentRow() == 1):
+            pass
+        else:
+            self.h5viewer.ui.listData.setCurrentRow(
+                self.h5viewer.ui.listData.currentRow() - 1
+            )
+            selected_items = self.ui.listData.selectedItems()
+            selected_items[0].setSelected(True)
+            self.displayframe.auto_last = False
+            # self.displayframe.ui.pushRightLast.setEnabled(True)
+
+    def first_arch(self):
+        """Goes to first arch in data list, updates displayframe
+        """
+        ic()
+        # if self.arch == self.sphere.arches.iloc(0).idx or self.arch.idx is None:
+        if len(self.arches) == 0:
+            pass
+        else:
+            self.h5viewer.ui.listData.setCurrentRow(1)
+            self.displayframe.auto_last = False
+            # self.displayframe.ui.pushRightLast.setEnabled(True)
+
+    def last_arch(self):
+        """Advances to last arch in data list, updates displayframe, and
+        set auto_last to True
+        """
+        ic()
+        self.displayframe.auto_last = True
+        # if self.arch.idx is None:
+        if len(self.arches) == 0:
+            pass
+
+        else:
+            # if self.arch.idx == self.sphere.arches.index[-1]:
+            #     pass
+            #
+            # else:
+            self.h5viewer.ui.listData.setCurrentRow(
+                self.h5viewer.ui.listData.count() - 1
+            )
+
+            self.displayframe.auto_last = True
+            # self.displayframe.ui.pushRightLast.setEnabled(False)

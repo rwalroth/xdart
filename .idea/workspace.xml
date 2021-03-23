@@ -19,23 +19,19 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Fixed a couple of bugs related to making keys integers">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="005f7ea8-3a3e-454d-9d3c-5f92f7f04230" name="Default Changelist" comment="Fixed saving of xye and csv files when averaging/summing over scans">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/xdart.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/xdart.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/display_frame_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/h5viewer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/integrator.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/sphere_threads.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/static_scan_widget.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/spec_wrangler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/Basic Tests of bServer with SPEC Infoserver.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/Basic Tests of bServer with SPEC Infoserver.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/PulpitObject.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/PulpitObject.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_command.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_command.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_communication.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_communication.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_interaction.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/bServer/bl_interaction.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/config/beamline_catalogue.yml" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/config/beamline_catalogue.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/runSPEC_bServer.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/runSPEC_bServer.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/test_bServer_funcs.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/pySSRL_bServer/test_bServer_funcs.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/gui/tabs/static_scan/wranglers/wrangler_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/arch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/modules/ewald/sphere.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xdart/utils/_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xdart/utils/containers/int_data_static.py" beforeDir="false" afterPath="$PROJECT_DIR$/xdart/utils/containers/int_data_static.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xdart_env.yml" beforeDir="false" afterPath="$PROJECT_DIR$/xdart_env.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -316,7 +312,28 @@
       <option name="project" value="LOCAL" />
       <updated>1602191182107</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Initial changes to save H5 File to local drive">
+      <created>1614931435401</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1614931435401</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Remove hardcoded test file names">
+      <created>1614970489997</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1614970489997</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Fixed saving of xye and csv files when averaging/summing over scans">
+      <created>1614979632347</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1614979632347</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -346,12 +363,9 @@
     <MESSAGE value="Re-integrate working. Removed re-integrate individual image option. Also removed left right push buttons." />
     <MESSAGE value="Updated xdart_yml file" />
     <MESSAGE value="Fixed a couple of bugs related to making keys integers" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed a couple of bugs related to making keys integers" />
-  </component>
-  <component name="WindowStateProjectService">
-    <state x="397" y="185" key="SettingsEditor" timestamp="1614371724936">
-      <screen x="0" y="0" width="1792" height="1080" />
-    </state>
-    <state x="397" y="185" key="SettingsEditor/0.0.1792.1080@0.0.1792.1080" timestamp="1614371724936" />
+    <MESSAGE value="Initial changes to save H5 File to local drive" />
+    <MESSAGE value="Remove hardcoded test file names" />
+    <MESSAGE value="Fixed saving of xye and csv files when averaging/summing over scans" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed saving of xye and csv files when averaging/summing over scans" />
   </component>
 </project>

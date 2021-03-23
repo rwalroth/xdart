@@ -7,10 +7,6 @@ from scipy.interpolate import RectBivariateSpline
 from .nzarrays import nzarray2d
 from .. import _utils as utils
 
-from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
-ic.disable()
-
 
 class int_1d_data_static:
     """Container for 1-dimensional integration data returned by pyFAI.
@@ -196,7 +192,6 @@ class int_2d_data_static(int_1d_data_static):
             unit = result.unit
 
         self.chi = chi = result.azimuthal
-        # self.chi = result.azimuthal
 
         if unit == units.TTH_DEG or str(unit) == '2th_deg':
             self.i_tthChi = result.intensity

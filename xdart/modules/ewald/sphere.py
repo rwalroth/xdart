@@ -11,8 +11,6 @@ from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 from xdart import utils
 
 from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
-ic.disable()
 
 
 class EwaldSphere():
@@ -432,7 +430,7 @@ class EwaldSphere():
             self.mgi_1d.to_hdf5(grp['mgi_1d'], compression)
             self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
 
-    def load_from_h5(self, replace=True, *args, **kwargs):
+    def load_from_h5(self, replace=True, mode='r', *args, **kwargs):
         """Loads data stored in hdf5 file.
 
         args:
@@ -445,7 +443,7 @@ class EwaldSphere():
         with self.file_lock:
             if replace:
                 self.reset()
-            with utils.catch_h5py_file(self.data_file, 'r') as file:
+            with utils.catch_h5py_file(self.data_file, mode=mode) as file:
                 self._load_from_h5(file, *args, **kwargs)
 
     def _load_from_h5(self, grp, data_only=False, set_mg=True):

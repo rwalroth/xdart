@@ -13,6 +13,7 @@ import numpy as np
 import re
 from datetime import datetime
 from pathlib import Path
+from collections import OrderedDict
 
 from skimage import io
 import scipy
@@ -27,9 +28,7 @@ import hdf5plugin
 import fabio
 
 # This module imports
-from lmfit.models import LinearModel, GaussianModel, ParabolicModel
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
-
 
 def write_xye(fname, xdata, ydata):
     """Saves data to an xye file. Variance is the square root of the
@@ -1023,3 +1022,15 @@ def query_yes_no(question, default="no"):
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "\
                              "(or 'y' or 'n').\n")
+
+
+class FixSizeOrderedDict(OrderedDict):
+    def __init__(self, *args, max=0, **kwargs):
+        self._max = max
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        OrderedDict.__setitem__(self, key, value)
+        if self._max > 0:
+            if len(self) > self._max:
+                self.popitem(False)

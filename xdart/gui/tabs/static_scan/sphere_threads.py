@@ -22,8 +22,6 @@ from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
 
 from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
-ic.disable()
 
 
 class integratorThread(Qt.QtCore.QThread):
@@ -194,6 +192,7 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.new_fname = None
         self.lock = Condition()
         self.running = False
+        self.update_2d = True
 
     def run(self):
         ic()
@@ -241,15 +240,19 @@ class fileHandlerThread(Qt.QtCore.QThread):
                 for idx in self.arch_ids:
                     ic(idx)
                     try:
-                        self.arch = self.data_2d[int(idx)]
-                        ic('loaded arch from memory', idx)
-                    except KeyError:
+                        # self.arch = self.data_2d[int(idx)]
+                        # ic('loaded arch from memory', idx)
+                        # except KeyError:
                         self.arch = self.arches[int(idx)]
-                        self.arch.load_from_h5(file['arches'])
+                        self.arch.load_from_h5(file['arches'], load_2d=self.update_2d)
                         ic('loaded arch from file', idx)
                         # self.parse_unit()
                         self.data_2d[int(idx)] = self.arch.copy()
                         self.data_1d[int(idx)] = self.arch.int_1d
+                    except KeyError:
+                        self.sigUpdate.emit()
+                        return
+
                     self.arches[idx] = self.arch
             ic(len(self.arches))
             self.sigUpdate.emit()

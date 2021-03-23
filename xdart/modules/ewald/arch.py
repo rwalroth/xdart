@@ -6,6 +6,7 @@ Created on Mon Aug 26 14:21:58 2019
 """
 import copy
 from threading import Condition
+from multiprocessing import shared_memory
 
 import pyFAI
 import pygix
@@ -19,8 +20,6 @@ from xdart.utils.containers import PONI, int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 
 from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
-ic.disable()
 
 
 class EwaldArch():
@@ -342,6 +341,15 @@ class EwaldArch():
         q, chi = result.radial, result.azimuthal
         ic(q.min(), q.max(), q.shape, result.__dict__.keys(), self.integrator.wavelength)
 
+        existing_shm = shared_memory.SharedMemory(name='arch_2d_data')
+        a_rr = np.ndarray((1000, 1000), dtype=float, buffer=existing_shm.buf)
+
+        arch_2d_data = self.int_2d.i_qChi
+        a_rr[:] = arch_2d_data[:]
+
+        existing_shm.close()
+        # ic(self.a_rr)
+
         return result
 
     def set_integrator(self, **args):
@@ -433,7 +441,7 @@ class EwaldArch():
             ic('created groups')
             utils.dict_to_h5(self.poni.to_dict(), grp, 'poni')
 
-    def load_from_h5(self, file):
+    def load_from_h5(self, file, load_2d=True):
         """Loads data from hdf5 file and sets attributes.
 
         args:
@@ -454,7 +462,8 @@ class EwaldArch():
                             ]
                             utils.h5_to_attributes(self, grp, lst_attr)
                             self.int_1d.from_hdf5(grp['int_1d'])
-                            self.int_2d.from_hdf5(grp['int_2d'])
+                            if load_2d:
+                                self.int_2d.from_hdf5(grp['int_2d'])
                             self.poni = PONI.from_yamdict(
                                 utils.h5_to_dict(grp['poni'])
                             )
