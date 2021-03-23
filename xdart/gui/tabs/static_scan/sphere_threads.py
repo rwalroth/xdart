@@ -247,8 +247,12 @@ class fileHandlerThread(Qt.QtCore.QThread):
                         self.arch.load_from_h5(file['arches'], load_2d=self.update_2d)
                         ic('loaded arch from file', idx)
                         # self.parse_unit()
-                        self.data_2d[int(idx)] = self.arch.copy()
-                        self.data_1d[int(idx)] = self.arch.int_1d
+                        # self.data_2d[int(idx)] = self.arch.copy()
+                        # self.data_1d[int(idx)] = self.arch.int_1d
+                        self.data_1d[int(idx)] = self.arch.copy()
+                        if self.update_2d:
+                            self.data_2d[int(idx)] = self.arch.copy()
+
                     except KeyError:
                         self.sigUpdate.emit()
                         return

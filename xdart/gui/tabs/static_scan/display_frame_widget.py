@@ -302,6 +302,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         except TypeError:
             return False
 
+        # Apply label to 2D view
+        if self.ui.update2D.isChecked():
+            self.update_2d_label()
+
         return True
 
     def update_views(self):
@@ -676,7 +680,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if self.ui.plotUnit.currentIndex() != 2:
             if not self.ui.slice.isChecked():
-                int_1d = self.data_1d[int(idx)]
+                # int_1d = self.data_1d[int(idx)]
+                int_1d = arch.int_1d
                 # intensity = arch.int_1d.norm
                 intensity = int_1d.norm
                 ydata = self.normalize(intensity, arch.scan_info)

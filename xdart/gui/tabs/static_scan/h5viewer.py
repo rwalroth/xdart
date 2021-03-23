@@ -338,10 +338,14 @@ class H5Viewer(QWidget):
 
             idxs_memory = []
             for idx in idxs:
-                keys = self.data_2d.keys() if self.update_2d else self.data_1d.keys()
+                # keys = self.data_2d.keys() if self.update_2d else self.data_1d.keys()
+                keys, data = self.data_2d.keys(), self.data_2d
+                if not self.update_2d:
+                    keys, data = self.data_1d.keys(), self.data_1d
                 # if int(idx) in self.data_2d.keys():
                 if int(idx) in keys:
-                    self.arches[int(idx)] = self.data_2d[int(idx)]
+                    # self.arches[int(idx)] = self.data_2d[int(idx)]
+                    self.arches[int(idx)] = data[int(idx)]
                     ic('loaded arch from memory', idx)
                     idxs_memory.append(int(idx))
 
