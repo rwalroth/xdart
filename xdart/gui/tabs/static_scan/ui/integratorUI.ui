@@ -136,7 +136,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>13</pointsize>
+                 <pointsize>12</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
@@ -428,7 +428,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>13</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -449,7 +449,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>13</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -571,7 +571,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>13</pointsize>
+                 <pointsize>12</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
@@ -884,7 +884,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>13</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -905,7 +905,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>13</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">

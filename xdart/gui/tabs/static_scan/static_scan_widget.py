@@ -122,7 +122,7 @@ class staticWidget(QWidget):
         self.arch_ids = []
         self.arches = OrderedDict()
         self.data_1d = OrderedDict()
-        self.data_2d = FixSizeOrderedDict(max=6)
+        self.data_2d = FixSizeOrderedDict(max=10)
         self.arch_2d = np.zeros(0)
         # self.shm = shared_memory.SharedMemory()
         self.shm = None
