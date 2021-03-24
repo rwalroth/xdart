@@ -22,6 +22,7 @@ from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
 
 from icecream import ic
+import gc
 
 
 class integratorThread(Qt.QtCore.QThread):
@@ -249,9 +250,9 @@ class fileHandlerThread(Qt.QtCore.QThread):
                         # self.parse_unit()
                         # self.data_2d[int(idx)] = self.arch.copy()
                         # self.data_1d[int(idx)] = self.arch.int_1d
-                        self.data_1d[int(idx)] = self.arch.copy()
+                        self.data_1d[int(idx)] = self.arch.copy(include_2d=False)
                         if self.update_2d:
-                            self.data_2d[int(idx)] = self.arch.copy()
+                            self.data_2d[int(idx)] = self.arch.int_2d
 
                     except KeyError:
                         self.sigUpdate.emit()
@@ -260,6 +261,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
                     self.arches[idx] = self.arch
             ic(len(self.arches))
             self.sigUpdate.emit()
+
+        gc.collect()
 
     def parse_unit(self):
         """ Returns EwaldArch Object updated with missing q/tth interpolated data

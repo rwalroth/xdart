@@ -7,6 +7,7 @@ import os
 import traceback
 import numpy as np
 from multiprocessing import shared_memory
+import gc
 
 # This module imports
 from xdart.modules.ewald import EwaldArch
@@ -248,11 +249,15 @@ class H5Viewer(QWidget):
         self.ui.listData.setFocus()
         self.ui.listData.focusWidget()
 
+        gc.collect()
+
     def thread_finished(self, task):
         ic()
         if task != "load_arch":
             self.update()
         self.sigThreadFinished.emit()
+
+        gc.collect()
     
     def scans_clicked(self, q):
         """Handles items being double clicked in listScans. Either
@@ -339,15 +344,24 @@ class H5Viewer(QWidget):
             idxs_memory = []
             for idx in idxs:
                 # keys = self.data_2d.keys() if self.update_2d else self.data_1d.keys()
-                keys, data = self.data_2d.keys(), self.data_2d
-                if not self.update_2d:
-                    keys, data = self.data_1d.keys(), self.data_1d
-                # if int(idx) in self.data_2d.keys():
-                if int(idx) in keys:
+                # keys, data = self.data_2d.keys(), self.data_2d
+                # if not self.update_2d:
+                #     keys, data = self.data_1d.keys(), self.data_1d
+                if self.update_2d:
+                    if int(idx) in self.data_2d.keys():
+                        self.arches[int(idx)] = self.data_1d[int(idx)]
+                        self.arches[int(idx)].int_2d = self.data_2d[int(idx)]
+                        ic('loaded arch from memory', idx)
+                        idxs_memory.append(int(idx))
+                else:
+                    if int(idx) in self.data_1d.keys():
+                        self.arches[int(idx)] = self.data_1d[int(idx)]
+                        ic('loaded arch from memory', idx)
+                        idxs_memory.append(int(idx))
+
+                    #if int(idx) in keys:
                     # self.arches[int(idx)] = self.data_2d[int(idx)]
-                    self.arches[int(idx)] = data[int(idx)]
-                    ic('loaded arch from memory', idx)
-                    idxs_memory.append(int(idx))
+                    # self.arches[int(idx)] = data[int(idx)]
 
             self.file_thread.arch_ids = [int(idx) for idx in idxs
                                          if int(idx) not in idxs_memory]
@@ -357,6 +371,8 @@ class H5Viewer(QWidget):
                 self.file_thread.queue.put("load_arches")
             else:
                 self.sigUpdate.emit()
+
+        gc.collect()
 
     def data_reset(self):
         """Resets data in memory (self.arches, self.arch_ids, self.data_..

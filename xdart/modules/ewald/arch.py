@@ -341,13 +341,13 @@ class EwaldArch():
         q, chi = result.radial, result.azimuthal
         ic(q.min(), q.max(), q.shape, result.__dict__.keys(), self.integrator.wavelength)
 
-        existing_shm = shared_memory.SharedMemory(name='arch_2d_data')
-        a_rr = np.ndarray((1000, 1000), dtype=float, buffer=existing_shm.buf)
+        # existing_shm = shared_memory.SharedMemory(name='arch_2d_data')
+        # a_rr = np.ndarray((1000, 1000), dtype=float, buffer=existing_shm.buf)
 
-        arch_2d_data = self.int_2d.i_qChi
-        a_rr[:] = arch_2d_data[:]
+        # arch_2d_data = self.int_2d.i_qChi
+        # a_rr[:] = arch_2d_data[:]
 
-        existing_shm.close()
+        # existing_shm.close()
         # ic(self.a_rr)
 
         return result
@@ -497,7 +497,7 @@ class EwaldArch():
                                     **self.ai_args
                                 )
 
-    def copy(self):
+    def copy(self, include_2d=True):
         """Returns a copy of self.
         """
         ic()
@@ -513,6 +513,7 @@ class EwaldArch():
         arch_copy.arch_lock = Condition()
         arch_copy.map_norm = copy.deepcopy(self.map_norm)
         arch_copy.int_1d = copy.deepcopy(self.int_1d)
-        arch_copy.int_2d = copy.deepcopy(self.int_2d)
+        if include_2d:
+            arch_copy.int_2d = copy.deepcopy(self.int_2d)
 
         return arch_copy

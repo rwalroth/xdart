@@ -12,6 +12,7 @@ import numpy as np
 from collections import OrderedDict
 from multiprocessing import shared_memory
 from multiprocessing.managers import SharedMemoryManager
+import gc
 
 # Qt imports
 from pyqtgraph import Qt
@@ -324,6 +325,8 @@ class staticWidget(QWidget):
                 with self.file_lock:
                     self.update_all()
 
+        gc.collect()
+
     def enable_last(self, q):
         """
         Parameters
@@ -358,6 +361,8 @@ class staticWidget(QWidget):
             self.metawidget.update()
             # self.integratorTree.update()
 
+        gc.collect()
+
     def close(self):
         """Tries a graceful close.
         """
@@ -367,6 +372,8 @@ class staticWidget(QWidget):
         del self.arch
         del self.displayframe.arch
         super().close()
+
+        gc.collect()
 
     def enable_integration(self, enable=True):
         """Calls the integratorTree setEnabled function.
@@ -391,6 +398,8 @@ class staticWidget(QWidget):
 
         # self.h5viewer.ui.listData.setFocus()
         # self.h5viewer.ui.listData.focusWidget()
+
+        gc.collect()
 
     def integrator_thread_update(self, idx):
         ic()
@@ -480,10 +489,10 @@ class staticWidget(QWidget):
         """
         ic()
 
-        i_qChi = np.zeros((1000, 1000), dtype=float)
-        self.shm = shared_memory.SharedMemory(name='arch_2d_data', create=True, size=i_qChi.nbytes)
-        self.arch_2d = np.ndarray(i_qChi.shape, dtype=i_qChi.dtype, buffer=self.shm.buf)
-        self.arch_2d[:] = i_qChi[:]
+        # i_qChi = np.zeros((1000, 1000), dtype=float)
+        # self.shm = shared_memory.SharedMemory(name='arch_2d_data', create=True, size=i_qChi.nbytes)
+        # self.arch_2d = np.ndarray(i_qChi.shape, dtype=i_qChi.dtype, buffer=self.shm.buf)
+        # self.arch_2d[:] = i_qChi[:]
         # ic(arch_2d)
 
         self.ui.wranglerBox.setEnabled(False)
@@ -508,8 +517,10 @@ class staticWidget(QWidget):
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
 
-        self.shm.close()
-        self.shm.unlink()
+        # self.shm.close()
+        # self.shm.unlink()
+
+        gc.collect()
 
     def update_h5_options(self, state):
         """Changes H5Widget Option to update only 1D or both views

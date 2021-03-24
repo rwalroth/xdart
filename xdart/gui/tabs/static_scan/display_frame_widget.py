@@ -572,6 +572,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         intensity = 0.
         for nn, idx in enumerate(idxs):
             ic(idx, idxs)
+            print(idx, idxs, self.arch_ids, self.arch_names)
             arch = self.arches[int(idx)]
             intensity += self.normalize(arch.map_raw, arch.scan_info)
 
