@@ -26,7 +26,10 @@ import xdart.utils as ut
 from ...widgets import pgxImageWidget
 from xdart.utils import split_file_name
 
-from icecream import ic
+try:
+    from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 QFileDialog = QtWidgets.QFileDialog
 _translate = Qt.QtCore.QCoreApplication.translate
@@ -147,7 +150,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
         self.image_layout.setContentsMargins(0, 0, 0, 0)
         self.image_layout.setSpacing(0)
-        self.image_widget = pgxImageWidget(lockAspect=1, raw_image=True)
+        self.image_widget = pgxImageWidget(lockAspect=1, raw=True)
         self.image_layout.addWidget(self.image_widget)
 
         # Regrouped Image pane setup

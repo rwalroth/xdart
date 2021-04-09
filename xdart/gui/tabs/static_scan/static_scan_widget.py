@@ -28,10 +28,16 @@ from .metadata import metadataWidget
 from .wranglers import specWrangler, wranglerWidget
 from xdart.utils._utils import FixSizeOrderedDict
 
-from icecream import install, ic
-ic.configureOutput(prefix='', includeContext=True)
-ic.disable()
-install()
+try:
+    from icecream import ic
+    from icecream import install
+    ic.configureOutput(prefix='', includeContext=True)
+    ic.disable()
+    install()
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
+
+# from icecream import install, ic
 
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy

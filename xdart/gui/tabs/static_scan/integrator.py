@@ -4,7 +4,7 @@
 """
 
 # Standard library imports
-import subprocess
+import os, subprocess
 
 # Other imports
 
@@ -17,9 +17,13 @@ from pyqtgraph.parametertree import Parameter
 from .ui.integratorUI import Ui_Form
 from .sphere_threads import integratorThread
 
-from icecream import ic
+try:
+    from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 _translate = Qt.QtCore.QCoreApplication.translate
+QFileDialog = Qt.QtWidgets.QFileDialog
 
 AA_inv = u'\u212B\u207B\u00B9'
 Th = u'\u03B8'
@@ -190,7 +194,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
         # Connect Calibrate and Mask Buttons
         self.ui.pyfai_calib.clicked.connect(self.run_pyfai_calib)
-        # self.ui.get_mask.clicked.connect(self.advancedWidget2D.show)
+        self.ui.get_mask.clicked.connect(self.run_pyfai_drawmask)
 
         self.setEnabled()
         # self.set_image_units()
@@ -863,7 +867,27 @@ class integratorTree(Qt.QtWidgets.QWidget):
     @staticmethod
     def run_pyfai_calib():
         process = subprocess.run(['pyFAI-calib2'], check=True, stdout=subprocess.PIPE, universal_newlines=True)
-        output = process.stdout
+        _ = process.stdout
+
+    @staticmethod
+    def run_pyfai_drawmask():
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(
+            caption='Choose Image File',
+            options=QFileDialog.DontUseNativeDialog
+        )
+        if fname != '':
+            process = subprocess.run(
+                ['pyFAI-drawmask', fname], check=True,
+                stdout=subprocess.PIPE, universal_newlines=True)
+            _ = process.stdout
+
+        mask_fname = f'{os.path.splitext(fname)[0]}-mask.edf'
+        ic(mask_fname)
+        if os.path.exists(mask_fname):
+            ic('file_exists')
+            out_dialog = Qt.QtWidgets.QMessageBox()
+            out_dialog.setText(f'Mask File saved to {mask_fname}')
+            out_dialog.exec_()
 
     def set_image_units(self):
         """Disable/Enable Qz-Qxy option if we are/are not in GI mode"""

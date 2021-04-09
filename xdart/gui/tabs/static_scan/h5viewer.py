@@ -20,7 +20,10 @@ from ...widgets import defaultWidget
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets, QtCore
 
-from icecream import ic
+try:
+    from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
@@ -350,7 +353,7 @@ class H5Viewer(QWidget):
                 if self.update_2d:
                     if int(idx) in self.data_2d.keys():
                         self.arches[int(idx)] = self.data_1d[int(idx)]
-                        self.arches[int(idx)].int_2d = self.data_2d[int(idx)]
+                        self.arches[int(idx)].map_raw, self.arches[int(idx)].int_2d = self.data_2d[int(idx)]
                         ic('loaded arch from memory', idx)
                         idxs_memory.append(int(idx))
                 else:

@@ -21,8 +21,12 @@ from pyqtgraph import Qt
 from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
 
-from icecream import ic
 import gc
+
+try:
+    from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 
 class integratorThread(Qt.QtCore.QThread):
@@ -252,7 +256,7 @@ class fileHandlerThread(Qt.QtCore.QThread):
                         # self.data_1d[int(idx)] = self.arch.int_1d
                         self.data_1d[int(idx)] = self.arch.copy(include_2d=False)
                         if self.update_2d:
-                            self.data_2d[int(idx)] = self.arch.int_2d
+                            self.data_2d[int(idx)] = self.arch.map_raw, self.arch.int_2d
 
                     except KeyError:
                         self.sigUpdate.emit()

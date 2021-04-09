@@ -14,7 +14,6 @@ from matplotlib import cm
 from ..gui_utils import RectViewBox
 from .imageWidgetUI import Ui_Form
 import pyqtgraph_extensions as pgx
-from icecream import ic
 
 # Qt imports
 import pyqtgraph as pg
@@ -22,9 +21,6 @@ from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
 
 QFileDialog = QtWidgets.QFileDialog
-
-ic.configureOutput(prefix='', includeContext=True)
-ic.enable()
 
 
 class XDImageWidget(Qt.QtWidgets.QWidget):
@@ -97,11 +93,11 @@ class XDImageWidget(Qt.QtWidgets.QWidget):
 
 
 class XDImageItem(pgx.ImageItem):
-    def __init__(self, parent=None, raw_image=False):
+    def __init__(self, parent=None, raw=False):
         super().__init__(parent)
 
         self.pos_label = pg.LabelItem(justify='right')
-        self.raw_image = raw_image
+        self.raw = raw
 
     def hoverEvent(self, ev):
         """Show the position, pixel, and value under the mouse cursor.
@@ -119,20 +115,20 @@ class XDImageItem(pgx.ImageItem):
         val = data[i, j]
         ppos = self.mapToParent(pos)
         x, y = ppos.x(), ppos.y()
-        if self.raw_image:
+        if self.raw:
             self.pos_label.setText(f'{x:0.0f}, {y:0.0f} [{val:.2e}]')
         else:
             self.pos_label.setText(f'{x:0.2f}, {y:0.2f} [{val:.2e}]')
 
 
 class pgxImageWidget(Qt.QtWidgets.QWidget):
-    def __init__(self, parent=None, lockAspect=False, raw_image=False):
+    def __init__(self, parent=None, lockAspect=False, raw=False):
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
         # Some options for Raw Images
-        self.raw_image = raw_image
+        self.raw = raw
 
         # Image pane setup
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
@@ -144,7 +140,7 @@ class pgxImageWidget(Qt.QtWidgets.QWidget):
         self.imageViewBox = RectViewBox(lockAspect=lockAspect)
         self.image_plot = self.image_win.addPlot(viewBox=self.imageViewBox)
         # self.imageItem = pgx.ImageItem()
-        self.imageItem = XDImageItem(raw_image=self.raw_image)
+        self.imageItem = XDImageItem(raw=self.raw)
         self.image_plot.addItem(self.imageItem)
 
         # Make Label Item for showing position

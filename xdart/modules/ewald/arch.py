@@ -19,7 +19,10 @@ from xdart import utils
 from xdart.utils.containers import PONI, int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 
-from icecream import ic
+try:
+    from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 
 class EwaldArch():
@@ -502,7 +505,8 @@ class EwaldArch():
         """
         ic()
         arch_copy = EwaldArch(
-            copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
+            # copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
+            copy.deepcopy(self.idx), None,
             copy.deepcopy(self.poni), copy.deepcopy(self.mask),
             copy.deepcopy(self.scan_info), copy.deepcopy(self.ai_args),
             self.file_lock, poni_file=copy.deepcopy(self.poni_file),
@@ -511,9 +515,10 @@ class EwaldArch():
         )
         arch_copy.integrator = copy.deepcopy(self.integrator)
         arch_copy.arch_lock = Condition()
-        arch_copy.map_norm = copy.deepcopy(self.map_norm)
         arch_copy.int_1d = copy.deepcopy(self.int_1d)
         if include_2d:
+            arch_copy.map_raw = copy.deepcopy(self.map_raw)
+            arch_copy.map_norm = copy.deepcopy(self.map_norm)
             arch_copy.int_2d = copy.deepcopy(self.int_2d)
 
         return arch_copy

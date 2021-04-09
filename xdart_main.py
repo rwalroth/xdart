@@ -20,6 +20,7 @@ from pyqtgraph.Qt import QtGui, QtWidgets
 from xdart.gui.mainWindow import Ui_MainWindow
 from xdart.gui import tabs
 
+import multiprocessing
 
 def setup_data_folders(exp_list):
     """
@@ -112,6 +113,7 @@ class Main(QMainWindow):
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
     # app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())

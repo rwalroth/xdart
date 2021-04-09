@@ -24,11 +24,14 @@ import pandas as pd
 import yaml
 import json
 import h5py
-import hdf5plugin
 import fabio
+import hdf5plugin
 
 # This module imports
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
+
+from icecream import ic
+
 
 def write_xye(fname, xdata, ydata):
     """Saves data to an xye file. Variance is the square root of the
@@ -191,12 +194,11 @@ def query(question):
     return input()
 
     
-def get_image_meta_data(meta_file, BL='2-1', rv='all'):
+def get_image_meta_data(meta_file, rv='all'):
     """Get image meta data from pdi/txt files for different beamlines
 
     Args:
         meta_file (str): Meta file name with path
-        BL (str, optional): Beamline. Defaults to '2-1'.
         rv (str, optional): Return values (Counters, motors or all)
 
     Returns:
@@ -207,7 +209,9 @@ def get_image_meta_data(meta_file, BL='2-1', rv='all'):
         data = f.read()
 
     image_meta_data = {}
-    if BL == '2-1':
+    meta_ext = os.path.splitext(meta_file)[1][1:]
+    # if BL == '2-1':
+    if meta_ext == 'pdi':  # Pilatus Image
         data = data.replace('\n', ';')
 
         try:
@@ -218,17 +222,21 @@ def get_image_meta_data(meta_file, BL='2-1', rv='all'):
             motors = re.search('All Motors;(.*);#', data).group(1)
             cts = re.split(';|=', motors)
             Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-        except:
+        except AttributeError:
             ss1 = '# Diffractometer Motor Positions for image;# '
             ss2 = ';# Calculated Detector Calibration Parameters for image:'
 
-            motors = re.search(f'{ss1}(.*){ss2}', data).group(1)
-            cts = re.split(';|=', motors)
-            Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-            Motors['TwoTheta'] = Motors['2Theta']
+            try:
+                motors = re.search(f'{ss1}(.*){ss2}', data).group(1)
+                cts = re.split(';|=', motors)
+                Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+                Motors['TwoTheta'] = Motors['2Theta']
+            except AttributeError:
+                Motors = {'TwoTheta': float(0.0), 'Theta': float(0.0)}
             Counters = {}
-        
-        image_meta_data['epoch'] = data[data.rindex(';')+1:]
+
+        if len(data[data.rindex(';')+1:]) > 0:
+            image_meta_data['epoch'] = data[data.rindex(';')+1:]
 
     else:  # if BL == '11-3':
 
@@ -337,15 +345,19 @@ def read_image_file(fname, orientation='horizontal',
     if 'tif' in fname[-5:]:
         img = np.asarray(io.imread(fname))
     elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
+        ic('reading h5 file', fname, im)
         with h5py.File(fname, mode='r') as f:
-            img = f['entry']['data']['data'][im]
+            img = np.asarray(f['entry']['data']['data'][im], dtype=float)
             img[514:551, :] = np.nan
+
+            # Hot pixel in SSRL Eiger 1M detector
+            img[0, 1029] = np.nan
     elif 'mar3450' in fname[-9:]:
         img = fabio.open(fname).data
     else:
         try:
             img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))
-        except:
+        except ValueError:
             img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_300K))
             
     if return_float:
