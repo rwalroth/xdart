@@ -77,7 +77,7 @@ class EwaldArch():
         """idx: int, name of the arch.
         map_raw: numpy array, raw image data
         poni: PONI object, calibration data
-        mask: None or numpy array, indeces of pixels to mask
+        mask: None or numpy array, indices of pixels to mask
         scan_info: dict, metadata about scan
         ai_args: dict, args to be fed to azimuthalIntegrator constructor
         file_lock: Condition, lock for file access.
@@ -507,7 +507,7 @@ class EwaldArch():
         arch_copy = EwaldArch(
             # copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
             copy.deepcopy(self.idx), None,
-            copy.deepcopy(self.poni), copy.deepcopy(self.mask),
+            copy.deepcopy(self.poni), None,
             copy.deepcopy(self.scan_info), copy.deepcopy(self.ai_args),
             self.file_lock, poni_file=copy.deepcopy(self.poni_file),
             static=copy.deepcopy(self.static), gi=copy.deepcopy(self.gi),
@@ -518,6 +518,7 @@ class EwaldArch():
         arch_copy.int_1d = copy.deepcopy(self.int_1d)
         if include_2d:
             arch_copy.map_raw = copy.deepcopy(self.map_raw)
+            arch_copy.mask = copy.deepcopy(self.mask),
             arch_copy.map_norm = copy.deepcopy(self.map_norm)
             arch_copy.int_2d = copy.deepcopy(self.int_2d)
 

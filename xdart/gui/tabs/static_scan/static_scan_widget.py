@@ -129,8 +129,6 @@ class staticWidget(QWidget):
         self.arches = OrderedDict()
         self.data_1d = OrderedDict()
         self.data_2d = FixSizeOrderedDict(max=10)
-        self.arch_2d = np.zeros(0)
-        # self.shm = shared_memory.SharedMemory()
         self.shm = None
         # self.data_2d_ = np.zeros(0)
 
@@ -322,8 +320,6 @@ class staticWidget(QWidget):
         memory.
         """
         ic()
-        # ic(self.data_2d_, self.arch_2d)
-        ic(self.arch_2d)
         with self.sphere.sphere_lock:
             if self.sphere.name == self.wrangler.scan_name:
                 self.h5viewer.file_thread.queue.put("update_sphere")
@@ -356,13 +352,13 @@ class staticWidget(QWidget):
 
             # if self.arch.idx is None:
             if len(self.arches) == 0:
-                self.integratorTree.ui.apply_mask.setEnabled(False)
-                # self.integratorTree.ui.all1D.setEnabled(False)
-                # self.integratorTree.ui.all2D.setEnabled(False)
+                # self.integratorTree.ui.apply_mask.setEnabled(False)
+                self.integratorTree.ui.integrate1D.setEnabled(False)
+                self.integratorTree.ui.integrate2D.setEnabled(False)
             else:
-                self.integratorTree.ui.apply_mask.setEnabled(True)
-                # self.integratorTree.ui.all1D.setEnabled(True)
-                # self.integratorTree.ui.all2D.setEnabled(True)
+                # self.integratorTree.ui.apply_mask.setEnabled(True)
+                self.integratorTree.ui.integrate1D.setEnabled(True)
+                self.integratorTree.ui.integrate2D.setEnabled(True)
 
             self.metawidget.update()
             # self.integratorTree.update()
@@ -442,7 +438,6 @@ class staticWidget(QWidget):
         """
         ic()
         # if self.sphere.name != name or self.sphere.name == 'null_main':
-        # ic(name, self.sphere.name, self.arch_2d)
         ic(name, self.sphere.name)
         self.h5viewer.dirname = os.path.dirname(fname)
         self.h5viewer.set_file(fname)
@@ -497,9 +492,6 @@ class staticWidget(QWidget):
 
         # i_qChi = np.zeros((1000, 1000), dtype=float)
         # self.shm = shared_memory.SharedMemory(name='arch_2d_data', create=True, size=i_qChi.nbytes)
-        # self.arch_2d = np.ndarray(i_qChi.shape, dtype=i_qChi.dtype, buffer=self.shm.buf)
-        # self.arch_2d[:] = i_qChi[:]
-        # ic(arch_2d)
 
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)

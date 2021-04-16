@@ -9,6 +9,9 @@ import time
 import glob
 import numpy as np
 
+# pyFAI imports
+import fabio
+
 # Qt imports
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
@@ -32,8 +35,10 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 QFileDialog = QtWidgets.QFileDialog
 
-def_poni_file = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
-def_img_file = ''  # '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
+# def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
+# def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
+def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/AgBe.poni'
+def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/RxnE_201902_0_exp0_0001.tif'
 
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
@@ -50,8 +55,10 @@ params = [
         {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
         {'name': 'img_ext', 'title': 'File Type  ', 'type': 'list',
          'values': ['tif', 'raw', 'hdf5', 'h5'], 'value':'tif', 'visible': False},
+        {'name': 'mask_file', 'title': 'Mask File', 'type': 'str', 'value': ''},
+        NamedActionParameter(name='mask_file_browse', title='Browse...'),
     ], 'expanded': True},
-    {'name': 'BG', 'title': 'Background', 'type': 'group', 'children': [
+    {'name': 'BG', 'title': 'Mask & Background', 'type': 'group', 'children': [
         {'name': 'bg_type', 'title': '', 'type': 'list',
          'values': ['Single Bkg File', 'Bkg Directory'], 'value': 'Single Bkg'},
         {'name': 'File', 'title': 'Bkg File', 'type': 'str', 'value': ''},
@@ -177,6 +184,9 @@ class specWrangler(wranglerWidget):
         self.file_filter = self.parameters.child('Signal').child('Filter').value()
 
         # Background
+        self.mask_file = self.parameters.child('Signal').child('mask_file').value()
+
+        # Background
         self.bg_type = self.parameters.child('BG').child('bg_type').value()
         self.bg_file = self.parameters.child('BG').child('File').value()
         self.bg_dir = self.parameters.child('BG').child('Match').child('bg_dir').value()
@@ -206,6 +216,9 @@ class specWrangler(wranglerWidget):
         )
         self.parameters.child('Signal').child('img_dir_browse').sigActivated.connect(
             self.set_img_dir
+        )
+        self.parameters.child('Signal').child('mask_file_browse').sigActivated.connect(
+            self.set_mask_file
         )
         self.parameters.child('BG').child('bg_type').sigValueChanged.connect(
             self.set_bg_type
@@ -240,6 +253,7 @@ class specWrangler(wranglerWidget):
             self.img_dir,
             self.img_ext,
             self.file_filter,
+            self.mask_file,
             self.bg_type,
             self.bg_file,
             self.bg_dir,
@@ -296,6 +310,9 @@ class specWrangler(wranglerWidget):
         fname_dir = get_fname_dir(self.scan_name)
         self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
         self.thread.fname = self.fname
+
+        self.mask_file = self.parameters.child('Signal').child('mask_file').value()
+        self.thread.mask_file = self.mask_file
 
         # Background
         self.bg_type = self.parameters.child('BG').child('bg_type').value()
@@ -439,7 +456,7 @@ class specWrangler(wranglerWidget):
             filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
             f_names = sorted(glob.glob(os.path.join(
                 img_dir, f'{filters}[0-9][0-9][0-9][0-9].{img_ext}')))
-            ic(fnames)
+            ic(f_names)
 
             # Check if metadata file exists
             f_names = [f for f in f_names if self.get_meta_ext(f) or (self.img_ext in ['h5', 'hdf5'])]
@@ -479,6 +496,15 @@ class specWrangler(wranglerWidget):
 
         ic(self.meta_ext)
         return self.meta_ext
+
+    def set_mask_file(self):
+        """Opens file dialogue and sets the mask file
+        """
+        ic()
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        if fname != '':
+            self.parameters.child('Signal').child('mask_file').setValue(fname)
+        self.mask_file = fname
 
     def set_bg_type(self):
         """Change Parameter Names depending on BG Type
@@ -658,6 +684,7 @@ class specThread(wranglerThread):
             img_ext,
             meta_ext,
             file_filter,
+            mask_file,
             bg_type,
             bg_file,
             bg_dir,
@@ -699,6 +726,7 @@ class specThread(wranglerThread):
         self.img_ext = img_ext
         self.meta_ext = meta_ext
         self.file_filter = file_filter
+        self.mask_file = mask_file
         self.bg_type = bg_type
         self.bg_file = bg_file
         self.bg_dir = bg_dir
@@ -731,6 +759,7 @@ class specThread(wranglerThread):
             self.img_ext,
             self.meta_ext,
             self.file_filter,
+            self.mask_file,
             self.bg_type,
             self.bg_file,
             self.bg_dir,
@@ -836,6 +865,7 @@ class specProcess(wranglerProcess):
             img_ext,
             meta_ext,
             file_filter,
+            mask_file,
             bg_type,
             bg_file,
             bg_dir,
@@ -874,6 +904,7 @@ class specProcess(wranglerProcess):
         self.img_ext = img_ext
         self.meta_ext = meta_ext
         self.file_filter = file_filter
+        self.mask_file = mask_file
         self.bg_type = bg_type
         self.bg_file = bg_file
         self.bg_dir = bg_dir
@@ -886,8 +917,8 @@ class specProcess(wranglerProcess):
         self.timeout = timeout
 
         self.user = None
+        self.mask = None
         self.processed = []
-        self.a_rr = np.zeros(0)
 
     def _main(self):
         """Checks for commands in queue, sends back updates through
@@ -977,8 +1008,6 @@ class specProcess(wranglerProcess):
         ic(sphere.name)
 
         # Enter main loop
-        # i = 1
-        # if not self.single_img:
         i = first_img
 
         pause = False
@@ -1028,17 +1057,13 @@ class specProcess(wranglerProcess):
                 arch = EwaldArch(
                     idx, map_raw, poni_file=self.poni_file,
                     scan_info=scan_info, static=True, gi=self.gi,
-                    th_mtr=self.th_mtr,
+                    mask=self.mask, th_mtr=self.th_mtr,
                 )
 
                 # integrate image to 1d and 2d arrays
                 ic(sphere.bai_1d_args, sphere.bai_2d_args)
                 arch.integrate_1d(**sphere.bai_1d_args)
                 arch.integrate_2d(**sphere.bai_2d_args)
-
-                arch_2d_data = arch.int_2d.i_qChi
-                # self.a_rr[:] = arch_2d_data[:]
-                # ic(self.a_rr)
 
                 # Add arch copy to sphere, save to file
                 with self.file_lock:
@@ -1102,6 +1127,9 @@ class specProcess(wranglerProcess):
         else:
             image_meta = {}
         # ic(image_meta)
+
+        # Get Mask
+        self.get_mask()
 
         # Subtract background if any
         bg = self.get_background(image_meta)
@@ -1167,6 +1195,17 @@ class specProcess(wranglerProcess):
         self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
 
         return self.scan_name, self.img_fname, self.fname
+
+    def get_mask(self):
+        """Get mask array from mask file
+        """
+        ic()
+        if (not self.mask_file) or (not os.path.exists(self.mask_file)):
+            self.mask = None
+            return
+
+        self.mask = fabio.open(self.mask_file).data
+        self.mask = np.flatnonzero(self.mask)
 
     def get_background(self, image_meta):
         """Subtract background image if bg_file or bg_dir specified

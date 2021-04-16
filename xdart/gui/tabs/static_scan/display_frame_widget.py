@@ -349,6 +349,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         data -= self.bkg_map_raw
         ic('Subtracted BG', data.shape)
 
+        # Apply Mask
+        arch = self.arches[list(self.arches.keys())[0]]
+        mask = np.unravel_index(arch.mask, data.shape)
+        data[mask] = np.nan
+
         rect = get_rect(np.arange(data.shape[0]), np.arange(data.shape[1]))
 
         self.image_data = (data, rect)
@@ -364,8 +369,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         self.image_widget.image_plot.setLabel("bottom", 'x (Pixels)')
         self.image_widget.image_plot.setLabel("left", 'y (Pixels)')
-
-        return data
 
     def update_binned(self):
         """Updates image plotted in image frame

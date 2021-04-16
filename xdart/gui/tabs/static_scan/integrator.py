@@ -866,8 +866,9 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     @staticmethod
     def run_pyfai_calib():
-        process = subprocess.run(['pyFAI-calib2'], check=True, stdout=subprocess.PIPE, universal_newlines=True)
-        _ = process.stdout
+        # process = subprocess.run(['pyFAI-calib2'], check=True, stdout=subprocess.PIPE, universal_newlines=True)
+        # _ = process.stdout
+        os.system('pyFAI-calib2')
 
     @staticmethod
     def run_pyfai_drawmask():

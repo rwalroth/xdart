@@ -428,7 +428,8 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>9</pointsize>
+                 <family>Arial</family>
+                 <pointsize>13</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -449,7 +450,8 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>9</pointsize>
+                 <family>Arial</family>
+                 <pointsize>13</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -884,7 +886,8 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>9</pointsize>
+                 <family>Arial</family>
+                 <pointsize>13</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -905,7 +908,8 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>9</pointsize>
+                 <family>Arial</family>
+                 <pointsize>13</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -975,6 +979,11 @@
             <height>20</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <family>Arial</family>
+           </font>
+          </property>
           <property name="text">
            <string>Calibrate</string>
           </property>
@@ -982,21 +991,13 @@
         </item>
         <item>
          <widget class="QPushButton" name="get_mask">
+          <property name="font">
+           <font>
+            <family>Arial</family>
+           </font>
+          </property>
           <property name="text">
            <string>Make Mask</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="apply_mask">
-          <property name="maximumSize">
-           <size>
-            <width>120</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Apply Mask</string>
           </property>
          </widget>
         </item>
@@ -1033,7 +1034,6 @@
   <tabstop>advanced2D</tabstop>
   <tabstop>pyfai_calib</tabstop>
   <tabstop>get_mask</tabstop>
-  <tabstop>apply_mask</tabstop>
  </tabstops>
  <resources/>
  <connections/>

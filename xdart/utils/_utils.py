@@ -25,12 +25,10 @@ import yaml
 import json
 import h5py
 import fabio
-import hdf5plugin
+# import hdf5plugin
 
 # This module imports
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
-
-from icecream import ic
 
 
 def write_xye(fname, xdata, ydata):
@@ -345,7 +343,6 @@ def read_image_file(fname, orientation='horizontal',
     if 'tif' in fname[-5:]:
         img = np.asarray(io.imread(fname))
     elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
-        ic('reading h5 file', fname, im)
         with h5py.File(fname, mode='r') as f:
             img = np.asarray(f['entry']['data']['data'][im], dtype=float)
             img[514:551, :] = np.nan
@@ -1042,7 +1039,18 @@ class FixSizeOrderedDict(OrderedDict):
         super().__init__(*args, **kwargs)
 
     def __setitem__(self, key, value):
-        OrderedDict.__setitem__(self, key, value)
         if self._max > 0:
-            if len(self) > self._max:
-                self.popitem(False)
+            if len(self) >= self._max:
+                keys = list(self.keys())
+                try:
+                    k = int(key)
+                    diffs = [abs(int(k_)-k) for k_ in keys]
+                    out_key = keys[diffs.index(max(diffs))]
+                    self.pop(out_key)
+                    # pos = False if (abs(k - keys[0]) > abs(k - keys[-1])) else True
+                    print(k, out_key, keys[0], keys[-1], diffs)
+                except ValueError:
+                    self.popitem(False)
+                    print('ValueError')
+
+        OrderedDict.__setitem__(self, key, value)

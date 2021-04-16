@@ -5,8 +5,6 @@
 # Standard library imorts
 import os
 import traceback
-import numpy as np
-from multiprocessing import shared_memory
 import gc
 
 # This module imports
@@ -335,10 +333,6 @@ class H5Viewer(QWidget):
         print(f'\n*************')
         ic('selected items', self.arch_ids, self.sphere.gi, self.sphere.static)
 
-        # if len(idxs) == 0:
-        #     self.sigUpdate.emit()
-        #     return
-
         if 'No Data' not in self.arch_ids:
             self.arches.clear()
             self.arches.update({int(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi)
@@ -353,7 +347,8 @@ class H5Viewer(QWidget):
                 if self.update_2d:
                     if int(idx) in self.data_2d.keys():
                         self.arches[int(idx)] = self.data_1d[int(idx)]
-                        self.arches[int(idx)].map_raw, self.arches[int(idx)].int_2d = self.data_2d[int(idx)]
+                        self.arches[int(idx)].map_raw, self.arches[int(idx)].mask, self.arches[int(idx)].int_2d =\
+                            self.data_2d[int(idx)]
                         ic('loaded arch from memory', idx)
                         idxs_memory.append(int(idx))
                 else:
@@ -361,10 +356,6 @@ class H5Viewer(QWidget):
                         self.arches[int(idx)] = self.data_1d[int(idx)]
                         ic('loaded arch from memory', idx)
                         idxs_memory.append(int(idx))
-
-                    #if int(idx) in keys:
-                    # self.arches[int(idx)] = self.data_2d[int(idx)]
-                    # self.arches[int(idx)] = data[int(idx)]
 
             self.file_thread.arch_ids = [int(idx) for idx in idxs
                                          if int(idx) not in idxs_memory]

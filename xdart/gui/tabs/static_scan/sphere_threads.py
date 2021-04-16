@@ -245,18 +245,15 @@ class fileHandlerThread(Qt.QtCore.QThread):
                 for idx in self.arch_ids:
                     ic(idx)
                     try:
-                        # self.arch = self.data_2d[int(idx)]
                         # ic('loaded arch from memory', idx)
                         # except KeyError:
                         self.arch = self.arches[int(idx)]
                         self.arch.load_from_h5(file['arches'], load_2d=self.update_2d)
                         ic('loaded arch from file', idx)
-                        # self.parse_unit()
-                        # self.data_2d[int(idx)] = self.arch.copy()
-                        # self.data_1d[int(idx)] = self.arch.int_1d
                         self.data_1d[int(idx)] = self.arch.copy(include_2d=False)
                         if self.update_2d:
-                            self.data_2d[int(idx)] = self.arch.map_raw, self.arch.int_2d
+                            self.data_2d[int(idx)] = self.arch.map_raw, self.arch.mask, self.arch.int_2d
+                        print(self.data_2d.keys())
 
                     except KeyError:
                         self.sigUpdate.emit()
