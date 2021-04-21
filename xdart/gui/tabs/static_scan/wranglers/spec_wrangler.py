@@ -39,8 +39,8 @@ QFileDialog = QtWidgets.QFileDialog
 # def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
 # def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/AgBe.poni'
 # def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/RxnE_201902_0_exp0_0001.tif'
-def_poni_file = '/Users/vthampy/Downloads/Data-selected/Calibrate/LaB6.poni'
-def_img_file = '/Users/vthampy/Downloads/Data-selected/Pt3Sn/Pt3Sn/sone_110Cdegas_scan1_0000.raw'
+def_poni_file = ''  # '/Users/vthampy/Downloads/Data-selected/Calibrate/LaB6.poni'
+def_img_file = ''  # '/Users/vthampy/Downloads/Data-selected/Pt3Sn/Pt3Sn/sone_110Cdegas_scan1_0000.raw'
 
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
