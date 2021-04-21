@@ -330,7 +330,6 @@ class H5Viewer(QWidget):
             self.arch_ids.insert(0, self.arch_ids.pop(self.arch_ids.index('Overall')))
             idxs = self.sphere.arches.index
 
-        print(f'\n*************')
         ic('selected items', self.arch_ids, self.sphere.gi, self.sphere.static)
 
         if 'No Data' not in self.arch_ids:

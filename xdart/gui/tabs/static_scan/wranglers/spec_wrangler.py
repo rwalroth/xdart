@@ -37,8 +37,10 @@ QFileDialog = QtWidgets.QFileDialog
 
 # def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
 # def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
-def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/AgBe.poni'
-def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/RxnE_201902_0_exp0_0001.tif'
+# def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/AgBe.poni'
+# def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/RxnE_201902_0_exp0_0001.tif'
+def_poni_file = '/Users/vthampy/Downloads/Data-selected/Calibrate/LaB6.poni'
+def_img_file = '/Users/vthampy/Downloads/Data-selected/Pt3Sn/Pt3Sn/sone_110Cdegas_scan1_0000.raw'
 
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
@@ -58,7 +60,7 @@ params = [
         {'name': 'mask_file', 'title': 'Mask File', 'type': 'str', 'value': ''},
         NamedActionParameter(name='mask_file_browse', title='Browse...'),
     ], 'expanded': True},
-    {'name': 'BG', 'title': 'Mask & Background', 'type': 'group', 'children': [
+    {'name': 'BG', 'title': 'Background', 'type': 'group', 'children': [
         {'name': 'bg_type', 'title': '', 'type': 'list',
          'values': ['Single Bkg File', 'Bkg Directory'], 'value': 'Single Bkg'},
         {'name': 'File', 'title': 'Bkg File', 'type': 'str', 'value': ''},
@@ -1081,8 +1083,8 @@ class specProcess(wranglerProcess):
                     self.signal_q.put(('TERMINATE', None))
                     break
 
-                # time.sleep(1)
                 i += 1
+                time.sleep(0.5)
 
             # Check if terminate signal sent
             elif flag == 'TERMINATE' and data is None:

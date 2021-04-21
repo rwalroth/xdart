@@ -13,7 +13,7 @@ import os
 # Other imports
 
 # Qt imports
-import qdarkstyle
+# import qdarkstyle
 from pyqtgraph.Qt import QtGui, QtWidgets
 
 # This module imports

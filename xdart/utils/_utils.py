@@ -521,7 +521,6 @@ def data_to_h5(data, grp, key, encoder='yaml', compression='lzf'):
             if np.array(data).shape == ():
                 scalar_to_h5(data, grp, key)
             else:
-                # print(f'_utils > data_to_hdf5: arr_to_h5 data.shape, data.dtype = {np.array(data).shape}, {data.dtype}')
                 arr_to_h5(data, grp, key, compression)
 
         except TypeError:
@@ -732,18 +731,13 @@ def arr_to_h5(data, grp, key, compression):
     if key in grp:
         if check_encoded(grp[key], 'arr'):
             if grp[key].dtype == arr.dtype:
-                # print(f'_utils > arr_to_h5: resizing grp[key] = {grp}, {key}')
                 grp[key].resize(arr.shape)
-                # print(f'_utils > arr_to_h5: resized grp[key] = {grp}, {key}')
                 grp[key][()] = arr[()]
                 return
-        # print(f'_utils > arr_to_h5: deleting grp[key] = {grp}, {key}')
         del(grp[key])
-    # print(f'_utils > arr_to_h5: creating dataset')
     # grp.create_dataset(key, data=arr, compression=compression, chunks=True,
     #                    maxshape=tuple(None for x in arr.shape))
     grp.create_dataset(key, data=arr, maxshape=tuple(None for x in arr.shape))
-    # print(f'_utils > arr_to_h5: created dataset')
     grp[key].attrs['encoded'] = 'arr'
 
 
@@ -797,11 +791,8 @@ def attributes_to_h5(obj, grp, lst_attr=None, priv=False, dpriv=False,
             lst_attr = [x for x in obj.__dict__.keys() if '__' not in x]
         else:
             lst_attr = [x for x in obj.__dict__.keys() if '_' not in x]
-    # print(f'_utils > attributes_to_h5: lst_attr = {lst_attr}')
     for attr in lst_attr:
-        # print(f'_utils > attributes_to_h5: attr = {attr}')
         data = getattr(obj, attr)
-        # print(f'_utils > attributes_to_h5: data, grp = {type(data)}, {grp}')
         data_to_h5(data, grp, attr, **kwargs)
 
 
@@ -1048,9 +1039,32 @@ class FixSizeOrderedDict(OrderedDict):
                     out_key = keys[diffs.index(max(diffs))]
                     self.pop(out_key)
                     # pos = False if (abs(k - keys[0]) > abs(k - keys[-1])) else True
-                    print(k, out_key, keys[0], keys[-1], diffs)
                 except ValueError:
                     self.popitem(False)
-                    print('ValueError')
 
         OrderedDict.__setitem__(self, key, value)
+
+
+import os
+import subprocess
+import sys
+
+
+def launch(program):
+    """launch(program)
+      Run program as if it had been double-clicked in Finder, Explorer,
+      Nautilus, etc. On OS X, the program should be a .app bundle, not a
+      UNIX executable. When used with a URL, a non-executable file, etc.,
+      the behavior is implementation-defined.
+
+      Returns something false (0 or None) on success; returns something
+      True (e.g., an error code from open or xdg-open) or throws on failure.
+      However, note that in some cases the command may succeed without
+      actually launching the targeted program."""
+    if sys.platform == 'darwin':
+        ret = subprocess.call(['open', program])
+    elif sys.platform.startswith('win'):
+        ret = os.startfile(os.path.normpath(program))
+    else:
+        ret = subprocess.call(['xdg-open', program])
+    return ret

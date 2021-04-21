@@ -4,9 +4,15 @@
 """
 
 # Standard library imports
-import os, subprocess
+import os
+# import subprocess
+# import sys
 
-# Other imports
+from xdart.utils.pyFAI_binaries import pyFAI_calib2_main
+from xdart.utils.pyFAI_binaries import pyFAI_drawmask_main
+from xdart.utils.pyFAI_binaries import MaskImageWidgetXdart
+from pyFAI.app.drawmask import postProcessId21
+# from xdart.utils._utils import launch
 
 # Qt imports
 import pyqtgraph as pg
@@ -153,6 +159,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         )
         self.bai_1d_pars = self.parameters.child('Default', 'Integrate 1D')
         self.bai_2d_pars = self.parameters.child('Default', 'Integrate 2D')
+        self.mask_window = None
 
         # UI adjustments
         _translate = Qt.QtCore.QCoreApplication.translate
@@ -866,29 +873,34 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     @staticmethod
     def run_pyfai_calib():
-        # process = subprocess.run(['pyFAI-calib2'], check=True, stdout=subprocess.PIPE, universal_newlines=True)
+        pyFAI_calib2_main()
+        # launch(f'{current_directory}/pyFAI-calib2-xdart')
+        # if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        #     current_directory = sys._MEIPASS
+        #     launch(f'{current_directory}/pyFAI-calib2')
+        # else:
+        #     pyFAI_calib2_main()
+        # process = subprocess.run(['pyFAI-calib2'], check=True, shell=True,
+        #                          stdout=subprocess.PIPE, universal_newlines=True)
         # _ = process.stdout
-        os.system('pyFAI-calib2')
 
-    @staticmethod
-    def run_pyfai_drawmask():
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(
+    # @staticmethod
+    def run_pyfai_drawmask(self):
+        processFile, _ = QFileDialog().getOpenFileName(
             caption='Choose Image File',
             options=QFileDialog.DontUseNativeDialog
         )
-        if fname != '':
-            process = subprocess.run(
-                ['pyFAI-drawmask', fname], check=True,
-                stdout=subprocess.PIPE, universal_newlines=True)
-            _ = process.stdout
+        if not os.path.exists(processFile):
+            print('No Image Chosen')
+            return
 
-        mask_fname = f'{os.path.splitext(fname)[0]}-mask.edf'
-        ic(mask_fname)
-        if os.path.exists(mask_fname):
-            ic('file_exists')
-            out_dialog = Qt.QtWidgets.QMessageBox()
-            out_dialog.setText(f'Mask File saved to {mask_fname}')
-            out_dialog.exec_()
+        self.mask_window = MaskImageWidgetXdart()
+        self.mask_window.setWindowModality(Qt.QtCore.Qt.WindowModal)
+        self.mask_window.show()
+        pyFAI_drawmask_main(self.mask_window, processFile)
+
+        mask = self.mask_window.getSelectionMask()
+        postProcessId21([processFile], mask)
 
     def set_image_units(self):
         """Disable/Enable Qz-Qxy option if we are/are not in GI mode"""

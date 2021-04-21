@@ -253,7 +253,6 @@ class fileHandlerThread(Qt.QtCore.QThread):
                         self.data_1d[int(idx)] = self.arch.copy(include_2d=False)
                         if self.update_2d:
                             self.data_2d[int(idx)] = self.arch.map_raw, self.arch.mask, self.arch.int_2d
-                        print(self.data_2d.keys())
 
                     except KeyError:
                         self.sigUpdate.emit()

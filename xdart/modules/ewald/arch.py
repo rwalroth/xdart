@@ -6,7 +6,6 @@ Created on Mon Aug 26 14:21:58 2019
 """
 import copy
 from threading import Condition
-from multiprocessing import shared_memory
 
 import pyFAI
 import pygix
@@ -343,15 +342,6 @@ class EwaldArch():
 
         q, chi = result.radial, result.azimuthal
         ic(q.min(), q.max(), q.shape, result.__dict__.keys(), self.integrator.wavelength)
-
-        # existing_shm = shared_memory.SharedMemory(name='arch_2d_data')
-        # a_rr = np.ndarray((1000, 1000), dtype=float, buffer=existing_shm.buf)
-
-        # arch_2d_data = self.int_2d.i_qChi
-        # a_rr[:] = arch_2d_data[:]
-
-        # existing_shm.close()
-        # ic(self.a_rr)
 
         return result
 

@@ -10,8 +10,6 @@ import copy
 import os
 import numpy as np
 from collections import OrderedDict
-from multiprocessing import shared_memory
-from multiprocessing.managers import SharedMemoryManager
 import gc
 
 # Qt imports
@@ -45,8 +43,6 @@ QSizePolicy = QtWidgets.QSizePolicy
 wranglers = {
     'SPEC': specWrangler
 }
-
-smm = SharedMemoryManager()
 
 
 def spherelocked(func):
@@ -129,7 +125,6 @@ class staticWidget(QWidget):
         self.arches = OrderedDict()
         self.data_1d = OrderedDict()
         self.data_2d = FixSizeOrderedDict(max=10)
-        self.shm = None
         # self.data_2d_ = np.zeros(0)
 
         self.ui = Ui_Form()
@@ -491,7 +486,6 @@ class staticWidget(QWidget):
         ic()
 
         # i_qChi = np.zeros((1000, 1000), dtype=float)
-        # self.shm = shared_memory.SharedMemory(name='arch_2d_data', create=True, size=i_qChi.nbytes)
 
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
@@ -514,9 +508,6 @@ class staticWidget(QWidget):
         else:
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
-
-        # self.shm.close()
-        # self.shm.unlink()
 
         gc.collect()
 

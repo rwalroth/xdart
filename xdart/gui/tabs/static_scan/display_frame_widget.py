@@ -17,7 +17,6 @@ from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
 import pyqtgraph.exporters
 from pyqtgraph import ROI
-from multiprocessing import shared_memory
 
 # This module imports
 from .ui.displayFrameUI import Ui_Form
@@ -794,7 +793,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 dataset
         """
         ic()
-        intensity = np.asarray(int_data.copy(), dtype=float)
+        try:
+            intensity = np.asarray(int_data.copy(), dtype=float)
+        except AttributeError:
+            return np.zeros((10, 10))
+
         normChannel = self.ui.normChannel.currentText()
         if normChannel.upper() in scan_info.keys():
             intensity /= scan_info[normChannel.upper()]
