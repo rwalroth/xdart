@@ -1,2 +1,2 @@
-from .hvector import HVector
-from .harray import HArray
+from .smvector import SMVector
+from .smarray import SMArray, SMArrayDescriptor

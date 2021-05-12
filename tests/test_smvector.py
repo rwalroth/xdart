@@ -12,11 +12,11 @@ xdart_dir = 'C:/Users/walroth/Documents/repos/xdart/'
 if xdart_dir not in sys.path:
     sys.path.append(xdart_dir)
 
-from xdart.modules.datashare.hvector import HVector
+from xdart.modules.datashare.smvector import SMVector
 from xdart.modules.datashare.typedefs import int_t, char_t, float_t, double_t
 
 
-class TestHVector(unittest.TestCase):
+class TestSMVector(unittest.TestCase):
     # @unittest.skip("passed")
     def test_push(self):
         self._push_test(int_t)
@@ -25,7 +25,7 @@ class TestHVector(unittest.TestCase):
         self._push_test(double_t)
 
     def _push_test(self, dtype):
-        vector = HVector(dtype=dtype)
+        vector = SMVector(dtype=dtype)
         for i in range(20):
             vector.push_back(i)
         self.assertEqual(vector.size(), 20)
@@ -39,8 +39,8 @@ class TestHVector(unittest.TestCase):
         self._named_test(double_t)
 
     def _named_test(self, dtype):
-        vector1 = HVector(dtype=dtype)
-        vector2 = HVector(memory_name=vector1.name())
+        vector1 = SMVector(dtype=dtype)
+        vector2 = SMVector(addr=vector1.name())
         for i in range(0, 10, 2):
             vector1.push_back(i)
             vector2.push_back(i + 1)
@@ -59,7 +59,7 @@ class TestHVector(unittest.TestCase):
     def _manager_test(self, dtype):
         with SharedMemoryManager() as smm:
             address = smm.address
-            vector = HVector(manager_address=address, dtype=dtype)
+            vector = SMVector(manager=address, dtype=dtype)
             for i in range(10):
                 vector.push_back(i)
             vector.__del__()
@@ -72,7 +72,7 @@ class TestHVector(unittest.TestCase):
         self._slice_test(double_t)
 
     def _slice_test(self, dtype):
-        vector = HVector(size=10, dtype=dtype)
+        vector = SMVector(size=10, dtype=dtype)
         test_list = list(range(10))
         vector[:] = test_list[:]
         test_list[:3] = [10, 10, 10]
