@@ -5,7 +5,7 @@ from multiprocessing import RLock
 
 import numpy as np
 
-from ._utils import DummyManager, SMBase
+from .smbase import SMBase
 
 
 def shape_to_bytes(shape):

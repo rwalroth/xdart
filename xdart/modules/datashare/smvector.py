@@ -1,11 +1,6 @@
-import traceback
-from multiprocessing.shared_memory import SharedMemory, ShareableList
-from multiprocessing import shared_memory
-from multiprocessing.managers import SharedMemoryManager
-from multiprocessing import RLock
-
 from .typedefs import int_t, dtype_to_key, key_to_dtype
-from ._utils import none_lesser, none_greater, multiply_none, DummyManager, SMBase
+from ._utils import none_lesser, none_greater, multiply_none
+from .smbase import SMBase
 
 
 class SMVector(SMBase):
