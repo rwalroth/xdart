@@ -3,7 +3,7 @@ from multiprocessing import shared_memory, RLock
 import traceback
 from functools import wraps
 
-from ._utils import DummyManager
+from ._smutils import DummyManager
 
 
 def synced(func):

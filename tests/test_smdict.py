@@ -6,7 +6,7 @@ xdart_dir = 'C:/Users/walroth/Documents/repos/xdart/'
 if xdart_dir not in sys.path:
     sys.path.append(xdart_dir)
 
-from xdart.modules.datashare import SMDict
+from xdart.utils.datashare import SMDict
 
 
 def summed(a, b):

@@ -1,5 +1,5 @@
 from .typedefs import int_t, dtype_to_key, key_to_dtype
-from ._utils import none_lesser, none_greater, multiply_none
+from ._smutils import none_lesser, none_greater, multiply_none
 from .smbase import SMBase
 
 

@@ -1,6 +1,4 @@
 import unittest
-from multiprocessing import shared_memory
-from multiprocessing.managers import SharedMemoryManager
 
 import sys
 
@@ -10,7 +8,7 @@ xdart_dir = 'C:/Users/walroth/Documents/repos/xdart/'
 if xdart_dir not in sys.path:
     sys.path.append(xdart_dir)
 
-from xdart.modules.datashare import SMArray, SMArrayDescriptor
+from xdart.utils.datashare import SMArray, SMArrayDescriptor
 
 
 class DummyArray:

@@ -10,6 +10,43 @@ import h5py
 from .nzarrays import nzarray1d, nzarray2d
 from .. import _utils as utils
 
+
+def parse_unit(result, wavelength):
+    """Helper function to take integrator result and return a two
+    theta and q array regardless of the unit used for integration.
+
+    args:
+        result: result from 1dintegrator
+        wavelength: wavelength for conversion in meters
+
+    returns:
+        int_1d_2theta: two theta array
+        int_1d_q: q array
+    """
+    if wavelength is None:
+        return result.radial, None
+
+    if result.unit == units.TTH_DEG or str(result.unit) == '2th_deg':
+        int_1d_2theta = result.radial
+        int_1d_q = (
+            (4 * np.pi / (wavelength*1e10)) *
+            np.sin(np.radians(int_1d_2theta / 2))
+        )
+    elif result.unit == units.Q_A or str(result.unit) == 'q_A^-1':
+        int_1d_q = result.radial
+        int_1d_2theta = (
+            2*np.degrees(
+                np.arcsin(
+                    int_1d_q *
+                    (wavelength * 1e10) /
+                    (4 * np.pi)
+                )
+            )
+        )
+    # TODO: implement other unit options for unit
+    return int_1d_2theta, int_1d_q
+
+
 class int_1d_data:
     """Container for 1-dimensional integration data returned by pyFAI.
     
@@ -52,7 +89,7 @@ class int_1d_data:
             result: object returned by AzimuthalIntegrator
             wavelength: float, energy of the beam in meters
         """
-        self.ttheta, self.q = self.parse_unit(
+        self.ttheta, self.q = parse_unit(
             result, wavelength)
 
         self.pcount = result._count
@@ -66,41 +103,6 @@ class int_1d_data:
         else:
             self.sigma = result.sigma / monitor
             self.sigma_raw = ((result._count * result.sigma)**2) / (monitor**2)
-    
-    def parse_unit(self, result, wavelength):
-        """Helper function to take integrator result and return a two
-        theta and q array regardless of the unit used for integration.
-
-        args:
-            result: result from 1dintegrator
-            wavelength: wavelength for conversion in meters
-
-        returns:
-            int_1d_2theta: two theta array
-            int_1d_q: q array
-        """
-        if wavelength is None:
-            return result.radial, None
-
-        if result.unit == units.TTH_DEG or str(result.unit) == '2th_deg':
-            int_1d_2theta = result.radial
-            int_1d_q = (
-                (4 * np.pi / (wavelength*1e10)) *
-                np.sin(np.radians(int_1d_2theta / 2))
-            )
-        elif result.unit == units.Q_A or str(result.unit) == 'q_A^-1':
-            int_1d_q = result.radial
-            int_1d_2theta = (
-                2*np.degrees(
-                    np.arcsin(
-                        int_1d_q *
-                        (wavelength * 1e10) /
-                        (4 * np.pi)
-                    )
-                )
-            )
-        # TODO: implement other unit options for unit
-        return int_1d_2theta, int_1d_q
 
     def to_hdf5(self, grp, compression=None):
         """Saves data to hdf5 file.

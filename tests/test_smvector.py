@@ -1,5 +1,4 @@
 import unittest
-from multiprocessing import shared_memory
 from multiprocessing.managers import SharedMemoryManager
 
 # add xdart to path
@@ -12,8 +11,8 @@ xdart_dir = 'C:/Users/walroth/Documents/repos/xdart/'
 if xdart_dir not in sys.path:
     sys.path.append(xdart_dir)
 
-from xdart.modules.datashare.smvector import SMVector
-from xdart.modules.datashare.typedefs import int_t, char_t, float_t, double_t
+from xdart.utils.datashare import SMVector
+from xdart.utils.datashare.typedefs import int_t, char_t, float_t, double_t
 
 
 class TestSMVector(unittest.TestCase):
