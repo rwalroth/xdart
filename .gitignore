@@ -122,3 +122,5 @@ xdart/pySSRL_bServer/bServer.lnk
 *.srctrlbm
 *.srctrldb
 *.srctrlprj
+.idea
+.idea/*
