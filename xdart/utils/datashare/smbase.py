@@ -83,7 +83,6 @@ class SMBase:
                 self._shm_addr = self._shl[0]
         return updated
 
-    @synced
     def _recap(self, cap: int):
         if cap > self._shm.size:
             new_shm = self._manager.SharedMemory(size=int(cap))
