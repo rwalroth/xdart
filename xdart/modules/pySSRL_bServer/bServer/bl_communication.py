@@ -8,8 +8,9 @@ import logging
 from logging import info, warning, critical, debug
 import asyncio
 
-from bServer.BL_Error import *
-from bServer.useful_func import *
+sys.path.append('C:\\Users\\Public\\repos\\xdart')
+from xdart.modules.pySSRL_bServer.bServer.BL_Error import *
+from xdart.modules.pySSRL_bServer.bServer.useful_func import *
 
 class BL_Communication():
     """Different communication protocals can be added and extended through this class. A few base functions like writeCommand and readResponse should not depend on the communication protocal and will be implemented here."""
@@ -227,8 +228,6 @@ class BL_SPEC(BL_Communication):
         except:
             critical("write: hmmmm.... critical error in write: ",  sys.exc_info()[0])
             raise
-        
-        
             
     def close(self):
         """Just close the socket and set the connected property to false."""
@@ -244,8 +243,5 @@ class BL_SPEC(BL_Communication):
 
     def __del__(self):
         """Cleanup the beamline object. Basically, just make sure the socket connection is closed."""
-        debug("called __del__ on beamline interactor")
+        # debug("called __del__ on beamline interactor")
         self.close()
-        
-        
-        

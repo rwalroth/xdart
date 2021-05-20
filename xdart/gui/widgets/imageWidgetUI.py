@@ -80,3 +80,13 @@ class Ui_Form(object):
         self.cmapBox.setItemText(10, _translate("Form", "cyclic"))
         self.cmapBox.setItemText(11, _translate("Form", "greyclip"))
         self.logButton.setText(_translate("Form", "Log"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Form = QtWidgets.QWidget()
+    ui = Ui_Form()
+    ui.setupUi(Form)
+    Form.show()
+    sys.exit(app.exec_())

@@ -6,10 +6,14 @@
 # Standard library imports
 import time
 import sys
+import os
 
 # Other imports
 import numpy as np
 import re
+from datetime import datetime
+from pathlib import Path
+from collections import OrderedDict
 
 from skimage import io
 import scipy
@@ -20,10 +24,10 @@ import pandas as pd
 import yaml
 import json
 import h5py
-
+import fabio
+# import hdf5plugin
 
 # This module imports
-from lmfit.models import LinearModel, GaussianModel, ParabolicModel
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
 
 
@@ -94,6 +98,7 @@ def find_between( s, first, last ):
     except ValueError:
         return ""
 
+
 def find_between_r( s, first, last ):
     """find last occurence of substring in string s
      between two substrings (first and last)
@@ -107,11 +112,86 @@ def find_between_r( s, first, last ):
         str: substring between first and last
     """
     try:
-        start = s.rindex( first ) + len( first )
-        end = s.rindex( last, start )
+        start = s.rindex(first) + len(first)
+        end = s.rindex(last, start)
         return s[start:end]
     except ValueError:
         return ""
+
+
+def get_fname_dir(fname):
+    """
+    Returns directory on local drive to save temporary h5 files in
+
+    Args:
+        fname: {str} Name of scan name used to create subdirectory
+
+    Returns:
+        path: {str} Path where h5 file is saved
+    """
+    home_path = str(Path.home())
+    today = datetime.today()
+    date = str(today.date())
+
+    path = os.path.join(home_path, 'xdart_processed_data', date, fname)
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+    return path
+
+
+def split_file_name(fname):
+    """Splits filename to get directory, file root and extension
+
+    Arguments:
+        fname {str} -- full image file name with path
+    """
+    directory = os.path.dirname(fname)
+    root, ext = os.path.splitext(os.path.basename(fname))
+
+    if len(ext) > 0:
+        if ext[0] == '.':
+            ext = ext[1:]
+
+    return directory, root, ext
+
+
+def get_scan_name(fname):
+    """Splits filename to get scan name
+
+    Arguments:
+        fname {str} -- full image file name with path
+    Returns:
+        scan_name {str}
+        nImage {int}
+    """
+    directory, root, ext = split_file_name(fname)
+    try:
+        first_img = root[root.rindex('_') + 1:]
+        first_img = int(first_img)
+        root = root[:root.rindex('_')]
+    except ValueError:
+        pass
+
+    return root
+
+
+def get_img_number(fname):
+    """Splits filename to get scan name and image number
+
+    Arguments:
+        fname {str} -- full image file name with path
+    Returns:
+        scan_name {str}
+        nImage {int}
+    """
+    directory, root, ext = split_file_name(fname)
+    try:
+        first_img = root[root.rindex('_') + 1:]
+        first_img = int(first_img)
+    except ValueError:
+        first_img = None
+
+    return first_img
 
 
 def query(question):
@@ -122,6 +202,79 @@ def query(question):
     return input()
 
     
+def get_image_meta_data(meta_file, rv='all'):
+    """Get image meta data from pdi/txt files for different beamlines
+
+    Args:
+        meta_file (str): Meta file name with path
+        rv (str, optional): Return values (Counters, motors or all)
+
+    Returns:
+        [dict]: Dictionary with all the meta data
+    """
+
+    with open(meta_file, 'r') as f:
+        data = f.read()
+
+    image_meta_data = {}
+    meta_ext = os.path.splitext(meta_file)[1][1:]
+    # if BL == '2-1':
+    if meta_ext == 'pdi':  # Pilatus Image
+        data = data.replace('\n', ';')
+
+        try:
+            counters = re.search('All Counters;(.*);;# All Motors', data).group(1)
+            cts = re.split(';|=', counters)
+            Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+
+            motors = re.search('All Motors;(.*);#', data).group(1)
+            cts = re.split(';|=', motors)
+            Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+        except AttributeError:
+            ss1 = '# Diffractometer Motor Positions for image;# '
+            ss2 = ';# Calculated Detector Calibration Parameters for image:'
+
+            try:
+                motors = re.search(f'{ss1}(.*){ss2}', data).group(1)
+                cts = re.split(';|=', motors)
+                Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+                Motors['TwoTheta'] = Motors['2Theta']
+            except AttributeError:
+                Motors = {'TwoTheta': float(0.0), 'Theta': float(0.0)}
+            Counters = {}
+
+        if len(data[data.rindex(';')+1:]) > 0:
+            image_meta_data['epoch'] = data[data.rindex(';')+1:]
+
+    else:  # if BL == '11-3':
+
+        counters = re.search('# Counters\n(.*)\n', data).group(1)
+        cts = re.split(',|=', counters)
+        Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+
+        motors = re.search('# Motors\n(.*)\n', data).group(1)
+        cts = re.split(',|=', motors)
+        Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+        
+        # image_meta_data['User'] = (data[data.index('User: ')+5: data.index(', time')]).strip()
+        # image_meta_data['Time'] = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
+        Time = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
+        
+        # d = datetime.strptime(image_meta_data['Time'], "%a %b %d %H:%M:%S %Y")
+        d = datetime.strptime(Time, "%a %b %d %H:%M:%S %Y")
+        image_meta_data['epoch'] = time.mktime(d.timetuple())
+
+    image_meta_data.update(Counters)
+    image_meta_data.update(Motors)
+
+    if rv == 'Counters':
+        return Counters
+    elif rv == 'Motors':
+        return Motors
+
+    return image_meta_data
+
+
 def get_from_pdi(pdi_file):
     """Get motor and counter names and values from PDI file
 
@@ -173,40 +326,58 @@ def get_motor_val(pdi_file, motor):
     return Motors[motor]
 
 
-def read_image_file(fname, orientation='horizontal', flip=False,
-                    shape_100K=(195, 487), shape_300K=(195,1475),
-                    return_float=False, verbose=False):
+def read_image_file(fname, orientation='horizontal',
+                    flip=False, fliplr=False, transpose=False,
+                    shape_100K=(195, 487), shape_300K=(195, 1475),
+                    return_float=False, im=0, verbose=False):
     """Read image file and return numpy array
 
     Args:
         fname (str): File Name with path
-        orientation (str, optional): Orientation of detector. Defaults to 'horizontal'.
-        flip (bool, optional): Flag to flip the image (required by pyFAI at times). Defaults to False.
+        orientation (str, optional): Orientation of detector. Options: 'horizontal', 'vertical'. Defaults to 'horizontal'.
+        flip (bool, optional): Flag to flip the image up-down (required by pyFAI at times). Defaults to False.
+        fliplr (bool, optional): Flag to flip the image left-right (required by pyFAI at times). Defaults to False.
+        transpose (bool, optional): Flag to transpose the image (required by pyFAI at times). Defaults to False.
         shape_100K (tuple, optional): Shape of numpy array for Pilatus 100K. Defaults to (195, 487).
         shape_300K (tuple, optional): Shape of numpy array for Pilatus 300K. Defaults to (195,1475).
         return_float (bool, optional): Convert array to float. Defaults to False.
+        im (integer, optional): image number if input is h5 file from Eiger. Defaults to 0
         verbose (bool, optional): Print debug messages. Defaults to False.
 
     Returns:
         ndarray: Image data read into numpy array
     """
-    if verbose: print('Reading image data into numpy array..')
+    if verbose:
+        print('Reading image data into numpy array..')
+
     if 'tif' in fname[-5:]:
         img = np.asarray(io.imread(fname))
+    elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
+        with h5py.File(fname, mode='r') as f:
+            img = np.asarray(f['entry']['data']['data'][im], dtype=float)
+            img[514:551, :] = np.nan
+
+            # Hot pixel in SSRL Eiger 1M detector
+            img[0, 1029] = np.nan
+    elif 'mar3450' in fname[-9:]:
+        img = fabio.open(fname).data
     else:
         try:
             img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))
-        except:
+        except ValueError:
             img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_300K))
             
     if return_float:
-        img = np.asarray(img, np.float)
+        img = np.asarray(img, dtype=float)
         
-    if orientation == 'vertical':
+    if (orientation == 'vertical') or transpose:
         img = img.T
-        
-    if flip: 
+
+    if flip:
         img = np.flipud(img)
+
+    if fliplr:
+        img = np.fliplr(img)
 
     return img
 
@@ -354,7 +525,7 @@ def data_to_h5(data, grp, key, encoder='yaml', compression='lzf'):
     
     elif type(data) == pd.core.frame.DataFrame:
         dataframe_to_h5(data, grp, key, compression)
-    
+
     else:
         try:
             if np.array(data).shape == ():
@@ -574,8 +745,9 @@ def arr_to_h5(data, grp, key, compression):
                 grp[key][()] = arr[()]
                 return
         del(grp[key])
-    grp.create_dataset(key, data=arr, compression=compression, chunks=True,
-                       maxshape=tuple(None for x in arr.shape))
+    # grp.create_dataset(key, data=arr, compression=compression, chunks=True,
+    #                    maxshape=tuple(None for x in arr.shape))
+    grp.create_dataset(key, data=arr, maxshape=tuple(None for x in arr.shape))
     grp[key].attrs['encoded'] = 'arr'
 
 
@@ -860,3 +1032,49 @@ def query_yes_no(question, default="no"):
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "\
                              "(or 'y' or 'n').\n")
+
+
+class FixSizeOrderedDict(OrderedDict):
+    def __init__(self, *args, max=0, **kwargs):
+        self._max = max
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        if self._max > 0:
+            if len(self) >= self._max:
+                keys = list(self.keys())
+                try:
+                    k = int(key)
+                    diffs = [abs(int(k_)-k) for k_ in keys]
+                    out_key = keys[diffs.index(max(diffs))]
+                    self.pop(out_key)
+                    # pos = False if (abs(k - keys[0]) > abs(k - keys[-1])) else True
+                except ValueError:
+                    self.popitem(False)
+
+        OrderedDict.__setitem__(self, key, value)
+
+
+import os
+import subprocess
+import sys
+
+
+def launch(program):
+    """launch(program)
+      Run program as if it had been double-clicked in Finder, Explorer,
+      Nautilus, etc. On OS X, the program should be a .app bundle, not a
+      UNIX executable. When used with a URL, a non-executable file, etc.,
+      the behavior is implementation-defined.
+
+      Returns something false (0 or None) on success; returns something
+      True (e.g., an error code from open or xdg-open) or throws on failure.
+      However, note that in some cases the command may succeed without
+      actually launching the targeted program."""
+    if sys.platform == 'darwin':
+        ret = subprocess.call(['open', program])
+    elif sys.platform.startswith('win'):
+        ret = os.startfile(os.path.normpath(program))
+    else:
+        ret = subprocess.call(['xdg-open', program])
+    return ret
