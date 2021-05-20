@@ -75,6 +75,7 @@ class Main(QMainWindow):
         self.set_tabs()
         #
         self.show()
+        self.resize(1300, 720)
 
     def exit(self):
         try:
@@ -97,6 +98,8 @@ class Main(QMainWindow):
     def openExperiment(self, q):
         if q.text() == 'ttheta_scan':
             if 'ttheta_scan' not in self.tabs:
+                if self.width() < 1300:
+                    self.resize(1300, self.height())
                 self.tabs['ttheta_scan'] = tabs.ttheta_scan.tthetaWidget(local_path=self.tab_paths['ttheta_scan'])
                 self.tabwidget.addTab(self.tabs['ttheta_scan'], 'ttheta_scan')
         elif q.text() == 'static_scan':
@@ -114,9 +117,11 @@ class Main(QMainWindow):
 
 
 if __name__ == '__main__':
+    os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     multiprocessing.freeze_support()
     tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
+    os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     # app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     mw = Main(tab_paths)
     mw.show()

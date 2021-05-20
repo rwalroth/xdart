@@ -35,9 +35,11 @@ class nzarray1d():
         lazy: bool, if True the data attribute is a view of the
             h5py dataset called 'data' in grp
         """
+        self.none_flag = False
         if isinstance(arr, self.__class__):
             if arr.data is None:
                 self._none_array()
+                self.none_flag = True
             else:
                 self.data = np.empty_like(arr.data)
                 self.data[()] = arr.data[()]
@@ -53,6 +55,7 @@ class nzarray1d():
                 self.corners = grp['corners'][()]
                 self.data = grp['data'][()]
         elif arr is None:
+            self.none_flag = True
             self._none_array()
         else:
             self.shape = self.get_shape(arr)

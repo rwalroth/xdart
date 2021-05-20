@@ -13,6 +13,104 @@ from pyqtgraph import Qt
 # This module imports
 from .rangeWidgetUI import Ui_Form
 
+UNITS_STYLE_SHEET = """
+            QComboBox {
+              border: 1px solid #32414B;
+              border-radius: 4px;
+              selection-background-color: #1464A0;
+              padding-left: 4px;
+              padding-right: 4px;
+              /* 4 + 16*2 See scrollbar size */
+              /* Fixes #103, #111 */
+              min-height: 1.5em;
+              /* padding-top: 2px;     removed to fix #132 */
+              /* padding-bottom: 2px;  removed to fix #132 */
+              /* min-width: 75px;      removed to fix #109 */
+              /* Needed to remove indicator - fix #132 */
+            }
+            
+            QComboBox QAbstractItemView {
+              border: 1px solid #32414B;
+              border-radius: 0;
+              background-color: #19232D;
+              selection-background-color: #1464A0;
+            }
+            
+            QComboBox QAbstractItemView:hover {
+              background-color: #19232D;
+              color: #F0F0F0;
+            }
+            
+            QComboBox QAbstractItemView:selected {
+              background: #1464A0;
+              color: #32414B;
+            }
+            
+            QComboBox QAbstractItemView:alternate {
+              background: #19232D;
+            }
+            
+            QComboBox:disabled {
+              background-color: #19232D;
+              color: #787878;
+            }
+            
+            QComboBox:hover {
+              border: 1px solid #148CD2;
+            }
+            
+            QComboBox:focus {
+              border: 1px solid #1464A0;
+            }
+            
+            QComboBox:on {
+              selection-background-color: #1464A0;
+            }
+            
+            QComboBox::indicator {
+              border: none;
+              border-radius: 0;
+              background-color: transparent;
+              selection-background-color: transparent;
+              color: transparent;
+              selection-color: transparent;
+              /* Needed to remove indicator - fix #132 */
+            }
+            
+            QComboBox::indicator:alternate {
+              background: #19232D;
+            }
+            
+            QComboBox::item:alternate {
+              background: #19232D;
+            }
+            
+            QComboBox::item:checked {
+              font-weight: bold;
+            }
+            
+            QComboBox::item:selected {
+              border: 0px solid transparent;
+            }
+            
+            QComboBox::drop-down {
+              subcontrol-origin: padding;
+              subcontrol-position: top right;
+              width: 12px;
+              border-left: 1px solid #32414B;
+            }
+            QComboBox::down-arrow {
+              image: url(":/qss_icons/rc/arrow_down_disabled.png");
+              height: 8px;
+              width: 8px;
+            }
+            
+            QComboBox::down-arrow:on, QComboBox::down-arrow:hover, QComboBox::down-arrow:focus {
+              image: url(":/qss_icons/rc/arrow_down.png");
+            }
+        """
+
+
 class rangeWidget(Qt.QtWidgets.QWidget):
     """Widget for storing range parameters. Contains high, low, number
     of points, and step size boxes. Modifying one will modify the others
@@ -82,6 +180,8 @@ class rangeWidget(Qt.QtWidgets.QWidget):
             self.ui.low.setValue(defaults[0])
             self.ui.high.setValue(defaults[1])
             self.ui.points.setValue(defaults[2])
+
+        self.ui.units.setStyleSheet(UNITS_STYLE_SHEET)
     
     def low_changed(self, low):
         """Sets the new minimum for high, moves high to a higher value

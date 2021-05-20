@@ -71,7 +71,10 @@ class MakePONI(Operation):
         """
         base = PONI.from_ponifile(self.inputs['poni_file'])
         for key, val in self.inputs['calib_rotations'].items():
-            r = getattr(base, key) - val
+            try:
+                r = getattr(base, key) - val
+            except TypeError:
+                r = getattr(base, key)
             setattr(base, key, r)
         self.base = base
 

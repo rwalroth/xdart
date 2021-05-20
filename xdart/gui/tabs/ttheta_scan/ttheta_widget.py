@@ -104,6 +104,7 @@ class tthetaWidget(QWidget):
             os.mkdir(dirname)
         self.fname = os.path.join(dirname, 'default.hdf5')
         self.sphere = EwaldSphere('null_main', data_file=self.fname)
+        self.sphere.file_lock = self.file_lock
         self.arch = EwaldArch()
 
         self.ui = Ui_Form()
@@ -179,8 +180,10 @@ class tthetaWidget(QWidget):
             parameters.append(w.parameters)
         self.h5viewer.defaultWidget.set_parameters(parameters)
         self.h5viewer.load_starting_defaults()
-
         self.show()
+
+        self.resize(1300, self.height())
+        self.ui.mainSplitter.setSizes([200,700,400])
         """
         self.timer = Qt.QtCore.QTimer()
         self.timer.timeout.connect(self.clock)
@@ -235,10 +238,12 @@ class tthetaWidget(QWidget):
             self.h5viewer.ui.listScans.setEnabled(False)
             self.h5viewer.set_open_enabled(False)
             self.integratorTree.setEnabled(False)
+            self.displayframe.ui.setMaskButton.setEnabled(False)
 
         elif integrator_running:
             self.h5viewer.ui.listData.setEnabled(True)
             self.integratorTree.setEnabled(False)
+            self.displayframe.ui.setMaskButton.setEnabled(False)
             self.h5viewer.ui.listScans.setEnabled(False)
             self.h5viewer.set_open_enabled(False)
             if same_name or wrangler_running:
@@ -254,6 +259,7 @@ class tthetaWidget(QWidget):
             self.wrangler.enabled(False)
             if same_name:
                 self.integratorTree.setEnabled(False)
+                self.displayframe.ui.setMaskButton.setEnabled(False)
             else:
                 self.integratorTree.setEnabled(True)
 
@@ -262,6 +268,7 @@ class tthetaWidget(QWidget):
             self.h5viewer.ui.listScans.setEnabled(True)
             self.h5viewer.set_open_enabled(True)
             self.integratorTree.setEnabled(True)
+            self.displayframe.ui.setMaskButton.setEnabled(True)
             self.wrangler.enabled(True)
 
     def update_data(self, q):
@@ -412,9 +419,10 @@ class tthetaWidget(QWidget):
         integratorThread
         """
         self.thread_state_changed()
-        self.enable_integration(True)
-        self.h5viewer.set_open_enabled(True)
-        self.update_all()
+        if self.integratorTree.integrator_thread.method in ["bai_1d_SI", "bai_2d_SI"]:
+            self.displayframe.update()
+        else:
+            self.update_all()
         if not self.wrangler.thread.isRunning():
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)

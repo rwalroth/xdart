@@ -12,14 +12,16 @@ from matplotlib import cm
 
 # This module imports
 from ..gui_utils import RectViewBox
+from ..widgets import RangeSliderWidget
+import xdart.utils as ut
 from .imageWidgetUI import Ui_Form
 import pyqtgraph_extensions as pgx
 
 # Qt imports
 import pyqtgraph as pg
+from pyqtgraph import GraphicsLayoutWidget
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets
-
 QFileDialog = QtWidgets.QFileDialog
 
 

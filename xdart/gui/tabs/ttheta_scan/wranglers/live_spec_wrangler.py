@@ -33,6 +33,8 @@ from xdart.modules.pySSRL_bServer.watcher import Watcher
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 from xdart.utils import get_from_pdi
 
+from .spec_wrangler import DETECTOR_DICT, MaskWidget
+
 params = [
     {'name': 'Image Directory', 'type': 'str', 'default': ''},
     NamedActionParameter(name='image_dir_browse', title= 'Browse...'),
@@ -54,6 +56,11 @@ params = [
         {'name': 'Rot2', 'type': 'float', 'value': 0},
         {'name': 'Rot3', 'type': 'float', 'value': 0}
     ]},
+    {'name': 'Detector', 'type': 'list', 'values': [
+            "Pilatus100k"
+        ],
+     'value':'Pilatus100k'},
+    NamedActionParameter(name='set_mask', title= 'Set mask...'),
 
 ]
 
@@ -171,6 +178,21 @@ class liveSpecWrangler(wranglerWidget):
         self.thread.finished.connect(self.finished.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
         self.setup()
+
+        self.mask = None
+        self.mask_widget = MaskWidget()
+        key = self.parameters.child("Detector").value()
+        data = np.zeros(DETECTOR_DICT[key]["shape"])
+        data[0, 0] = 1
+        self.mask_widget.set_data(data.T)
+        self.mask_widget.hide()
+        self.parameters.child('set_mask').sigActivated.connect(
+            self.launch_mask_widget
+        )
+
+        self.mask_widget.newMask.connect(self.set_mask)
+
+        self.setup()
     
     def setup(self):
         """Syncs all attributes of liveSpecThread with parameters
@@ -184,6 +206,7 @@ class liveSpecWrangler(wranglerWidget):
         self.thread.filetypes = self.parameters.child('File Types').value().split()
         self.thread.set_queues() 
         self.thread.pollingperiod = self.parameters.child('Polling Period').value()
+        self.thread.mask = self.mask
     
     def send_command(self):
         """Sends command in command line to spec, and calls
@@ -227,6 +250,22 @@ class liveSpecWrangler(wranglerWidget):
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
         if fname != '':
             self.parameters.child('Calibration PONI File').setValue(fname)
+
+    def set_mask(self, idx, mask):
+        self.mask = np.arange(mask.size)[mask.ravel() == 1]
+        self.thread.mask = self.mask
+
+    def launch_mask_widget(self):
+        key = self.parameters.child("Detector").value()
+        data = np.zeros(DETECTOR_DICT[key]["shape"])
+        data[0, 0] = 1
+        if self.mask is not None:
+            _mask = np.zeros_like(data)
+            _mask.ravel()[self.mask] = 1
+            self.mask_widget.set_data(data.T, base=_mask)
+        else:
+            self.mask_widget.set_data(data.T)
+        self.mask_widget.show()
     
     def _get_mp_inputs(self):
         """Organizes inputs for MakePONI from parameters.
@@ -357,6 +396,7 @@ class liveSpecThread(wranglerThread):
         self.filetypes = filetypes
         self.pollingperiod = pollingperiod
         self.queues = {fp: mp.Queue() for fp in filetypes}
+        self.mask = None
     
     def set_queues(self):
         """Empty all current file queues, recreate them based on current
@@ -395,7 +435,8 @@ class liveSpecThread(wranglerThread):
             queues=self.queues, 
             mp_inputs=self.mp_inputs,
             pdi_dir=self.pdi_dir,
-            out_dir=self.out_dir
+            out_dir=self.out_dir,
+            global_mask = self.mask
         )
         last=False
         integrator.start()
@@ -469,7 +510,7 @@ class liveSpecProcess(wranglerProcess):
             providing updates, and catching errors.
     """
     def __init__(self, command_q, signal_q, sphere_args, fname, file_lock, 
-                 queues, mp_inputs, pdi_dir, out_dir):
+                 queues, mp_inputs, pdi_dir, out_dir, global_mask):
         """command_q: mp.Queue, queue for commands from parent thread.
         signal_q: queue to place signals back to parent thread.
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -486,8 +527,9 @@ class liveSpecProcess(wranglerProcess):
         self.scan_name = None
         self.pdi_dir = pdi_dir
         self.out_dir = out_dir
+        self.mask = global_mask
     
-    def run(self):
+    def _main(self):
         """Main method. Takes in file paths from queues fed by watcher,
         reads in the metadata from pdi file and image data from raw
         file. Integrates data and stores it in hdf5 file.
@@ -527,6 +569,7 @@ class liveSpecProcess(wranglerProcess):
                     ),
                     **self.sphere_args
                 )
+                sphere.global_mask = self.mask
                 sphere.save_to_h5(replace=True)
                 self.signal_q.put(('new_scan', 
                                    (sphere.name, sphere.data_file)))

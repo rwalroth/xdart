@@ -159,22 +159,26 @@ class EwaldArch():
         self.scan_info = {}
         self.integrator = self.setup_integrator()
         self.map_norm = 1
-
         if self.static:
             self.int_1d = int_1d_data_static()
             self.int_2d = int_2d_data_static()
         else:
             self.int_1d = int_1d_data()
             self.int_2d = int_2d_data()
-
-    def get_mask(self):
+            
+    def get_mask(self, global_mask=None):
         ic()
+        if global_mask is not None:
+            mask_idx = np.unique(np.append(self.mask, global_mask))
+            mask_idx.sort()
+        else:
+            mask_idx = self.mask
         mask = np.zeros(self.map_raw.size, dtype=int)
-        mask[self.mask] = 1
+        mask[mask_idx] = 1
         return mask.reshape(self.map_raw.shape)
 
     def integrate_1d(self, numpoints=10000, radial_range=None,
-                     monitor=None, unit=units.TTH_DEG, **kwargs):
+                     monitor=None, unit=units.TTH_DEG, global_mask=None, **kwargs):
         """Wrapper for integrate1d method of AzimuthalIntegrator from pyFAI.
         Returns result and also stores the data in the int_1d object.
 
@@ -209,7 +213,7 @@ class EwaldArch():
                 ic(self.integrator, kwargs, self.map_norm, unit)
                 result = self.integrator.integrate1d(
                     self.map_raw/self.map_norm, numpoints, unit=unit,
-                    radial_range=radial_range, mask=self.get_mask(),
+                    radial_range=radial_range, mask=self.get_mask(global_mask),
                     **kwargs
                 )
 
@@ -233,7 +237,7 @@ class EwaldArch():
                 Intensity, qAxis = self.integrator.integrate_1d(
                     self.map_raw/self.map_norm, numpoints, unit='q_A^-1',
                     p0_range=radial_range, p1_range=kwargs['azimuth_range'],
-                    mask=self.get_mask(), **pg_args
+                    mask=self.get_mask(global_mask), **pg_args
                 )
                 result = Integrate1dResult(qAxis, Intensity)
                 ic(result.__dict__.keys(), self.integrator.wavelength)
@@ -245,11 +249,11 @@ class EwaldArch():
         ic(q.min(), q.max(), q.shape, result.__dict__.keys(), self.integrator.wavelength)
 
         return result
-
+      
     def integrate_2d(self, npt_rad=1000, npt_azim=1000, monitor=None,
                      radial_range=None, azimuth_range=None,
                      x_range=None, y_range=None,
-                     unit=units.TTH_DEG, **kwargs):
+                     unit=units.TTH_DEG, global_mask=None, **kwargs):
         """Wrapper for integrate2d method of AzimuthalIntegrator from pyFAI.
         Returns result and also stores the data in the int_2d object.
 
@@ -300,7 +304,7 @@ class EwaldArch():
             if not self.gi:
                 result = self.integrator.integrate2d(
                     self.map_raw/self.map_norm, npt_rad, npt_azim, unit=unit,
-                    mask=self.get_mask(), radial_range=radial_range,
+                    mask=self.get_mask(global_mask), radial_range=radial_range,
                     azimuth_range=azimuth_range, **kwargs
                 )
                 wavelength = self.poni.wavelength
@@ -327,7 +331,7 @@ class EwaldArch():
                 i_qchi, Q, Chi = self.integrator.transform_image(
                     self.map_raw, process='polar', npt=(npt_rad, npt_azim),
                     x_range=radial_range, y_range=azimuth_range, unit='q_A^-1',
-                    mask=self.get_mask(), all=False, **pg_args)
+                    mask=self.get_mask(global_mask), all=False, **pg_args)
                 result = Integrate2dResult(i_qchi, Q, Chi)
 
                 # Transform to reciprocal (Qz-Qxy) coordinates
@@ -342,7 +346,6 @@ class EwaldArch():
 
         q, chi = result.radial, result.azimuthal
         ic(q.min(), q.max(), q.shape, result.__dict__.keys(), self.integrator.wavelength)
-
         return result
 
     def set_integrator(self, **args):

@@ -31,7 +31,7 @@ import fabio
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
 
 
-def write_xye(fname, xdata, ydata):
+def write_xye(fname, xdata, ydata, variance=None):
     """Saves data to an xye file. Variance is the square root of the
     signal.
     
@@ -40,16 +40,20 @@ def write_xye(fname, xdata, ydata):
         xdata: angle or q data
         ydata: intensity
     """
+    if variance is None:
+        _variance = np.sqrt(ydata)
+    else:
+        _variance = variance
     with open(fname, "w") as file:
         for i in range(0, len(xdata)):
             file.write(
                 str(xdata[i]) + "\t" +
                 str(ydata[i]) + "\t" +
-                str(np.sqrt(ydata[i])) + "\n"
+                str(_variance[i]) + "\n"
             )
 
 
-def write_csv(fname, xdata, ydata):
+def write_csv(fname, xdata, ydata, variance=None):
     """Saves data to a csv file.
     
     args:
@@ -57,9 +61,15 @@ def write_csv(fname, xdata, ydata):
         xdata: angle or q data
         ydata: intensity
     """
+    if variance is None:
+        _variance = np.sqrt(ydata)
+    else:
+        _variance = variance
     with open(fname, 'w') as file:
         for i in range(0, len(xdata)):
-            file.write(str(xdata[i]) + ', ' + str(ydata[i]) + '\n')
+            file.write(str(xdata[i]) + ', ' +
+                       str(ydata[i]) + ', ' +
+                       str(_variance[i]) + '\n')
 
 
 def check_encoded(grp, name):

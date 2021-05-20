@@ -26,6 +26,13 @@ from xdart.utils import catch_h5py_file as catch
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
+from ....widgets import MaskWidget
+
+DETECTOR_DICT = {
+    "Pilatus100k": {
+        "shape": (195, 487)
+    }
+}
 
 params = [
     {'name': 'Scan Number', 'type': 'int', 'value': 0},
@@ -46,7 +53,11 @@ params = [
         {'name': 'Rot2', 'type': 'float', 'value': 0},
         {'name': 'Rot3', 'type': 'float', 'value': 0}
     ]},
-
+    {'name': 'Detector', 'type': 'list', 'values': [
+            "Pilatus100k"
+        ],
+     'value':'Pilatus100k'},
+    NamedActionParameter(name='set_mask', title= 'Set mask...'),
 ]
 
 class specWrangler(wranglerWidget):
@@ -143,6 +154,20 @@ class specWrangler(wranglerWidget):
         self.thread.sigUpdateFile.connect(self.sigUpdateFile.emit)
         self.thread.finished.connect(self.finished.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
+
+        self.mask = None
+        self.mask_widget = MaskWidget()
+        key = self.parameters.child("Detector").value()
+        data = np.zeros(DETECTOR_DICT[key]["shape"])
+        data[0, 0] = 1
+        self.mask_widget.set_data(data.T)
+        self.mask_widget.hide()
+        self.parameters.child('set_mask').sigActivated.connect(
+            self.launch_mask_widget
+        )
+
+        self.mask_widget.newMask.connect(self.set_mask)
+
         self.setup()
 
     def setup(self):
@@ -164,6 +189,7 @@ class specWrangler(wranglerWidget):
         self.thread.timeout = self.parameters.child('Timeout').value()
         self.thread.file_lock = self.file_lock
         self.thread.sphere_args = self.sphere_args
+        self.thread.mask = self.mask
 
     def pause(self):
         if self.thread.isRunning():
@@ -254,6 +280,22 @@ class specWrangler(wranglerWidget):
         """
         self.tree.setEnabled(enable)
         self.ui.startButton.setEnabled(enable)
+
+    def set_mask(self, idx, mask):
+        self.mask = np.arange(self.mask_widget.data.size)[mask.ravel() == 1]
+        self.thread.mask = self.mask
+
+    def launch_mask_widget(self):
+        key = self.parameters.child("Detector").value()
+        data = np.zeros(DETECTOR_DICT[key]["shape"])
+        data[0, 0] = 1
+        if self.mask is not None:
+            _mask = np.zeros_like(data.T)
+            _mask.ravel()[self.mask] = 1
+            self.mask_widget.set_data(data.T, base=_mask)
+        else:
+            self.mask_widget.set_data(data.T)
+        self.mask_widget.show()
                 
 
 class specThread(wranglerThread):
@@ -317,6 +359,7 @@ class specThread(wranglerThread):
         self.lsf_inputs = lsf_inputs
         self.img_dir = img_dir
         self.timeout = timeout
+        self.mask = None
 
     def run(self):
         """Initializes specProcess and watches for new commands from
@@ -333,7 +376,8 @@ class specThread(wranglerThread):
             self.lsf_inputs, 
             self.mp_inputs,
             self.img_dir,
-            self.timeout
+            self.timeout,
+            self.mask
         )
         process.start()
         last = False
@@ -408,7 +452,7 @@ class specProcess(wranglerProcess):
     """
     def __init__(self, command_q, signal_q, sphere_args, scan_name, 
                  scan_number, fname, file_lock, lsf_inputs, mp_inputs,
-                 img_dir, timeout, *args, **kwargs):
+                 img_dir, timeout, mask, *args, **kwargs):
         """command_q: mp.Queue, queue for commands from parent thread.
         signal_q: queue to place signals back to parent thread.
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -444,6 +488,7 @@ class specProcess(wranglerProcess):
         self.user = None
         self.spec_name = None
         self.timeout = timeout
+        self.mask = mask
     
     def _main(self):
         """Checks for commands in queue, sends back updates through
@@ -453,6 +498,7 @@ class specProcess(wranglerProcess):
         # Initialize sphere and save to disk, send update for new scan
         sphere = EwaldSphere(self.scan_name, data_file=self.fname,
                              **self.sphere_args)
+        sphere.global_mask = self.mask
         with self.file_lock:
             sphere.save_to_h5(replace=True)
             self.signal_q.put(('new_scan', None))
@@ -506,8 +552,8 @@ class specProcess(wranglerProcess):
                 )
                 
                 # integrate image to 1d and 2d arrays
-                arch.integrate_1d(**sphere.bai_1d_args)
-                arch.integrate_2d(**sphere.bai_2d_args)
+                arch.integrate_1d(global_mask=self.mask, **sphere.bai_1d_args)
+                arch.integrate_2d(global_mask=self.mask, **sphere.bai_2d_args)
 
                 # Add arch copy to sphere, save to file
                 with self.file_lock:
