@@ -127,6 +127,8 @@ xdart/pySSRL_bServer/bServer.lnk
 *.DS_Store
 
 # .idea files
+.idea
+.idea/*
 .idea/workspace.xml
 .idea/usage*.xml
 .idea/tasks.xml
