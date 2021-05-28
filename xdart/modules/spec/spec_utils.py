@@ -86,6 +86,7 @@ def get_spec_scan(file_path, scan_number, header):
         meta: dict, metadata associated with scan.
     """
     cont = True
+    df = None
     
     with open(file_path, 'r') as file:
         for lin in file:
@@ -101,6 +102,8 @@ def get_spec_scan(file_path, scan_number, header):
                     df, meta = _parse_scan(line, header)
                 elif not cont:
                     df, meta = _parse_scan(line, header, df, meta)
+    if df is None:
+        raise KeyError("Scan not found")
     return df, meta
                     
 def _parse_scan(line, header, df=None, meta=None):
