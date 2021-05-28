@@ -11,7 +11,8 @@ from .nzarrays import nzarray1d, nzarray2d
 from .. import _utils as utils
 
 class int_1d_data:
-    """Container for 1-dimensional integration data returned by pyFAI.
+    """Container for 1-dimensional integration data returned by pyFAI,
+    scanning detector version.
     
     attributes:
         raw: nzarray1d, raw integrated signal
