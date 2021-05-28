@@ -9,11 +9,13 @@ from logging import info, warning, critical, debug
 import asyncio
 import re
 
-from bServer.bl_communication import *
-from bServer.bl_command import *
-from bServer.BL_Error import *
-from bServer.PulpitObject import *
-from bServer.BL_Variables import *
+sys.path.append('C:\\Users\\Public\\repos\\xdart')
+
+from xdart.modules.pySSRL_bServer.bServer.bl_communication import *
+from xdart.modules.pySSRL_bServer.bServer.bl_command import *
+from xdart.modules.pySSRL_bServer.bServer.BL_Error import *
+from xdart.modules.pySSRL_bServer.bServer.PulpitObject import *
+from xdart.modules.pySSRL_bServer.bServer.BL_Variables import *
 
 class BL_Interaction():
     """This class is holds all of the beamline interaction objects and initilizes all of

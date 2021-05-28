@@ -7,7 +7,10 @@ import copy
 import logging
 from logging import info, warning, critical, debug
 import asyncio
-from bServer.BL_Error import *
+
+sys.path.append('C:\\Users\\Public\\repos\\xdart')
+
+from xdart.modules.pySSRL_bServer.bServer.BL_Error import *
 
 
 class BLCommand():

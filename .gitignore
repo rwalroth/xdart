@@ -122,5 +122,18 @@ xdart/pySSRL_bServer/bServer.lnk
 *.srctrlbm
 *.srctrldb
 *.srctrlprj
+
+# Mac temp files
+*.DS_Store
+
+# .idea files
 .idea
 .idea/*
+.idea/workspace.xml
+.idea/usage*.xml
+.idea/tasks.xml
+.idea/shelf/*
+.idea/*/*.iml
+.idea/dictionaries/*
+.idea/libraries/*.xml
+.idea/gradle.xml

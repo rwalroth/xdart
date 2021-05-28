@@ -13,13 +13,14 @@ import os
 # Other imports
 
 # Qt imports
-import qdarkstyle
+# import qdarkstyle
 from pyqtgraph.Qt import QtGui, QtWidgets
-QMainWindow = QtWidgets.QMainWindow
 
 # This module imports
 from xdart.gui.mainWindow import Ui_MainWindow
 from xdart.gui import tabs
+
+import multiprocessing
 
 
 def setup_data_folders(exp_list):
@@ -46,6 +47,9 @@ def setup_data_folders(exp_list):
         if not os.path.isdir(tab_directory):
             os.mkdir(tab_directory)
     return tab_paths
+
+
+QMainWindow = QtWidgets.QMainWindow
 
 
 class Main(QMainWindow):
@@ -86,7 +90,6 @@ class Main(QMainWindow):
         except Exception as e:
             print(e)
 
-
     def set_tabs(self):
         for e in tabs.exp_list:
             self.ui.menuExperiments.addAction(e)
@@ -99,6 +102,10 @@ class Main(QMainWindow):
                     self.resize(1300, self.height())
                 self.tabs['ttheta_scan'] = tabs.ttheta_scan.tthetaWidget(local_path=self.tab_paths['ttheta_scan'])
                 self.tabwidget.addTab(self.tabs['ttheta_scan'], 'ttheta_scan')
+        elif q.text() == 'static_scan':
+            if 'static_scan' not in self.tabs:
+                self.tabs['static_scan'] = tabs.static_scan.staticWidget(local_path=self.tab_paths['static_scan'])
+                self.tabwidget.addTab(self.tabs['static_scan'], 'static_scan')
 
     def closeExperiment(self, q):
         _to_close = self.tabwidget.widget(q)
@@ -111,10 +118,11 @@ class Main(QMainWindow):
 
 if __name__ == '__main__':
     os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
+    multiprocessing.freeze_support()
     tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
     os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
-    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api=os.environ['PYQTGRAPH_QT_LIB']))
+    # app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     mw = Main(tab_paths)
     mw.show()
     app.exec_()

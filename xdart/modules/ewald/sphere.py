@@ -1,14 +1,19 @@
 from threading import Condition, _PyRLock
-import time
 import os
 import pandas as pd
 import numpy as np
 from pyFAI.multi_geometry import MultiGeometry
 
-from .arch import EwaldArch, parse_unit
+from .arch import EwaldArch
 from .arch_series import ArchSeries
 from xdart.utils.containers import int_1d_data, int_2d_data
+from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 from xdart import utils
+
+try:
+    from icecream import ic
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 
 class EwaldSphere():
@@ -53,9 +58,13 @@ class EwaldSphere():
         set_multi_geo: instatiates the multigeometry object, or
             overrides it if it already exists.
     """
+
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
-                 bai_1d_args={}, bai_2d_args={}):
+                 bai_1d_args={}, bai_2d_args={},
+                 static=False, gi=False, th_mtr='th',
+                 overall_raw=0, overall_norm=0, single_img=False,
+                 ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
         data_file: str, path to hdf5 file where data is stored
@@ -67,6 +76,7 @@ class EwaldSphere():
         bai_2d_args: dict, arguments for the integrate2d method of pyFAI
             AzimuthalIntegrator
         """
+        ic()
         super().__init__()
         self.file_lock = Condition()
         if name is None:
@@ -77,10 +87,19 @@ class EwaldSphere():
             self.data_file = name + ".hdf5"
         else:
             self.data_file = data_file
+
+        self.static = static
+        self.gi = gi
+        self.th_mtr = th_mtr
+        self.single_img = single_img
+        ic(self.static, self.gi, self.th_mtr, self.single_img)
+
         if arches:
-            self.arches = ArchSeries(self.data_file, self.file_lock, arches)
+            self.arches = ArchSeries(self.data_file, self.file_lock, arches,
+                                     static=self.static, gi=self.gi)
         else:
-            self.arches = ArchSeries(self.data_file, self.file_lock)
+            self.arches = ArchSeries(self.data_file, self.file_lock,
+                                     static=self.static, gi=self.gi)
         self.scan_data = scan_data
         self.mg_args = mg_args
         self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
@@ -89,8 +108,16 @@ class EwaldSphere():
         self.mgi_1d = int_1d_data()
         self.mgi_2d = int_2d_data()
         self.sphere_lock = Condition(_PyRLock())
-        self.bai_1d = int_1d_data()
-        self.bai_2d = int_2d_data()
+
+        if self.static:
+            self.bai_1d = int_1d_data_static()
+            self.bai_2d = int_2d_data_static()
+        else:
+            self.bai_1d = int_1d_data()
+            self.bai_2d = int_2d_data()
+
+        self.overall_raw = overall_raw
+        self.overall_norm = overall_norm
         self.global_mask = None
 
     def reset(self):
@@ -98,21 +125,29 @@ class EwaldSphere():
         new data is going to be loaded or when a sphere needs to be
         purged of old data.
         """
+        ic()
         with self.sphere_lock:
             self.scan_data = pd.DataFrame()
-            self.bai_1d = int_1d_data()
-            self.bai_2d = int_2d_data()
             self.mgi_1d = int_1d_data()
             self.mgi_2d = int_2d_data()
-            self.arches = ArchSeries(self.data_file, self.file_lock)
+            self.arches = ArchSeries(self.data_file, self.file_lock,
+                                     static=self.static, gi=self.gi)
             self.global_mask = None
-    
+            if self.static:
+                self.bai_1d = int_1d_data_static()
+                self.bai_2d = int_2d_data_static()
+            else:
+                self.bai_1d = int_1d_data()
+                self.bai_2d = int_2d_data()
+            self.overall_raw = 0
+            self.overall_norm = 0
+
     def add_arch(self, arch=None, calculate=True, update=True, get_sd=True,
                  set_mg=True, **kwargs):
         """Adds new arch to sphere.
 
         args:
-            arch: EwaldArch instance, arch to be added. Recommended to 
+            arch: EwaldArch instance, arch to be added. Recommended to
                 always pass a copy of an arch with the arch.copy method
                 or intialize with kwargs
             calculate: whether to run the arch's calculate methods after
@@ -129,6 +164,7 @@ class EwaldSphere():
 
         returns None
         """
+        ic()
         with self.sphere_lock:
             if arch is None:
                 arch = EwaldArch(**kwargs)
@@ -138,6 +174,7 @@ class EwaldSphere():
             arch.file_lock = self.file_lock
             self.arches = self.arches.append(pd.Series(arch, index=[arch.idx]))
             self.arches.sort_index(inplace=True)
+
             if arch.scan_info and get_sd:
                 ser = pd.Series(arch.scan_info, dtype='float64')
                 if list(self.scan_data.columns):
@@ -162,6 +199,10 @@ class EwaldSphere():
                     [a.integrator for a in self.arches], **self.mg_args
                 )
 
+            self.overall_raw += arch.map_raw
+            self.overall_norm += arch.map_raw / arch.map_norm
+            ic(self.overall_raw.shape)
+
     def by_arch_integrate_1d(self, **args):
         """Integrates all arches individually, then sums the results for
         the overall integration result.
@@ -170,17 +211,22 @@ class EwaldSphere():
             bai_1d_args dictionary is also updated with the new args.
             If no args are passed, uses bai_1d_args attribute.
         """
+        ic()
         if not args:
             args = self.bai_1d_args
         else:
             self.bai_1d_args = args.copy()
         with self.sphere_lock:
-            self.bai_1d = int_1d_data()
+            if self.static:
+                self.bai_1d = int_1d_data_static()
+            else:
+                self.bai_1d = int_1d_data()
+
             for arch in self.arches:
                 arch.integrate_1d(global_mask=self.global_mask, **args)
                 self.arches[arch.idx] = arch
                 self._update_bai_1d(arch)
-    
+
     def by_arch_integrate_2d(self, **args):
         """Integrates all arches individually, then sums the results for
         the overall integration result.
@@ -189,12 +235,17 @@ class EwaldSphere():
             bai_2d_args dictionary is also updated with the new args.
             If no args are passed, uses bai_2d_args attribute.
         """
+        ic()
         if not args:
             args = self.bai_2d_args
         else:
             self.bai_2d_args = args.copy()
         with self.sphere_lock:
-            self.bai_2d = int_2d_data()
+            if self.static:
+                self.bai_2d = int_2d_data_static()
+            else:
+                self.bai_2d = int_2d_data()
+
             for arch in self.arches:
                 arch.integrate_2d(global_mask=self.global_mask, **args)
                 self.arches[arch.idx] = arch
@@ -203,12 +254,14 @@ class EwaldSphere():
     def _update_bai_1d(self, arch):
         """helper function to update overall bai variables.
         """
+        ic()
         with self.sphere_lock:
             try:
                 assert list(self.bai_1d.raw.shape) == list(arch.int_1d.raw.shape)
             except (AssertionError, AttributeError):
-                self.bai_1d.raw = np.zeros(arch.int_1d.raw.shape)
-                self.bai_1d.pcount = np.zeros(arch.int_1d.pcount.shape)
+                if not self.static:
+                    self.bai_1d.raw = np.zeros(arch.int_1d.raw.shape)
+                    self.bai_1d.pcount = np.zeros(arch.int_1d.pcount.shape)
                 self.bai_1d.norm = np.zeros(arch.int_1d.norm.shape)
                 self.bai_1d.sigma = np.zeros(arch.int_1d.norm.shape)
                 self.bai_1d.sigma_raw = np.zeros(arch.int_1d.norm.shape)
@@ -219,19 +272,28 @@ class EwaldSphere():
             except AttributeError:
                 pass
             self.save_bai_1d()
-    
+
     def _update_bai_2d(self, arch):
         """helper function to update overall bai variables.
         """
+        ic()
         with self.sphere_lock:
             try:
-                assert list(self.bai_2d.raw.shape) == list(arch.int_2d.raw.shape)
+                # assert self.bai_2d.raw.shape == arch.int_2d.raw.shape
+                if self.static:
+                    assert self.bai_2d.i_qChi.shape == arch.int_2d.i_qChi.shape
+                else:
+                    assert self.bai_2d.norm.shape == arch.int_2d.norm.shape
             except (AssertionError, AttributeError):
-                self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
-                self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
-                self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
-                self.bai_2d.sigma = np.zeros(arch.int_2d.norm.shape)
-                self.bai_2d.sigma_raw = np.zeros(arch.int_2d.norm.shape)
+                if self.static:
+                    self.bai_2d.i_qChi = np.zeros(arch.int_2d.i_qChi.shape)
+                    self.bai_2d.i_tthChi = np.zeros(arch.int_2d.i_tthChi.shape)
+                if not self.static:
+                    self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
+                    self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
+                    self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
+                    self.bai_2d.sigma = np.zeros(arch.int_2d.norm.shape)
+                    self.bai_2d.sigma_raw = np.zeros(arch.int_2d.norm.shape)
             try:
                 self.bai_2d += arch.int_2d
                 self.bai_2d.ttheta = arch.int_2d.ttheta
@@ -248,6 +310,7 @@ class EwaldSphere():
             passed, uses mg_args attribute. Otherwise, updates
             mg_args and uses passed arguments.
         """
+        ic()
         self.mg_args.update(args)
         with self.sphere_lock:
             self.multi_geo = MultiGeometry(
@@ -264,6 +327,7 @@ class EwaldSphere():
         returns:
             result: result from MultiGeometry.integrate1d
         """
+        ic()
         with self.sphere_lock:
             lst_mask = [a.get_mask() for a in self.arches]
             if monitor is None:
@@ -274,6 +338,7 @@ class EwaldSphere():
                     )
                 except Exception as e:
                     print(e)
+                    print('Exception 1')
                     result = self.multi_geo.integrate1d(
                         [a.map_raw for a in self.arches], lst_mask=lst_mask,
                         **kwargs
@@ -287,7 +352,7 @@ class EwaldSphere():
 
             self.mgi_1d.from_result(result, self.multi_geo.wavelength)
         return result
-    
+
     def multigeometry_integrate_2d(self, monitor=None, **kwargs):
         """Wrapper for integrate1d method of MultiGeometry.
 
@@ -298,16 +363,18 @@ class EwaldSphere():
         returns:
             result: result from MultiGeometry.integrate1d
         """
+        ic()
         with self.sphere_lock:
             lst_mask = [a.get_mask() for a in self.arches]
             if monitor is None:
                 try:
                     result = self.multi_geo.integrate2d(
-                        [a.map_raw/a.map_norm for a in self.arches], lst_mask=lst_mask,
+                        [a.map_raw / a.map_norm for a in self.arches], lst_mask=lst_mask,
                         **kwargs
                     )
                 except Exception as e:
                     print(e)
+                    print('Exception 2')
                     result = self.multi_geo.integrate2d(
                         [a.map_raw for a in self.arches], lst_mask=lst_mask,
                         **kwargs
@@ -321,7 +388,7 @@ class EwaldSphere():
 
             self.mgi_2d.from_result(result, self.multi_geo.wavelength)
         return result
-    
+
     def save_to_h5(self, replace=False, *args, **kwargs):
         """Saves data to hdf5 file.
 
@@ -335,6 +402,7 @@ class EwaldSphere():
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
+        ic()
         if replace:
             mode = 'w'
         else:
@@ -343,26 +411,29 @@ class EwaldSphere():
             with utils.catch_h5py_file(self.data_file, mode) as file:
                 self._save_to_h5(file, *args, **kwargs)
 
-    def _save_to_h5(self, grp, arches=None, data_only=False, 
+    def _save_to_h5(self, grp, arches=None, data_only=False,
                     compression='lzf'):
         """Actual function for saving data, run with the file open and
             holding the file_lock.
         """
+        ic()
         with self.sphere_lock:
-            
+            ic(self.static, self.gi)
+
             grp.attrs['type'] = 'EwaldSphere'
-            
+
             if data_only:
                 lst_attr = [
-                    "scan_data", "global_mask"
+                    "scan_data", "global_mask", "overall_raw", "overall_norm",
                 ]
             else:
                 lst_attr = [
                     "scan_data", "global_mask", "mg_args", "bai_1d_args",
-                    "bai_2d_args"
+                    "bai_2d_args", "overall_raw", "overall_norm",
+                    "static", "gi", "th_mtr", "single_img"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
-                                       compression=compression)
+                                   compression=compression)
             for key in ('bai_1d', 'bai_2d', 'mgi_1d', 'mgi_2d'):
                 if key not in grp:
                     grp.create_group(key)
@@ -370,65 +441,73 @@ class EwaldSphere():
             self.bai_2d.to_hdf5(grp['bai_2d'], compression)
             self.mgi_1d.to_hdf5(grp['mgi_1d'], compression)
             self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
-    
-    def load_from_h5(self, replace=True, *args, **kwargs):
+
+    def load_from_h5(self, replace=True, mode='r', *args, **kwargs):
         """Loads data stored in hdf5 file.
-        
+
         args:
             data_only: bool, if True only loads the scan_data attribute
                 and does not load mg_args, bai_1d_args, or bai_2d_args.
             set_mg: bool, if True instantiates the Multigeometry
                 object.
         """
+        ic()
         with self.file_lock:
             if replace:
                 self.reset()
-            with utils.catch_h5py_file(self.data_file, 'r') as file:
+            with utils.catch_h5py_file(self.data_file, mode=mode) as file:
                 self._load_from_h5(file, *args, **kwargs)
 
     def _load_from_h5(self, grp, data_only=False, set_mg=True):
         """Actual function for loading data, run with the file open and
             holding the file_lock.
         """
+        ic()
         with self.sphere_lock:
             if 'type' in grp.attrs:
                 if grp.attrs['type'] == 'EwaldSphere':
                     for arch in grp['arches']:
                         if int(arch) not in self.arches.index:
                             self.arches.index.append(int(arch))
-                    
+
                     self.arches.sort_index(inplace=True)
-                            
+
                     if data_only:
                         lst_attr = [
-                            "scan_data", 
+                            "scan_data", "overall_raw", "overall_norm",
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                     else:
                         lst_attr = [
                             "scan_data", "mg_args", "bai_1d_args",
-                            "bai_2d_args"
+                            "bai_2d_args", "overall_raw", "overall_norm",
+                            "static", "gi", "th_mtr", "single_img"
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                         self._set_args(self.bai_1d_args)
                         self._set_args(self.bai_2d_args)
-                        self._set_args(self.mg_args)
+
+                        if not self.static:
+                            self._set_args(self.mg_args)
                     if "global_mask" in grp:
                         utils.h5_to_attributes(self, grp, ["global_mask"])
                     else:
                         self.global_mask = None
+
                     self.bai_1d.from_hdf5(grp['bai_1d'])
                     self.bai_2d.from_hdf5(grp['bai_2d'])
-                    self.mgi_1d.from_hdf5(grp['mgi_1d'])
-                    self.mgi_2d.from_hdf5(grp['mgi_2d'])
-                    if set_mg:
-                        self.set_multi_geo(**self.mg_args)
-    
+                    if not self.static:
+                        self.mgi_1d.from_hdf5(grp['mgi_1d'])
+                        self.mgi_2d.from_hdf5(grp['mgi_2d'])
+                        if set_mg:
+                            self.set_multi_geo(**self.mg_args)
+            ic(self.static, self.gi)
+
     def set_datafile(self, fname, name=None, keep_current_data=False,
                      save_args={}, load_args={}):
         """Sets the data_file. If file exists and has data, loads in the
         data. Otherwise, creates new file and resets self.
-        
+
         args:
             fname: str, new data file
             name: str or None, new name. If None, name is obtained from
@@ -440,6 +519,7 @@ class EwaldSphere():
             save_args: dict, arguments to be passed to save_to_h5
             load_args: dict, arguments to be passed to load_from_h5
         """
+        ic()
         with self.sphere_lock:
             self.data_file = fname
             if name is None:
@@ -450,32 +530,34 @@ class EwaldSphere():
                 self.save_to_h5(replace=True, **save_args)
             else:
                 if os.path.exists(fname):
+                    ic(load_args, self.static, self.gi)
                     self.load_from_h5(replace=True, **load_args)
                 else:
                     self.reset()
                     self.save_to_h5(replace=True, **save_args)
-            
-    
+
     def save_bai_1d(self, compression='lzf'):
         """Function to save only the bai_1d object.
-        
+
         args:
             compression: str, what compression algorithm to pass to
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
+        ic()
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_1d.to_hdf5(file['bai_1d'], compression=compression)
-    
+
     def save_bai_2d(self, compression='lzf'):
         """Function to save only the bai_2d object.
-        
+
         args:
             compression: str, what compression algorithm to pass to
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
+        ic()
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_2d.to_hdf5(file['bai_2d'], compression=compression)
@@ -483,6 +565,7 @@ class EwaldSphere():
     def _set_args(self, args):
         """Ensures any range args are lists.
         """
+        ic()
         for arg in args:
             if 'range' in arg:
                 if args[arg] is not None:
