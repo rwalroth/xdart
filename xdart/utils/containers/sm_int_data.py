@@ -1,4 +1,5 @@
 import copy
+import warnings
 
 import numpy as np
 
@@ -115,6 +116,7 @@ class SMIntData1D(SMBase):
             self.sigma = result.sigma / monitor
             self.sigma_raw = ((result._count * result.sigma) ** 2) / (monitor ** 2)
 
+    @synced
     def to_hdf5(self, grp, compression=None):
         """Saves data to hdf5 file.
 
@@ -126,13 +128,17 @@ class SMIntData1D(SMBase):
         utils.attributes_to_h5(self, grp, ['raw', 'norm', 'pcount', 'sigma', 'sigma_raw', 'ttheta', 'q'],
                                compression=compression)
 
+    @synced
     def from_hdf5(self, grp):
         """Loads in data from hdf5 file.
 
         args:
             grp: h5py Group or File, object to load data from.
         """
-        utils.h5_to_attributes(self, grp, ['raw', 'pcount', 'norm'])
+        ysize = grp['raw'].size
+        xsize = grp['ttheta'].size
+        self.resize(ysize=ysize, xsize=xsize)
+        utils.h5_to_attributes(self, grp, ['raw', 'pcount', 'norm', 'ttheta', 'q'])
         try:
             utils.h5_to_attributes(self, grp, ['sigma', 'sigma_raw'])
         except KeyError:
@@ -142,4 +148,21 @@ class SMIntData1D(SMBase):
                 data[data > 0] = np.sqrt(data[data > 0]/minval) * minval
             self.sigma = data
             self.sigma_raw = self.sigma * self.pcount
-        utils.h5_to_attributes(self, grp, ['ttheta', 'q'])
+
+    @synced
+    def __iadd__(self, other):
+        if not (self.raw.shape == other.raw.shape and self.ttheta.shape == other.ttheta.shape):
+            raise ValueError("Cannot add SMIntData for differently sized data")
+        if not ((self.ttheta == other.ttheta).all() and (self.q == other.q).all()):
+            warnings.warn(RuntimeWarning("Adding SMIntData objects with mismatched x axis"))
+        self.raw = self.raw + other.raw
+        self.pcount = self.pcount + other.pcount
+        self.sigma_raw = self.sigma_raw + other.sigma_raw
+
+        # out.sigma = self.sigma*self.sigma + other.sigma*other.sigma
+        # out.sigma.data = np.sqrt(out.sigma.data)
+        self.sigma = np.sqrt(self.sigma_raw)
+        self.sigma = self.sigma / self.pcount
+
+        self.norm = self.raw / self.pcount
+        return self
