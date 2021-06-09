@@ -9,8 +9,8 @@ from .. import _utils as utils
 from .int_data import parse_unit, int_1d_data
 
 
-def _get_size(xsize, ysize):
-    length = ysize * 5 + xsize * 2
+def _get_size(full_shape, sub_shape):
+    length = np.product(sub_shape) * 5 + np.product(full_shape) * 2
     itemsize = np.dtype(float).itemsize
     size = int(itemsize * length)
     if size < itemsize * 2:
@@ -27,22 +27,22 @@ def _get_bounds(arr: np.ndarray):
 
 
 class SMIntData1D(SMBase):
-    def __init__(self, addr=None, ysize=0, xsize=0, no_zeros=False, **kwargs):
+    def __init__(self, addr=None, sub_shape=0, full_shape=0, no_zeros=False, **kwargs):
         format_list = [
             '0'*128, # shm address
             int(0), # size
             int(0), # capacity
-            int(ysize), # ysize
-            int(xsize), # xsize
-            int(0), # offset for ydata (NOT IMPLEMENTED SHOULD STAY 0)
+            int(sub_shape), # sub_shape
+            int(full_shape), # full_shape
+            int(0), # offset for sub data (NOT IMPLEMENTED SHOULD STAY 0)
             True # is non_zero being used (NOT IMPLEMENTED SHOULD STAY FALSE)
         ]
-        size = _get_size(xsize, ysize)
+        size = _get_size(full_shape, sub_shape)
         SMBase.__init__(self, addr=addr, format_list=format_list, size=size, **kwargs)
         with self.mutex:
             if addr is None:
-                self._shl[3] = ysize
-                self._shl[4] = xsize
+                self._shl[3] = sub_shape
+                self._shl[4] = full_shape
                 self._shl[5] = 0
                 self._shl[6] = no_zeros
             self.npview = np.ndarray(
@@ -68,29 +68,29 @@ class SMIntData1D(SMBase):
     def __setattr__(self, name, value):
         if name in ['raw', 'norm', 'pcount', 'sigma', 'sigma_raw']:
             if value.shape != self.__dict__[name].shape:
-                self.resize(ysize=value.shape)
+                self.resize(sub_shape=value.shape)
             self.__dict__[name][:] = value[:]
         elif name in ['ttheta', 'q']:
             if value.shape != self.__dict__[name].shape:
-                self.resize(xsize=value.shape)
+                self.resize(full_shape=value.shape)
             self.__dict__[name][:] = value[:]
         else:
             super(SMBase, self).__setattr__(name, value)
 
     @synced
-    def resize(self, ysize=None, xsize=None):
-        if ysize is None:
-            _ysize = self._shl[3]
+    def resize(self, sub_shape=None, full_shape=None):
+        if sub_shape is None:
+            _sub_shape = self._shl[3]
         else:
-            _ysize = ysize
-        if xsize is None:
-            _xsize = self._shl[4]
+            _sub_shape = sub_shape
+        if full_shape is None:
+            _full_shape = self._shl[4]
         else:
-            _xsize = xsize
-        size = _get_size(_xsize, ysize)
+            _full_shape = full_shape
+        size = _get_size(_full_shape, sub_shape)
         self._recap(size)
-        self._shl[3] = ysize
-        self._shl[4] = xsize
+        self._shl[3] = sub_shape
+        self._shl[4] = full_shape
         self._set_arrays()
 
     @synced
@@ -135,9 +135,9 @@ class SMIntData1D(SMBase):
         args:
             grp: h5py Group or File, object to load data from.
         """
-        ysize = grp['raw'].size
-        xsize = grp['ttheta'].size
-        self.resize(ysize=ysize, xsize=xsize)
+        sub_shape = grp['raw'].size
+        full_shape = grp['ttheta'].size
+        self.resize(sub_shape=sub_shape, full_shape=full_shape)
         utils.h5_to_attributes(self, grp, ['raw', 'pcount', 'norm', 'ttheta', 'q'])
         try:
             utils.h5_to_attributes(self, grp, ['sigma', 'sigma_raw'])
@@ -151,18 +151,64 @@ class SMIntData1D(SMBase):
 
     @synced
     def __iadd__(self, other):
-        if not (self.raw.shape == other.raw.shape and self.ttheta.shape == other.ttheta.shape):
-            raise ValueError("Cannot add SMIntData for differently sized data")
-        if not ((self.ttheta == other.ttheta).all() and (self.q == other.q).all()):
-            warnings.warn(RuntimeWarning("Adding SMIntData objects with mismatched x axis"))
-        self.raw = self.raw + other.raw
-        self.pcount = self.pcount + other.pcount
-        self.sigma_raw = self.sigma_raw + other.sigma_raw
+        try:
+            if isinstance(other, self.__class__):
+                other.mutex.acquire()
+                other.check_memory()
+            if not (self.raw.shape == other.raw.shape and self.ttheta.shape == other.ttheta.shape):
+                raise ValueError("Cannot add SMIntData for differently sized data")
+            if not ((self.ttheta == other.ttheta).all() and (self.q == other.q).all()):
+                warnings.warn(RuntimeWarning("Adding SMIntData objects with mismatched x axis"))
+            self.raw = self.raw + other.raw
+            self.pcount = self.pcount + other.pcount
+            self.sigma_raw = self.sigma_raw + other.sigma_raw
 
-        # out.sigma = self.sigma*self.sigma + other.sigma*other.sigma
-        # out.sigma.data = np.sqrt(out.sigma.data)
-        self.sigma = np.sqrt(self.sigma_raw)
-        self.sigma = self.sigma / self.pcount
+            # out.sigma = self.sigma*self.sigma + other.sigma*other.sigma
+            # out.sigma.data = np.sqrt(out.sigma.data)
+            self.sigma = np.sqrt(self.sigma_raw)
+            self.sigma = self.sigma / self.pcount
 
-        self.norm = self.raw / self.pcount
+            self.norm = self.raw / self.pcount
+        finally:
+            if isinstance(other, self.__class__):
+                other.mutex.release()
         return self
+
+
+class SMIntData2D(SMIntData1D):
+    def __init__(self, addr=None, yshape=(0,0), xshape=(0,0), no_zeros=False, **kwargs):
+        sub_shape = np.product(yshape)
+        full_shape = np.product(xshape)
+        format_list = [
+            '0'*128, # shm address
+            int(0), # size
+            int(0), # capacity
+            int(sub_shape), # sub_shape
+            int(full_shape), # full_shape
+            int(yshape[0]),
+            int(xshape[0]),
+            int(0), # offset for ydata (NOT IMPLEMENTED SHOULD STAY 0)
+            int(0), # offset for ydata (NOT IMPLEMENTED SHOULD STAY 0)
+            True # is non_zero being used (NOT IMPLEMENTED SHOULD STAY FALSE)
+        ]
+        size = _get_size(full_shape, sub_shape)
+        SMBase.__init__(self, addr=addr, format_list=format_list, size=size, **kwargs)
+        with self.mutex:
+            if addr is None:
+                self._shl[3] = sub_shape
+                self._shl[4] = full_shape
+                self._shl[5] = yshape[0]
+                self._shl[6] = xshape[0]
+                self._shl[7] = 0
+                self._shl[8] = 0
+                self._shl[9] = no_zeros
+            self.npview = np.ndarray(
+                (self._shl[3] * 5 + self._shl[4] * 3,),
+                dtype=float,
+                buffer=self._shm.buf
+            )
+            self._set_arrays()
+
+    def _set_arrays(self):
+        super()._set_arrays()
+
