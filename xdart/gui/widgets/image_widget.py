@@ -4,7 +4,6 @@
 """
 
 # Standard library imports
-import traceback
 
 # Other imports
 import numpy as np
@@ -12,9 +11,8 @@ from matplotlib import cm
 
 # This module imports
 from ..gui_utils import RectViewBox
-from ..widgets import RangeSliderWidget
-import xdart.utils as ut
 from .imageWidgetUI import Ui_Form
+from .imageWidgetUI_static import Ui_Form as Ui_Form_static
 import pyqtgraph_extensions as pgx
 
 # Qt imports
@@ -126,7 +124,7 @@ class XDImageItem(pgx.ImageItem):
 class pgxImageWidget(Qt.QtWidgets.QWidget):
     def __init__(self, parent=None, lockAspect=False, raw=False):
         super().__init__(parent)
-        self.ui = Ui_Form()
+        self.ui = Ui_Form_static()
         self.ui.setupUi(self)
 
         # Some options for Raw Images

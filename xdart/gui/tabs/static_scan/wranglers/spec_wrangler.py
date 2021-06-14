@@ -35,12 +35,12 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 QFileDialog = QtWidgets.QFileDialog
 
-# def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
-# def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
-# def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/AgBe.poni'
-# def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/1-5/bg_test_data/test/RxnE_201902_0_exp0_0001.tif'
-def_poni_file = ''  # '/Users/vthampy/Downloads/Data-selected/Calibrate/LaB6.poni'
-def_img_file = ''  # '/Users/vthampy/Downloads/Data-selected/Pt3Sn/Pt3Sn/sone_110Cdegas_scan1_0000.raw'
+def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
+def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0004.tif'
+
+if not os.path.exists(def_poni_file):
+    def_poni_file = ''
+    def_img_file = ''
 
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
@@ -387,7 +387,9 @@ class specWrangler(wranglerWidget):
         """Opens file dialogue and sets the calibration file
         """
         ic()
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(
+            filter="PONI (*.poni *.PONI)"
+        )
         if fname != '':
             self.parameters.child('Calibration').child('PONI File').setValue(fname)
         self.poni_file = fname
@@ -423,7 +425,9 @@ class specWrangler(wranglerWidget):
         """Opens file dialogue and sets the spec data file
         """
         ic()
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(
+            filter="Images (*.tiff *.tif *.h5 *.raw *.mar3450)"
+        )
         if fname != '':
             self.parameters.child('Signal').child('File').setValue(fname)
         self.img_fname = fname
@@ -497,6 +501,7 @@ class specWrangler(wranglerWidget):
                 break
 
         ic(self.meta_ext)
+        print(self.meta_ext)
         return self.meta_ext
 
     def set_mask_file(self):
@@ -609,6 +614,7 @@ class specWrangler(wranglerWidget):
             return
         meta_file = f'{os.path.splitext(self.img_fname)[0]}.{self.meta_ext}'
         ic(meta_file)
+        print(meta_file)
 
         if not os.path.exists(meta_file):
             return
@@ -773,6 +779,9 @@ class specThread(wranglerThread):
             self.th_mtr,
             self.timeout
         )
+
+        if (self.poni_file == '') or (self.img_fname == ''):
+            return
 
         process.start()
         last = False
@@ -1124,11 +1133,13 @@ class specProcess(wranglerProcess):
         ic(arr.shape)
 
         meta_file = f'{os.path.splitext(image_file)[0]}.{self.meta_ext}'
+        print('wrangle: ', meta_file)
         if os.path.exists(meta_file):
             image_meta = get_image_meta_data(meta_file)
         else:
             image_meta = {}
         # ic(image_meta)
+        print(image_meta)
 
         # Get Mask
         self.get_mask()

@@ -9,6 +9,7 @@ import os
 # Other imports
 import numpy as np
 from matplotlib import cm
+from pathlib import Path
 
 # Qt imports
 from PyQt5.QtCore import Qt as pyQt
@@ -1004,6 +1005,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         for f in formats:
             ext_filter += "*." + f + " "
 
+        print(ext_filter)
+
         dialog = QFileDialog()
         fname, _ = dialog.getSaveFileName(
             dialog,
@@ -1054,6 +1057,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 fname += f'_{suffix}'
         else:
             path = os.path.dirname(self.sphere.data_file)
+            path = os.path.join(path, self.sphere.name)
+            Path(path).mkdir(parents=True, exist_ok=True)
 
         fname = os.path.join(path, fname)
 

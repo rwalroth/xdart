@@ -133,7 +133,8 @@ def get_fname_dir(fname):
     today = datetime.today()
     date = str(today.date())
 
-    path = os.path.join(home_path, 'xdart_processed_data', date, fname)
+    # path = os.path.join(home_path, 'xdart_processed_data', date, fname)
+    path = os.path.join(home_path, 'xdart_processed_data')
     Path(path).mkdir(parents=True, exist_ok=True)
 
     return path
