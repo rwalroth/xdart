@@ -10,8 +10,46 @@ import h5py
 from .nzarrays import nzarray1d, nzarray2d
 from .. import _utils as utils
 
+
+def parse_unit(result, wavelength):
+    """Helper function to take integrator result and return a two
+    theta and q array regardless of the unit used for integration.
+
+    args:
+        result: result from 1dintegrator
+        wavelength: wavelength for conversion in meters
+
+    returns:
+        int_1d_2theta: two theta array
+        int_1d_q: q array
+    """
+    if wavelength is None:
+        return result.radial, None
+
+    if result.unit == units.TTH_DEG or str(result.unit) == '2th_deg':
+        int_1d_2theta = result.radial
+        int_1d_q = (
+            (4 * np.pi / (wavelength*1e10)) *
+            np.sin(np.radians(int_1d_2theta / 2))
+        )
+    elif result.unit == units.Q_A or str(result.unit) == 'q_A^-1':
+        int_1d_q = result.radial
+        int_1d_2theta = (
+            2*np.degrees(
+                np.arcsin(
+                    int_1d_q *
+                    (wavelength * 1e10) /
+                    (4 * np.pi)
+                )
+            )
+        )
+    # TODO: implement other unit options for unit
+    return int_1d_2theta, int_1d_q
+
+
 class int_1d_data:
-    """Container for 1-dimensional integration data returned by pyFAI.
+    """Container for 1-dimensional integration data returned by pyFAI,
+    scanning detector version.
     
     attributes:
         raw: nzarray1d, raw integrated signal
@@ -45,7 +83,7 @@ class int_1d_data:
         self.sigma = sigma
         self.sigma_raw = sigma_raw
 
-    def from_result(self, result, wavelength, monitor=1):
+    def from_result(self, result, wavelength, monitor=1, unit=None):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
         
         args:
@@ -53,7 +91,7 @@ class int_1d_data:
             wavelength: float, energy of the beam in meters
         """
         self.ttheta, self.q = self.parse_unit(
-            result, wavelength)
+            result, wavelength, unit)
 
         self.pcount = result._count
         self.raw = result._sum_signal/monitor
@@ -67,7 +105,7 @@ class int_1d_data:
             self.sigma = result.sigma / monitor
             self.sigma_raw = ((result._count * result.sigma)**2) / (monitor**2)
     
-    def parse_unit(self, result, wavelength):
+    def parse_unit(self, result, wavelength, unit=None):
         """Helper function to take integrator result and return a two
         theta and q array regardless of the unit used for integration.
 
@@ -82,13 +120,16 @@ class int_1d_data:
         if wavelength is None:
             return result.radial, None
 
-        if result.unit == units.TTH_DEG or str(result.unit) == '2th_deg':
+        if unit is None:
+            unit = result.unit
+
+        if unit == units.TTH_DEG or str(unit) == '2th_deg':
             int_1d_2theta = result.radial
             int_1d_q = (
                 (4 * np.pi / (wavelength*1e10)) *
                 np.sin(np.radians(int_1d_2theta / 2))
             )
-        elif result.unit == units.Q_A or str(result.unit) == 'q_A^-1':
+        elif unit == units.Q_A or str(unit) == 'q_A^-1':
             int_1d_q = result.radial
             int_1d_2theta = (
                 2*np.degrees(
@@ -208,14 +249,14 @@ class int_2d_data(int_1d_data):
         self.sigma = sigma
         self.sigma_raw = sigma_raw
 
-    def from_result(self, result, wavelength, monitor=1):
+    def from_result(self, result, wavelength, monitor=1, unit=None):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
         
         args:
             result: object returned by AzimuthalIntegrator
             wavelength: float, energy of the beam in meters
         """
-        super(int_2d_data, self).from_result(result, wavelength, monitor)
+        super(int_2d_data, self).from_result(result, wavelength, monitor, unit)
         self.chi = result.azimuthal
     
     def from_hdf5(self, grp):
