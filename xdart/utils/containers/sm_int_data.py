@@ -64,9 +64,6 @@ class SMIntData1D(SMBase):
                     arr[i*sub_length:(i + 1)*sub_length]
         for i, attr in enumerate(['ttheta', 'q']):
             start_idx = 5 * self._shl[3] + i * self._shl[4]
-            print(start_idx, start_idx + self._shl[4])
-            print(self.npview)
-            print((self.npview[start_idx:start_idx + self._shl[4]]))
             super(SMBase, self).__setattr__(
                 attr,
                 self.npview[start_idx:start_idx + self._shl[4]]
@@ -87,12 +84,13 @@ class SMIntData1D(SMBase):
         elif name in ['raw', 'norm', 'sigma', 'sigma_raw']:
             offset = self._shl[5]
             shape = self._shl[3]
-            self.__dict__[name][:shape] = value[offset:offset + shape]
+            if shape == value.shape[0]:
+                self.__dict__[name][:] = value[:]
+            else:
+                self.__dict__[name][:shape] = value[offset:offset + shape]
         elif name in ['ttheta', 'q']:
             if value.shape != self.__dict__[name].shape:
-                print(f"before: {(value.shape, self.__dict__[name].shape)}")
                 self.resize(full_shape=value.shape[0])
-                print(f"after: {(value.shape, self.__dict__[name].shape)}")
             self.__dict__[name][:] = value[:]
         else:
             super(SMBase, self).__setattr__(name, value)
@@ -117,13 +115,11 @@ class SMIntData1D(SMBase):
             _full_shape = self._shl[4]
         else:
             _full_shape = full_shape
-        print(f"sub: {_sub_shape}, full: {_full_shape}")
         if _full_shape*2 + _sub_shape*5 != len(self.npview):
             size = _get_size(_full_shape, _sub_shape)
             data_copy = self.npview.copy()
             self._recap(size)
             old_shape = (self._shl[3], self._shl[4])
-            print(old_shape)
             self._shl[3] = int(_sub_shape)
             self._shl[4] = int(_full_shape)
             self.npview = np.ndarray(
@@ -131,7 +127,6 @@ class SMIntData1D(SMBase):
                 dtype=float,
                 buffer=self._shm.buf
             )
-            print(self._shl[3], self._shl[4])
             self._set_arrays(data_copy, *old_shape)
 
     @synced
@@ -180,10 +175,11 @@ class SMIntData1D(SMBase):
         args:
             grp: h5py Group or File, object to load data from.
         """
-        sub_shape = grp['raw'].size
+        offset, sub_shape = self._get_offset(grp['pcount'])
         full_shape = grp['ttheta'].size
-        self.resize(sub_shape=sub_shape, full_shape=full_shape)
-        utils.h5_to_attributes(self, grp, ['raw', 'pcount', 'norm', 'ttheta', 'q'])
+        self.resize(sub_shape=sub_shape[0], full_shape=full_shape)
+        self._shl[5] = int(offset)
+        utils.h5_to_attributes(self, grp, ['pcount', 'raw', 'norm', 'ttheta', 'q'])
         try:
             utils.h5_to_attributes(self, grp, ['sigma', 'sigma_raw'])
         except KeyError:
@@ -198,6 +194,12 @@ class SMIntData1D(SMBase):
         arr[self._shl[5]:self._shl[5] + self._shl[3]] = getattr(self, key)[()]
 
     @synced
+    def full(self, key):
+        arr = np.zeros(self._shl[4])
+        self._get_full(arr, key)
+        return arr
+
+    @synced
     def __iadd__(self, other):
         if self.ttheta.shape != other.ttheta.shape:
             raise ValueError("Cannot add SMIntData for differently sized data")
@@ -208,19 +210,19 @@ class SMIntData1D(SMBase):
             if not ((self.ttheta == other.ttheta).all() and (self.q == other.q).all()):
                 warnings.warn(RuntimeWarning("Adding SMIntData objects with mismatched x axis"))
 
-            _temp_self = np.zeros(self._shl[4])
-            _temp_other = np.zeros(self._shl[4])
+            self_arrs = {}
+            other_arrs = {}
             for key in ("pcount", "raw", "sigma_raw"):
-                self._get_full(_temp_self, key)
+                self_arrs[key] = self.full(key)
                 if isinstance(other, self.__class__):
-                    _temp_other[()] = 0
-                    other._get_full(_temp_other, key)
+                    other_arrs[key] = other.full(key)
                 elif isinstance(other, int_1d_data):
-                    _temp_other = getattr(other, key).full()
+                    other_arrs[key] = getattr(other, key).full()
                 else:
-                    _temp_other = getattr(other, key)
-                self.__setattr__(key, _temp_other + _temp_self)
-                _temp_self[()] = 0
+                    other_arrs[key] = getattr(other, key)
+
+            for key in ("pcount", "raw", "sigma_raw"):
+                self.__setattr__(key, self_arrs[key] + other_arrs[key])
 
             # out.sigma = self.sigma*self.sigma + other.sigma*other.sigma
             # out.sigma.data = np.sqrt(out.sigma.data)
