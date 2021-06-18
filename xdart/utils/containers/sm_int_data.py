@@ -1,6 +1,7 @@
 import copy
 import warnings
 
+import h5py
 import numpy as np
 
 from ..datashare import SMBase, synced, locked
@@ -138,7 +139,7 @@ class SMIntData1D(SMBase):
             wavelength: float, energy of the beam in meters
         """
         full_length = len(result.radial)
-        offset, sub_length = self._get_offset(result._sum_signal)
+        offset, sub_length = self._get_offset(result._count)
         self.resize(sub_length[0], full_length)
 
         self.ttheta, self.q = parse_unit(
@@ -157,7 +158,7 @@ class SMIntData1D(SMBase):
             self.sigma_raw = utils.div0(((result._count * result.sigma) ** 2), (monitor ** 2))
 
     @synced
-    def to_hdf5(self, grp, compression=None):
+    def to_hdf5(self, grp: h5py.Group, compression=None):
         """Saves data to hdf5 file.
 
         args:
@@ -165,6 +166,11 @@ class SMIntData1D(SMBase):
             compression: str, compression algorithm to use. See h5py
                 documentation.
         """
+        grp.attrs["encoded"] = "SMIntData1D"
+        grp.attrs["sub_shape"] = int(self._shl[3])
+        grp.attrs["full_shape"] = int(self._shl[4])
+        grp.attrs["offset"] = int(self._shl[5])
+        grp.attrs["no_zeros"] = int(self._shl[6])
         utils.attributes_to_h5(self, grp, ['raw', 'norm', 'pcount', 'sigma', 'sigma_raw', 'ttheta', 'q'],
                                compression=compression)
 
@@ -175,11 +181,18 @@ class SMIntData1D(SMBase):
         args:
             grp: h5py Group or File, object to load data from.
         """
-        offset, sub_shape = self._get_offset(grp['pcount'])
-        full_shape = grp['ttheta'].size
-        self.resize(sub_shape=sub_shape[0], full_shape=full_shape)
+        self._shl[6] = bool(grp.attrs["no_zeros"])
+        offset = grp.attrs["offset"]
+        sub_shape = grp.attrs["sub_shape"]
+        full_shape = grp.attrs["full_shape"]
+        self.resize(sub_shape=sub_shape, full_shape=full_shape)
         self._shl[5] = int(offset)
-        utils.h5_to_attributes(self, grp, ['pcount', 'raw', 'norm', 'ttheta', 'q'])
+        for i, attr in enumerate(['raw', 'pcount', 'norm']):
+            start_idx = i*self._shl[3]
+            self.npview[start_idx:start_idx + self._shl[3]] = grp[attr][:]
+        for i, attr in enumerate(['ttheta', 'q']):
+            start_idx = 5 * self._shl[3] + i * self._shl[4]
+            self.npview[start_idx:start_idx + self._shl[4]] = grp[attr][:]
         try:
             utils.h5_to_attributes(self, grp, ['sigma', 'sigma_raw'])
         except KeyError:

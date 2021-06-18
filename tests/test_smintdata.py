@@ -1,8 +1,10 @@
 import unittest
 from multiprocessing.managers import SharedMemoryManager
+import tempfile
 
 from pyFAI import units
 import numpy as np
+import h5py
 
 # add xdart to path
 import sys
@@ -54,14 +56,15 @@ class TestSMIntData1D(unittest.TestCase):
         self.assertEqual(intdata2._shl[4], 1000)
 
     def test_from_result(self):
-        for key in ['raw', 'pcount', 'sigma', 'norm']:
-            self.assertTrue((self.sm_intdata.full(key) == getattr(self.old_intdata, key).full()).all())
+        self._check_old_sm_equal()
 
         intdata = SMIntData1D(no_zeros=False)
         intdata.from_result(self.result, wavelength=1e-10)
 
-        for key in ['raw', 'pcount', 'sigma', 'norm']:
+        for key in ['raw', 'pcount', 'sigma', 'norm', 'sigma_raw']:
             self.assertTrue((intdata.full(key) == getattr(self.old_intdata, key).full()).all())
+        for key in ['ttheta', 'q']:
+            self.assertTrue((getattr(intdata, key) == getattr(self.old_intdata, key)).all())
 
     def test_addition(self):
         result2 = make_result(1000, 100, 150)
@@ -75,10 +78,26 @@ class TestSMIntData1D(unittest.TestCase):
         self.sm_intdata += sm_intdata2
         self.old_intdata += old_intdata2
 
-        for key in ['raw', 'pcount', 'sigma', 'norm']:
-            self.assertTrue((self.sm_intdata.full(key) == getattr(self.old_intdata, key).full()).all())
+        self._check_old_sm_equal()
 
-    @unittest.skip("Not implemented")
+    def _check_old_sm_equal(self):
+        for key in ['raw', 'pcount', 'sigma', 'norm', 'sigma_raw']:
+            self.assertTrue((self.sm_intdata.full(key) == getattr(self.old_intdata, key).full()).all())
+        for key in ['ttheta', 'q']:
+            self.assertTrue((getattr(self.sm_intdata, key) == getattr(self.old_intdata, key)).all())
+
+    # @unittest.skip("Not implemented")
     def test_hdf5(self):
         # TODO: implement test for hdf5 saving
-        pass
+        with tempfile.TemporaryFile() as file:
+            with h5py.File(file, 'w') as hfile:
+                self.sm_intdata.to_hdf5(hfile)
+                read_intdata = SMIntData1D()
+                read_intdata.from_hdf5(hfile)
+                for i, val in enumerate(self.sm_intdata._shl):
+                    if i > 0:
+                        self.assertEqual(val, read_intdata._shl[i])
+        for key in ['raw', 'pcount', 'sigma', 'norm', 'sigma_raw']:
+            self.assertTrue((self.sm_intdata.full(key) == read_intdata.full(key)).all())
+        for key in ['ttheta', 'q']:
+            self.assertTrue((getattr(self.sm_intdata, key) == getattr(read_intdata, key)).all())
