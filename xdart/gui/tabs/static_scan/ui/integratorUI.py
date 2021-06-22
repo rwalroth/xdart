@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'integratorUI.ui'
+# Form implementation generated from reading ui file '.\integratorUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.2
 #
@@ -156,7 +156,7 @@ class Ui_Form(object):
         self.integrate1D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Arial")
-        font.setPointSize(13)
+        font.setPointSize(9)
         self.integrate1D.setFont(font)
         self.integrate1D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.integrate1D.setObjectName("integrate1D")
@@ -169,7 +169,7 @@ class Ui_Form(object):
         self.advanced1D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Arial")
-        font.setPointSize(13)
+        font.setPointSize(9)
         self.advanced1D.setFont(font)
         self.advanced1D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.advanced1D.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -320,7 +320,7 @@ class Ui_Form(object):
         self.integrate2D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Arial")
-        font.setPointSize(13)
+        font.setPointSize(9)
         self.integrate2D.setFont(font)
         self.integrate2D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.integrate2D.setObjectName("integrate2D")
@@ -333,7 +333,7 @@ class Ui_Form(object):
         self.advanced2D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("Arial")
-        font.setPointSize(13)
+        font.setPointSize(9)
         self.advanced2D.setFont(font)
         self.advanced2D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.advanced2D.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -360,12 +360,14 @@ class Ui_Form(object):
         self.pyfai_calib.setMinimumSize(QtCore.QSize(0, 20))
         font = QtGui.QFont()
         font.setFamily("Arial")
+        font.setPointSize(9)
         self.pyfai_calib.setFont(font)
         self.pyfai_calib.setObjectName("pyfai_calib")
         self.horizontalLayout_13.addWidget(self.pyfai_calib)
         self.get_mask = QtWidgets.QPushButton(self.frame_3)
         font = QtGui.QFont()
         font.setFamily("Arial")
+        font.setPointSize(9)
         self.get_mask.setFont(font)
         self.get_mask.setObjectName("get_mask")
         self.horizontalLayout_13.addWidget(self.get_mask)

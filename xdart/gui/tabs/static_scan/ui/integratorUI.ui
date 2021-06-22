@@ -429,7 +429,7 @@
                <property name="font">
                 <font>
                  <family>Arial</family>
-                 <pointsize>13</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -451,7 +451,7 @@
                <property name="font">
                 <font>
                  <family>Arial</family>
-                 <pointsize>13</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -887,7 +887,7 @@
                <property name="font">
                 <font>
                  <family>Arial</family>
-                 <pointsize>13</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -909,7 +909,7 @@
                <property name="font">
                 <font>
                  <family>Arial</family>
-                 <pointsize>13</pointsize>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -982,6 +982,7 @@
           <property name="font">
            <font>
             <family>Arial</family>
+            <pointsize>9</pointsize>
            </font>
           </property>
           <property name="text">
@@ -994,6 +995,7 @@
           <property name="font">
            <font>
             <family>Arial</family>
+            <pointsize>9</pointsize>
            </font>
           </property>
           <property name="text">
