@@ -254,16 +254,16 @@ class SMIntData2D(SMIntData1D):
         sub_shape = np.product(yshape)
         full_shape = np.product(xshape)
         format_list = [
-            '0'*128, # shm address
-            int(0), # size
-            int(0), # capacity
-            int(sub_shape), # sub_shape
-            int(full_shape), # full_shape
-            int(yshape[0]),
-            int(xshape[0]),
-            int(0), # offset for ydata (NOT IMPLEMENTED SHOULD STAY 0)
-            int(0), # offset for ydata (NOT IMPLEMENTED SHOULD STAY 0)
-            True # is non_zero being used (NOT IMPLEMENTED SHOULD STAY FALSE)
+            '0'*128,  # 0 shm address
+            int(0),   # 1 size
+            int(0),   # 2 capacity
+            int(0),   # 3 sub_length_r
+            int(0),   # 4 full_length_r
+            int(0),   # 5 offset for sub data
+            True,     # 6 is non_zero being used
+            int(0),   # 7 sub_length_a
+            int(0),   # 8 full_length_a
+            int(0),   # 9 offset for azimuthal axis
         ]
         size = _get_size(full_shape, sub_shape)
         SMBase.__init__(self, addr=addr, format_list=format_list, size=size, **kwargs)
@@ -271,11 +271,11 @@ class SMIntData2D(SMIntData1D):
             if addr is None:
                 self._shl[3] = sub_shape
                 self._shl[4] = full_shape
-                self._shl[5] = yshape[0]
-                self._shl[6] = xshape[0]
+                self._shl[5] = 0
+                self._shl[6] = no_zeros
                 self._shl[7] = 0
                 self._shl[8] = 0
-                self._shl[9] = no_zeros
+                self._shl[9] = 0
             self.npview = np.ndarray(
                 (self._shl[3] * 5 + self._shl[4] * 3,),
                 dtype=float,
