@@ -355,7 +355,10 @@ def read_image_file(fname, orientation='horizontal',
         img = np.asarray(io.imread(fname))
     elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
         with h5py.File(fname, mode='r') as f:
-            img = np.asarray(f['entry']['data']['data'][im], dtype=float)
+            try:
+                img = np.asarray(f['entry']['data']['data'][im], dtype=float)
+            except IndexError:
+                return None
             img[514:551, :] = np.nan
 
             # Hot pixel in SSRL Eiger 1M detector

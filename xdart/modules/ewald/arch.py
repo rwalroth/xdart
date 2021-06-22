@@ -229,16 +229,20 @@ class EwaldArch():
                 ic('#######', pg_args)
 
                 # incident angle in deg
-                self.integrator.incident_angle = self.scan_info[self.th_mtr]
+                try:
+                    self.integrator.incident_angle = self.scan_info[self.th_mtr]
+                except KeyError:
+                    pass
                 # tilt angle of sample in deg (misalignment in "chi")
                 self.integrator.tilt_angle = self.tilt_angle
                 ic(self.integrator.incident_angle, self.tilt_angle)
 
                 Intensity, qAxis = self.integrator.integrate_1d(
-                    self.map_raw/self.map_norm, numpoints, unit='q_A^-1',
-                    p0_range=radial_range, p1_range=kwargs['azimuth_range'],
-                    mask=self.get_mask(global_mask), **pg_args
+                        self.map_raw/self.map_norm, numpoints, unit='q_A^-1',
+                        p0_range=radial_range, p1_range=kwargs['azimuth_range'],
+                        mask=self.get_mask(global_mask), **pg_args
                 )
+                # ic(result)
                 result = Integrate1dResult(qAxis, Intensity)
                 ic(result.__dict__.keys(), self.integrator.wavelength)
 

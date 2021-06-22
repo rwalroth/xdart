@@ -5,6 +5,8 @@
 
 # Standard library imports
 import os
+import time
+import copy
 
 # Other imports
 import numpy as np
@@ -212,7 +214,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.yOffset.valueChanged.connect(self.update_plot_view)
         self.ui.plotUnit.activated.connect(self._set_slice_range)
         self.ui.plotUnit.activated.connect(self.update_plot)
-        self.ui.showLegend.stateChanged.connect(self.update_plot_view)
+        # self.ui.showLegend.stateChanged.connect(self.update_plot_view)
+        self.ui.showLegend.stateChanged.connect(self.update_legend)
         self.ui.slice.stateChanged.connect(self.update_plot)
         self.ui.slice.stateChanged.connect(self._update_slice_range)
         self.ui.slice_center.valueChanged.connect(self.update_plot_range)
@@ -579,7 +582,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         for nn, idx in enumerate(idxs):
             ic(idx, idxs)
             arch = self.arches[int(idx)]
-            intensity += self.normalize(arch.map_raw, arch.scan_info)
+            try:
+                intensity += self.normalize(arch.map_raw, arch.scan_info)
+            except ValueError:
+                time.sleep(0.5)
+                intensity += self.normalize(arch.map_raw, arch.scan_info)
 
         intensity /= (nn + 1)
         ic(intensity.shape, nn, idxs)
@@ -800,7 +807,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             return np.zeros((10, 10))
 
         normChannel = self.ui.normChannel.currentText()
-        if normChannel.upper() in scan_info.keys():
+        if normChannel in scan_info.keys():
+            intensity /= scan_info[normChannel]
+            self.normChannel = normChannel
+        elif normChannel.upper() in scan_info.keys():
             intensity /= scan_info[normChannel.upper()]
             self.normChannel = normChannel
         elif normChannel.lower() in scan_info.keys():
@@ -864,6 +874,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if not self.ui.showLegend.isChecked():
             self.legend.clear()
+
+    def update_legend(self):
+        if not self.ui.showLegend.isChecked():
+            ic(self.legend.items)
+            self.legend_items = self.legend.items
+            self.plot.scene().removeItem(self.legend)
+            # self.legend_items = self.legend.items
+            # self.legend.scene().removeItem(self.legend)
+        else:
+            self.legend = self.plot.addLegend()
+            [self.legend.addItem(item[0], item[1]) for item in self.legend_items]
+            # self.legend = self.plot.scene().addItem(self.legend)
+            # self.legend.setParent(self.plot.vb)
+            # self.legend.scene().addItem(self.legend)
 
     def _set_slice_range(self, _=None, initialize=False):
         ic()

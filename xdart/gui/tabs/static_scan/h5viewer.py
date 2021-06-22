@@ -196,6 +196,11 @@ class H5Viewer(QWidget):
         """Takes in directory path and adds files in path to listScans
         """
         ic()
+        if not os.path.exists(self.dirname):
+            return
+
+        ic(self.dirname)
+
         self.ui.listScans.clear()
         self.ui.listScans.addItem('..')
 
@@ -384,12 +389,18 @@ class H5Viewer(QWidget):
         """Changes the directory being displayed in the file explorer.
         """
         ic()
-        self.dirname = QFileDialog().getExistingDirectory()
-        self.arches.clear()
-        self.data_1d.clear()
-        self.data_2d.clear()
-        self.new_scan = True
-        self.update_scans()
+        dirname = QFileDialog().getExistingDirectory(
+            caption='Choose Directory',
+            directory='',
+            options=QFileDialog.ShowDirsOnly
+        )
+        if os.path.exists(dirname):
+            self.dirname = dirname
+            self.arches.clear()
+            self.data_1d.clear()
+            self.data_2d.clear()
+            self.new_scan = True
+            self.update_scans()
     
     def set_open_enabled(self, enable):
         """Sets the save and open actions to enable
