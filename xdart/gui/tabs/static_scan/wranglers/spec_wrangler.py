@@ -39,8 +39,8 @@ QDialog = QtWidgets.QDialog
 QMessageBox = QtWidgets.QMessageBox
 QPushButton = QtWidgets.QPushButton
 
-def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
-def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0008.tif'
+def_poni_file = 'C:/Users/vthampy-a/xdart_test_data/Feng_Jun2021/Calibration/LaB6_insitu_detz150_10s_06102111_0001.poni'
+def_img_file = 'C:/Users/vthampy-a/xdart_test_data/Feng_Jun2021/Aborted Run/MJD002_1/MJD002_1_0001.tif'
 # def_poni_file = ''
 # def_img_file = ''
 
@@ -63,7 +63,7 @@ params = [
         {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
         {'name': 'img_ext', 'title': 'File Type  ', 'type': 'list',
          'values': ['tif', 'raw', 'h5', 'mar3450'], 'value':'tif', 'visible': False},
-        {'name': 'write_mode', 'title': 'Write Mode', 'type': 'list',
+        {'name': 'write_mode', 'title': 'Write Mode  ', 'type': 'list',
          'values': ['Append', 'Overwrite'], 'value':'Append'},
         {'name': 'mask_file', 'title': 'Mask File', 'type': 'str', 'value': ''},
         NamedActionParameter(name='mask_file_browse', title='Browse...'),
@@ -530,9 +530,11 @@ class specWrangler(wranglerWidget):
         ic()
         img_root = os.path.splitext(img_fname)[0]
         fnames = glob.glob(f'{img_root}.*')
-        ic(fnames)
+        ic(img_root, fnames, os.path.splitext(img_fname))
 
-        exts = [f.replace(img_root, '')[1:] for f in fnames if f != img_fname]
+        # exts = [f.replace(img_root, '')[1:] for f in fnames if f != img_fname]
+        exts = [os.path.splitext(f)[1][1:] for f in fnames if f != img_fname]
+        ic(exts)
 
         meta_ext = None
         for ext in exts:

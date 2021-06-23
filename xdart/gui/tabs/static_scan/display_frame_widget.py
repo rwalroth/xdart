@@ -34,6 +34,7 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 QFileDialog = QtWidgets.QFileDialog
+QInputDialog = QtWidgets.QInputDialog
 _translate = Qt.QtCore.QCoreApplication.translate
 
 formats = [
@@ -221,6 +222,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.slice_center.valueChanged.connect(self.update_plot_range)
         self.ui.slice_width.valueChanged.connect(self.update_plot_range)
 
+        # Clear 1D Plot Buttons
+        self.ui.clear_1D.clicked.connect(self.clear_1D)
+
         # Save Image/Data Buttons
         self.ui.save_2D.clicked.connect(self.save_image)
         self.ui.save_1D.clicked.connect(self.save_array)
@@ -247,6 +251,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ic()
         self.plot_win.setParent(None)
         self.plot_layout.addWidget(self.wf_widget)
+
+        arch = self.arches[list(self.arches.keys())[0]]
+        counters = list(arch.scan_info.keys())
+        counters = ['Frame #'] + counters
+        yaxis, ok = QInputDialog().getItem(self, 'Pick Y Axis', 'Y Axis', counters, 0, False)
 
     def enable_2D_buttons(self):
         """Disable buttons if update 2D is unchecked"""
@@ -474,6 +483,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates 1D view of data in plot frame
         """
         ic()
+
+        ic(self.arch_ids)
+        if (len(self.arch_ids) == 0) or len(self.data_1d) == 0:
+            return
 
         # Clear curves
         [curve.clear() for curve in self.curves]
@@ -874,6 +887,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if not self.ui.showLegend.isChecked():
             self.legend.clear()
+
+    def clear_1D(self):
+        """Initialize curves for line plots
+        """
+        ic()
+        [curve.clear() for curve in self.curves]
+        ic('cleared curves')
+        self.curves.clear()
+        self.legend.clear()
+        self.arch_names.clear()
+        self.arch_ids.clear()
 
     def update_legend(self):
         if not self.ui.showLegend.isChecked():
