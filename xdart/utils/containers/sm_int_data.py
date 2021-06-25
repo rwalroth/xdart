@@ -203,23 +203,34 @@ class SMIntData1D(SMBase):
             self.sigma = data
             self.sigma_raw = self.sigma * self.pcount
 
+    def _get_subshape(self) -> tuple[int]:
+        return (self._shl[4],)
+
+    def _get_fullshape(self) -> tuple[int]:
+        return (self._shl[5],)
+
+    def _get_slice(self):
+        return slice(self._shl[5], self._shl[5] + self._shl[3])
+
     def _get_full(self, arr, key):
-        arr[self._shl[5]:self._shl[5] + self._shl[3]] = getattr(self, key)[()]
+        arr[self._get_slice()] = getattr(self, key)[()]
 
     @synced
     def full(self, key):
-        arr = np.zeros(self._shl[4])
+        arr = np.zeros(self._get_subshape())
         self._get_full(arr, key)
         return arr
 
     @synced
     def __iadd__(self, other):
-        if self.ttheta.shape != other.ttheta.shape:
-            raise ValueError("Cannot add SMIntData for differently sized data")
         try:
             if isinstance(other, self.__class__):
                 other.mutex.acquire()
                 other.check_memory()
+                if self._get_fullshape != other._get_fullshape():
+                    raise ValueError("Cannot add SMIntData for differently sized data")
+            elif self._get_fullshape() != other.raw.shape:
+                raise ValueError("Cannot add SMIntData for differently sized data")
             if not ((self.ttheta == other.ttheta).all() and (self.q == other.q).all()):
                 warnings.warn(RuntimeWarning("Adding SMIntData objects with mismatched x axis"))
 
@@ -250,9 +261,8 @@ class SMIntData1D(SMBase):
 
 
 class SMIntData2D(SMIntData1D):
-    def __init__(self, addr=None, yshape=(0,0), xshape=(0,0), no_zeros=False, **kwargs):
-        sub_shape = np.product(yshape)
-        full_shape = np.product(xshape)
+    def __init__(self, addr=None, sub_shape: tuple[int, int] = (0, 0),
+                 full_shape: tuple[int, int] = (0, 0), no_zeros=False, **kwargs):
         format_list = [
             '0'*128,  # 0 shm address
             int(0),   # 1 size
@@ -265,19 +275,19 @@ class SMIntData2D(SMIntData1D):
             int(0),   # 8 full_length_a
             int(0),   # 9 offset for azimuthal axis
         ]
-        size = _get_size(full_shape, sub_shape)
+        size = _get_size(sub_shape[0] * sub_shape[1] * 5 + full_shape[0] * 2 + full_shape[1])
         SMBase.__init__(self, addr=addr, format_list=format_list, size=size, **kwargs)
         with self.mutex:
             if addr is None:
-                self._shl[3] = sub_shape
-                self._shl[4] = full_shape
+                self._shl[3] = sub_shape[0]
+                self._shl[4] = full_shape[0]
                 self._shl[5] = 0
                 self._shl[6] = no_zeros
-                self._shl[7] = 0
-                self._shl[8] = 0
+                self._shl[7] = sub_shape[1]
+                self._shl[8] = full_shape[1]
                 self._shl[9] = 0
             self.npview = np.ndarray(
-                (self._shl[3] * 5 + self._shl[4] * 3,),
+                (self._shl[3] * self._shl[8] * 5 + self._shl[4] * 2 + self._shl[8],),
                 dtype=float,
                 buffer=self._shm.buf
             )
@@ -330,11 +340,12 @@ class SMIntData2D(SMIntData1D):
         elif name in ['raw', 'norm', 'sigma', 'sigma_raw']:
             offset = (self._shl[5], self._shl[9])
             shape = (self._shl[3], self._shl[5])
-            if shape == value.shape[0]:
-                self.__dict__[name][:] = value[:]
+            if shape == value.shape:
+                self.__dict__[name][()] = value[()]
             else:
-                self.__dict__[name][:shape] = value[offset:offset + shape]
-        elif name in ['ttheta', 'q', 'chi']:
+                self.__dict__[name][:shape[0], :shape[1]] = \
+                    value[offset[0]:offset[0] + shape[0], offset[1]:offset[1] + shape[1]]
+        elif name in ['ttheta', 'q']:
             if value.shape != self.__dict__[name].shape:
                 self.resize(full_shape=(value.shape[0], None))
             self.__dict__[name][:] = value[:]
@@ -348,6 +359,7 @@ class SMIntData2D(SMIntData1D):
     def _get_offset(self, value):
         if self._shl[6]:
             _nonzero = np.nonzero(value)
+            print(_nonzero)
             offset = (_nonzero[0][0], _nonzero[1][0])
             shape = (_nonzero[0][-1] - offset[0] + 1,
                      _nonzero[1][-1] - offset[1] + 1)
@@ -389,3 +401,53 @@ class SMIntData2D(SMIntData1D):
     def from_result(self, result, wavelength, monitor=1):
         super(SMIntData2D, self).from_result(result, wavelength, monitor)
         self.chi = result.azimuthal
+
+    @synced
+    def to_hdf5(self, grp: h5py.Group, compression=None):
+        super().to_hdf5(grp, compression)
+        grp.attrs["sub_shape_a"] = self._shl[7]
+        grp.attrs["full_shape_a"] = self._shl[8]
+        grp.attrs["offset_a"] = self._shl[9]
+
+        utils.attributes_to_h5(self, grp, ["chi"], compression=compression)
+
+    @synced
+    def from_hdf5(self, grp: h5py.Group):
+        self._shl[6] = bool(grp.attrs["no_zeros"])
+        offset_r = grp.attrs["offset_r"]
+        offset_a = grp.attrs["offset_a"]
+        sub_shape = (grp.attrs["sub_shape_r"], grp.attrs["sub_shape_a"])
+        full_shape = (grp.attrs["full_shape_r"], grp.attrs["full_shape_a"])
+        self.resize(sub_shape=sub_shape, full_shape=full_shape)
+        self._shl[5] = int(offset_r)
+        self._shl[9] = int(offset_a)
+        _length = self._shl[3] * self._shl[7]
+        for i, attr in enumerate(['raw', 'pcount', 'norm']):
+            start_idx = i*_length
+            self.npview[start_idx:start_idx + _length] = grp[attr].ravel()[:]
+        for i, attr in enumerate(['ttheta', 'q']):
+            start_idx = 5 * _length + i * self._shl[4]
+            self.npview[start_idx:start_idx + self._shl[4]] = grp[attr].ravel()[:]
+        start_idx = 5 * _length + 2 * self._shl[4]
+        self.npview[start_idx:start_idx + self._shl[8]] = grp["chi"].ravel()[:]
+        try:
+            utils.h5_to_attributes(self, grp, ['sigma', 'sigma_raw'])
+        except KeyError:
+            data = self.norm.copy()
+            if data[data > 0].size > 0:
+                minval = data[data > 0].min()
+                data[data > 0] = np.sqrt(data[data > 0]/minval) * minval
+            self.sigma = data
+            self.sigma_raw = self.sigma * self.pcount
+
+    def _get_slice(self):
+        return (
+            slice(self._shl[5], self._shl[5] + self._shl[3]),
+            slice(self._shl[9], self._shl[9] + self._shl[7])
+        )
+
+    def _get_subshape(self) -> tuple[int, int]:
+        return self._shl[4], self._shl[7]
+
+    def _get_fullshape(self) -> tuple[int, int]:
+        return self._shl[5], self._shl[8]
