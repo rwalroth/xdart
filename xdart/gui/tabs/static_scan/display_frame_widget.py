@@ -9,6 +9,7 @@ import time
 import copy
 
 # Other imports
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import cm
 from pathlib import Path
@@ -25,7 +26,8 @@ from pyqtgraph import ROI
 from .ui.displayFrameUI import Ui_Form
 from ...gui_utils import RectViewBox, get_rect
 import xdart.utils as ut
-from ...widgets import pgxImageWidget
+# from ...widgets import pgxImageWidget, pgImageWidget
+from ...widgets import pgImageWidget, pmeshImageWidget
 from xdart.utils import split_file_name
 
 try:
@@ -121,9 +123,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.slice.setText(Chi)
 
         # Plotting parameters
+        self.ui.cmap.clear()
+        self.ui.cmap.addItems(['Default'] + plt.colormaps())
+        self.ui.cmap.setCurrentIndex(0)
         self.cmap = self.ui.cmap.currentText()
         self.plotMethod = self.ui.plotMethod.currentText()
         self.scale = self.ui.scale.currentText()
+        self.wf_yaxis = 'Frame #'
 
         # Data object initialization
         self.sphere = sphere
@@ -153,14 +159,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
         self.image_layout.setContentsMargins(0, 0, 0, 0)
         self.image_layout.setSpacing(0)
-        self.image_widget = pgxImageWidget(lockAspect=1, raw=True)
+        self.image_widget = pgImageWidget(lockAspect=1, raw=True)
         self.image_layout.addWidget(self.image_widget)
 
         # Regrouped Image pane setup
         self.binned_layout = Qt.QtWidgets.QHBoxLayout(self.ui.binnedFrame)
         self.binned_layout.setContentsMargins(0, 0, 0, 0)
         self.binned_layout.setSpacing(0)
-        self.binned_widget = pgxImageWidget()
+        self.binned_widget = pgImageWidget()
         self.binned_layout.addWidget(self.binned_widget)
 
         # 1D/Waterfall Plot pane setup
@@ -184,7 +190,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.trackMouse()
 
         # WF Plot pane setup
-        self.wf_widget = pgxImageWidget()
+        # self.wf_widget = pgImageWidget()
+        self.wf_widget = pmeshImageWidget()
         self.plot_layout.addWidget(self.wf_widget)
 
         # Waterfall Plot setup
@@ -215,8 +222,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.yOffset.valueChanged.connect(self.update_plot_view)
         self.ui.plotUnit.activated.connect(self._set_slice_range)
         self.ui.plotUnit.activated.connect(self.update_plot)
-        # self.ui.showLegend.stateChanged.connect(self.update_plot_view)
-        self.ui.showLegend.stateChanged.connect(self.update_legend)
+        self.ui.showLegend.stateChanged.connect(self.update_plot_view)
+        # self.ui.showLegend.stateChanged.connect(self.update_legend)
         self.ui.slice.stateChanged.connect(self.update_plot)
         self.ui.slice.stateChanged.connect(self._update_slice_range)
         self.ui.slice_center.valueChanged.connect(self.update_plot_range)
@@ -254,8 +261,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         arch = self.arches[list(self.arches.keys())[0]]
         counters = list(arch.scan_info.keys())
-        counters = ['Frame #'] + counters
-        yaxis, ok = QInputDialog().getItem(self, 'Pick Y Axis', 'Y Axis', counters, 0, False)
+        counters = ['Frame #', 'Time (s)', 'Time (minutes)'] + counters
+        self.wf_yaxis, ok = QInputDialog().getItem(self, 'Pick Y Axis', 'Y Axis', counters, 0, False)
+        ic(self.wf_yaxis)
 
     def enable_2D_buttons(self):
         """Disable buttons if update 2D is unchecked"""
@@ -571,16 +579,49 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         xdata_, data_ = self.plot_data
         s_xdata, data = xdata_.copy(), data_.copy()
-        rect = get_rect(s_xdata, np.arange(data.shape[0]))
+        # rect = get_rect(s_xdata, np.arange(data.shape[0]))
 
-        ic(self.scale)
-        self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
-        self.wf_widget.setRect(rect)
+        x_max, x_min = np.max(s_xdata), np.min(s_xdata)
+        x_step = (x_max - x_min)/len(s_xdata)
+        ic(s_xdata.shape)
+        s_xdata = np.append(s_xdata, [x_max + x_step])
+        ic(s_xdata.shape)
+        s_xdata -= x_step/2
+        s_xdata = np.tile(s_xdata, (data.shape[0]+1, 1)).T
+
+        # Set YAxis Unit
+        if self.wf_yaxis == 'Frame #':
+            s_ydata = np.asarray(np.arange(data.shape[0]) + 1, dtype=float)
+        else:
+            if self.wf_yaxis == 'Time (s)':
+                s_ydata = np.asarray([arch.scan_info['epoch'] for arch_id, arch in self.arches.items()])
+                s_ydata -= s_ydata.min()
+            elif self.wf_yaxis == 'Time (minutes)':
+                s_ydata = np.asarray([arch.scan_info['epoch'] for arch_id, arch in self.arches.items()])/60.
+                s_ydata -= s_ydata.min()
+            else:
+                s_ydata = np.asarray([arch.scan_info[self.wf_yaxis] for arch_id, arch in self.arches.items()])
+
+        y_max, y_min = np.max(s_ydata), np.min(s_ydata)
+        y_step = (y_max - y_min)/len(s_ydata)
+        ic(s_ydata.shape)
+        s_ydata = np.append(s_ydata, [y_max + y_step])
+        ic(s_ydata.shape)
+        s_ydata -= y_step/2.
+        s_ydata = np.tile(s_ydata, (data.shape[1]+1, 1))
+
+        ic(s_xdata.shape, s_ydata.shape, data.shape, self.scale, self.wf_yaxis)
+        # self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
+        self.wf_widget.imageItem.setData(s_xdata, s_ydata, data.T)
+        self.wf_widget.imageItem.informViewBoundsChanged()
+        # self.wf_widget.setRect(rect)
 
         plotUnit = self.ui.plotUnit.currentIndex()
         self.wf_widget.image_plot.setLabel("bottom", x_labels_1D[plotUnit],
                                            units=x_units_1D[plotUnit])
-        self.plot.setLabel("left", 'Frame #')
+        self.wf_widget.image_plot.setLabel("left", self.wf_yaxis)
+                                           # units=x_units_1D[plotUnit])
+        # self.plot.setLabel("left", 'Frame #')
 
         return data
 
@@ -881,7 +922,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             pen=color,
             symbolBrush=color,
             symbolPen=color,
-            symbolSize=3,
+            symbolSize=4,
             name=arch_id,
         ) for (color, arch_id) in zip(colors, arch_ids)]
 

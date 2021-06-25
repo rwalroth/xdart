@@ -39,8 +39,8 @@ QDialog = QtWidgets.QDialog
 QMessageBox = QtWidgets.QMessageBox
 QPushButton = QtWidgets.QPushButton
 
-def_poni_file = 'C:/Users/vthampy-a/xdart_test_data/Feng_Jun2021/Calibration/LaB6_insitu_detz150_10s_06102111_0001.poni'
-def_img_file = 'C:/Users/vthampy-a/xdart_test_data/Feng_Jun2021/Aborted Run/MJD002_1/MJD002_1_0001.tif'
+def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
+def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0005.tif'
 # def_poni_file = ''
 # def_img_file = ''
 
