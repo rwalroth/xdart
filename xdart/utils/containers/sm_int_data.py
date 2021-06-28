@@ -98,8 +98,12 @@ class SMIntData1D(SMBase):
     def _get_offset(self, value):
         if self._shl[6]:
             _nonzero = np.nonzero(value)[0]
-            offset = _nonzero[0]
-            shape = (_nonzero[-1] - offset + 1,)
+            if _nonzero.size:
+                offset = _nonzero[0]
+                shape = (_nonzero[-1] - offset + 1,)
+            else:
+                offset = 0
+                shape = (0,)
         else:
             offset = 0
             shape = value.shape
@@ -204,10 +208,10 @@ class SMIntData1D(SMBase):
             self.sigma_raw = self.sigma * self.pcount
 
     def _get_subshape(self) -> tuple[int]:
-        return (self._shl[4],)
+        return (self._shl[3],)
 
     def _get_fullshape(self) -> tuple[int]:
-        return (self._shl[5],)
+        return (self._shl[4],)
 
     def _get_slice(self):
         return slice(self._shl[5], self._shl[5] + self._shl[3])
@@ -227,7 +231,8 @@ class SMIntData1D(SMBase):
             if isinstance(other, self.__class__):
                 other.mutex.acquire()
                 other.check_memory()
-                if self._get_fullshape != other._get_fullshape():
+                if self._get_fullshape() != other._get_fullshape():
+                    print(self._get_fullshape(), other._get_fullshape())
                     raise ValueError("Cannot add SMIntData for differently sized data")
             elif self._get_fullshape() != other.raw.shape:
                 raise ValueError("Cannot add SMIntData for differently sized data")
@@ -297,7 +302,6 @@ class SMIntData2D(SMIntData1D):
         _length = self._shl[3] * self._shl[7]
         _shape = (self._shl[3], self._shl[7])
         sub_length = np.product(sub_shape)
-        full_length = np.product(full_shape)
         for i, attr in enumerate(['raw', 'pcount', 'norm', 'sigma', 'sigma_raw']):
             start_idx = i*_length
             super(SMBase, self).__setattr__(
@@ -324,9 +328,9 @@ class SMIntData2D(SMIntData1D):
             self.npview[start_idx:start_idx + self._shl[8]]
         )
         if arr is not None:
-            start_idx_2 = 5 * sub_length + 2 * full_length[0]
-            self.npview[start_idx:start_idx + full_length[1]] = \
-                arr[start_idx_2:start_idx_2 + full_length[1]]
+            start_idx_2 = 5 * sub_length + 2 * full_shape[0]
+            self.npview[start_idx:start_idx + full_shape[1]] = \
+                arr[start_idx_2:start_idx_2 + full_shape[1]]
 
     def __setattr__(self, name, value):
         if name == "pcount":
@@ -359,12 +363,15 @@ class SMIntData2D(SMIntData1D):
     def _get_offset(self, value):
         if self._shl[6]:
             _nonzero = np.nonzero(value)
-            print(_nonzero)
-            offset = (_nonzero[0][0], _nonzero[1][0])
-            shape = (_nonzero[0][-1] - offset[0] + 1,
-                     _nonzero[1][-1] - offset[1] + 1)
+            if _nonzero[0].size:
+                offset = (_nonzero[0][0], _nonzero[1][0])
+                shape = (_nonzero[0][-1] - offset[0] + 1,
+                         _nonzero[1][-1] - offset[1] + 1)
+            else:
+                offset = (0, 0)
+                shape = (0, 0)
         else:
-            offset = (0,0)
+            offset = (0, 0)
             shape = value.shape
         return offset, shape
 
@@ -447,7 +454,7 @@ class SMIntData2D(SMIntData1D):
         )
 
     def _get_subshape(self) -> tuple[int, int]:
-        return self._shl[4], self._shl[7]
+        return self._shl[3], self._shl[7]
 
     def _get_fullshape(self) -> tuple[int, int]:
-        return self._shl[5], self._shl[8]
+        return self._shl[4], self._shl[8]

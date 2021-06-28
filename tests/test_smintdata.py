@@ -41,7 +41,7 @@ def make_result(shape, nzero1, nzero2):
 
 def make_result2d(shape, nzero1, nzero2):
     count = np.zeros(shape)
-    count[nzero1[0]:nzero2[0], nzero1[1]:nzero2[1]] = 100
+    count[nzero1[0]:nzero1[1], nzero2[0]:nzero2[1]] = 100
     print(np.nonzero(count))
     sum_signal = np.round(np.random.rand(np.product(shape)) * 10).reshape(shape) * count
     print(np.nonzero(sum_signal))
