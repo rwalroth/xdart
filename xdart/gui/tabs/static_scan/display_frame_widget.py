@@ -26,7 +26,6 @@ from pyqtgraph import ROI
 from .ui.displayFrameUI import Ui_Form
 from ...gui_utils import RectViewBox, get_rect
 import xdart.utils as ut
-# from ...widgets import pgxImageWidget, pgImageWidget
 from ...widgets import pgImageWidget, pmeshImageWidget
 from xdart.utils import split_file_name
 
@@ -37,6 +36,8 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 
 QFileDialog = QtWidgets.QFileDialog
 QInputDialog = QtWidgets.QInputDialog
+QCombo = QtWidgets.QComboBox
+QDialog = QtWidgets.QDialog
 _translate = Qt.QtCore.QCoreApplication.translate
 
 formats = [
@@ -130,12 +131,15 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.plotMethod = self.ui.plotMethod.currentText()
         self.scale = self.ui.scale.currentText()
         self.wf_yaxis = 'Frame #'
+        self.wf_start = 0
+        self.wf_step = 1
 
         # Data object initialization
         self.sphere = sphere
         self.arch = arch
         self.arch_ids = arch_ids
         self.arches = arches
+        self.idxs = sorted(list(self.arches.keys()))
         self.arch_names = []
         self.sphere_name = None
         self.data_1d = data_1d
@@ -228,6 +232,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.slice.stateChanged.connect(self._update_slice_range)
         self.ui.slice_center.valueChanged.connect(self.update_plot_range)
         self.ui.slice_width.valueChanged.connect(self.update_plot_range)
+        self.ui.wf_options.clicked.connect(self.popup_wf_options)
 
         # Clear 1D Plot Buttons
         self.ui.clear_1D.clicked.connect(self.clear_1D)
@@ -239,6 +244,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Initialize image units
         self.set_image_units()
         self._set_slice_range(initialize=True)
+
+        # Setup Waterfall Options Popup
+        self.wf_dialog = QDialog()
+        self.wf_yaxis_widget = QCombo()
+        self.wf_start_widget = QtWidgets.QDoubleSpinBox()
+        self.wf_step_widget = QtWidgets.QDoubleSpinBox()
+        self.wf_accept_button = QtWidgets.QPushButton('Okay')
+        self.wf_cancel_button = QtWidgets.QPushButton('Cancel')
 
     def update_plot_range(self):
         ic()
@@ -252,6 +265,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.wf_widget.setParent(None)
         self.plot_layout.addWidget(self.plot_win)
 
+        self.ui.wf_options.setEnabled(False)
+        if len(self.plot_data[1]) > 1:
+            self.ui.wf_options.setEnabled(True)
+            self.wf_yaxis_widget.setEnabled(False)
+
     def setup_wf_layout(self):
         """Setup the layout for WF plot
         """
@@ -259,11 +277,64 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.plot_win.setParent(None)
         self.plot_layout.addWidget(self.wf_widget)
 
-        arch = self.arches[list(self.arches.keys())[0]]
+        self.ui.wf_options.setEnabled(True)
+        self.wf_yaxis_widget.setEnabled(True)
+
+    def popup_wf_options(self):
+        """
+        Popup Qt Window to select options for Waterfall Plot
+        Options include Y-axis unit and number of points to skip
+        """
+        if self.wf_dialog.layout() is None:
+            self.setup_wf_options_widget()
+
+        self.wf_dialog.show()
+
+    def setup_wf_options_widget(self):
+        """
+        Setup y-axis option for Waterfall plot
+        Setup first image and step size for wf and overlay plots
+        """
+        layout = QtWidgets.QGridLayout()
+        self.wf_dialog.setLayout(layout)
+
+        layout.addWidget(QtWidgets.QLabel('Y-Axis'), 0, 0)
+        layout.addWidget(QtWidgets.QLabel('Start'), 0, 1)
+        layout.addWidget(QtWidgets.QLabel('Step'), 0, 2)
+
+        layout.addWidget(self.wf_yaxis_widget, 1, 0)
+        layout.addWidget(self.wf_start_widget, 1, 1)
+        layout.addWidget(self.wf_step_widget, 1, 2)
+
+        layout.addWidget(self.wf_accept_button, 2, 1)
+        layout.addWidget(self.wf_cancel_button, 2, 2)
+
+        arch = self.arches[self.idxs[0]]
         counters = list(arch.scan_info.keys())
         counters = ['Frame #', 'Time (s)', 'Time (minutes)'] + counters
-        self.wf_yaxis, ok = QInputDialog().getItem(self, 'Pick Y Axis', 'Y Axis', counters, 0, False)
-        ic(self.wf_yaxis)
+        self.wf_yaxis_widget.addItems(counters)
+
+        self.wf_start_widget.setDecimals(0)
+        self.wf_start_widget.setRange(1, 1000)
+
+        self.wf_step_widget.setDecimals(0)
+        self.wf_step_widget.setRange(1, 100)
+
+        self.wf_accept_button.clicked.connect(self.get_wf_option)
+        self.wf_cancel_button.clicked.connect(self.close_wf_popup)
+
+    def get_wf_option(self):
+        ic()
+        self.wf_yaxis = self.wf_yaxis_widget.currentText()
+
+        self.wf_start = int(self.wf_start_widget.value()) - 1
+        self.wf_step = int(self.wf_step_widget.value())
+
+        self.close_wf_popup()
+        self.update_plot_view()
+
+    def close_wf_popup(self):
+        self.wf_dialog.close()
 
     def enable_2D_buttons(self):
         """Disable buttons if update 2D is unchecked"""
@@ -302,6 +373,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ic(self.sphere.static, self.sphere.gi, self.arch_ids)
         if not self._updated():
             return True
+
+        self.idxs = sorted(list(self.arches.keys()))
 
         if self.ui.shareAxis.isChecked() and (self.ui.imageUnit.currentIndex() < 2):
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
@@ -355,22 +428,19 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if not self._updated():
             return True
 
-        ic(self.data_2d.keys())
         if 'Overall' in self.arch_ids:
             ic('getting sphere')
             data = self.get_sphere_map_raw()
         else:
-            ic(self.arches.keys(), self.arch_ids)
+            ic(self.idxs, self.arches.keys(), self.arch_ids)
             data = self.get_arches_map_raw()
-
         data = np.asarray(data, dtype=float)
-        ic('Subtracting BG', self.bkg_map_raw)
+
         # Subtract background
         data -= self.bkg_map_raw
-        ic('Subtracted BG', data.shape)
 
         # Apply Mask
-        arch = self.arches[list(self.arches.keys())[0]]
+        arch = self.arches[self.idxs[0]]
         mask = np.unravel_index(arch.mask, data.shape)
         data[mask] = np.nan
 
@@ -459,7 +529,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # Get 1D data for all arches
         ydata, xdata = self.get_arches_data_1d()
-        arch_names = [f'{self.sphere.name}_{i}' for i in self.arches.keys()]
+        # arch_names = [f'{self.sphere.name}_{i}' for i in self.arches.keys()]
+        arch_names = [f'{self.sphere.name}_{i}' for i in self.idxs]
         ic(ydata.shape, xdata.shape)
 
         # Subtract background
@@ -474,8 +545,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 if arch_name not in self.arch_names:
                     self.plot_data[1] = np.vstack((self.plot_data[1], data))
                     self.arch_names.append(arch_name)
-
-            ic(self.plot_data[1].shape)
         else:
             self.plot_data = [xdata, ydata]
             self.arch_names.clear()
@@ -505,7 +574,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if (self.plotMethod in ['Overlay', 'Single']) and (len(self.arch_names) > 1):
             self.ui.yOffset.setEnabled(True)
 
-        ic(self.plotMethod, self.arch_names, self.plot_data[1].shape)
         if (self.plotMethod == 'Waterfall') and (len(self.plot_data[1]) > 3):
             self.update_wf()
         else:
@@ -543,12 +611,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if ((self.plotMethod in ['Overlay', 'Waterfall']) or
                 ((self.plotMethod == 'Single') and (ydata.shape[0] > 1))):
+            ydata = ydata[self.wf_start::self.wf_step]
             self.setup_curves()
 
             offset = self.ui.yOffset.value()
             y_offset = offset / 100 * (self.plot_data_range[1][1] - self.plot_data_range[1][0])
-            ic(self.plot_data_range)
-            # for nn, (curve, s_ydata, idx) in enumerate(zip(self.curves, ydata, idxs)):
             for nn, (curve, s_ydata) in enumerate(zip(self.curves, ydata)):
                 curve.setData(s_xdata, s_ydata + y_offset*nn)
 
@@ -579,7 +646,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         xdata_, data_ = self.plot_data
         s_xdata, data = xdata_.copy(), data_.copy()
-        # rect = get_rect(s_xdata, np.arange(data.shape[0]))
+
+        data = data[self.wf_start::self.wf_step, :]
 
         x_max, x_min = np.max(s_xdata), np.min(s_xdata)
         x_step = (x_max - x_min)/len(s_xdata)
@@ -591,7 +659,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # Set YAxis Unit
         if self.wf_yaxis == 'Frame #':
-            s_ydata = np.asarray(np.arange(data.shape[0]) + 1, dtype=float)
+            s_ydata = np.asarray(np.arange(data.shape[0]) + self.wf_start + 1, dtype=float)
         else:
             if self.wf_yaxis == 'Time (s)':
                 s_ydata = np.asarray([arch.scan_info['epoch'] for arch_id, arch in self.arches.items()])
@@ -601,6 +669,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 s_ydata -= s_ydata.min()
             else:
                 s_ydata = np.asarray([arch.scan_info[self.wf_yaxis] for arch_id, arch in self.arches.items()])
+
+            s_ydata = s_ydata[self.wf_start::self.wf_step]
+
+        ic(self.wf_step, s_ydata.shape)
 
         y_max, y_min = np.max(s_ydata), np.min(s_ydata)
         y_step = (y_max - y_min)/len(s_ydata)
@@ -612,16 +684,20 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         ic(s_xdata.shape, s_ydata.shape, data.shape, self.scale, self.wf_yaxis)
         # self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
+        levels = np.nanpercentile(data, (1, 99))
+        self.wf_widget.imageItem.setLevels(levels)
         self.wf_widget.imageItem.setData(s_xdata, s_ydata, data.T)
         self.wf_widget.imageItem.informViewBoundsChanged()
-        # self.wf_widget.setRect(rect)
+
+        # rect = get_rect(s_xdata, np.arange(data.shape[0]))
+        rect = get_rect(s_xdata[:, 0], s_ydata[0])
+        # ic(s_xdata[0], s_xdata[:, 0], s_ydata[:, 0], s_ydata[0])
+        self.wf_widget.setRect(rect)
 
         plotUnit = self.ui.plotUnit.currentIndex()
         self.wf_widget.image_plot.setLabel("bottom", x_labels_1D[plotUnit],
                                            units=x_units_1D[plotUnit])
         self.wf_widget.image_plot.setLabel("left", self.wf_yaxis)
-                                           # units=x_units_1D[plotUnit])
-        # self.plot.setLabel("left", 'Frame #')
 
         return data
 
@@ -629,7 +705,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Return 2D arch data for multiple arches (averaged)"""
         ic()
         if idxs is None:
-            idxs = list(self.arches.keys())
+            idxs = self.idxs
+            # idxs = list(self.arches.keys())
         ic(idxs)
 
         intensity = 0.
@@ -662,7 +739,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Return 2D arch data for multiple arches (averaged)"""
         ic()
         if idxs is None:
-            idxs = list(self.arches.keys())
+            # idxs = list(self.arches.keys())
+            idxs = self.idxs
 
         intensity = 0.
         for nn, idx in enumerate(idxs):
@@ -688,7 +766,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             int_data = self.sphere.bai_2d
 
         intensity = np.asarray(int_data.norm, dtype=float)
-        idxs = list(self.arches.keys())
+        # idxs = list(self.arches.keys())
+        idxs = self.idxs
         xdata, ydata = self.get_xydata(self.arches[int(idxs[0])])
 
         return intensity/len(idxs), xdata, ydata
@@ -697,7 +776,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Return 1D data for multiple arches"""
         ic()
         if idxs is None:
-            idxs = list(self.arches.keys())
+            # idxs = sorted(list(self.arches.keys()))
+            idxs = self.idxs
 
         ydata = 0.
         for nn, idx in enumerate(idxs):
@@ -768,9 +848,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         width = self.ui.slice_width.value()
         _range = [center - width, center + width]
 
-        # binned_data, rect = self.binned_data
-
-        # _inds = None
         _inds = np.s_[:]
         if self.ui.plotUnit.currentIndex() < 2:
             slice_axis = Chi
@@ -909,7 +986,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.legend.clear()
 
         # arch_ids = list(self.arches.keys())
-        arch_ids = self.arch_names
+        arch_ids = self.arch_names[self.wf_start::self.wf_step]
         ic(arch_ids)
         if (self.plotMethod in ['Sum', 'Average']) and (len(self.arch_names) > 1):
             arch_ids = f'{self.plotMethod} [{self.arch_names[0]}'
@@ -1011,7 +1088,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         cen = self.ui.slice_center.value()
         wid = self.ui.slice_width.value()
         _range = np.array([cen - wid, cen + wid])
-        wavelength = self.arches[list(self.arches.keys())[0]].integrator.wavelength
+        # wavelength = self.arches[list(self.arches.keys())[0]].integrator.wavelength
+        wavelength = self.arches[self.idxs[0]].integrator.wavelength
         ic(cen, wid, _range, wavelength)
         # self._set_slice_range()
 

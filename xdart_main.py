@@ -75,7 +75,7 @@ class Main(QMainWindow):
         self.set_tabs()
         #
         self.show()
-        self.resize(1300, 720)
+        self.resize(1600, 920)
 
     def exit(self):
         try:

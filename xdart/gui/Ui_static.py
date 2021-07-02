@@ -45,4 +45,3 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.toolButton.setText(_translate("MainWindow", "..."))
         self.pushButton.setText(_translate("MainWindow", "PushButton"))
-

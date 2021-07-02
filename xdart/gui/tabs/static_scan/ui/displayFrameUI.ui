@@ -628,18 +628,15 @@
            </spacer>
           </item>
           <item>
-           <widget class="QCheckBox" name="shareAxis">
-            <property name="maximumSize">
-             <size>
-              <width>90</width>
-              <height>16777215</height>
-             </size>
-            </property>
+           <widget class="QCheckBox" name="update2D">
             <property name="focusPolicy">
              <enum>Qt::StrongFocus</enum>
             </property>
             <property name="text">
-             <string>Share Axis</string>
+             <string>Update 2D</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -660,15 +657,18 @@
            </spacer>
           </item>
           <item>
-           <widget class="QCheckBox" name="update2D">
+           <widget class="QCheckBox" name="shareAxis">
+            <property name="maximumSize">
+             <size>
+              <width>90</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="focusPolicy">
              <enum>Qt::StrongFocus</enum>
             </property>
             <property name="text">
-             <string>Update 2D</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
+             <string>Share Axis</string>
             </property>
            </widget>
           </item>
@@ -678,7 +678,7 @@
              <enum>Qt::Horizontal</enum>
             </property>
             <property name="sizeType">
-             <enum>QSizePolicy::Maximum</enum>
+             <enum>QSizePolicy::Expanding</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -694,19 +694,6 @@
              <string>Save</string>
             </property>
            </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_8">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </widget>
@@ -899,6 +886,18 @@
               <height>16777215</height>
              </size>
             </property>
+            <property name="toolTip">
+             <string comment="Center" extracomment="Center"/>
+            </property>
+            <property name="toolTipDuration">
+             <number>2</number>
+            </property>
+            <property name="whatsThis">
+             <string comment="Center" extracomment="Center"/>
+            </property>
+            <property name="accessibleDescription">
+             <string extracomment="Center"/>
+            </property>
             <property name="minimum">
              <double>-180.000000000000000</double>
             </property>
@@ -933,6 +932,9 @@
               <height>16777215</height>
              </size>
             </property>
+            <property name="toolTip">
+             <string extracomment="Half Width"/>
+            </property>
             <property name="minimum">
              <double>0.000000000000000</double>
             </property>
@@ -957,7 +959,7 @@
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>80</width>
               <height>20</height>
              </size>
             </property>
@@ -1013,6 +1015,9 @@
           </item>
           <item>
            <widget class="QDoubleSpinBox" name="yOffset">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="focusPolicy">
              <enum>Qt::StrongFocus</enum>
             </property>
@@ -1028,16 +1033,32 @@
            </widget>
           </item>
           <item>
-           <spacer name="horizontalSpacer_5">
+           <widget class="QPushButton" name="wf_options">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="toolTip">
+             <string comment="Set Options for Waterfall Plot" extracomment="Set Options for Waterfall Plot"/>
+            </property>
+            <property name="whatsThis">
+             <string comment="Set Options for Waterfall Plot" extracomment="Set Options for Waterfall Plot"/>
+            </property>
+            <property name="text">
+             <string>Options</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_6">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
             <property name="sizeType">
-             <enum>QSizePolicy::Maximum</enum>
+             <enum>QSizePolicy::Expanding</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>40</width>
+              <width>30</width>
               <height>20</height>
              </size>
             </property>
@@ -1057,22 +1078,6 @@
            </widget>
           </item>
           <item>
-           <spacer name="horizontalSpacer_6">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Maximum</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>30</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
            <widget class="QPushButton" name="clear_1D">
             <property name="text">
              <string>Clear</string>
@@ -1080,43 +1085,11 @@
            </widget>
           </item>
           <item>
-           <spacer name="horizontalSpacer_15">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Maximum</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
            <widget class="QPushButton" name="save_1D">
             <property name="text">
              <string>Save</string>
             </property>
            </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </widget>
@@ -1133,15 +1106,12 @@
   <tabstop>scale</tabstop>
   <tabstop>cmap</tabstop>
   <tabstop>imageUnit</tabstop>
-  <tabstop>shareAxis</tabstop>
-  <tabstop>update2D</tabstop>
   <tabstop>save_2D</tabstop>
   <tabstop>plotUnit</tabstop>
   <tabstop>slice_center</tabstop>
   <tabstop>slice_width</tabstop>
   <tabstop>plotMethod</tabstop>
   <tabstop>yOffset</tabstop>
-  <tabstop>showLegend</tabstop>
   <tabstop>save_1D</tabstop>
  </tabstops>
  <resources/>

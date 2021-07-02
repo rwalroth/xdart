@@ -82,7 +82,8 @@ class H5Viewer(QWidget):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
-        self.layout = self.ui.layout
+        # self.layout = self.ui.layout
+        self.layout = self.ui.gridLayout
         self.defaultWidget = defaultWidget()
         self.defaultWidget.sigSetUserDefaults.connect(self.set_user_defaults)
 

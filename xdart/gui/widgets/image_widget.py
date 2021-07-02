@@ -263,9 +263,9 @@ class pmeshImageWidget(Qt.QtWidgets.QWidget):
         # Make Label Item for showing position
         # self.make_pos_label()
 
-        self.histogram = pg.ColorBarItem(width=15)
+        # self.histogram = pg.ColorBarItem(width=15)
         # Have ColorBarItem control colors of img and appear in 'plot':
-        self.histogram.setImageItem(self.imageItem, insert_in=self.image_plot)
+        # self.histogram.setImageItem(self.imageItem, insert_in=self.image_plot)
 
         self.raw_image = np.zeros(0)
         self.displayed_image = np.zeros(0)
@@ -281,8 +281,8 @@ class pmeshImageWidget(Qt.QtWidgets.QWidget):
                  **kwargs):
         self.raw_image = image[()]
         self.update_image(scale, cmap, **kwargs)
-        # if rect is not None:
-        #     self.imageItem.setRect(rect)
+        if rect is not None:
+            self.imageItem.setRect(rect)
 
     def setRect(self, rect):
         self.imageItem.setRect(rect)
@@ -292,7 +292,7 @@ class pmeshImageWidget(Qt.QtWidgets.QWidget):
 
         cmap = 'viridis' if cmap == 'Default' else cmap
         cm = pg.colormap.getFromMatplotlib(cmap)  # prepare a linear color map
-        self.histogram.axis.setLogMode(False)
+        # self.histogram.axis.setLogMode(False)
 
         if scale == 'Log':
             min_val = np.min(self.displayed_image)
@@ -303,7 +303,7 @@ class pmeshImageWidget(Qt.QtWidgets.QWidget):
             levels = np.nanpercentile(self.displayed_image, (0.1, 99.9))
             self.imageItem.setImage(self.displayed_image, levels=levels, **kwargs)
 
-            self.histogram.axis.setLogMode(True)
+            # self.histogram.axis.setLogMode(True)
         elif scale == 'Sqrt':
             min_val = np.min(self.displayed_image)
             if min_val < 0:
@@ -320,13 +320,14 @@ class pmeshImageWidget(Qt.QtWidgets.QWidget):
             levels = np.nanpercentile(self.displayed_image, (1, 99))
             self.imageItem.setImage(self.displayed_image, levels=levels, **kwargs)
 
-            self.histogram.axis.setLogMode(False)
+            # self.histogram.axis.setLogMode(False)
 
-        self.histogram.setCmap(cm)
+        self.imageItem.setLevels(levels)
+        # self.histogram.setCmap(cm)
 
-        self.histogram.setLevels(values=levels)
+        # self.histogram.setLevels(values=levels)
         low, high = np.min(self.displayed_image), np.max(self.displayed_image)
-        self.histogram.lo_lim, self.histogram.hi_lim = low, high
+        # self.histogram.lo_lim, self.histogram.hi_lim = low, high
 
 
 class PColorMeshItemLevels(PColorMeshItem):
@@ -458,15 +459,18 @@ class PColorMeshItemLevels(PColorMeshItem):
         # Second we associate each z value, that we normalize, to the lut
 
         vmin, vmax = self.z.min(), self.z.max()
-        # if self.levels is not None:
-        #     vmin, vmax = self.levels
-        #     vmin = max(vmin, self.z.min())
-        #     vmax = min(vmax, self.z.max())
+        ic(self.levels)
+        if self.levels is not None:
+            vmin, vmax = self.levels
+            vmin = max(vmin, self.z.min())
+            vmax = min(vmax, self.z.max())
 
         norm = self.z - vmin
         norm_max = vmax - vmin
         norm = norm / norm_max
         norm = (norm * (len(lut) - 1)).astype(int)
+        norm[norm < 0] = 0
+        norm[norm > 255] = 255
 
         # Go through all the data and draw the polygons accordingly
         for xi in range(self.z.shape[0]):
@@ -494,6 +498,7 @@ class PColorMeshItemLevels(PColorMeshItem):
 
     def setLevels(self, levels):
         self.levels = levels
+        self.update()
 
     def paint(self, p, *args):
         try:
@@ -503,3 +508,28 @@ class PColorMeshItemLevels(PColorMeshItem):
             return
 
         p.drawPicture(0, 0, self.qpicture)
+
+    def setRect(self, *args):
+        """
+        setRect(rect) or setRect(x,y,w,h)
+
+        Sets translation and scaling of this ImageItem to display the current image within the rectangle given
+        as ``QtCore.QRect`` or ``QtCore.QRectF`` `rect`, or described by parameters `x, y, w, h`, defining starting
+        position, width and height.
+
+        This method cannot be used before an image is assigned.
+        See the :ref:`examples <ImageItem_examples>` for how to manually set transformations.
+        """
+        if len(args) == 0:
+            self.resetTransform()  # reset scaling and rotation when called without argument
+            return
+        if isinstance(args[0], (QtCore.QRectF, QtCore.QRect)):
+            rect = args[0]  # use QRectF or QRect directly
+        else:
+            if hasattr(args[0], '__len__'):
+                args = args[0]  # promote tuple or list of values
+            rect = QtCore.QRectF(*args)  # QRectF(x,y,w,h), but also accepts other initializers
+        tr = QtGui.QTransform()
+        tr.translate(rect.left(), rect.top())
+        tr.scale(rect.width() / self.width(), rect.height() / self.height())
+        self.setTransform(tr)

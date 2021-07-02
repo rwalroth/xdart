@@ -30,7 +30,7 @@ try:
     from icecream import ic
     from icecream import install
     ic.configureOutput(prefix='', includeContext=True)
-    ic.enable()
+    ic.disable()
     install()
 except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
@@ -155,10 +155,6 @@ class staticWidget(QWidget):
 
         # DisplayFrame signal connections
         self.displayframe.ui.update2D.stateChanged.connect(self.update_h5_options)
-        # self.displayframe.ui.pushRight.clicked.connect(self.next_arch)
-        # self.displayframe.ui.pushLeft.clicked.connect(self.prev_arch)
-        # self.displayframe.ui.pushRightLast.clicked.connect(self.last_arch)
-        # self.displayframe.ui.pushLeftLast.clicked.connect(self.first_arch)
         self.h5viewer.actionSaveImage.triggered.connect(
             self.displayframe.save_image
         )

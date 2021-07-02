@@ -54,4 +54,3 @@ class Ui_MainWindow(object):
         self.menuExperiments.setTitle(_translate("MainWindow", "Experiments"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-
