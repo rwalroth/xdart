@@ -1,1 +1,0 @@
-pyi-makespec xdart_main.py --onefile --add-data '/Users/vthampy/mc/envs/xdart_env/lib/python3.9/site-packages/pyqtgraph_extensions/*.png:.' --exclude-module 'icecream' --hidden-import 'cmath' --hidden-import 'scipy' --collect-all 'pyFAI' --collect-all 'fabio' --collect-all 'silx' --collect-all 'hdf5plugin'

@@ -1,0 +1,1 @@
+pyi-makespec xdart_main.py --onefile --exclude-module 'icecream' --hidden-import 'cmath' --hidden-import 'scipy' --collect-submodules 'pyFAI' --collect-all 'fabio' --collect-all 'silx' --collect-all 'hdf5plugin' --add-data "/Users/vthampy/mc/envs/xdart_env/lib/python3.9/site-packages/pyFAI/resources/calibration/*:pyFAI/resources/calibration/"

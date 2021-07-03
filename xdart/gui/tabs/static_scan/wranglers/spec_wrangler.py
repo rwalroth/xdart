@@ -1140,7 +1140,7 @@ class specProcess(wranglerProcess):
                     self.signal_q.put(('TERMINATE', None))
                     break
 
-                print(f'wrangled: {i}')
+                # print(f'wrangled: {i}')
                 i += 1
                 time.sleep(0.3)
 
