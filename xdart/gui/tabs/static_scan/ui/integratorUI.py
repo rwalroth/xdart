@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'integratorUI.ui'
+# Form implementation generated from reading ui file '.\integratorUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.15.2
+# Created by: PyQt5 UI code generator 5.12.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -55,7 +55,7 @@ class Ui_Form(object):
         self.label1D.setMinimumSize(QtCore.QSize(70, 0))
         self.label1D.setMaximumSize(QtCore.QSize(70, 16777215))
         font = QtGui.QFont()
-        font.setPointSize(12)
+        font.setPointSize(11)
         font.setBold(True)
         font.setWeight(75)
         self.label1D.setFont(font)
@@ -154,8 +154,8 @@ class Ui_Form(object):
         sizePolicy.setHeightForWidth(self.integrate1D.sizePolicy().hasHeightForWidth())
         self.integrate1D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
-        font.setFamily(".AppleSystemUIFont")
-        font.setPointSize(13)
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(9)
         self.integrate1D.setFont(font)
         self.integrate1D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.integrate1D.setObjectName("integrate1D")
@@ -167,8 +167,8 @@ class Ui_Form(object):
         sizePolicy.setHeightForWidth(self.advanced1D.sizePolicy().hasHeightForWidth())
         self.advanced1D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
-        font.setFamily(".AppleSystemUIFont")
-        font.setPointSize(13)
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(9)
         self.advanced1D.setFont(font)
         self.advanced1D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.advanced1D.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -213,7 +213,7 @@ class Ui_Form(object):
         self.label2D.setMinimumSize(QtCore.QSize(70, 0))
         self.label2D.setMaximumSize(QtCore.QSize(70, 16777215))
         font = QtGui.QFont()
-        font.setPointSize(12)
+        font.setPointSize(11)
         font.setBold(True)
         font.setWeight(75)
         self.label2D.setFont(font)
@@ -318,8 +318,8 @@ class Ui_Form(object):
         sizePolicy.setHeightForWidth(self.integrate2D.sizePolicy().hasHeightForWidth())
         self.integrate2D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
-        font.setFamily(".AppleSystemUIFont")
-        font.setPointSize(13)
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(9)
         self.integrate2D.setFont(font)
         self.integrate2D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.integrate2D.setObjectName("integrate2D")
@@ -331,8 +331,8 @@ class Ui_Form(object):
         sizePolicy.setHeightForWidth(self.advanced2D.sizePolicy().hasHeightForWidth())
         self.advanced2D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
-        font.setFamily(".AppleSystemUIFont")
-        font.setPointSize(13)
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(11)
         self.advanced2D.setFont(font)
         self.advanced2D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.advanced2D.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -358,15 +358,15 @@ class Ui_Form(object):
         self.pyfai_calib = QtWidgets.QPushButton(self.frame_3)
         self.pyfai_calib.setMinimumSize(QtCore.QSize(0, 20))
         font = QtGui.QFont()
-        font.setFamily(".AppleSystemUIFont")
-        font.setPointSize(14)
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(10)
         self.pyfai_calib.setFont(font)
         self.pyfai_calib.setObjectName("pyfai_calib")
         self.horizontalLayout_13.addWidget(self.pyfai_calib)
         self.get_mask = QtWidgets.QPushButton(self.frame_3)
         font = QtGui.QFont()
-        font.setFamily(".AppleSystemUIFont")
-        font.setPointSize(14)
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(10)
         self.get_mask.setFont(font)
         self.get_mask.setObjectName("get_mask")
         self.horizontalLayout_13.addWidget(self.get_mask)

@@ -18,11 +18,6 @@ from pyqtgraph.parametertree import Parameter
 # This module imports
 from xdart.modules.ewald import EwaldSphere
 
-try:
-    from icecream import ic
-except ImportError:  # Graceful fallback if IceCream isn't installed.
-    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
-
 
 class wranglerWidget(Qt.QtWidgets.QWidget):
     """Base class for wranglers. Extending this ensures all methods,
@@ -67,7 +62,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         """fname: str, file path
         file_lock: mp.Condition, process safe lock
         """
-        ic()
+        #ic()
         super().__init__(parent)
         self.file_lock = file_lock
         self.fname = fname
@@ -89,14 +84,14 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         """Use this function to control what is enabled and disabled
         during integration.
         """
-        ic()
+        #ic()
         pass
 
     def setup(self):
         """Sets the thread child object. Called by tthetaWidget prior
         to starting thread.
         """
-        ic()
+        #ic()
         self.thread = wranglerThread(self.command_queue, self.sphere_args, self.fname, self.file_lock, self)
 
     def set_fname(self, fname):
@@ -104,7 +99,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         args:
             fname: str, path for new file.
         """
-        ic()
+        #ic()
         with self.file_lock:
             if not self.thread.isRunning():
                 self.fname = fname
@@ -148,7 +143,7 @@ class wranglerThread(Qt.QtCore.QThread):
         fname: str, path to data file.
         file_lock: mp.Condition, process safe lock for file access
         """
-        ic()
+        #ic()
         super().__init__(parent)
         self.input_q = command_queue # thread queue
         self.sphere_args = sphere_args
@@ -161,7 +156,7 @@ class wranglerThread(Qt.QtCore.QThread):
         """Main task. Should initialize child process here and listen
         to input and signal queues.
         """
-        ic()
+        #ic()
         process = wranglerProcess(
             self.command_q, 
             self.signal_q, 
@@ -206,7 +201,7 @@ class wranglerProcess(mp.Process):
         fname: str, path to data file
         file_lock: mp.Condition, process safe lock for file access
         """
-        ic()
+        #ic()
         super().__init__(*args, **kwargs)
         self.command_q = command_q
         self.signal_q = signal_q
@@ -218,7 +213,7 @@ class wranglerProcess(mp.Process):
         """Target of process, calls _main inside a try except clause to
         handle errors.
         """
-        ic()
+        #ic()
         try:
             self._main()
         except:
@@ -229,7 +224,7 @@ class wranglerProcess(mp.Process):
     def _main(self):
         """Treated like overriding run in a normal multiprocess Process.
         """
-        ic()
+        #ic()
         sphere = EwaldSphere(data_file=self.fname,
                              # keep_in_memory=True,
                              static=True,

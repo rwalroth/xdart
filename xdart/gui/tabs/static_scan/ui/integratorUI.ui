@@ -136,7 +136,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>12</pointsize>
+                 <pointsize>11</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
@@ -428,8 +428,8 @@
                </property>
                <property name="font">
                 <font>
-                 <family>.AppleSystemUIFont</family>
-                 <pointsize>13</pointsize>
+                 <family>MS Shell Dlg 2</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -450,8 +450,8 @@
                </property>
                <property name="font">
                 <font>
-                 <family>.AppleSystemUIFont</family>
-                 <pointsize>13</pointsize>
+                 <family>MS Shell Dlg 2</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -573,7 +573,7 @@
                </property>
                <property name="font">
                 <font>
-                 <pointsize>12</pointsize>
+                 <pointsize>11</pointsize>
                  <weight>75</weight>
                  <bold>true</bold>
                 </font>
@@ -886,8 +886,8 @@
                </property>
                <property name="font">
                 <font>
-                 <family>.AppleSystemUIFont</family>
-                 <pointsize>13</pointsize>
+                 <family>MS Shell Dlg 2</family>
+                 <pointsize>9</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -908,8 +908,8 @@
                </property>
                <property name="font">
                 <font>
-                 <family>.AppleSystemUIFont</family>
-                 <pointsize>13</pointsize>
+                 <family>MS Shell Dlg 2</family>
+                 <pointsize>11</pointsize>
                 </font>
                </property>
                <property name="focusPolicy">
@@ -981,8 +981,8 @@
           </property>
           <property name="font">
            <font>
-            <family>.AppleSystemUIFont</family>
-            <pointsize>14</pointsize>
+            <family>MS Shell Dlg 2</family>
+            <pointsize>10</pointsize>
            </font>
           </property>
           <property name="text">
@@ -994,8 +994,8 @@
          <widget class="QPushButton" name="get_mask">
           <property name="font">
            <font>
-            <family>.AppleSystemUIFont</family>
-            <pointsize>14</pointsize>
+            <family>MS Shell Dlg 2</family>
+            <pointsize>10</pointsize>
            </font>
           </property>
           <property name="text">

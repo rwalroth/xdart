@@ -23,11 +23,6 @@ from pyqtgraph.parametertree import Parameter
 from .ui.integratorUI import Ui_Form
 from .sphere_threads import integratorThread
 
-try:
-    from icecream import ic
-except ImportError:  # Graceful fallback if IceCream isn't installed.
-    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
-
 _translate = Qt.QtCore.QCoreApplication.translate
 QFileDialog = Qt.QtWidgets.QFileDialog
 
@@ -144,7 +139,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
     """
     def __init__(self, sphere, arch, file_lock,
                  arches, arch_ids, data_2d, parent=None):
-        ic()
+        #ic()
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -216,7 +211,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         args:
             sphere: EwaldSphere, object to get args from.
         """
-        ic()
+        #ic()
         self._update_params()
 
     def setEnabled(self, enable=True):
@@ -227,7 +222,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
             enable: bool, If True widgets are enabled. If False
                 they are disabled.
         """
-        ic()
+        #ic()
         self.ui.frame1D.setEnabled(enable)
         self.ui.frame2D.setEnabled(enable)
         self.advancedWidget1D.setEnabled(enable)
@@ -255,7 +250,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_radial_autoRange_1D(self):
         """Disable/Enable radial 1D widget if auto range is un/selected
         """
-        ic()
+        #ic()
         self.radial_autoRange_1D = self.ui.radial_autoRange_1D.isChecked()
         # self.setEnabled()
 
@@ -274,7 +269,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_azim_autoRange_1D(self):
         """Disable/Enable azim 1D widget if auto range is un/selected
         """
-        ic()
+        #ic()
         self.azim_autoRange_1D = self.ui.azim_autoRange_1D.isChecked()
 
         self.bai_1d_pars.child('azimuth_range', 'Auto').setValue(
@@ -293,7 +288,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_radial_autoRange_2D(self):
         """Disable/Enable radial 2D widget if auto range is un/selected
         """
-        ic()
+        #ic()
         self.radial_autoRange_2D = self.ui.radial_autoRange_2D.isChecked()
 
         self.bai_2d_pars.child('radial_range', 'Auto').setValue(
@@ -312,7 +307,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_azim_autoRange_2D(self):
         """Disable/Enable radial 2D widget if auto range is un/selected
         """
-        ic()
+        #ic()
         self.azim_autoRange_2D = self.ui.azim_autoRange_2D.isChecked()
 
         self.bai_2d_pars.child('azimuth_range', 'Auto').setValue(
@@ -329,7 +324,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         # print(f"integrator > update_azim_autoRange_2D: azimuth_range = {self.sphere.bai_2d_args['azimuth_range']}")
 
     def _validate_ranges(self):
-        ic()
+        #ic()
         self.ui.npts_1D.setValidator(Qt.QtGui.QIntValidator(0, 50000))
         self.ui.npts_radial_2D.setValidator(Qt.QtGui.QIntValidator(0, 50000))
         self.ui.npts_azim_2D.setValidator(Qt.QtGui.QIntValidator(0, 50000))
@@ -357,7 +352,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         args:
             sphere: EwaldSphere, object to get args from.
         """
-        ic()
+        #ic()
 
         self._disconnect_inp_signals()
         with self.sphere.sphere_lock:
@@ -372,26 +367,26 @@ class integratorTree(Qt.QtWidgets.QWidget):
             sphere: EwaldSphere, object to update
             key: str, which args to update.
         """
-        ic()
+        #ic()
         with self.sphere.sphere_lock:
             if key == 'bai_1d':
-                ic('bai_1D_args before', self.sphere.bai_1d_args)
+                #ic('bai_1D_args before', self.sphere.bai_1d_args)
                 self._get_npts_1D()
                 self._get_unit_1D()
                 self._get_radial_range_1D()
                 self._get_azim_range_1D()
                 self._params_to_args(self.sphere.bai_1d_args, self.bai_1d_pars)
-                ic('bai_1D_args after', self.sphere.bai_1d_args)
+                #ic('bai_1D_args after', self.sphere.bai_1d_args)
 
             elif key == 'bai_2d':
-                ic('bai_2D_args before', self.sphere.bai_2d_args)
+                #ic('bai_2D_args before', self.sphere.bai_2d_args)
                 self._get_npts_radial_2D()
                 self._get_npts_azim_2D()
                 self._get_unit_2D()
                 self._get_radial_range_2D()
                 self._get_azim_range_2D()
                 self._params_to_args(self.sphere.bai_2d_args, self.bai_2d_pars)
-                ic('bai_2D_args after', self.sphere.bai_2d_args)
+                #ic('bai_2D_args after', self.sphere.bai_2d_args)
 
     def _args_to_params(self, args, tree, dim='1D'):
         """Takes in args dictionary and sets all parameters in tree
@@ -401,9 +396,9 @@ class integratorTree(Qt.QtWidgets.QWidget):
             args: dict, values to use for updating tree
             tree: pyqtgraph Parameter, parameters to update
         """
-        ic()
+        #ic()
 
-        ic(args)
+        #ic(args)
         if len(args) == 0:
             return
 
@@ -455,9 +450,9 @@ class integratorTree(Qt.QtWidgets.QWidget):
             args: dict, values to be updates
             tree: pyqtgraph Parameter, parameters used to update args
         """
-        ic()
+        #ic()
 
-        ic(tree, args)
+        #ic(tree, args)
         for child in tree.children():
             # print(f'integrator > _params_to_args: child.name, value = {child.name()}, {child.value()}')
             if 'range' in child.name():
@@ -483,7 +478,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     def _get_radial_range_1D(self):
         """Sets Sphere 1D radial range in bai_1d_args from UI values"""
-        ic()
+        #ic()
 
         auto = self.ui.radial_autoRange_1D.isChecked()
         self.radial_autoRange_1D = auto
@@ -496,16 +491,16 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
         self.ui.radial_low_1D.setEnabled(not auto)
         self.ui.radial_high_1D.setEnabled(not auto)
-        ic(_range)
+        #ic(_range)
 
     def _set_radial_range_1D(self):
         """Sets UI values from Sphere 1D radial range in bai_1d_args"""
-        ic()
+        #ic()
 
         self._disconnect_radial_range_1D_signals()
 
         _range = self.sphere.bai_1d_args['radial_range']
-        ic(self.sphere.bai_1d_args, _range)
+        #ic(self.sphere.bai_1d_args, _range)
         if _range is None:
             self.ui.radial_autoRange_1D.setChecked(True)
             auto = True
@@ -522,7 +517,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     def _get_azim_range_1D(self):
         """Sets Sphere 1D azimuth range in bai_1d_args from UI values"""
-        ic()
+        #ic()
 
         auto = self.ui.azim_autoRange_1D.isChecked()
         self.azim_autoRange_1D = auto
@@ -535,16 +530,16 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
         self.ui.azim_low_1D.setEnabled(not auto)
         self.ui.azim_high_1D.setEnabled(not auto)
-        ic(_range)
+        #ic(_range)
 
     def _set_azim_range_1D(self):
         """Sets UI values from Sphere 1D aazimuth range in bai_1d_args"""
-        ic()
+        #ic()
 
         self._disconnect_azim_range_1D_signals()
 
         _range = self.sphere.bai_1d_args['azimuth_range']
-        ic(self.sphere.bai_1d_args, _range)
+        #ic(self.sphere.bai_1d_args, _range)
         if _range is None:
             self.ui.azim_autoRange_1D.setChecked(True)
             auto = True
@@ -561,7 +556,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     def _get_radial_range_2D(self):
         """Sets Sphere 2D radial range in bai_1d_args from UI values"""
-        ic()
+        #ic()
 
         auto = self.ui.radial_autoRange_2D.isChecked()
         self.radial_autoRange_2D = auto
@@ -578,16 +573,16 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
         self.ui.radial_low_2D.setEnabled(not auto)
         self.ui.radial_high_2D.setEnabled(not auto)
-        ic(_range)
+        #ic(_range)
 
     def _set_radial_range_2D(self):
         """Sets UI values from Sphere 2D radial range in bai_2d_args"""
-        ic()
+        #ic()
 
         self._disconnect_radial_range_2D_signals()
 
         _range = self.sphere.bai_2d_args['radial_range']
-        ic(self.sphere.bai_2d_args, _range)
+        #ic(self.sphere.bai_2d_args, _range)
         if _range is None:
             self.ui.radial_autoRange_2D.setChecked(True)
             auto = True
@@ -604,7 +599,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     def _get_azim_range_2D(self):
         """Sets Sphere 2D azimuth range in bai_1d_args from UI values"""
-        ic()
+        #ic()
 
         auto = self.ui.azim_autoRange_2D.isChecked()
         self.azim_autoRange_2D = auto
@@ -621,16 +616,16 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
         self.ui.azim_low_2D.setEnabled(not auto)
         self.ui.azim_high_2D.setEnabled(not auto)
-        ic(_range)
+        #ic(_range)
 
     def _set_azim_range_2D(self):
         """Sets UI values from Sphere 1D aazimuth range in bai_1d_args"""
-        ic()
+        #ic()
 
         self._disconnect_azim_range_2D_signals()
 
         _range = self.sphere.bai_2d_args['azimuth_range']
-        ic(self.sphere.bai_2d_args, _range)
+        #ic(self.sphere.bai_2d_args, _range)
         if _range is None:
             self.ui.azim_autoRange_2D.setChecked(True)
             auto = True
@@ -661,94 +656,94 @@ class integratorTree(Qt.QtWidgets.QWidget):
         return [low, high]
 
     def _get_unit_1D(self):
-        ic()
+        #ic()
 
         val = self.ui.unit_1D.currentText()
-        ic(val, Units_dict[val])
+        #ic(val, Units_dict[val])
         self.sphere.bai_1d_args['unit'] = Units_dict[val]
         self._validate_ranges()
 
     def _set_unit_1D(self):
-        ic()
+        #ic()
 
         self.ui.unit_1D.currentTextChanged.disconnect(self._get_unit_1D)
         val = self.sphere.bai_1d_args['unit']
-        ic(val, type(val), Units_dict_inv[val])
+        #ic(val, type(val), Units_dict_inv[val])
         self.ui.unit_1D.setCurrentIndex(Units_dict_inv[val])
         self.ui.unit_1D.currentTextChanged.connect(self._get_unit_1D)
 
     def _get_unit_2D(self):
-        ic()
+        #ic()
 
         val = self.ui.unit_2D.currentText()
-        ic(val, Units_dict[val])
+        #ic(val, Units_dict[val])
         self.sphere.bai_2d_args['unit'] = Units_dict[val]
         self._validate_ranges()
 
     def _set_unit_2D(self):
-        ic()
+        #ic()
 
         self.ui.unit_2D.currentTextChanged.disconnect(self._get_unit_2D)
         val = self.sphere.bai_2d_args['unit']
-        ic(val, type(val), Units_dict_inv[val])
+        #ic(val, type(val), Units_dict_inv[val])
         self.ui.unit_2D.setCurrentIndex(Units_dict_inv[val])
         # self.ui.unit_2D.setCurrentText(Units_dict_inv[val])
         self.ui.unit_2D.currentTextChanged.connect(self._get_unit_2D)
 
     def _get_npts_1D(self):
-        ic()
+        #ic()
 
         val = self.ui.npts_1D.text()
         val = 500 if (not val) else int(val)
-        ic(val)
+        #ic(val)
         self.sphere.bai_1d_args['numpoints'] = val
 
     def _set_npts_1D(self):
-        ic()
+        #ic()
 
         self.ui.npts_1D.textChanged.disconnect(self._get_npts_1D)
         val = str(self.sphere.bai_1d_args['numpoints'])
-        ic(val, type(val))
+        #ic(val, type(val))
         self.ui.npts_1D.setText(val)
         self.ui.npts_1D.textChanged.connect(self._get_npts_1D)
 
     def _get_npts_radial_2D(self):
-        ic()
+        #ic()
 
         val = self.ui.npts_radial_2D.text()
         val = 500 if (not val) else int(val)
-        ic(val)
+        #ic(val)
         self.sphere.bai_2d_args['npt_rad'] = val
 
     def _set_npts_radial_2D(self):
-        ic()
+        #ic()
 
         self.ui.npts_radial_2D.textChanged.disconnect(self._get_npts_radial_2D)
         val = str(self.sphere.bai_2d_args['npt_rad'])
-        ic(val, type(val))
+        #ic(val, type(val))
         self.ui.npts_radial_2D.setText(val)
         self.ui.npts_radial_2D.textChanged.connect(self._get_npts_radial_2D)
 
     def _get_npts_azim_2D(self):
-        ic()
+        #ic()
 
         val = self.ui.npts_azim_2D.text()
         val = 500 if (not val) else int(val)
-        ic(val)
+        #ic(val)
         self.sphere.bai_2d_args['npt_azim'] = val
 
     def _set_npts_azim_2D(self):
-        ic()
+        #ic()
 
         self.ui.npts_azim_2D.textChanged.disconnect(self._get_npts_azim_2D)
         val = str(self.sphere.bai_2d_args['npt_azim'])
-        ic(val, type(val))
+        #ic(val, type(val))
         self.ui.npts_azim_2D.setText(val)
         self.ui.npts_azim_2D.textChanged.connect(self._get_npts_azim_2D)
 
     def _connect_inp_signals(self):
         """Connect signals for all input sphere bai parameters"""
-        ic()
+        #ic()
 
         # Connect points and units signals
         self.ui.npts_1D.textChanged.connect(self._get_npts_1D)
@@ -770,7 +765,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     def _disconnect_inp_signals(self):
         """Disconnect signals for all input sphere bai parameters"""
-        ic()
+        #ic()
 
         # Disconnect points and units signals
         self.ui.npts_1D.textChanged.disconnect(self._get_npts_1D)
@@ -840,8 +835,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def bai_1d(self, q):
         """Uses the integrator_thread attribute to call bai_1d
         """
-        ic()
-        ic(self.sphere.arches.index, list(self.arches.keys()))
+        #ic()
+        #ic(self.sphere.arches.index, list(self.arches.keys()))
         with self.integrator_thread.lock:
             if len(self.sphere.arches.index) > 0:
                 self.integrator_thread.method = 'bai_1d_all'
@@ -857,8 +852,8 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def bai_2d(self, q):
         """Uses the integrator_thread attribute to call bai_2d
         """
-        ic()
-        ic(self.sphere.arches.index, list(self.arches.keys()))
+        #ic()
+        #ic(self.sphere.arches.index, list(self.arches.keys()))
         with self.integrator_thread.lock:
             if len(self.sphere.arches.index) > 0:
                 self.integrator_thread.method = 'bai_2d_all'
@@ -935,7 +930,7 @@ class advancedParameters(Qt.QtWidgets.QWidget):
     sigUpdateArgs = Qt.QtCore.Signal(str)
 
     def __init__(self, parameter, name, parent=None):
-        ic()
+        #ic()
         super().__init__(parent)
         self.name = name
         self.parameter = parameter
@@ -947,5 +942,5 @@ class advancedParameters(Qt.QtWidgets.QWidget):
         self.layout.addWidget(self.tree)
 
     def process_change(self, tree, changes):
-        ic()
+        #ic()
         self.sigUpdateArgs.emit(self.name)

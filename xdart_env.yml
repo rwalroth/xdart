@@ -2,9 +2,8 @@ name: xdart_env
 channels:
   - defaults
   - conda-forge
-  - nsls2forge
 dependencies:
-  - python[version='>=3.8']
+  - python[version='>=3.9']
   - h5py[version='>=2.10']
   - scikit-learn
   - silx
@@ -13,7 +12,7 @@ dependencies:
   - qtpy
   - scipy
   - matplotlib
-  - pyqtgraph
+  - pyqtgraph[version='>=0.12']
   - pandas
   - pyyaml
   - fabio

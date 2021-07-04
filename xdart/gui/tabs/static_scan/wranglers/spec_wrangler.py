@@ -29,11 +29,6 @@ from xdart.utils import split_file_name, get_scan_name, get_img_number, get_fnam
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
-try:
-    from icecream import ic
-except ImportError:  # Graceful fallback if IceCream isn't installed.
-    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
-
 QFileDialog = QtWidgets.QFileDialog
 QDialog = QtWidgets.QDialog
 QMessageBox = QtWidgets.QMessageBox
@@ -139,7 +134,7 @@ class specWrangler(wranglerWidget):
         file_lock: mp.Condition, process safe lock
         """
 
-        ic()
+        #ic()
         super().__init__(fname, file_lock, parent)
 
         # Scan Parameters
@@ -292,7 +287,7 @@ class specWrangler(wranglerWidget):
     def setup(self):
         """Sets up the child thread, syncs all parameters.
         """
-        ic()
+        #ic()
         # Calibration
         self.poni_file = self.parameters.child('Calibration').child('PONI File').value()
         self.thread.poni_file = self.poni_file
@@ -300,13 +295,13 @@ class specWrangler(wranglerWidget):
         # Signal
         self.file_filter = self.parameters.child('Signal').child('Filter').value()
         self.thread.file_filter = self.file_filter
-        ic(self.file_filter)
+        #ic(self.file_filter)
 
         self.inp_type = self.parameters.child('Signal').child('inp_type').value()
         self.thread.inp_type = self.inp_type
         self.get_img_fname()
         self.thread.img_fname = self.img_fname
-        ic(self.img_fname, self.inp_type)
+        #ic(self.img_fname, self.inp_type)
 
         self.thread.single_img = self.single_img
 
@@ -319,7 +314,7 @@ class specWrangler(wranglerWidget):
 
         self.scan_name = get_scan_name(self.img_fname)
         self.thread.scan_name = self.scan_name
-        ic(self.img_dir, self.scan_name, self.img_ext)
+        #ic(self.img_dir, self.scan_name, self.img_ext)
 
         # self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
         fname_dir = get_fname_dir(self.scan_name)
@@ -374,7 +369,7 @@ class specWrangler(wranglerWidget):
         commandLine send_command method to add command to list of
         commands.
         """
-        ic()
+        #ic()
         command = self.specCommandLine.text()
         if not (command.isspace() or command == ''):
             try:
@@ -386,24 +381,24 @@ class specWrangler(wranglerWidget):
         commandLine.send_command(self.specCommandLine)
 
     def pause(self):
-        ic()
+        #ic()
         if self.thread.isRunning():
             self.command_queue.put('pause')
 
     def cont(self):
-        ic()
+        #ic()
         if self.thread.isRunning():
             self.command_queue.put('continue')
 
     def stop(self):
-        ic()
+        #ic()
         if self.thread.isRunning():
             self.command_queue.put('stop')
 
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
         """
-        ic()
+        #ic()
         fname, _ = QFileDialog().getOpenFileName(
             filter="PONI (*.poni *.PONI)"
         )
@@ -436,12 +431,12 @@ class specWrangler(wranglerWidget):
 
         self.inp_type = inp_type
         self.get_img_fname()
-        ic(self.single_img, self.inp_type)
+        #ic(self.single_img, self.inp_type)
 
     def set_img_file(self):
         """Opens file dialogue and sets the spec data file
         """
-        ic()
+        #ic()
         fname, _ = QFileDialog().getOpenFileName(
             filter="Images (*.tiff *.tif *.h5 *.raw *.mar3450)"
         )
@@ -452,7 +447,7 @@ class specWrangler(wranglerWidget):
     def set_img_dir(self):
         """Opens file dialogue and sets the signal data folder
         """
-        ic()
+        #ic()
         path = QFileDialog().getExistingDirectory(
             caption='Choose Image Directory',
             directory='',
@@ -465,7 +460,7 @@ class specWrangler(wranglerWidget):
     def get_img_fname(self):
         """Sets file name based on chosen options
         """
-        ic()
+        #ic()
         old_fname = self.img_fname
         if self.inp_type != 'Image Directory':
             img_fname = self.parameters.child('Signal').child('File').value()
@@ -474,17 +469,17 @@ class specWrangler(wranglerWidget):
                 self.img_dir, _, self.img_ext = split_file_name(self.img_fname)
                 self.meta_ext = self.get_meta_ext(self.img_fname)
                 # self.img_ext = os.path.splitext(img_fname)[1][1:]
-                ic(self.img_ext)
+                #ic(self.img_ext)
                 # if self.get_meta_ext(img_fname) or (self.img_ext in ['h5', 'hdf5', 'mar3450']):
         else:
             self.img_ext = self.parameters.child('Signal').child('img_ext').value()
             self.img_dir = self.parameters.child('Signal').child('img_dir').value()
             filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-            ic(self.img_ext, self.img_dir, filters)
+            #ic(self.img_ext, self.img_dir, filters)
             # f_names = sorted(glob.glob(os.path.join(
             #     img_dir, f'{filters}[0-9][0-9][0-9][0-9].{img_ext}')))
             fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
-            ic(fnames)
+            #ic(fnames)
 
             # Check if metadata file exists
             # fnames = [f for f in fnames if self.get_meta_ext(f) or (self.img_ext in ['h5', 'hdf5'])]
@@ -509,9 +504,9 @@ class specWrangler(wranglerWidget):
             # else:
             #     self.img_fname = ''
 
-            ic(self.img_ext, self.img_dir, self.img_fname, fnames, filters, self.file_filter)
+            #ic(self.img_ext, self.img_dir, self.img_fname, fnames, filters, self.file_filter)
 
-        ic(old_fname, self.img_fname, self.inp_type)
+        #ic(old_fname, self.img_fname, self.inp_type)
 
         if (((self.img_fname != old_fname) or (self.img_fname and (len(self.scan_parameters) < 1)))
                 and self.meta_ext):
@@ -527,14 +522,14 @@ class specWrangler(wranglerWidget):
             img_fname: {str} Path of image file
 
         """
-        ic()
+        #ic()
         img_root = os.path.splitext(img_fname)[0]
         fnames = glob.glob(f'{img_root}.*')
-        ic(img_root, fnames, os.path.splitext(img_fname))
+        #ic(img_root, fnames, os.path.splitext(img_fname))
 
         # exts = [f.replace(img_root, '')[1:] for f in fnames if f != img_fname]
         exts = [os.path.splitext(f)[1][1:] for f in fnames if f != img_fname]
-        ic(exts)
+        #ic(exts)
 
         meta_ext = None
         for ext in exts:
@@ -542,13 +537,13 @@ class specWrangler(wranglerWidget):
                 meta_ext = ext
                 break
 
-        ic(meta_ext)
+        #ic(meta_ext)
         return meta_ext
 
     def set_mask_file(self):
         """Opens file dialogue and sets the mask file
         """
-        ic()
+        #ic()
         fname, _ = QFileDialog().getOpenFileName()
         if fname != '':
             self.parameters.child('Signal').child('mask_file').setValue(fname)
@@ -557,7 +552,7 @@ class specWrangler(wranglerWidget):
     def set_bg_type(self):
         """Change Parameter Names depending on BG Type
         """
-        ic()
+        #ic()
         self.parameters.child('BG').child('File').show()
         self.parameters.child('BG').child('bg_file_browse').show()
         self.parameters.child('BG').child('Match').hide()
@@ -571,7 +566,7 @@ class specWrangler(wranglerWidget):
     def set_bg_file(self):
         """Opens file dialogue and sets the background file
         """
-        ic()
+        #ic()
         fname, _ = QFileDialog().getOpenFileName()
         if fname != '':
             self.parameters.child('BG').child('File').setValue(fname)
@@ -580,7 +575,7 @@ class specWrangler(wranglerWidget):
     def set_bg_dir(self):
         """Opens file dialogue and sets the background folder
         """
-        ic()
+        #ic()
         path = QFileDialog().getExistingDirectory(
             caption='Choose Bkg Directory',
             directory='',
@@ -594,7 +589,7 @@ class specWrangler(wranglerWidget):
     def set_bg_matching_options(self):
         """Reads image metadata to populate matching parameters
         """
-        ic()
+        #ic()
         pars = [p for p in self.scan_parameters if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
         pars.insert(0, 'File Root')
         if 'TEMP' in pars:
@@ -607,14 +602,14 @@ class specWrangler(wranglerWidget):
     def set_bg_matching_par(self):
         """Changes bg matching parameter
         """
-        ic()
+        #ic()
         self.bg_matching_par = self.parameters.child('BG').child('Match').child('Parameter').value()
-        ic(self.bg_matching_par)
+        #ic(self.bg_matching_par)
 
     def set_bg_norm_options(self):
         """Counter Values used to normalize and subtract background
         """
-        ic()
+        #ic()
         pars = self.counters
         pars.insert(0, 'None')
 
@@ -629,7 +624,7 @@ class specWrangler(wranglerWidget):
     def set_gi_motor_options(self):
         """Reads image metadata to populate possible GI theta motor
         """
-        ic()
+        #ic()
         # pars = [p for p in self.scan_parameters if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
         pars = [p for p in self.motors if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
         if 'th' in pars:
@@ -651,11 +646,11 @@ class specWrangler(wranglerWidget):
     def get_scan_parameters(self):
         """Reads image metadata to populate matching parameters
         """
-        ic()
+        #ic()
         if not self.img_fname:
             return
         meta_file = f'{os.path.splitext(self.img_fname)[0]}.{self.meta_ext}'
-        ic(meta_file)
+        #ic(meta_file)
         # print(meta_file)
 
         if not os.path.exists(meta_file):
@@ -676,7 +671,7 @@ class specWrangler(wranglerWidget):
         args:
             enable: bool, True for enabled False for disabled.
         """
-        ic()
+        #ic()
         self.tree.setEnabled(enable)
         self.ui.startButton.setEnabled(enable)
 
@@ -765,7 +760,7 @@ class specThread(wranglerThread):
         gi: bool, grazing incidence flag to determine if pyGIX is to be used
         th_mtr: float, incidence angle
         """
-        ic()
+        #ic()
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
 
         self.scan_name = scan_name
@@ -794,7 +789,7 @@ class specThread(wranglerThread):
         """Initializes specProcess and watches for new commands from
         parent or signals from the process.
         """
-        ic()
+        #ic()
 
         process = specProcess(
             self.command_q,
@@ -835,7 +830,7 @@ class specThread(wranglerThread):
             # Check for new commands
             if not self.input_q.empty():
                 command = self.input_q.get()
-                ic(command)
+                #ic(command)
                 self.command_q.put(command)
 
             # Check for new updates
@@ -848,9 +843,9 @@ class specThread(wranglerThread):
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
-                    ic(data)
+                    #ic(data)
                     self.sigUpdateFile.emit(*data)
-                    ic(self.scan_name, self.single_img)
+                    #ic(self.scan_name, self.single_img)
                 elif signal == 'TERMINATE':
                     last = True
 
@@ -868,7 +863,7 @@ class specThread(wranglerThread):
         args:
             q: Queue
         """
-        ic()
+        #ic()
         while not q.empty():
             _ = q.get()
 
@@ -948,7 +943,7 @@ class specProcess(wranglerProcess):
         timeout: float or int, how long to continue checking for new
             data.
         """
-        ic()
+        #ic()
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
                          *args, **kwargs)
 
@@ -983,8 +978,8 @@ class specProcess(wranglerProcess):
         signal queue, and catches errors. Calls wrangle method for
         reading in data, then performs integration.
         """
-        ic()
-        ic(self.inp_type)
+        #ic()
+        #ic(self.inp_type)
 
         if self.inp_type != 'Image Directory':
             self.process_scan()
@@ -1007,7 +1002,7 @@ class specProcess(wranglerProcess):
 
                 self.scan_name, self.img_fname, self.fname = self._get_new_scan_info()
                 if self.scan_name:
-                    ic(self.scan_name, self.img_fname, self.fname, self.processed, self.file_filter)
+                    #ic(self.scan_name, self.img_fname, self.fname, self.processed, self.file_filter)
                     self.signal_q.put(('message', f"New Scan: {self.scan_name}"))
                     time.sleep(3)
                     rv = self.process_scan()
@@ -1031,14 +1026,14 @@ class specProcess(wranglerProcess):
         """Go through series of images in a scan and process them individually
         """
         first_img = get_img_number(self.img_fname)
-        ic(first_img, self.single_img)
+        #ic(first_img, self.single_img)
         if (first_img is None) and (self.img_ext not in ['h5', 'hdf5']):
             self.single_img = True
             first_img = 1
 
         # Initialize sphere and save to disk, send update for new scan
-        ic(self.fname, self.scan_name, self.single_img, self.gi)
-        ic(os.path.exists(self.fname))
+        #ic(self.fname, self.scan_name, self.single_img, self.gi)
+        #ic(os.path.exists(self.fname))
 
         if not os.path.exists(self.fname):
             self.write_mode = 'Overwrite'
@@ -1049,22 +1044,22 @@ class specProcess(wranglerProcess):
                              th_mtr=self.th_mtr,
                              single_img=self.single_img,
                              **self.sphere_args)
-        ic(self.sphere_args)
+        #ic(self.sphere_args)
         with self.file_lock:
-            ic(os.path.exists(self.fname), self.write_mode)
+            #ic(os.path.exists(self.fname), self.write_mode)
             if self.write_mode == 'Append':
                 sphere.load_from_h5(replace=False, mode='a')
                 existing_arches = sphere.arches.index
                 if len(existing_arches) == 0:
                     sphere.save_to_h5(replace=True)
-                ic(sphere.arches.index, len(sphere.arches.index))
+                #ic(sphere.arches.index, len(sphere.arches.index))
             else:
                 sphere.save_to_h5(replace=True)
             self.signal_q.put(('new_scan',
                                (self.scan_name, self.fname,
                                 self.gi, self.th_mtr,
                                 self.single_img)))
-        ic(sphere.name)
+        #ic(sphere.name)
 
         # Enter main loop
         i = first_img
@@ -1086,7 +1081,7 @@ class specProcess(wranglerProcess):
                     pause = True
                     continue
 
-            ic(sphere.arches.index, list(sphere.arches.index))
+            #ic(sphere.arches.index, list(sphere.arches.index))
             if i in list(sphere.arches.index):
                 i += 1
                 continue
@@ -1120,7 +1115,7 @@ class specProcess(wranglerProcess):
                 )
 
                 # integrate image to 1d and 2d arrays
-                ic(sphere.bai_1d_args, sphere.bai_2d_args)
+                #ic(sphere.bai_1d_args, sphere.bai_2d_args)
                 arch.integrate_1d(**sphere.bai_1d_args)
                 arch.integrate_2d(**sphere.bai_2d_args)
 
@@ -1167,7 +1162,7 @@ class specProcess(wranglerProcess):
                 index of the data, raw image array, metadata
                 dict associated with the image.
         """
-        ic()
+        #ic()
         self.signal_q.put(('message', f'Checking for {i}'))
 
         # Construct raw_file path from attributes and index
@@ -1175,13 +1170,13 @@ class specProcess(wranglerProcess):
             image_file = self._get_image_path(i)
         else:
             image_file = self.img_fname
-        ic(image_file, i)
+        #ic(image_file, i)
 
         # Read raw file into numpy array
         arr = read_image_file(image_file, im=i-1, return_float=True)
         if arr is None:
             return 'TERMINATE', None
-        ic(arr.shape)
+        #ic(arr.shape)
 
         meta_file = ''
         if self.meta_ext:
@@ -1190,7 +1185,7 @@ class specProcess(wranglerProcess):
             image_meta = get_image_meta_data(meta_file)
         else:
             image_meta = {}
-        ic(image_meta)
+        #ic(image_meta)
 
         # Get Mask
         self.get_mask()
@@ -1217,7 +1212,7 @@ class specProcess(wranglerProcess):
         returns:
             image_file: str, absolute path to image file.
         """
-        ic()
+        #ic()
         im_base = '_'.join([
             self.scan_name,
             str(i).zfill(4)
@@ -1235,19 +1230,19 @@ class specProcess(wranglerProcess):
         f_names = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
         # f_names = sorted(glob.glob(os.path.join(
         #     self.img_dir, f'{filters}[0-9][0-9][0-9][0-9].{self.img_ext}')))
-        ic(filters, self.file_filter)
+        #ic(filters, self.file_filter)
 
         if len(f_names) == 0:
             return None, None, None
 
         scan_names = sorted(list(set([get_scan_name(f) for f in f_names])))
         scan_names = [s for s in scan_names if s not in self.processed]
-        # ic(scan_names)
+        # #ic(scan_names)
 
         if len(scan_names) == 0:
             return None, None, None
 
-        ic(filters, scan_names, self.processed)
+        #ic(filters, scan_names, self.processed)
         self.scan_name = scan_names[0]
         self.processed.append(self.scan_name)
 
@@ -1289,7 +1284,7 @@ class specProcess(wranglerProcess):
     def get_mask(self):
         """Get mask array from mask file
         """
-        ic()
+        #ic()
         if (not self.mask_file) or (not os.path.exists(self.mask_file)):
             self.mask = None
             return
@@ -1300,13 +1295,13 @@ class specProcess(wranglerProcess):
     def get_background(self, image_meta):
         """Subtract background image if bg_file or bg_dir specified
         """
-        ic()
+        #ic()
         bg_file, bg_meta = None, None
-        ic(self.bg_type, self.bg_file, self.bg_dir, self.bg_matching_par)
+        #ic(self.bg_type, self.bg_file, self.bg_dir, self.bg_matching_par)
 
         if self.bg_type == 'Single Bkg File':
             if self.bg_file:
-                ic(self.bg_file)
+                #ic(self.bg_file)
                 bg_file = self.bg_file
         else:
             if self.bg_dir:
@@ -1315,20 +1310,20 @@ class specProcess(wranglerProcess):
                 filters = '*' + '*'.join(f for f in self.bg_file_filter.split()) + '*'
                 meta_files = sorted(glob.glob(os.path.join(
                     self.img_dir, f'{filters}[0-9][0-9][0-9][0-9].{self.meta_ext}')))
-                ic(filters, meta_files)
+                #ic(filters, meta_files)
 
                 for meta_file in meta_files:
                     bg_meta = get_image_meta_data(meta_file)
                     if bg_meta[self.bg_matching_par] == image_meta[self.bg_matching_par]:
                         bg_file = f'{os.path.splitext(meta_file)[0]}.{self.img_ext}'
-                        ic(meta_file, bg_file)
-                        ic(bg_meta[self.bg_matching_par], image_meta[self.bg_matching_par])
+                        #ic(meta_file, bg_file)
+                        #ic(bg_meta[self.bg_matching_par], image_meta[self.bg_matching_par])
                         break
 
         if not bg_file:
             return 0.
 
-        ic(bg_file)
+        #ic(bg_file)
         bg = read_image_file(self.bg_file, return_float=True)
         bg_meta_file = f'{os.path.splitext(self.bg_file)[0]}.{self.meta_ext}'
         bg_meta = get_image_meta_data(bg_meta_file)

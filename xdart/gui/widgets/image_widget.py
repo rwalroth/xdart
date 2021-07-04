@@ -459,7 +459,7 @@ class PColorMeshItemLevels(PColorMeshItem):
         # Second we associate each z value, that we normalize, to the lut
 
         vmin, vmax = self.z.min(), self.z.max()
-        ic(self.levels)
+        #ic(self.levels)
         if self.levels is not None:
             vmin, vmax = self.levels
             vmin = max(vmin, self.z.min())
