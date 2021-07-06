@@ -6,8 +6,8 @@
 # Standard library imports
 import copy
 from queue import Queue
-import multiprocessing as mp
 import traceback
+from threading import Thread
 
 # Other imports
 
@@ -28,7 +28,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     
     attributes:
         command_queue: Queue, used to send commands to thread
-        file_lock, mp.Condition, process safe lock for file access
+        file_lock, Condition, process safe lock for file access
         fname: str, path to data file
         parameters: pyqtgraph Parameter, stores parameters from user
         scan_name: str, current scan name, used to handle syncing data
@@ -137,8 +137,8 @@ class wranglerThread(Qt.QtCore.QThread):
         self.sphere_args = sphere_args
         self.fname = fname
         self.file_lock = file_lock
-        self.signal_q = mp.Queue()
-        self.command_q = mp.Queue()
+        self.signal_q = Queue()
+        self.command_q = Queue()
     
     def run(self):
         """Main task. Should initialize child process here and listen
@@ -160,7 +160,8 @@ class wranglerThread(Qt.QtCore.QThread):
                     break
         process.join()
 
-class wranglerProcess(mp.Process):
+
+class wranglerProcess(Thread):
     """Base class for wrangler processes. Subclasses should extend
     _main, NOT run. _main is run in a try except clause which ensures
     errors are printed.
@@ -193,6 +194,7 @@ class wranglerProcess(mp.Process):
         self.sphere_args = sphere_args
         self.fname = fname
         self.file_lock = file_lock
+
     def run(self):
         """Target of process, calls _main inside a try except clause to
         handle errors.
@@ -203,6 +205,7 @@ class wranglerProcess(mp.Process):
             print("-"*60)
             traceback.print_exc()
             print("-"*60)
+
     def _main(self):
         """Treated like overriding run in a normal multiprocess Process.
         """

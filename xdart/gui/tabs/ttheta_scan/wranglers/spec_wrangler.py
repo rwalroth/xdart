@@ -60,6 +60,7 @@ params = [
     NamedActionParameter(name='set_mask', title= 'Set mask...'),
 ]
 
+
 class specWrangler(wranglerWidget):
     """Widget for integrating data associated with spec file. Can be
     used "live", will continue to poll data folders until image data
@@ -360,55 +361,116 @@ class specThread(wranglerThread):
         self.img_dir = img_dir
         self.timeout = timeout
         self.mask = None
+        self.specFile = None
+        self.user = None
+        self.spec_name = None
 
     def run(self):
         """Initializes specProcess and watches for new commands from
         parent or signals from the process.
         """
-        process = specProcess(
-            self.command_q, 
-            self.signal_q, 
-            self.sphere_args, 
-            self.scan_name,
-            self.scan_number,
-            self.fname, 
-            self.file_lock,
-            self.lsf_inputs, 
-            self.mp_inputs,
-            self.img_dir,
-            self.timeout,
-            self.mask
-        )
-        process.start()
-        last = False
         # Main loop
+        self.specFile = OrderedDict(
+            header=dict(
+                    meta={},
+                    motors={},
+                    motors_r={},
+                    detectors={},
+                    detectors_r={}
+                    ),
+            scans={},
+            scans_meta={}
+        )
+        self.user = None
+        self.spec_name = None
+
+        sphere = EwaldSphere(self.scan_name, data_file=self.fname,
+                             **self.sphere_args)
+        sphere.global_mask = self.mask
+        with self.file_lock:
+            sphere.save_to_h5(replace=True)
+            self.sigUpdateFile.emit(self.scan_name, self.fname)
+
+        # Operation instantiated within process to avoid conflicts with locks
+        make_poni = MakePONI()
+        make_poni.inputs.update(self.mp_inputs)
+
+        # full spec path grabbed from lsf_inputs
+        # TODO: just give full spec path as argument
+        spec_path = os.path.join(self.lsf_inputs['spec_file_path'],
+                                 self.lsf_inputs['spec_file_name'])
+
+        # Enter main loop
+        i = 0
+        pause = False
+        start = time.time()
         while True:
             # Check for new commands
-            if not self.input_q.empty():
+            if not self.input_q.empty() or pause:
                 command = self.input_q.get()
                 print(command)
-                self.command_q.put(command)
-            
-            #Check for new updates
-            if not self.signal_q.empty():
-                signal, data = self.signal_q.get()
-                if signal == 'update':
-                    self.sigUpdate.emit(data)
-                elif signal == 'message':
-                    self.showLabel.emit(data)
-                elif signal == 'new_scan':
-                    self.sigUpdateFile.emit(self.scan_name, self.fname)
-                elif signal == 'TERMINATE':
-                    last = True
-            
-            # Breaks on signal from process
-            if last:
+                if command == 'stop':
+                    break
+                elif command == 'continue':
+                    pause = False
+                elif command == 'pause':
+                    pause = True
+                    continue
+            # if not self.signal_q.empty():
+            #     signal, data = self.signal_q.get()
+            #     if signal == 'update':
+            #         self.sigUpdate.emit(data)
+            #     elif signal == 'message':
+            #         self.showLabel.emit(data)
+            #     elif signal == 'new_scan':
+            #         self.sigUpdateFile.emit(self.scan_name, self.fname)
+            #     elif signal == 'TERMINATE':
+            #         last = True
+            # Get result from wrangle
+            try:
+                flag, data = self.wrangle(i, spec_path, make_poni)
+            # Errors associated with image not yet taken
+            except (KeyError, FileNotFoundError, AttributeError, ValueError):
+                elapsed = time.time() - start
+                if elapsed > self.timeout:
+                    self.showLabel.emit("Timeout occurred")
+                    break
+                else:
+                    time.sleep(0.1)
+                    continue
+            start = time.time()
+
+            # Unpack data and load into sphere
+            # TODO: Test how long integrating vs io takes
+            if flag == 'image':
+                idx, map_raw, scan_info, poni = data
+                arch = EwaldArch(
+                    idx, map_raw, PONI.from_yamdict(poni), scan_info=scan_info
+                )
+
+                # integrate image to 1d and 2d arrays
+                arch.integrate_1d(global_mask=self.mask, **sphere.bai_1d_args)
+                arch.integrate_2d(global_mask=self.mask, **sphere.bai_2d_args)
+
+                # Add arch copy to sphere, save to file
+                with self.file_lock:
+                    sphere.add_arch(
+                        arch=arch.copy(), calculate=False, update=True,
+                        get_sd=True, set_mg=False
+                    )
+                    sphere.save_to_h5(data_only=True, replace=False)
+
+                self.showLabel.emit(f'Image {i} integrated')
+                self.sigUpdate.emit(idx)
+                i += 1
+
+            # Check if terminate signal sent
+            elif flag == 'TERMINATE' and data is None:
                 break
         
         # Empty queues of any other items after main loop ends.
         self._empty_q(self.signal_q)
         self._empty_q(self.command_q)
-        process.join()
     
     def _empty_q(self, q):
         """Empties out a given queue.
@@ -417,6 +479,97 @@ class specThread(wranglerThread):
         """
         while not q.empty():
             _ = q.get()
+
+    def wrangle(self, i, spec_path, make_poni):
+        """Method for reading in data from raw files and spec file.
+
+        args:
+            i: int, index of image to check
+            spec_path: str, absolute path to spec file
+            make_poni: MakePONI, operation for creating poni objects
+
+        returns:
+            flag: str, signal for what kind of data to expect.
+            data: tuple (int, numpy array, dict, dict), the
+                index of the data, raw image array, metadata, and PONI
+                dict associated with the image.
+        """
+        self.showLabel.emit(f'Checking for {i}')
+
+        # reads in spec data file header
+        self.specFile['header'] = get_spec_header(spec_path)
+
+        # reads in scan data
+        self.specFile['scans'][self.scan_number], \
+        self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
+            spec_path, self.scan_number, self.specFile['header']
+        )
+
+        # checks for user and spec_name information
+        if self.user is None:
+            self.user = self.specFile['header']['meta']['User']
+        if self.spec_name is None:
+            self.spec_name = self.specFile['header']['meta']['File'][0]
+
+        # Construct raw_file path from attributes and index
+        raw_file = self._get_raw_path(i)
+
+        # Get scan meta data
+        if self.scan_number in self.specFile['scans'].keys():
+            image_meta = self.specFile['scans']\
+                                [self.scan_number].loc[i].to_dict()
+
+        else:
+            image_meta = self.specFile['current_scan'].loc[i].to_dict()
+
+        # Get poni dict based on meta data
+        make_poni.inputs['spec_dict'] = copy.deepcopy(image_meta)
+        poni = copy.deepcopy(make_poni.run())
+
+        # Read raw file into numpy array
+        arr = self.read_raw(raw_file)
+
+        self.showLabel.emit(f'Image {i} wrangled')
+
+        return 'image', (i, arr, image_meta, poni)
+
+    def _get_raw_path(self, i):
+        """Creates raw path name from attributes, following spec
+        convention.
+
+        args:
+            i: int, index of image
+
+        returns:
+            raw_file: str, absolute path to .raw image file.
+        """
+        im_base = '_'.join([
+            self.user,
+            self.spec_name,
+            'scan' + str(self.scan_number),
+            str(i).zfill(4)
+        ])
+        return os.path.join(self.img_dir, im_base + '.raw')
+
+    def read_raw(self, file, mask=True):
+        """Reads in .raw file and returns a numpy array.
+
+        args:
+            file: str, path to .raw file
+            mask: bool, if True clips the edges of the image
+
+        returns:
+            map_raw: numpy array, image data.
+        """
+        with open(file, 'rb') as im:
+            arr = np.fromstring(im.read(), dtype='int32')
+            arr = arr.reshape((195, 487))
+            if mask:
+                for i in range(0, 10):
+                    arr[:,i] = -2.0
+                for i in range(477, 487):
+                    arr[:,i] = -2.0
+            return arr.T
     
 
 class specProcess(wranglerProcess):
