@@ -208,7 +208,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
         #ic()
         with self.file_lock:
             self.sphere.set_datafile(
-                self.fname, save_args={'compression': 'lzf'}
+                # self.fname, save_args={'compression': 'lzf'}
+                self.fname, save_args = {'compression': None}
             )
         self.sigNewFile.emit(self.fname)
         self.sigUpdate.emit()

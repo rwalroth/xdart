@@ -485,7 +485,8 @@ def fit_images_2D(fname, tth, function='gaussian',
     Returns:
         tuple: tth value and fit result
     """
-    if verbose: print(f'Processing {fname}')
+    if verbose:
+        print(f'Processing {fname}')
     img = read_image_file(fname, return_float=True, verbose=False, **kwargs)
     
     smooth_img(img, kernel_size=kernel_size, window_size=window_size, order=order)
@@ -538,7 +539,6 @@ def data_to_h5(data, grp, key, encoder='yaml', compression='lzf'):
                 arr_to_h5(data, grp, key, compression)
 
         except TypeError:
-            print(f"TypeError, encoding {key} using {encoder}")
             try:
                 encoded_h5(data, grp, key, encoder)
             except Exception as e:

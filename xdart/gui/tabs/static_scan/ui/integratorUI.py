@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\integratorUI.ui'
+# Form implementation generated from reading ui file '.\xdart\gui\tabs\static_scan\ui\integratorUI.ui'
 #
 # Created by: PyQt5 UI code generator 5.12.3
 #
@@ -332,7 +332,7 @@ class Ui_Form(object):
         self.advanced2D.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
         font.setFamily("MS Shell Dlg 2")
-        font.setPointSize(11)
+        font.setPointSize(9)
         self.advanced2D.setFont(font)
         self.advanced2D.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.advanced2D.setLayoutDirection(QtCore.Qt.LeftToRight)

@@ -407,24 +407,20 @@ class EwaldArch():
         returns:
             None
         """
-        #ic()
+        if self.static:
+            compression = None
         with self.file_lock:
             if str(self.idx) in file:
-                #ic(self.idx)
                 grp = file[str(self.idx)]
             else:
-                #ic('creating group')
                 grp = file.create_group(str(self.idx))
-                #ic('created group')
             grp.attrs['type'] = 'EwaldArch'
             lst_attr = [
                 "map_raw", "mask", "map_norm", "scan_info", "ai_args",
                 "poni_file", "gi", "static",
             ]
-            #ic('attributes to h5')
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
-            #ic('attributes to h5 - done')
             if 'int_1d' not in grp:
                 grp.create_group('int_1d')
             self.int_1d.to_hdf5(grp['int_1d'], compression)

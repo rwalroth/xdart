@@ -36,6 +36,8 @@ QPushButton = QtWidgets.QPushButton
 
 def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
 def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0005.tif'
+def_poni_file = 'C:\\Users\\vthampy-a\\xdart_test_data\\Feng_Jun2021\\Calibration\\LaB6_insitu_detz150_10s_06102111_0001.poni'
+def_img_file = 'C:\\Users\\vthampy-a\\xdart_test_data\\Feng_Jun2021\\Aborted Run\\DX001B2_3\\DX001B2_3_0001.tif'
 # def_poni_file = ''
 # def_img_file = ''
 
@@ -650,8 +652,6 @@ class specWrangler(wranglerWidget):
         if not self.img_fname:
             return
         meta_file = f'{os.path.splitext(self.img_fname)[0]}.{self.meta_ext}'
-        #ic(meta_file)
-        # print(meta_file)
 
         if not os.path.exists(meta_file):
             return
@@ -685,6 +685,7 @@ class specWrangler(wranglerWidget):
 
 
 class specThread(wranglerThread):
+
     """Thread for controlling the specProcessor process. Receives
     manages a command and signal queue to pass commands from the main
     thread and communicate back relevant signals
@@ -1081,7 +1082,6 @@ class specProcess(wranglerProcess):
                     pause = True
                     continue
 
-            #ic(sphere.arches.index, list(sphere.arches.index))
             if i in list(sphere.arches.index):
                 i += 1
                 continue
@@ -1257,34 +1257,9 @@ class specProcess(wranglerProcess):
 
         return self.scan_name, self.img_fname, self.fname
 
-    def check_write_mode(self):
-        """
-        Check if H5 file should be overwritten or appended to
-        """
-        app = QtGui.QApplication(sys.argv)
-        app.exec_()
-
-        # option = QFileDialog()
-        fname, _ = QFileDialog().getOpenFileName(
-            filter="PONI (*.poni *.PONI)"
-        )
-        return
-        # option = QMessageBox.setText()
-        # option.setWindowTitle(QMessageBox, '')
-        text = QMessageBox.setText('Processed file already exists. Do you want to Overwrite or Append to it?')
-
-        overwrite = QPushButton('Overwrite')
-        append = QPushButton('Append')
-
-        QMessageBox.addButton(overwrite, QMessageBox.ActionRole)
-        QMessageBox.addButton(append, QMessageBox.ActionRole)
-
-        print(QMessageBox.clickedButton())
-
     def get_mask(self):
         """Get mask array from mask file
         """
-        #ic()
         if (not self.mask_file) or (not os.path.exists(self.mask_file)):
             self.mask = None
             return
@@ -1297,7 +1272,6 @@ class specProcess(wranglerProcess):
         """
         #ic()
         bg_file, bg_meta = None, None
-        #ic(self.bg_type, self.bg_file, self.bg_dir, self.bg_matching_par)
 
         if self.bg_type == 'Single Bkg File':
             if self.bg_file:

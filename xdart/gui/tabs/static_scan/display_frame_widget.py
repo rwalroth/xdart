@@ -182,7 +182,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.curves = []
 
         self.pos_label = pg.LabelItem(justify='right')
-        # self.plot.setClipToView(True)
         self.plot_win.addItem(self.pos_label)
         self.pos_label.anchor(itemPos=(1, 0), parentPos=(1, 0), offset=(-20, 10))
         self.pos_label.setFixedWidth(1)
@@ -577,11 +576,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_1d_view(self):
         """Updates data in 1D plot Frame
         """
-        #ic()
         self.setup_1d_layout()
         xdata_, ydata_ = self.plot_data
         s_xdata, ydata = xdata_.copy(), ydata_.copy()
-        #ic(ydata.shape)
 
         int_label = 'I'
         if self.normChannel:
@@ -617,7 +614,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             self.setup_curves()
             s_ydata = ydata
-            #ic(s_xdata.shape, s_ydata.shape)
             if self.plotMethod == 'Average':
                 s_ydata = np.nanmean(s_ydata, 0)
             elif self.plotMethod == 'Sum':
@@ -1004,13 +1000,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def clear_1D(self):
         """Initialize curves for line plots
         """
-        #ic()
-        [curve.clear() for curve in self.curves]
-        #ic('cleared curves')
-        self.curves.clear()
-        self.legend.clear()
+        # [curve.clear() for curve in self.curves]
+        # for curve in self.curves:
+        #     del curve
+        # self.curves.clear()
+        # self.legend.clear()
         self.arch_names.clear()
         self.arch_ids.clear()
+        self.plot.clear()
 
     def update_legend(self):
         if not self.ui.showLegend.isChecked():
@@ -1166,8 +1163,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ext_filter = "Images ("
         for f in formats:
             ext_filter += "*." + f + " "
-
-        print(ext_filter)
 
         dialog = QFileDialog()
         fname, _ = dialog.getSaveFileName(

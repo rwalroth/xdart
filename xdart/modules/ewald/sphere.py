@@ -184,8 +184,11 @@ class EwaldSphere():
                 self.scan_data.sort_index(inplace=True)
                 with self.file_lock:
                     with utils.catch_h5py_file(self.data_file, 'a') as file:
+                        compression = 'lzf'
+                        if self.static:
+                            compression = None
                         utils.dataframe_to_h5(self.scan_data, file,
-                                              'scan_data', 'lzf')
+                                              'scan_data', compression)
             if update:
                 self._update_bai_1d(arch)
                 self._update_bai_2d(arch)
@@ -411,10 +414,9 @@ class EwaldSphere():
         """Actual function for saving data, run with the file open and
             holding the file_lock.
         """
-        #ic()
+        if self.static:
+            compression = None
         with self.sphere_lock:
-            #ic(self.static, self.gi)
-
             grp.attrs['type'] = 'EwaldSphere'
 
             if data_only:
@@ -429,13 +431,18 @@ class EwaldSphere():
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
-            for key in ('bai_1d', 'bai_2d', 'mgi_1d', 'mgi_2d'):
+
+            keys = ('bai_1d', 'bai_2d', 'mgi_1d', 'mgi_2d')
+            if self.static:
+                keys = ('bai_1d', 'bai_2d')
+            for key in keys:
                 if key not in grp:
                     grp.create_group(key)
             self.bai_1d.to_hdf5(grp['bai_1d'], compression)
             self.bai_2d.to_hdf5(grp['bai_2d'], compression)
-            self.mgi_1d.to_hdf5(grp['mgi_1d'], compression)
-            self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
+            if not self.static:
+                self.mgi_1d.to_hdf5(grp['mgi_1d'], compression)
+                self.mgi_2d.to_hdf5(grp['mgi_2d'], compression)
 
     def load_from_h5(self, replace=True, mode='r', *args, **kwargs):
         """Loads data stored in hdf5 file.
@@ -539,7 +546,8 @@ class EwaldSphere():
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
-        #ic()
+        if self.static:
+            compression = None
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_1d.to_hdf5(file['bai_1d'], compression=compression)
@@ -552,7 +560,8 @@ class EwaldSphere():
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
-        #ic()
+        if self.static:
+            compression = None
         with self.file_lock:
             with utils.catch_h5py_file(self.data_file, 'a') as file:
                 self.bai_2d.to_hdf5(file['bai_2d'], compression=compression)
