@@ -8,6 +8,9 @@ import copy
 from queue import Queue
 import multiprocessing as mp
 import traceback
+import cProfile
+import os
+import time
 
 # Other imports
 
@@ -18,7 +21,7 @@ from pyqtgraph.parametertree import Parameter
 
 # This module imports
 from xdart.modules.ewald import EwaldSphere
-
+from xdart.utils import profile_dir, profile_decorator
 
 class wranglerWidget(Qt.QtWidgets.QWidget):
     """Base class for wranglers. Extending this ensures all methods,
@@ -139,7 +142,7 @@ class wranglerThread(Qt.QtCore.QThread):
         self.file_lock = file_lock
         self.signal_q = mp.Queue()
         self.command_q = mp.Queue()
-    
+
     def run(self):
         """Main task. Should initialize child process here and listen
         to input and signal queues.
@@ -193,6 +196,7 @@ class wranglerProcess(mp.Process):
         self.sphere_args = sphere_args
         self.fname = fname
         self.file_lock = file_lock
+
     def run(self):
         """Target of process, calls _main inside a try except clause to
         handle errors.
@@ -203,6 +207,7 @@ class wranglerProcess(mp.Process):
             print("-"*60)
             traceback.print_exc()
             print("-"*60)
+
     def _main(self):
         """Treated like overriding run in a normal multiprocess Process.
         """

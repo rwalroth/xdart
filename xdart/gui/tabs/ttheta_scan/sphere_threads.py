@@ -8,6 +8,8 @@ from queue import Queue
 from threading import Condition
 import traceback
 import time
+import cProfile
+import os
 
 # Other imports
 from xdart.utils.containers import int_1d_data, int_2d_data
@@ -17,7 +19,9 @@ from pyqtgraph import Qt
 
 # This module imports
 from xdart.utils import catch_h5py_file as catch
+from xdart.utils import profile_dir, profile_decorator
 from xdart import utils as ut
+from .wranglers.wrangler_widget import profile_dir
 
 class integratorThread(Qt.QtCore.QThread):
     """Thread for handling integration. Frees main gui thread from
@@ -55,7 +59,8 @@ class integratorThread(Qt.QtCore.QThread):
         self.lock = Condition()
         self.mg_1d_args = {}
         self.mg_2d_args = {}
-    
+
+    @profile_decorator(os.path.join(profile_dir, f"integratorThread_profile_"))
     def run(self):
         """Calls self.method. Catches exception where method does
         not match any attributes.
@@ -156,7 +161,7 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.new_fname = None
         self.lock = Condition()
         self.running = False
-        
+
     def run(self):
         while True:
             method_name = self.queue.get()

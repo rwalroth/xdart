@@ -21,6 +21,7 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 # This module imports
 from xdart.modules.spec import MakePONI, get_spec_header, get_spec_scan
 from xdart.utils.containers import PONI
+from xdart.utils import profile_dir, profile_decorator
 from xdart.modules.ewald import EwaldArch, EwaldSphere
 from xdart.utils import catch_h5py_file as catch
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
@@ -361,6 +362,7 @@ class specThread(wranglerThread):
         self.timeout = timeout
         self.mask = None
 
+    @profile_decorator(os.path.join(profile_dir, f"specThread_profile_"))
     def run(self):
         """Initializes specProcess and watches for new commands from
         parent or signals from the process.
@@ -489,7 +491,8 @@ class specProcess(wranglerProcess):
         self.spec_name = None
         self.timeout = timeout
         self.mask = mask
-    
+
+    @profile_decorator(os.path.join(profile_dir, f"specProcess_profile_"))
     def _main(self):
         """Checks for commands in queue, sends back updates through
         signal queue, and catches errors. Calls wrangle method for
@@ -574,7 +577,6 @@ class specProcess(wranglerProcess):
         
         # If loop ends, signal terminate to parent thread.
         self.signal_q.put(('TERMINATE', None))
-
 
     def wrangle(self, i, spec_path, make_poni):
         """Method for reading in data from raw files and spec file.

@@ -7,6 +7,8 @@
 import time
 import sys
 import os
+from functools import wraps
+import cProfile
 
 # Other imports
 import numpy as np
@@ -29,6 +31,9 @@ import fabio
 
 # This module imports
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
+
+
+profile_dir = r"C:\Users\walroth\AppData\Local\JetBrains\PyCharm2020.2\snapshots"
 
 
 def write_xye(fname, xdata, ydata, variance=None):
@@ -1082,3 +1087,18 @@ def launch(program):
     else:
         ret = subprocess.call(['xdg-open', program])
     return ret
+
+
+def profile_decorator(name):
+    def decorator(f):
+        locals_ = locals()
+        globals_ = globals()
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            filename = name + str(int(time.time())) + ".pstat"
+            locals_.update(locals())
+            globals_.update(globals())
+            cProfile.runctx("f(*args, **kwargs)", globals=globals_,
+                            locals=locals_, filename=filename)
+        return wrapper
+    return decorator
