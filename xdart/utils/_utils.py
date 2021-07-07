@@ -1093,6 +1093,7 @@ def profile_decorator(name):
     def decorator(f):
         locals_ = locals()
         globals_ = globals()
+
         @wraps(f)
         def wrapper(*args, **kwargs):
             filename = name + str(int(time.time())) + ".pstat"
