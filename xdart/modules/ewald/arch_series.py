@@ -35,7 +35,7 @@ class ArchSeries():
         sort_index: Sort the index by arch id.
     """
     def __init__(self, data_file, file_lock, arches=[],
-                 static=False, gi=False):
+                 static=False, gi=False, lazy=False):
         """data_file: Path to hdf5 file for storing data.
         file_lock: Thread safe lock.
         arches: List of arches to initialize series with.
@@ -45,30 +45,33 @@ class ArchSeries():
         self.index = []
         self.static = static
         self.gi = gi
+        self._lazy = lazy
         if arches:
             for a in arches:
                 self.__setitem__(a.idx, a)
         self._i = 0
         # invoke the lock to prevent conflicts
-        with self.file_lock:
-            # use catch to avoid oserrors which will resolve with time.
-            with catch(self.data_file, 'a') as f:
-                if 'arches' not in f:
-                    f.create_group('arches')
-                
+        if not lazy:
+            with self.file_lock:
+                # use catch to avoid oserrors which will resolve with time.
+                with catch(self.data_file, 'a') as f:
+                    if 'arches' not in f:
+                        f.create_group('arches')
     
     def __getitem__(self, idx):
         """Initializes a new EwaldArch object and loads data from file
         into it.
         """
         if idx in self.index:
-
             arch = EwaldArch(idx, static=self.static, gi=self.gi)
             # invoke the lock to prevent conflicts
-            with self.file_lock:
-                # use catch to avoid oserrors which will resolve with time.
-                with catch(self.data_file, 'r') as f:
-                    arch.load_from_h5(f['arches'])
+            if self._lazy:
+                arch.load_from_h5(self.data_file['arches'], lazy=self._lazy)
+            else:
+                with self.file_lock:
+                    # use catch to avoid oserrors which will resolve with time.
+                    with catch(self.data_file, 'r') as f:
+                        arch.load_from_h5(f['arches'])
             return arch
         else:
             raise KeyError(f"Arch not found with {idx} index")

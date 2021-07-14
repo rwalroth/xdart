@@ -83,6 +83,7 @@ class EwaldSphere():
             self.name = os.path.split(data_file)[-1].split('.')[0]
         else:
             self.name = name
+        self._name = self.name
         if data_file is None:
             self.data_file = name + ".hdf5"
         else:

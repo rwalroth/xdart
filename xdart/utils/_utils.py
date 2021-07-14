@@ -806,7 +806,7 @@ def attributes_to_h5(obj, grp, lst_attr=None, priv=False, dpriv=False,
         data_to_h5(data, grp, attr, **kwargs)
 
 
-def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
+def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader, lazy=False):
     """Reads data from hdf5 file and returns appropriate datatype.
     
     args:
@@ -824,7 +824,7 @@ def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
             data = None
 
         elif encoded == 'dict':
-            data = h5_to_dict(grp, encoder=encoder, Loader=Loader)
+            data = h5_to_dict(grp, encoder=encoder, Loader=Loader, lazy=lazy)
 
         elif encoded == 'str':
             try:
@@ -847,7 +847,10 @@ def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
             )
 
         elif encoded in ['data', 'arr', 'scalar']:
-            data = grp[()]
+            if lazy:
+                data = grp
+            else:
+                data = grp[()]
 
         elif encoded == 'yaml':
             data = yaml.load(grp[...].item(), Loader=Loader)
@@ -880,7 +883,10 @@ def h5_to_data(grp, encoder=True, Loader=yaml.UnsafeLoader):
             data = None
 
         else:
-            data = grp[()]
+            if lazy:
+                data = grp
+            else:
+                data = grp[()]
 
     return data
 
@@ -901,7 +907,7 @@ def h5_to_index(grp):
         return soft_list_eval(grp)
 
 
-def h5_to_dict(grp, **kwargs):
+def h5_to_dict(grp, lazy=False, **kwargs):
     """Converts h5py group to dictionary. See h5_to_data for how
     different datatypes are handled.
 
@@ -918,12 +924,12 @@ def h5_to_dict(grp, **kwargs):
         except:
             e_key = key
 
-        data[e_key] = h5_to_data(grp[key], **kwargs)
+        data[e_key] = h5_to_data(grp[key], lazy=lazy, **kwargs)
 
     return data
 
 
-def h5_to_attributes(obj, grp, lst_attr=None, **kwargs):
+def h5_to_attributes(obj, grp, lst_attr=None, lazy=False, **kwargs):
     """Sets attributes of obj using data in an hdf5 file. See h5_to_data
     for how data types are handled.
     
@@ -938,7 +944,7 @@ def h5_to_attributes(obj, grp, lst_attr=None, **kwargs):
         lst_attr = grp.keys()
     for attr in lst_attr:
         if attr in obj.__dict__.keys():
-            data = h5_to_data(grp[attr], **kwargs)
+            data = h5_to_data(grp[attr], lazy=lazy, **kwargs)
             setattr(obj, attr, data)
 
 

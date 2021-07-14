@@ -437,7 +437,7 @@ class EwaldArch():
             ic('created groups')
             utils.dict_to_h5(self.poni.to_dict(), grp, 'poni')
 
-    def load_from_h5(self, file, load_2d=True):
+    def load_from_h5(self, file, load_2d=True, lazy=False):
         """Loads data from hdf5 file and sets attributes.
 
         args:
@@ -456,7 +456,7 @@ class EwaldArch():
                                 "map_raw", "mask", "map_norm", "scan_info", "ai_args",
                                 "poni_file", "gi", "static",
                             ]
-                            utils.h5_to_attributes(self, grp, lst_attr)
+                            utils.h5_to_attributes(self, grp, lst_attr, lazy=lazy)
                             self.int_1d.from_hdf5(grp['int_1d'])
                             if load_2d:
                                 self.int_2d.from_hdf5(grp['int_2d'])
