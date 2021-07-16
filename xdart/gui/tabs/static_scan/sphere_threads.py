@@ -13,6 +13,7 @@ from scipy.interpolate import RectBivariateSpline
 # Other imports
 from xdart.utils.containers import int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
+from xdart.modules.ewald import EwaldArch
 
 # Qt imports
 from pyqtgraph import Qt
@@ -22,6 +23,9 @@ from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
 
 import gc
+
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
 
 
 class integratorThread(Qt.QtCore.QThread):
@@ -54,7 +58,6 @@ class integratorThread(Qt.QtCore.QThread):
 
     def __init__(self, sphere, arch, file_lock,
                  arches, arch_ids, parent=None):
-        #ic()
         super().__init__(parent)
         self.sphere = sphere
         self.arch = arch
@@ -70,7 +73,6 @@ class integratorThread(Qt.QtCore.QThread):
         """Calls self.method. Catches exception where method does
         not match any attributes.
         """
-        #ic()
         with self.lock:
             method = getattr(self, self.method)
             try:
@@ -83,8 +85,6 @@ class integratorThread(Qt.QtCore.QThread):
         directly, handles same functions but broken up for updates
         after each image.
         """
-        #ic()
-        #ic(list(self.sphere.arches.index), list(self.arches.keys()))
         with self.sphere.sphere_lock:
             if self.sphere.static:
                 self.sphere.bai_2d = int_2d_data_static()
@@ -108,8 +108,6 @@ class integratorThread(Qt.QtCore.QThread):
         directly, handles same functions but broken up for updates
         after each image.
         """
-        #ic()
-        #ic(list(self.sphere.arches.index), list(self.arches.keys()))
         with self.sphere.sphere_lock:
             if self.sphere.static:
                 self.sphere.bai_1d = int_1d_data_static()
@@ -131,9 +129,6 @@ class integratorThread(Qt.QtCore.QThread):
     def bai_2d_SI(self):
         """Integrate the current arch, 2d
         """
-        #ic()
-        # self.sphere.arches[self.arch].integrate_2d(**self.sphere.bai_2d_args)
-        #ic(list(self.arches.keys()))
         for idx in self.arches.keys():
             # self.sphere.arches[arch].integrate_2d(**self.sphere.bai_2d_args)
             self.sphere.arches[int(idx)].integrate_2d(**self.sphere.bai_2d_args)
@@ -142,7 +137,6 @@ class integratorThread(Qt.QtCore.QThread):
     def bai_1d_SI(self):
         """Integrate the current arch, 1d.
         """
-        #ic()
         for (idx, arch) in self.arches.items():
             # self.sphere.arches[arch].integrate_1d(**self.sphere.bai_1d_args)
             self.sphere.arches[int(idx)].integrate_1d(**self.sphere.bai_1d_args)
@@ -150,9 +144,7 @@ class integratorThread(Qt.QtCore.QThread):
     def load(self):
         """Load data.
         """
-        #ic()
         self.sphere.load_from_h5()
-        #ic(self.sphere.gi, self.sphere.static)
 
 
 class fileHandlerThread(Qt.QtCore.QThread):
@@ -174,7 +166,6 @@ class fileHandlerThread(Qt.QtCore.QThread):
         arch : xdart.modules.ewald.EwaldArch
         sphere : xdart.modules.ewald.EwaldSphere
         """
-        #ic()
         super().__init__(parent)
         self.sphere = sphere
         self.arch = arch
@@ -191,7 +182,6 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.update_2d = True
 
     def run(self):
-        #ic()
         while True:
             method_name = self.queue.get()
             try:
@@ -205,53 +195,46 @@ class fileHandlerThread(Qt.QtCore.QThread):
             self.sigTaskDone.emit(method_name)
     
     def set_datafile(self):
-        #ic()
         with self.file_lock:
             self.sphere.set_datafile(
-                # self.fname, save_args={'compression': 'lzf'}
                 self.fname, save_args = {'compression': None}
             )
         self.sigNewFile.emit(self.fname)
         self.sigUpdate.emit()
     
     def update_sphere(self):
-        #ic()
         with self.file_lock:
             self.sphere.load_from_h5(replace=False, data_only=True,
                                      set_mg=False)
-            #ic(self.sphere.gi, self.sphere.static)
 
     def load_arch(self):
-        #ic()
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
                 self.arch.load_from_h5(file['arches'])
-        #ic('emitting signal')
         self.sigUpdate.emit()
 
     def load_arches(self):
-        #ic()
-        #ic(self.arch_ids, self.sphere.arches.index)
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
                 for idx in self.arch_ids:
-                    #ic(idx)
                     try:
-                        # #ic('loaded arch from memory', idx)
-                        # except KeyError:
-                        self.arch = self.arches[int(idx)]
-                        self.arch.load_from_h5(file['arches'], load_2d=self.update_2d)
-                        #ic('loaded arch from file', idx)
-                        self.data_1d[int(idx)] = self.arch.copy(include_2d=False)
+                        # ic(idx, self.arch_ids)
+                        arch = EwaldArch(idx=idx, static=True, gi=self.sphere.gi)
+                        # self.arch = self.arches[int(idx)]
+                        # self.arch.load_from_h5(file['arches'], load_2d=self.update_2d)
+                        arch.load_from_h5(file['arches'], load_2d=self.update_2d)
+                        self.data_1d[int(idx)] = arch.copy(include_2d=False)
+                        # ic(self.data_1d.keys())
                         if self.update_2d:
-                            self.data_2d[int(idx)] = self.arch.map_raw, self.arch.mask, self.arch.int_2d
-
+                            # self.data_2d[int(idx)] = self.arch.map_raw, self.arch.mask, self.arch.int_2d
+                            self.data_2d[int(idx)] = {'map_raw': arch.map_raw,
+                                                      'mask': arch.mask,
+                                                      'int_2d': arch.int_2d}
+                            # ic(self.data_2d.keys())
                     except KeyError:
-                        self.sigUpdate.emit()
-                        return
+                        pass
 
-                    self.arches[idx] = self.arch
-            #ic(len(self.arches))
+                    # self.arches[idx] = self.arch
             self.sigUpdate.emit()
 
         gc.collect()
@@ -259,7 +242,6 @@ class fileHandlerThread(Qt.QtCore.QThread):
     def parse_unit(self):
         """ Returns EwaldArch Object updated with missing q/tth interpolated data
         """
-        #ic()
         int_2d = self.arch.int_2d
         wavelength = self.arch.poni.wavelength
 
@@ -272,8 +254,6 @@ class fileHandlerThread(Qt.QtCore.QThread):
 
             spline = RectBivariateSpline(chi, qtth, i_tthChi)
             self.arch.int_2d.i_qChi = spline(chi, q)
-            #ic(self.arch.int_2d.i_tthChi.shape, self.arch.int_2d.i_qChi.shape,
-            #   self.arch.int_2d.q.shape, self.arch.int_2d.tth.shape, self.arch.int_2d.chi.shape)
 
         elif len(int_2d.i_tthChi) == 0:
             i_qChi, q, chi = int_2d.i_qChi, int_2d.q, int_2d.chi
@@ -284,11 +264,8 @@ class fileHandlerThread(Qt.QtCore.QThread):
 
             spline = RectBivariateSpline(chi, tthq, i_qChi)
             self.arch.int_2d.i_tthChi = spline(chi, tth)
-            #ic(self.arch.int_2d.i_tthChi.shape, self.arch.int_2d.i_qChi.shape,
-            #   self.arch.int_2d.q.shape, self.arch.int_2d.ttheta.shape, self.arch.int_2d.chi.shape)
 
     def save_data_as(self):
-        #ic()
         if self.new_fname is not None and self.new_fname != "":
             with self.file_lock:
                 with catch(self.sphere.data_file, 'r') as f1:

@@ -9,18 +9,22 @@ __version__ = '0.4.2'
 import sys
 import gc
 import os
+import signal
 
 # Other imports
+import multiprocessing
+multiprocessing.freeze_support()
+try:
+    multiprocessing.set_start_method('spawn')
+except RuntimeError:
+    pass
 
 # Qt imports
-# import qdarkstyle
 from pyqtgraph.Qt import QtGui, QtWidgets
 
 # This module imports
 from xdart.gui.mainWindow import Ui_MainWindow
 from xdart.gui import tabs
-
-import multiprocessing
 
 
 def setup_data_folders(exp_list):
@@ -82,7 +86,13 @@ class Main(QMainWindow):
             for i in range(self.tabwidget.count()):
                 self.closeExperiment(i)
         finally:
-            sys.exit()
+            self.close()
+            gc.collect()
+            try:
+                os.killpg(os.getpid(), signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            sys.exit(1)
 
     def openFile(self):
         try:
@@ -117,12 +127,17 @@ class Main(QMainWindow):
 
 
 if __name__ == '__main__':
-    os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     multiprocessing.freeze_support()
+    os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
-    os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     # app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     mw = Main(tab_paths)
     mw.show()
     app.exec_()
+
+    try:
+        os.killpg(os.getpid(), signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    sys.exit(1)

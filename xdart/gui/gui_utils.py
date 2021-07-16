@@ -22,6 +22,7 @@ from pyqtgraph.parametertree.Parameter import Parameter
 
 # This module imports
 
+
 def return_no_zero(x, y):
     """Returns only values greater than 0 for plotting.
     
@@ -32,6 +33,7 @@ def return_no_zero(x, y):
         x[y > 0], y[y > 0]
     """
     return x[y > 0], y[y > 0]
+
 
 def get_rect(x, y):
     """Gets a QRectF object from given x and y data.
@@ -47,6 +49,7 @@ def get_rect(x, y):
     width = max(x) - min(x)
     height = max(y) - min(y)
     return Qt.QtCore.QRectF(left, top, width, height)
+
 
 def to_rgba(arr, cmap, alpha=1):
     """Converts array to rgba image.
@@ -183,6 +186,7 @@ class NamedActionParameterItem(ParameterItem):
         
     def buttonClicked(self):
         self.param.activate()
+
         
 class NamedActionParameter(Parameter):
     """Used for displaying a button within the tree."""

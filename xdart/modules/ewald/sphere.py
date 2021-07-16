@@ -59,6 +59,7 @@ class EwaldSphere():
                  bai_1d_args={}, bai_2d_args={},
                  static=False, gi=False, th_mtr='th',
                  overall_raw=0, overall_norm=0, single_img=False,
+                 global_mask=None,
                  ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
@@ -113,7 +114,7 @@ class EwaldSphere():
 
         self.overall_raw = overall_raw
         self.overall_norm = overall_norm
-        self.global_mask = None
+        self.global_mask = global_mask
 
     def reset(self):
         """Resets all held data objects to blank state, called when all
@@ -286,17 +287,25 @@ class EwaldSphere():
                 if self.static:
                     self.bai_2d.i_qChi = np.zeros(arch.int_2d.i_qChi.shape)
                     self.bai_2d.i_tthChi = np.zeros(arch.int_2d.i_tthChi.shape)
-                if not self.static:
+                    self.bai_2d.i_QxyQz = np.zeros(arch.int_2d.i_QxyQz.shape)
+                else:
                     self.bai_2d.norm = np.zeros(arch.int_2d.norm.shape)
                     self.bai_2d.raw = np.zeros(arch.int_2d.raw.shape)
                     self.bai_2d.pcount = np.zeros(arch.int_2d.pcount.shape)
                     self.bai_2d.sigma = np.zeros(arch.int_2d.norm.shape)
                     self.bai_2d.sigma_raw = np.zeros(arch.int_2d.norm.shape)
             try:
-                self.bai_2d += arch.int_2d
                 self.bai_2d.ttheta = arch.int_2d.ttheta
                 self.bai_2d.q = arch.int_2d.q
                 self.bai_2d.chi = arch.int_2d.chi
+                if not self.static:
+                    self.bai_2d += arch.int_2d
+                else:
+                    self.bai_2d.i_qChi += arch.int_2d.i_qChi
+                    self.bai_2d.i_tthChi += arch.int_2d.i_tthChi
+                    self.bai_2d.i_QxyQz += arch.int_2d.i_QxyQz
+                    self.bai_2d.qz = arch.int_2d.qz
+                    self.bai_2d.qxy = arch.int_2d.qxy
             except AttributeError:
                 pass
             self.save_bai_2d()

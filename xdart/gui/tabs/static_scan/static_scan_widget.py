@@ -13,7 +13,6 @@ from collections import OrderedDict
 import gc
 
 # Qt imports
-from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets, QtCore
 
 # This module imports
@@ -26,16 +25,8 @@ from .metadata import metadataWidget
 from .wranglers import specWrangler, wranglerWidget
 from xdart.utils._utils import FixSizeOrderedDict
 
-#try:
-#    from icecream import ic
-#    from icecream import install
-#    ic.configureOutput(prefix='', includeContext=True)
-#    ic.disable()
-#    install()
-#except ImportError:  # Graceful fallback if IceCream isn't installed.
-#    ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
-
-# from icecream import install, ic
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
 
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
@@ -106,8 +97,6 @@ class staticWidget(QWidget):
     """
 
     def __init__(self, local_path=None, parent=None):
-        # #ic(f'- static_scan_widget > staticWidget: {inspect.currentframe().f_code.co_name} -')
-        #ic()
         super().__init__(parent)
 
         # Data object initialization
@@ -246,7 +235,6 @@ class staticWidget(QWidget):
     def disconnect_wrangler(self):
         """Disconnects all signals attached the the current wrangler
         """
-        #ic()
         for signal in (self.wrangler.sigStart,
                        self.wrangler.sigUpdateData,
                        self.wrangler.sigUpdateFile,
@@ -261,7 +249,7 @@ class staticWidget(QWidget):
     def thread_state_changed(self):
         """Called whenever a thread is started or finished.
         """
-        #ic()
+        # ic()
         wrangler_running = self.wrangler.thread.isRunning()
         integrator_running = self.integratorTree.integrator_thread.isRunning()
         loader_running = self.h5viewer.file_thread.running
@@ -310,15 +298,13 @@ class staticWidget(QWidget):
         is the same as the wrangler scan name, updates the data in
         memory.
         """
-        #ic()
+        # ic()
         with self.sphere.sphere_lock:
-            if self.sphere.name == self.wrangler.scan_name:
-                self.h5viewer.file_thread.queue.put("update_sphere")
+            # if self.sphere.name == self.wrangler.scan_name:
+            self.h5viewer.file_thread.queue.put("update_sphere")
 
-                with self.file_lock:
-                    self.update_all()
-
-        gc.collect()
+            with self.file_lock:
+                self.update_all()
 
     def enable_last(self, q):
         """
@@ -326,23 +312,29 @@ class staticWidget(QWidget):
         ----------
         q : Qt.QtWidgets.QListWidgetItem
         """
-        #ic()
+        # ic()
         self.displayframe.auto_last = False
-        # self.displayframe.ui.pushRightLast.setEnabled(True)
 
     def set_data(self):
         """Connected to h5viewer, sets the data in displayframe based
         on the selected image or overall data.
         """
-        #ic()
+        # ic(self.sphere.name)
 
         if self.sphere.name != 'null_main':
-            #ic('updating displayframe')
-            if (len(self.arches.keys()) > 0) and (len(self.sphere.arches.index) > 0):
-                self.displayframe.update()
+            # ic(self.data_1d.keys(), self.arch_ids, self.sphere.arches.index, self.sphere.name)
+            self.displayframe.update()
+            # ic(self.data_1d.keys(), self.arch_ids, self.sphere.arches.index)
+            # # if (len(self.arches.keys()) > 0) and (len(self.sphere.arches.index) > 0):
+            # if ((len(self.data_1d.keys()) > 0) and
+            #         (len(self.arch_ids) > 0) and
+            #         (self.arch_ids[0] != 'No data') and
+            #         (len(self.sphere.arches.index) > 0)):
+            #     ic('updating displayframe')
+            #     self.displayframe.update()
 
             # if self.arch.idx is None:
-            if len(self.arches) == 0:
+            if len(self.arch_ids) == 0:
                 # self.integratorTree.ui.apply_mask.setEnabled(False)
                 self.integratorTree.ui.integrate1D.setEnabled(False)
                 self.integratorTree.ui.integrate2D.setEnabled(False)
@@ -353,8 +345,6 @@ class staticWidget(QWidget):
 
             self.metawidget.update()
             # self.integratorTree.update()
-
-        gc.collect()
 
     def close(self):
         """Tries a graceful close.

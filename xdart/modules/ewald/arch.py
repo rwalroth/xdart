@@ -169,8 +169,12 @@ class EwaldArch():
         else:
             mask_idx = self.mask
         mask = np.zeros(self.map_raw.size, dtype=int)
-        mask[mask_idx] = 1
-        return mask.reshape(self.map_raw.shape)
+        try:
+            mask[mask_idx] = 1
+            return mask.reshape(self.map_raw.shape)
+        except IndexError:
+            print('Mask File Shape Mismatch')
+            return mask
 
     def integrate_1d(self, numpoints=10000, radial_range=None,
                      monitor=None, unit=units.TTH_DEG, global_mask=None, **kwargs):

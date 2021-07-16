@@ -36,8 +36,8 @@ QPushButton = QtWidgets.QPushButton
 
 def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
 def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0005.tif'
-def_poni_file = 'C:\\Users\\vthampy-a\\xdart_test_data\\Feng_Jun2021\\Calibration\\LaB6_insitu_detz150_10s_06102111_0001.poni'
-def_img_file = 'C:\\Users\\vthampy-a\\xdart_test_data\\Feng_Jun2021\\Aborted Run\\DX001B2_3\\DX001B2_3_0001.tif'
+# def_poni_file = 'C:\\Users\\vthampy-a\\xdart_test_data\\Feng_Jun2021\\Calibration\\LaB6_insitu_detz150_10s_06102111_0001.poni'
+# def_img_file = 'C:\\Users\\vthampy-a\\xdart_test_data\\Feng_Jun2021\\Aborted Run\\DX001B2_3\\DX001B2_3_0001.tif'
 # def_poni_file = ''
 # def_img_file = ''
 
@@ -545,8 +545,9 @@ class specWrangler(wranglerWidget):
     def set_mask_file(self):
         """Opens file dialogue and sets the mask file
         """
-        #ic()
-        fname, _ = QFileDialog().getOpenFileName()
+        fname, _ = QFileDialog().getOpenFileName(
+            filter="EDF (*.edf)"
+        )
         if fname != '':
             self.parameters.child('Signal').child('mask_file').setValue(fname)
         self.mask_file = fname
@@ -979,9 +980,6 @@ class specProcess(wranglerProcess):
         signal queue, and catches errors. Calls wrangle method for
         reading in data, then performs integration.
         """
-        #ic()
-        #ic(self.inp_type)
-
         if self.inp_type != 'Image Directory':
             self.process_scan()
         else:
@@ -1003,7 +1001,6 @@ class specProcess(wranglerProcess):
 
                 self.scan_name, self.img_fname, self.fname = self._get_new_scan_info()
                 if self.scan_name:
-                    #ic(self.scan_name, self.img_fname, self.fname, self.processed, self.file_filter)
                     self.signal_q.put(('message', f"New Scan: {self.scan_name}"))
                     time.sleep(3)
                     rv = self.process_scan()
@@ -1027,15 +1024,14 @@ class specProcess(wranglerProcess):
         """Go through series of images in a scan and process them individually
         """
         first_img = get_img_number(self.img_fname)
-        #ic(first_img, self.single_img)
         if (first_img is None) and (self.img_ext not in ['h5', 'hdf5']):
             self.single_img = True
             first_img = 1
 
-        # Initialize sphere and save to disk, send update for new scan
-        #ic(self.fname, self.scan_name, self.single_img, self.gi)
-        #ic(os.path.exists(self.fname))
+        # Get Mask
+        global_mask = self.get_mask()
 
+        # Initialize sphere and save to disk, send update for new scan
         if not os.path.exists(self.fname):
             self.write_mode = 'Overwrite'
         sphere = EwaldSphere(self.scan_name,
@@ -1044,23 +1040,20 @@ class specProcess(wranglerProcess):
                              gi=self.gi,
                              th_mtr=self.th_mtr,
                              single_img=self.single_img,
+                             global_mask=global_mask,
                              **self.sphere_args)
-        #ic(self.sphere_args)
         with self.file_lock:
-            #ic(os.path.exists(self.fname), self.write_mode)
             if self.write_mode == 'Append':
                 sphere.load_from_h5(replace=False, mode='a')
                 existing_arches = sphere.arches.index
                 if len(existing_arches) == 0:
                     sphere.save_to_h5(replace=True)
-                #ic(sphere.arches.index, len(sphere.arches.index))
             else:
                 sphere.save_to_h5(replace=True)
             self.signal_q.put(('new_scan',
                                (self.scan_name, self.fname,
                                 self.gi, self.th_mtr,
                                 self.single_img)))
-        #ic(sphere.name)
 
         # Enter main loop
         i = first_img
@@ -1115,7 +1108,6 @@ class specProcess(wranglerProcess):
                 )
 
                 # integrate image to 1d and 2d arrays
-                #ic(sphere.bai_1d_args, sphere.bai_2d_args)
                 arch.integrate_1d(**sphere.bai_1d_args)
                 arch.integrate_2d(**sphere.bai_2d_args)
 
@@ -1185,10 +1177,9 @@ class specProcess(wranglerProcess):
             image_meta = get_image_meta_data(meta_file)
         else:
             image_meta = {}
-        #ic(image_meta)
 
         # Get Mask
-        self.get_mask()
+        self.mask = self.get_mask()
 
         # Subtract background if any
         bg = self.get_background(image_meta)
@@ -1261,11 +1252,11 @@ class specProcess(wranglerProcess):
         """Get mask array from mask file
         """
         if (not self.mask_file) or (not os.path.exists(self.mask_file)):
-            self.mask = None
-            return
+            # self.mask = None
+            return None
 
-        self.mask = fabio.open(self.mask_file).data
-        self.mask = np.flatnonzero(self.mask)
+        mask = fabio.open(self.mask_file).data
+        return np.flatnonzero(mask)
 
     def get_background(self, image_meta):
         """Subtract background image if bg_file or bg_dir specified

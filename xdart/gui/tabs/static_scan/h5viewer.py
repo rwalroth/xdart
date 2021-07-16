@@ -8,7 +8,7 @@ import traceback
 import gc
 
 # This module imports
-from xdart.modules.ewald import EwaldArch
+# from xdart.modules.ewald import EwaldArch
 from xdart.utils import catch_h5py_file
 from .ui.h5viewerUI import Ui_Form
 from .sphere_threads import fileHandlerThread
@@ -17,6 +17,9 @@ from ...widgets import defaultWidget
 # Qt imports
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets, QtCore
+
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
 
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
@@ -149,7 +152,9 @@ class H5Viewer(QWidget):
         self.actionSetDefaults.triggered.connect(self.defaultWidget.show)
         
         self.ui.listScans.itemDoubleClicked.connect(self.scans_clicked)
+        self.ui.listScans.itemActivated.connect(self.scans_clicked)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
+        self.ui.listData.itemClicked.connect(self.data_changed)
         self.actionOpenFolder.triggered.connect(self.open_folder)
         self.actionSaveDataAs.triggered.connect(self.save_data_as)
         self.actionNewFile.triggered.connect(self.new_file)
@@ -169,7 +174,6 @@ class H5Viewer(QWidget):
         # self.show()
 
     def load_starting_defaults(self):
-        #ic()
         default_path = os.path.join(self.local_path, "last_defaults.json")
         if os.path.exists(default_path):
             self.defaultWidget.load_defaults(fname=default_path)
@@ -177,25 +181,20 @@ class H5Viewer(QWidget):
             self.defaultWidget.save_defaults(fname=default_path)
 
     def set_user_defaults(self):
-        #ic()
         default_path = os.path.join(self.local_path, "last_defaults.json")
         self.defaultWidget.save_defaults(fname=default_path)
 
     def update(self):
         """Calls both update_scans and update_data.
         """
-        #ic()
         self.update_scans()
         self.update_data()
         
     def update_scans(self):
         """Takes in directory path and adds files in path to listScans
         """
-        #ic()
         if not os.path.exists(self.dirname):
             return
-
-        #ic(self.dirname)
 
         self.ui.listScans.clear()
         self.ui.listScans.addItem('..')
@@ -210,10 +209,8 @@ class H5Viewer(QWidget):
     def update_data(self):
         """Updates list with all arch ids.
         """
-        #ic()
         previous_loc = self.ui.listData.currentRow()
         previous_sel = self.ui.listData.selectedItems()
-        #ic(previous_loc, self.data_1d.keys())
         self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
 
         if self.sphere.name != "null_main":
@@ -222,11 +219,9 @@ class H5Viewer(QWidget):
 
             # Clear data 1d/1d objects if reintegrated
             if len(_idxs) < len(self.data_1d.keys()):
-                #ic('clearing data_1d/2d objects')
                 self.data_1d.clear()
                 self.data_2d.clear()
 
-            #ic(len(_idxs), self.ui.listData.count())
             if (len(_idxs) == 0) or (len(_idxs) > self.ui.listData.count() - 1):
                 self.ui.listData.clear()
                 self.ui.listData.addItem('Overall')
@@ -236,22 +231,17 @@ class H5Viewer(QWidget):
         if previous_loc > self.ui.listData.count() - 1:
             previous_loc = self.ui.listData.count() - 1
 
-        #ic('resetting selection', len(previous_sel))
         if len(previous_sel) < 2:
             self.ui.listData.setCurrentRow(previous_loc)
         else:
             for item in previous_sel:
-                #ic(item.text())
                 item.setSelected(True)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
 
         #ic('listItems (updated)', self.ui.listData.count(), self.ui.listData.currentRow())
 
-        # self.ui.listData.activateWindow()
         self.ui.listData.setFocus()
         self.ui.listData.focusWidget()
-
-        gc.collect()
 
     def thread_finished(self, task):
         #ic()
@@ -310,58 +300,59 @@ class H5Viewer(QWidget):
     def data_changed(self):
         """Connected to currentItemChanged signal of listData
         """
-        #ic()
         self.arch_ids.clear()
         items = self.ui.listData.selectedItems()
         self.arch_ids += [str(item.text()) for item in items]
         self.arch_ids.sort()
         idxs = self.arch_ids
-        #ic(idxs, self.new_scan, self.update_2d)
 
-        if (len(idxs) == 0) or (idxs[0] == 'No data'):
-            self.sigUpdate.emit()
-            return
+        # ic(self.arch_ids)
 
-        if self.new_scan and (idxs[0] == 'Overall') and (len(self.data_1d) == 0):
+        # if (len(idxs) == 0) or (idxs[0] == 'No data'):
+        #     self.arch_ids = []
+        #     self.sigUpdate.emit()
+        #     return
+
+        # ic(self.new_scan, idxs, self.data_1d.keys())
+        # if self.new_scan and (idxs[0] == 'Overall') and (len(self.data_1d) == 0):
+        if self.new_scan and (len(self.data_1d) == 0):
             self.new_scan = False
             return
 
         # Put 'Overall' first in list
+        load_2d = self.update_2d
         if 'Overall' in self.arch_ids:
             self.arch_ids.insert(0, self.arch_ids.pop(self.arch_ids.index('Overall')))
             idxs = self.sphere.arches.index
-
-        #ic('selected items', self.arch_ids, self.sphere.gi, self.sphere.static)
+            load_2d = False
 
         if 'No Data' not in self.arch_ids:
-            self.arches.clear()
-            self.arches.update({int(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi)
-                                for idx in idxs})
+            # self.arches.clear()
+            # self.arches.update({int(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi)
+            #                     for idx in idxs})
 
             idxs_memory = []
             for idx in idxs:
-                # keys = self.data_2d.keys() if self.update_2d else self.data_1d.keys()
-                # keys, data = self.data_2d.keys(), self.data_2d
-                # if not self.update_2d:
-                #     keys, data = self.data_1d.keys(), self.data_1d
-                if self.update_2d:
+                if idx == 'No data':
+                    continue
+                # if self.update_2d:
+                if load_2d:
                     if int(idx) in self.data_2d.keys():
-                        self.arches[int(idx)] = self.data_1d[int(idx)]
-                        self.arches[int(idx)].map_raw, self.arches[int(idx)].mask, self.arches[int(idx)].int_2d =\
-                            self.data_2d[int(idx)]
-                        #ic('loaded arch from memory', idx)
+                        # self.arches[int(idx)] = self.data_1d[int(idx)]
+                        # self.arches[int(idx)].map_raw, self.arches[int(idx)].mask, self.arches[int(idx)].int_2d =\
+                        #     self.data_2d[int(idx)]['map_raw'], self.data_2d[int(idx)]['mask'], self.data_2d[int(idx)]['int_2d']
+                            # self.data_2d[int(idx)]
                         idxs_memory.append(int(idx))
                 else:
                     if int(idx) in self.data_1d.keys():
-                        self.arches[int(idx)] = self.data_1d[int(idx)]
-                        #ic('loaded arch from memory', idx)
+                        # self.arches[int(idx)] = self.data_1d[int(idx)]
                         idxs_memory.append(int(idx))
 
             self.file_thread.arch_ids = [int(idx) for idx in idxs
                                          if int(idx) not in idxs_memory]
 
-            #ic(len(self.arches), self.file_thread.arch_ids)
             if len(self.file_thread.arch_ids) > 0:
+                self.file_thread.update_2d = load_2d
                 self.file_thread.queue.put("load_arches")
             else:
                 self.sigUpdate.emit()
