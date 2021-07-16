@@ -7,9 +7,10 @@ from pyFAI import units
 import h5py
 
 from .. import _utils as utils
+from .h5_wrapper import H5Wrapper
 
 
-class nzarray1d():
+class nzarray1d(H5Wrapper):
     """Sparse matrix like object which stores minimal box to contain
     non-zero data. Only for 1D arrays.
     
@@ -29,12 +30,13 @@ class nzarray1d():
             objects
         to_hdf5: Saves the data to an hdf5 file
     """
-    def __init__(self, arr=None, grp=None, lazy=False):
+    def __init__(self, arr=None, grp=None, lazy=False, **kwargs):
         """arr: numpy array, full dataset
         grp: h5py File or Group object, if used will load in data
         lazy: bool, if True the data attribute is a view of the
             h5py dataset called 'data' in grp
         """
+        super().__init__(grp, lazy, **kwargs)
         self.none_flag = False
         if isinstance(arr, self.__class__):
             if arr.data is None:
@@ -45,15 +47,6 @@ class nzarray1d():
                 self.data[()] = arr.data[()]
                 self.shape = copy.deepcopy(arr.shape)
                 self.corners = copy.deepcopy(arr.corners)
-        elif grp is not None:
-            if lazy:
-                self.shape = grp['shape'][()]
-                self.corners = grp['corners'][()]
-                self.data = grp['data']
-            else:
-                self.shape = grp['shape'][()]
-                self.corners = grp['corners'][()]
-                self.data = grp['data'][()]
         elif arr is None:
             self.none_flag = True
             self._none_array()
@@ -391,13 +384,13 @@ class nzarray2d(nzarray1d):
             objects
         to_hdf5: Saves the data to an hdf5 file
     """
-    def __init__(self, arr=None, grp=None, lazy=False):
+    def __init__(self, arr=None, grp=None, lazy=False, **kwargs):
         """arr: numpy array, full dataset
         grp: h5py File or Group object, if used will load in data
         lazy: bool, if True the data attribute is a view of the
             h5py dataset called 'data' in grp
         """
-        super().__init__(arr, grp, lazy)
+        super().__init__(arr, grp, lazy, **kwargs)
     
     def _none_array(self):
         arrn = np.array([[0],[0]])
