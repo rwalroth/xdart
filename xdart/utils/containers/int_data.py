@@ -209,6 +209,10 @@ class int_1d_data:
         out.norm = out.raw/out.pcount
         out.ttheta = copy.deepcopy(self.ttheta)
         out.q = copy.deepcopy(self.q)
+        try:
+            out.chi = copy.deepcopy(self.chi)
+        except AttributeError:
+            pass
         return out
 
 class int_2d_data(int_1d_data):
@@ -267,7 +271,7 @@ class int_2d_data(int_1d_data):
         """
         super().from_hdf5(grp)
         utils.h5_to_attributes(self, grp, ['chi'])
-    
+
     def to_hdf5(self, grp, compression=None):
         """Saves data to hdf5 file.
         
@@ -278,7 +282,7 @@ class int_2d_data(int_1d_data):
         """
         super().to_hdf5(grp, compression)
         utils.attributes_to_h5(self, grp, ['chi'], compression=compression)
-    
+
     def __setattr__(self, name, value):
         """Ensures raw, norm, and pcount are nzarray2d objects.
         """

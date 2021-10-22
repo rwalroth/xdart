@@ -308,14 +308,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                     int_data = self.sphere.bai_2d
             elif self.ui.imageMethod.currentIndex() == 1:
                 int_data = self.sphere.bai_2d
-        
+
         data, corners, sigma = read_NRP(self.ui.imageNRP, int_data)
-        
+
         rect = get_rect(
             get_xdata(self.ui.imageUnit, int_data)[corners[2]:corners[3]], 
             int_data.chi[corners[0]:corners[1]]
         )
-        
+
         return data, rect
     
     def update_plot(self):
@@ -548,5 +548,3 @@ def get_xdata(box, int_data):
     elif box.currentIndex() == 1:
         xdata = int_data.q
     return xdata
-
-

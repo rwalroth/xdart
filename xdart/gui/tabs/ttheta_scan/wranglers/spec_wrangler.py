@@ -35,7 +35,7 @@ DETECTOR_DICT = {
 }
 
 params = [
-    {'name': 'Scan Number', 'type': 'int', 'value': 0},
+    {'name': 'Scan Number', 'type': 'int', 'value': 1},
     {'name': 'Spec File', 'type': 'str', 'default': ''},
     NamedActionParameter(name='spec_file_browse', title= 'Browse...'),
     {'name': 'Image Directory', 'type': 'str', 'default': ''},
@@ -45,7 +45,7 @@ params = [
     {'name': 'Timeout', 'type': 'float', 'value': 5},
     {'name': 'Rotation Motors', 'type': 'group', 'children': [
         {'name': 'Rot1', 'type': 'str', 'default': ''},
-        {'name': 'Rot2', 'type': 'str', 'default': ''},
+        {'name': 'Rot2', 'type': 'str', 'default': 'TwoTheta'},
         {'name': 'Rot3', 'type': 'str', 'default': ''}
     ]},
     {'name': 'Calibration Angles', 'type': 'group', 'children': [
@@ -666,8 +666,3 @@ class specProcess(wranglerProcess):
                 for i in range(477, 487):
                     arr[:,i] = -2.0
             return arr.T
-
-
-
-    
-

@@ -10,6 +10,12 @@ from xdart.utils.containers import int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 from xdart import utils
 
+import logging
+logger = logging.getLogger(__name__)
+
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
+
 
 class EwaldSphere():
     """Class for storing multiple arch objects, and stores a MultiGeometry
@@ -298,6 +304,7 @@ class EwaldSphere():
                     self.bai_2d.qz = arch.int_2d.qz
                     self.bai_2d.qxy = arch.int_2d.qxy
             except AttributeError:
+                logger.error('**Error**')
                 pass
             self.save_bai_2d()
 
@@ -537,6 +544,7 @@ class EwaldSphere():
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
+        compression = None
         if self.static:
             compression = None
         with self.file_lock:
@@ -551,6 +559,7 @@ class EwaldSphere():
                 h5py. See h5py documentation for acceptable compression
                 algorithms.
         """
+        compression = None
         if self.static:
             compression = None
         with self.file_lock:

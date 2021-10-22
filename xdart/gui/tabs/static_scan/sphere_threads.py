@@ -222,7 +222,6 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.sigUpdate.emit()
 
     def load_arches(self):
-        # ic(self.update_2d, self.arch_ids[:])
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
                 for idx in self.arch_ids:
@@ -250,8 +249,6 @@ class fileHandlerThread(Qt.QtCore.QThread):
 
                     except KeyError:
                         pass
-
-                    # ic(self.data_1d.keys(), self.data_2d.keys())
 
             self.sigUpdate.emit()
 

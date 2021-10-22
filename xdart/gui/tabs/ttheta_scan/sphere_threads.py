@@ -19,6 +19,10 @@ from pyqtgraph import Qt
 from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
 
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
+
+
 class integratorThread(Qt.QtCore.QThread):
     """Thread for handling integration. Frees main gui thread from
     intensive calculations.
@@ -91,7 +95,7 @@ class integratorThread(Qt.QtCore.QThread):
             self.sphere.bai_2d = int_2d_data()
         for arch in self.sphere.arches:
             arch.integrate_2d(**self.sphere.bai_2d_args, global_mask=self.sphere.global_mask)
-            self.sphere.arches[arch.idx] = arch
+            # self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_2d(arch)
             self.update.emit(arch.idx)
         with self.file_lock:
@@ -112,7 +116,7 @@ class integratorThread(Qt.QtCore.QThread):
             self.sphere.bai_1d = int_1d_data()
         for arch in self.sphere.arches:
             arch.integrate_1d(**self.sphere.bai_1d_args, global_mask=self.sphere.global_mask)
-            self.sphere.arches[arch.idx] = arch
+            # self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_1d(arch)
             self.update.emit(arch.idx)
         with self.file_lock:
