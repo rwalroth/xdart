@@ -2,17 +2,18 @@
 """
 @author: walroth
 """
-# Standard library imorts
+# Standard library imports
 import os
+import time
 import traceback
 import gc
 
 # This module imports
-# from xdart.modules.ewald import EwaldArch
 from xdart.utils import catch_h5py_file
 from .ui.h5viewerUI import Ui_Form
 from .sphere_threads import fileHandlerThread
 from ...widgets import defaultWidget
+from xdart.utils.containers import int_2d_data_static
 
 # Qt imports
 from pyqtgraph import Qt
@@ -60,7 +61,6 @@ class H5Viewer(QWidget):
                  sphere, arch, arch_ids, arches,
                  data_1d, data_2d,
                  parent=None):
-        #ic()
         super().__init__(parent)
         self.local_path = local_path
         self.file_lock = file_lock
@@ -152,7 +152,7 @@ class H5Viewer(QWidget):
         self.actionSetDefaults.triggered.connect(self.defaultWidget.show)
         
         self.ui.listScans.itemDoubleClicked.connect(self.scans_clicked)
-        self.ui.listScans.itemActivated.connect(self.scans_clicked)
+        # self.ui.listScans.itemActivated.connect(self.scans_clicked)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
         self.ui.listData.itemClicked.connect(self.data_changed)
         self.actionOpenFolder.triggered.connect(self.open_folder)
@@ -170,9 +170,6 @@ class H5Viewer(QWidget):
         self.file_thread.sigUpdate.connect(self.sigUpdate.emit)
         self.file_thread.start(Qt.QtCore.QThread.LowPriority)
         
-        # self.update()
-        # self.show()
-
     def load_starting_defaults(self):
         default_path = os.path.join(self.local_path, "last_defaults.json")
         if os.path.exists(default_path):
@@ -238,13 +235,10 @@ class H5Viewer(QWidget):
                 item.setSelected(True)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
 
-        #ic('listItems (updated)', self.ui.listData.count(), self.ui.listData.currentRow())
-
         self.ui.listData.setFocus()
         self.ui.listData.focusWidget()
 
     def thread_finished(self, task):
-        #ic()
         if task != "load_arch":
             self.update()
         self.sigThreadFinished.emit()
@@ -257,23 +251,25 @@ class H5Viewer(QWidget):
         
         q: QListItem, item selected in h5viewer.
         """
-        #ic()
-        if q.data(0) == '..':
-            if self.dirname[-1] in ['/', '\\']:
-                up = os.path.dirname(self.dirname[:-1])
-            else:
-                up = os.path.dirname(self.dirname)
-            
-            if os.path.isdir(up) and os.path.splitdrive(up)[1] != '':
-                self.dirname = up
-                self.update_scans()
-        elif '/' in q.data(0):
-            dirname = os.path.join(self.dirname, q.data(0))
-            if os.path.isdir(dirname):
-                self.dirname = dirname
-                self.update_scans()
-        elif q.data(0) != 'No scans':
-            self.set_file(os.path.join(self.dirname, q.data(0)))
+        try:
+            if q.data(0) == '..':
+                if self.dirname[-1] in ['/', '\\']:
+                    up = os.path.dirname(self.dirname[:-1])
+                else:
+                    up = os.path.dirname(self.dirname)
+
+                if os.path.isdir(up) and os.path.splitdrive(up)[1] != '':
+                    self.dirname = up
+                    self.update_scans()
+            elif '/' in q.data(0):
+                dirname = os.path.join(self.dirname, q.data(0))
+                if os.path.isdir(dirname):
+                    self.dirname = dirname
+                    self.update_scans()
+            elif q.data(0) != 'No scans':
+                self.set_file(os.path.join(self.dirname, q.data(0)))
+        except AttributeError:
+            pass
     
     def set_file(self, fname):
         """Changes the data file.
@@ -281,7 +277,6 @@ class H5Viewer(QWidget):
         args:
             fname: str, absolute path for data file
         """
-        #ic()
         if fname != '':
             try:
                 with self.file_lock:
@@ -306,16 +301,17 @@ class H5Viewer(QWidget):
         self.arch_ids.sort()
         idxs = self.arch_ids
 
-        # ic(self.arch_ids)
+        if (len(idxs) == 0) or 'No data' in idxs:
+            time.sleep(1)
+            #     self.sigUpdate.emit()
+            return
 
         # if (len(idxs) == 0) or (idxs[0] == 'No data'):
         #     self.arch_ids = []
         #     self.sigUpdate.emit()
         #     return
 
-        # ic(self.new_scan, idxs, self.data_1d.keys())
-        # if self.new_scan and (idxs[0] == 'Overall') and (len(self.data_1d) == 0):
-        if self.new_scan and (len(self.data_1d) == 0):
+        if self.new_scan and ('Overall' in idxs) and (len(self.data_1d) == 0):
             self.new_scan = False
             return
 
@@ -324,45 +320,72 @@ class H5Viewer(QWidget):
         if 'Overall' in self.arch_ids:
             self.arch_ids.insert(0, self.arch_ids.pop(self.arch_ids.index('Overall')))
             idxs = self.sphere.arches.index
-            load_2d = False
 
-        if 'No Data' not in self.arch_ids:
-            # self.arches.clear()
-            # self.arches.update({int(idx): EwaldArch(idx=idx, static=True, gi=self.sphere.gi)
-            #                     for idx in idxs})
+        if len(self.sphere.arches.index) > 1:
+            if len(idxs) == len(self.sphere.arches.index):
+                # ic('len(idxs) = len(sphere)')
+                load_2d = False
 
-            idxs_memory = []
-            for idx in idxs:
-                if idx == 'No data':
-                    continue
-                # if self.update_2d:
-                if load_2d:
-                    if int(idx) in self.data_2d.keys():
-                        # self.arches[int(idx)] = self.data_1d[int(idx)]
-                        # self.arches[int(idx)].map_raw, self.arches[int(idx)].mask, self.arches[int(idx)].int_2d =\
-                        #     self.data_2d[int(idx)]['map_raw'], self.data_2d[int(idx)]['mask'], self.data_2d[int(idx)]['int_2d']
-                            # self.data_2d[int(idx)]
-                        idxs_memory.append(int(idx))
-                else:
-                    if int(idx) in self.data_1d.keys():
-                        # self.arches[int(idx)] = self.data_1d[int(idx)]
-                        idxs_memory.append(int(idx))
+        # ic(self.arch_ids, idxs[:], load_2d)
 
-            self.file_thread.arch_ids = [int(idx) for idx in idxs
-                                         if int(idx) not in idxs_memory]
+        # idxs_memory = []
+        if load_2d:
+            idxs_memory = [int(idx) for idx in idxs if int(idx) in self.data_2d.keys()]
+        else:
+            idxs_memory = [int(idx) for idx in idxs if int(idx) in self.data_1d.keys()]
+        # ic(idxs_memory[:])
 
-            if len(self.file_thread.arch_ids) > 0:
-                self.file_thread.update_2d = load_2d
-                self.file_thread.queue.put("load_arches")
-            else:
-                self.sigUpdate.emit()
+        # Remove 2d data from 'Sum' if for unselected keys
+        if load_2d:
+            if len(self.arches) == 0:
+                self.arches.update({'sum_int_2d': int_2d_data_static(), 'sum_map_raw': 0})
+            if len(self.data_2d) == 0:
+                self.arches.update({'idxs': [], 'add_idxs': [], 'sub_idxs': []})
 
-        gc.collect()
+            new_idxs = set([int(idx) for idx in idxs])
+            old_idxs, data_keys = set(self.arches['idxs']), set(self.data_2d.keys())
+
+            changed_idxs = new_idxs ^ old_idxs
+            load_idxs = changed_idxs - data_keys
+
+            add_from_data = (new_idxs - old_idxs) & data_keys
+            add_from_h5 = new_idxs - old_idxs - data_keys
+            self.arches['add_idxs'] = [int(k) for k in add_from_h5]
+
+            sub_from_data = (old_idxs - new_idxs) & data_keys
+            sub_from_h5 = old_idxs - new_idxs - data_keys
+            self.arches['sub_idxs'] = [int(k) for k in sub_from_h5]
+
+            for x in load_idxs:
+                if int(x) in idxs_memory:
+                    idxs_memory.remove(int(x))
+
+            for k in add_from_data:
+                self.arches['sum_int_2d'] += self.data_2d[int(k)]['int_2d']
+                self.arches['sum_map_raw'] += self.data_2d[int(k)]['map_raw']
+
+            for k in sub_from_data:
+                self.arches['sum_int_2d'] -= self.data_2d[int(k)]['int_2d']
+                self.arches['sum_map_raw'] -= self.data_2d[int(k)]['map_raw']
+
+            self.arches['idxs'] = [int(idx) for idx in idxs]
+
+        self.file_thread.arch_ids = [int(idx) for idx in idxs
+                                     if int(idx) not in idxs_memory]
+
+        # ic(self.data_2d.keys(), idxs_memory, self.file_thread.arch_ids[:])
+        if len(self.file_thread.arch_ids) > 0:
+            self.file_thread.update_2d = load_2d
+            self.file_thread.queue.put("load_arches")
+        else:
+            self.sigUpdate.emit()
+        # ic(self.data_2d.keys())
+
+    gc.collect()
 
     def data_reset(self):
         """Resets data in memory (self.arches, self.arch_ids, self.data_..
         """
-        #ic()
         self.arches.clear()
         self.arch_ids.clear()
         self.data_1d.clear()
@@ -375,7 +398,6 @@ class H5Viewer(QWidget):
     def open_folder(self):
         """Changes the directory being displayed in the file explorer.
         """
-        #ic()
         dirname = QFileDialog().getExistingDirectory(
             caption='Choose Directory',
             directory='',
@@ -395,7 +417,6 @@ class H5Viewer(QWidget):
         args:
             enable: bool, if True actions are enabled
         """
-        #ic()
         self.actionSaveDataAs.setEnabled(enable)
         self.paramMenu.setEnabled(enable)
         self.actionOpenFolder.setEnabled(enable)
@@ -406,7 +427,6 @@ class H5Viewer(QWidget):
         """Saves all data to hdf5 file. Also sets fname to be the
         selected file.
         """
-        #ic()
         fname, _ = QFileDialog.getSaveFileName()
         with self.file_thread.lock:
             self.file_thread.new_fname = fname
@@ -416,6 +436,5 @@ class H5Viewer(QWidget):
     def new_file(self):
         """Calls file dialog and sets the file name.
         """
-        #ic()
         fname, _ = QFileDialog.getSaveFileName()
         self.set_file(fname)

@@ -4,8 +4,10 @@ import numpy as np
 from pyFAI import units
 from scipy.interpolate import RectBivariateSpline
 
-from .nzarrays import nzarray2d
 from .. import _utils as utils
+
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
 
 
 class int_1d_data_static:
@@ -134,7 +136,8 @@ class int_2d_data_static(int_1d_data_static):
         to_hdf5: Saves data to hdf5 file
     """
 
-    def __init__(self, i_tthChi=np.zeros(0), i_qChi=np.zeros(0), ttheta=0, q=0, chi=0,
+    # def __init__(self, i_tthChi=np.zeros(0), i_qChi=np.zeros(0), ttheta=0, q=0, chi=0,
+    def __init__(self, i_tthChi=0, i_qChi=0, ttheta=0, q=0, chi=0,
                  i_QxyQz=0, qz=0, qxy=0):
         """
         raw: nzarray2d, raw integrated signal
@@ -197,7 +200,7 @@ class int_2d_data_static(int_1d_data_static):
             self.i_tthChi = result.intensity
             self.ttheta = tth = result.radial
             self.tth_from_q = False
-            if (self.i_qChi is None) or self.q_from_tth:
+            if (self.i_qChi == 0) or self.q_from_tth:
                 tth_range = np.asarray([tth[0], tth[-1]])
                 q_range = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth_range / 2))
                 qtth = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth / 2))
@@ -211,7 +214,7 @@ class int_2d_data_static(int_1d_data_static):
             self.i_qChi = result.intensity
             self.q = q = result.radial
             self.q_from_tth = False
-            if (len(self.i_tthChi) == 0) or self.tth_from_q:
+            if (self.i_tthChi == 0) or self.tth_from_q:
                 q_range = np.array([q[0], q[-1]])
                 tth_range = 2 * np.degrees(np.arcsin(q_range * (wavelength * 1e10) / (4 * np.pi)))
                 tthq = 2 * np.degrees(np.arcsin(q * (wavelength * 1e10) / (4 * np.pi)))
@@ -252,3 +255,33 @@ class int_2d_data_static(int_1d_data_static):
         """Ensures all saved objects are np.ndarray objects.
         """
         self.__dict__[name] = np.asarray(value)
+
+    def __add__(self, other):
+        out = self.__class__()
+
+        out.i_qChi = self.i_qChi + other.i_qChi
+        out.i_tthChi = self.i_tthChi + other.i_tthChi
+        out.i_QxyQz = self.i_QxyQz + other.i_QxyQz
+
+        out.ttheta = copy.deepcopy(other.ttheta)
+        out.q = copy.deepcopy(other.q)
+        out.chi = copy.deepcopy(other.chi)
+        out.qz = copy.deepcopy(other.qz)
+        out.qxy = copy.deepcopy(other.qxy)
+
+        return out
+
+    def __sub__(self, other):
+        out = self.__class__()
+
+        out.i_qChi = self.i_qChi - other.i_qChi
+        out.i_tthChi = self.i_tthChi - other.i_tthChi
+        out.i_QxyQz = self.i_QxyQz - other.i_QxyQz
+
+        out.ttheta = copy.deepcopy(other.ttheta)
+        out.q = copy.deepcopy(other.q)
+        out.chi = copy.deepcopy(other.chi)
+        out.qz = copy.deepcopy(other.qz)
+        out.qxy = copy.deepcopy(other.qxy)
+
+        return out

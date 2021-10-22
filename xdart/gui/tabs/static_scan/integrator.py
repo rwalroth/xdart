@@ -139,7 +139,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
     """
     def __init__(self, sphere, arch, file_lock,
                  arches, arch_ids, data_2d, parent=None):
-        #ic()
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -211,7 +210,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
         args:
             sphere: EwaldSphere, object to get args from.
         """
-        #ic()
         self._update_params()
 
     def setEnabled(self, enable=True):
@@ -222,7 +220,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
             enable: bool, If True widgets are enabled. If False
                 they are disabled.
         """
-        #ic()
         self.ui.frame1D.setEnabled(enable)
         self.ui.frame2D.setEnabled(enable)
         self.advancedWidget1D.setEnabled(enable)
@@ -250,7 +247,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_radial_autoRange_1D(self):
         """Disable/Enable radial 1D widget if auto range is un/selected
         """
-        #ic()
         self.radial_autoRange_1D = self.ui.radial_autoRange_1D.isChecked()
         # self.setEnabled()
 
@@ -269,7 +265,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def update_azim_autoRange_1D(self):
         """Disable/Enable azim 1D widget if auto range is un/selected
         """
-        #ic()
         self.azim_autoRange_1D = self.ui.azim_autoRange_1D.isChecked()
 
         self.bai_1d_pars.child('azimuth_range', 'Auto').setValue(
@@ -835,8 +830,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def bai_1d(self, q):
         """Uses the integrator_thread attribute to call bai_1d
         """
-        #ic()
-        #ic(self.sphere.arches.index, list(self.arches.keys()))
         with self.integrator_thread.lock:
             if len(self.sphere.arches.index) > 0:
                 self.integrator_thread.method = 'bai_1d_all'
@@ -852,8 +845,6 @@ class integratorTree(Qt.QtWidgets.QWidget):
     def bai_2d(self, q):
         """Uses the integrator_thread attribute to call bai_2d
         """
-        #ic()
-        #ic(self.sphere.arches.index, list(self.arches.keys()))
         with self.integrator_thread.lock:
             if len(self.sphere.arches.index) > 0:
                 self.integrator_thread.method = 'bai_2d_all'

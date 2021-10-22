@@ -442,7 +442,6 @@ class EwaldArch():
         args:
             file: h5py file or group object
         """
-        #ic()
         with self.file_lock:
             with self.arch_lock:
                 if str(self.idx) not in file:
@@ -495,9 +494,7 @@ class EwaldArch():
     def copy(self, include_2d=True):
         """Returns a copy of self.
         """
-        #ic()
         arch_copy = EwaldArch(
-            # copy.deepcopy(self.idx), copy.deepcopy(self.map_raw),
             copy.deepcopy(self.idx), None,
             copy.deepcopy(self.poni), None,
             copy.deepcopy(self.scan_info), copy.deepcopy(self.ai_args),

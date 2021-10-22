@@ -25,6 +25,9 @@ from pyqtgraph.graphicsItems.GradientEditorItem import Gradients
 from pyqtgraph.graphicsItems.GraphicsObject import GraphicsObject
 from pyqtgraph import getConfigOption
 
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
+
 QFileDialog = QtWidgets.QFileDialog
 
 
@@ -153,7 +156,7 @@ class pgImageWidget(Qt.QtWidgets.QWidget):
         self.histogram.axis.setLogMode(False)
 
         if scale == 'Log':
-            min_val = np.min(self.displayed_image)
+            min_val = np.nanmin(self.displayed_image)
             if min_val < 1:
                 self.displayed_image -= (min_val - 1)
             self.displayed_image = np.log10(self.displayed_image)
@@ -163,7 +166,7 @@ class pgImageWidget(Qt.QtWidgets.QWidget):
 
             self.histogram.axis.setLogMode(True)
         elif scale == 'Sqrt':
-            min_val = np.min(self.displayed_image)
+            min_val = np.nanmin(self.displayed_image)
             if min_val < 0:
                 img = np.sqrt(np.abs(self.displayed_image))
                 img[self.displayed_image < 0] *= -1
@@ -459,7 +462,6 @@ class PColorMeshItemLevels(PColorMeshItem):
         # Second we associate each z value, that we normalize, to the lut
 
         vmin, vmax = self.z.min(), self.z.max()
-        #ic(self.levels)
         if self.levels is not None:
             vmin, vmax = self.levels
             vmin = max(vmin, self.z.min())

@@ -105,7 +105,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     """
 
     def __init__(self, sphere, arch, arch_ids, arches, data_1d, data_2d, parent=None):
-        #ic()
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -135,7 +134,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.sphere = sphere
         self.arch = arch
         self.arch_ids = arch_ids
-        # self.arches = arches
+        self.arches = arches
         # self.idxs = sorted(list(self.arches.keys()))
         self.arch_names = []
         self.sphere_name = None
@@ -258,7 +257,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def get_idxs(self):
         """ Return selected arch indices
         """
-        # ic(self.arch_ids)
         self.idxs, self.idxs_1d, self.idxs_2d = [], [], []
         if len(self.arch_ids) == 0 or self.arch_ids[0] == 'No data':
             return
@@ -274,8 +272,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.idxs = list(np.asarray(self.idxs, dtype=int))
         self.idxs_1d = [int(idx) for idx in self.idxs if idx in self.data_1d.keys()]
         self.idxs_2d = [int(idx) for idx in self.idxs if idx in self.data_2d.keys()]
-
-        # ic(self.arch_ids, self.idxs, self.idxs_1d, self.idxs_2d)
 
     def update_plot_range(self):
         if self.ui.slice.isChecked():
@@ -330,7 +326,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         layout.addWidget(self.wf_accept_button, 2, 1)
         layout.addWidget(self.wf_cancel_button, 2, 2)
 
-        # arch = self.arches[self.idxs[0]]
         arch = self.data_1d[self.idxs_1d[0]]
         counters = list(arch.scan_info.keys())
         counters = ['Frame #', 'Time (s)', 'Time (minutes)'] + counters
@@ -373,10 +368,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def _updated(self):
         """Check if there is data to update
         """
-        # ic()
-        # if len(self.arches) == 0:
         if (len(self.data_1d) == 0) or (len(self.idxs_1d) == 0):
-            # ic('returning false')
             return False
         if self.ui.update2D.isChecked() and (len(self.idxs_2d) == 0):
             return False
@@ -394,7 +386,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates image and plot frames based on toolbar options
         """
         # self.idxs = sorted(list(self.arches.keys()))
-        # ic()
         self.get_idxs()
 
         if not self._updated():
@@ -464,7 +455,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             # Apply Mask
             # arch = self.arches[self.idxs[0]]
             arch_2d = self.data_2d[self.idxs_2d[0]]
-            # ic(self.arch_ids, self.idxs, self.idxs_1d, self.idxs_2d)
             # mask = np.unravel_index(arch.mask, data.shape)
             mask = np.unravel_index(arch_2d['mask'], data.shape)
             data[mask] = np.nan
@@ -516,10 +506,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         return
 
     def update_binned_view(self):
-        #ic()
         data, rect = self.binned_data
 
-        #ic(self.scale)
         self.binned_widget.setImage(data.T[:, ::-1], scale=self.scale, cmap=self.cmap)
         self.binned_widget.setRect(rect)
 
@@ -548,8 +536,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_plot(self):
         """Updates data in plot frame
         """
-        #ic()
-
         if (self.sphere.name == 'null_main') or (len(self.arch_ids) == 0):
             data = (np.arange(100), np.arange(100))
             return data
@@ -557,14 +543,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Get 1D data for all arches
         ydata, xdata = self.get_arches_data_1d()
         arch_names = [f'{self.sphere.name}_{i}' for i in self.idxs]
-        #ic(ydata.shape, xdata.shape)
 
         # Subtract background
         ydata -= self.bkg_1d
         if ydata.ndim == 1:
             ydata = ydata[np.newaxis, :]
 
-        #ic(ydata.shape, xdata.shape, self.plot_data[0].shape)
         if ((self.plot_data[0].shape == xdata.shape) and
                 (self.plotMethod in ['Overlay', 'Waterfall'])):
             for (arch_name, data) in zip(arch_names, ydata):
@@ -580,7 +564,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.plot_data_range = [[xdata.min(), xdata.max()], [ydata.min(), ydata.max()]]
         self.update_plot_view()
 
-        self.save_array(auto=True)
+        # self.save_array(auto=True)
 
     def update_plot_view(self):
         """Updates 1D view of data in plot frame
@@ -669,9 +653,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         x_max, x_min = np.max(s_xdata), np.min(s_xdata)
         x_step = (x_max - x_min)/len(s_xdata)
-        #ic(s_xdata.shape)
         s_xdata = np.append(s_xdata, [x_max + x_step])
-        #ic(s_xdata.shape)
         s_xdata -= x_step/2
         s_xdata = np.tile(s_xdata, (data.shape[0]+1, 1)).T
 
@@ -680,7 +662,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             s_ydata = np.asarray(np.arange(data.shape[0]) + self.wf_start + 1, dtype=float)
         else:
             # TODO: Fix below for more WF options
-            # ic(self.idxs)
             if self.wf_yaxis == 'Time (s)':
                 # s_ydata = np.asarray([arch.scan_info['epoch'] for arch_id, arch in self.arches.items()])
                 s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])
@@ -695,17 +676,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
             s_ydata = s_ydata[self.wf_start::self.wf_step]
 
-        #ic(self.wf_step, s_ydata.shape)
-
         y_max, y_min = np.max(s_ydata), np.min(s_ydata)
         y_step = (y_max - y_min)/len(s_ydata)
-        #ic(s_ydata.shape)
         s_ydata = np.append(s_ydata, [y_max + y_step])
-        #ic(s_ydata.shape)
         s_ydata -= y_step/2.
         s_ydata = np.tile(s_ydata, (data.shape[1]+1, 1))
 
-        #ic(s_xdata.shape, s_ydata.shape, data.shape, self.scale, self.wf_yaxis)
         # self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
         levels = np.nanpercentile(data, (1, 99))
         self.wf_widget.imageItem.setLevels(levels)
@@ -714,7 +690,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # rect = get_rect(s_xdata, np.arange(data.shape[0]))
         rect = get_rect(s_xdata[:, 0], s_ydata[0])
-        # #ic(s_xdata[0], s_xdata[:, 0], s_ydata[:, 0], s_ydata[0])
         self.wf_widget.setRect(rect)
 
         plotUnit = self.ui.plotUnit.currentIndex()
@@ -737,13 +712,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             arch_2d = self.data_2d[int(idx)]
             for kk in range(3):
                 try:
-                    # intensity += self.normalize(arch.map_raw, arch.scan_info)
                     intensity += self.normalize(arch_2d['map_raw'], arch_1d.scan_info)
                     ctr += 1
                     break
                 except ValueError:
                     time.sleep(0.5)
-                # intensity += self.normalize(arch.map_raw, arch.scan_info)
 
         if ctr > 0:
             intensity /= ctr
@@ -770,12 +743,15 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def get_arches_data_2d(self, idxs=None):
         """Return 2D arch data for multiple arches (averaged)"""
         if idxs is None:
-            # idxs = self.idxs
             idxs = self.idxs_2d
+
+        if len(idxs) > 1:
+            intensity = self.get_int_2d(self.arches['sum_int_2d'])
+            xdata, ydata = self.get_xydata(self.arches['sum_int_2d'])
+            return intensity, xdata, ydata
 
         intensity, n_arches = 0., 0
         for nn, idx in enumerate(idxs):
-            # arch = self.arches[int(idx)]
             arch_1d = self.data_1d[int(idx)]
             arch_2d = self.data_2d[int(idx)]
             arch_intensity = self.get_int_2d(arch_2d['int_2d'], arch_1d)
@@ -798,19 +774,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         with self.sphere.sphere_lock:
             int_2d = self.sphere.bai_2d
 
-        # if self.ui.imageUnit.currentIndex() == 0:
-        #     intensity = int_2d.i_qChi
-        # elif self.ui.imageUnit.currentIndex() == 1:
-        #     intensity = int_2d.i_tthChi
-        # else:
-        #     intensity = int_2d.i_QxyQz
-        # intensity = np.asarray(intensity, dtype=float)
-
         intensity = self.get_int_2d(int_2d, normalize=True)
 
         xdata, ydata = self.get_xydata(int_2d)
         return intensity, xdata, ydata
-        # return intensity/norm_fac, xdata, ydata
 
     def get_arches_data_1d(self, idxs=None, rv='all'):
         """Return 1D data for multiple arches"""
@@ -819,7 +786,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         ydata = 0.
         for nn, idx in enumerate(idxs):
-            # arch = self.arches[int(idx)]
             arch_1d = self.data_1d[int(idx)]
             arch_2d = self.data_2d.get(int(idx), None)
             xdata, s_ydata = self.get_int_1d(arch_1d, arch_2d, idx)
@@ -840,23 +806,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Returns the appropriate 2D data depending on the chosen axes
         I(Q, Chi) or I(Qz, Qxy)
         """
-        # if self.ui.imageUnit.currentIndex() == 0:
-        #     # int_2d = arch_2d.int_2d.i_qChi
-        #     int_2d = arch_2d['int_2d'].i_qChi
-        # elif self.ui.imageUnit.currentIndex() == 1:
-        #     # int_2d = arch_2d.int_2d.i_tthChi
-        #     int_2d = arch_2d['int_2d'].i_tthChi
-        # else:
-        #     # int_2d = arch_2d.int_2d.i_QxyQz
-        #     int_2d = arch_2d['int_2d'].i_QxyQz
-
         if self.ui.imageUnit.currentIndex() == 0:
-            intensity = int_2d.i_qChi
+            intensity_2d = int_2d.i_qChi
         elif self.ui.imageUnit.currentIndex() == 1:
-            intensity = int_2d.i_tthChi
+            intensity_2d = int_2d.i_tthChi
         else:
-            intensity = int_2d.i_QxyQz
+            intensity_2d = int_2d.i_QxyQz
 
+        intensity = intensity_2d.copy()
         intensity = np.asarray(intensity, dtype=float)
 
         if normalize:
@@ -921,7 +878,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         ydata = self.normalize(ydata, arch.scan_info)
         return xdata, ydata
 
-    # def get_xydata(self, arch):
     def get_xydata(self, int_2d):
         """Reads the unit box and returns appropriate xdata
 
@@ -932,18 +888,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         returns:
             xdata: numpy array, x axis data for plot.
         """
-        # try:
-        #     # int_data = arch.int_2d
-        #     int_2d = arch['int_2d']
-        # except AttributeError or KeyError:
-        #     int_2d = arch
-
         imageUnit = self.ui.imageUnit.currentIndex()
         if imageUnit == 0:  # Q-Chi
             xdata, ydata = int_2d.q, int_2d.chi
         elif imageUnit == 1:  # 2Th-Chi
             xdata, ydata = int_2d.ttheta, int_2d.chi
-        # elif imageUnit == 2:  # Qzx-Qz
         else:  # Qzx-Qz
             xdata, ydata = int_2d.qxy, int_2d.qz
 
@@ -1006,7 +955,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def setBkg(self):
         """Sets selected points as background.
         If background is already selected, it unsets it"""
-        # if (len(self.arch_ids) == 0) or (len(self.arches) == 0):
         if (len(self.arch_ids) == 0) or (len(self.idxs) == 0):
             return
 
@@ -1036,7 +984,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.curves.clear()
         self.legend.clear()
 
-        # arch_ids = list(self.arches.keys())
         arch_ids = self.arch_names[self.wf_start::self.wf_step]
         if (self.plotMethod in ['Sum', 'Average']) and (len(self.arch_names) > 1):
             arch_ids = f'{self.plotMethod} [{self.arch_names[0]}'
@@ -1059,11 +1006,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def clear_1D(self):
         """Initialize curves for line plots
         """
-        # [curve.clear() for curve in self.curves]
-        # for curve in self.curves:
-        #     del curve
-        # self.curves.clear()
-        # self.legend.clear()
         self.arch_names.clear()
         self.arch_ids.clear()
         self.plot.clear()
@@ -1115,8 +1057,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 self.ui.slice_center.setProperty("value", 0)
                 self.ui.slice_width.setProperty("value", 10)
 
-        # self.update_plot()
-
     def _update_slice_range(self):
 
         if not self.ui.slice.isChecked():
@@ -1129,14 +1069,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.update_plot()
             return
 
-        # cen = self.ui.slice_center.value()
-        # wid = self.ui.slice_width.value()
-        # _range = np.array([cen - wid, cen + wid])
-
         cen = self.ui.slice_center.value()
         wid = self.ui.slice_width.value()
         _range = np.array([cen - wid, cen + wid])
-        # wavelength = self.arches[self.idxs[0]].integrator.wavelength
         wavelength = self.data_1d[self.idxs_1d[0]].integrator.wavelength
 
         if imageUnit == 0:
@@ -1172,14 +1107,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         center = self.ui.slice_center.value()
         width = self.ui.slice_width.value()
         _range = [center-width, center+width]
-        #ic(_range)
 
         binned_data, rect = self.binned_data
 
         if self.ui.plotUnit.currentIndex() < 2:
             _range = [max(rect.top(), _range[0]), min(rect.top() + rect.height(), _range[1])]
             width = (_range[1] - _range[0])/2.
-            #ic(_range, width)
             self.overlay = ROI(
                 [rect.left(), _range[0]], [rect.width(), 2*width],
                 pen=(255, 255, 255),
@@ -1188,7 +1121,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             _range = [max(rect.left(), _range[0]), min(rect.left() + rect.width(), _range[1])]
             width = (_range[1] - _range[0])/2.
-            #ic(_range, width)
             self.overlay = ROI(
                 [_range[0], rect.top()], [2*width, rect.height()],
                 pen=(255, 255, 255),
@@ -1199,10 +1131,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
     def clear_slice_overlay(self):
         """Clear the overlay that shows integration slice"""
-        #ic()
-
         if self.overlay is not None:
-            #ic('removing overlay')
             self.binned_widget.imageViewBox.removeItem(self.overlay)
             self.overlay = None
 
@@ -1210,7 +1139,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Saves currently displayed image. Formats are automatically
         grabbed from Qt. Also implements tiff saving.
         """
-        #ic()
         ext_filter = "Images ("
         for f in formats:
             ext_filter += "*." + f + " "
@@ -1240,14 +1168,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Save as Numpy array as well
         directory, base_name, ext = split_file_name(fname)
         save_fname = os.path.join(directory, base_name)
-        #ic(directory, base_name, ext)
         np.save(f'{save_fname}.npy', data)
 
     def save_array(self, auto=False):
         """Saves currently displayed data. Currently supports .xye
         and .csv.
         """
-        #ic()
         fname = f'{self.sphere.name}'
         if not auto:
             path = QFileDialog().getExistingDirectory(
@@ -1258,7 +1184,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
             inp_dialog = QtWidgets.QInputDialog()
             suffix, ok = inp_dialog.getText(inp_dialog, 'Enter Suffix to be added to File Name', 'Suffix', text='')
-            #ic(suffix, ok)
             if not ok:
                 return
             if suffix != '':
@@ -1271,7 +1196,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         fname = os.path.join(path, fname)
 
         xdata, ydata = self.plot_data
-        # idxs = list(self.arches.keys())
         if self.plotMethod in ['Average', 'Sum']:
             if self.plotMethod == 'Average':
                 s_ydata = np.nanmean(ydata, 0)
@@ -1364,8 +1288,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         Returns: x, y (z) coordinates on screen
 
         """
-        #ic()
-
         proxy = pg.SignalProxy(signal=self.plot.scene().sigMouseMoved, rateLimit=60, slot=self.mouseMoved)
         proxy.signal.connect(self.mouseMoved)
 

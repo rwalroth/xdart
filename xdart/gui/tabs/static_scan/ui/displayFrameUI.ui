@@ -1022,7 +1022,10 @@
              <enum>Qt::StrongFocus</enum>
             </property>
             <property name="decimals">
-             <number>0</number>
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>-100.000000000000000</double>
             </property>
             <property name="singleStep">
              <double>5.000000000000000</double>

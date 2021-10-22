@@ -129,7 +129,11 @@ class integratorThread(Qt.QtCore.QThread):
     def bai_2d_SI(self):
         """Integrate the current arch, 2d
         """
-        for idx in self.arches.keys():
+        idxs = self.arch_ids
+        if 'Overall' in self.arch_ids:
+            idxs = self.sphere.arches.index
+        # for idx in self.arches.keys():
+        for idx in idxs:
             # self.sphere.arches[arch].integrate_2d(**self.sphere.bai_2d_args)
             self.sphere.arches[int(idx)].integrate_2d(**self.sphere.bai_2d_args)
             # arch.integrate_2d(**self.sphere.bai_2d_args)
@@ -137,7 +141,11 @@ class integratorThread(Qt.QtCore.QThread):
     def bai_1d_SI(self):
         """Integrate the current arch, 1d.
         """
-        for (idx, arch) in self.arches.items():
+        idxs = self.arch_ids
+        if 'Overall' in self.arch_ids:
+            idxs = self.sphere.arches.index
+        # for (idx, arch) in self.arches.items():
+        for idx in idxs:
             # self.sphere.arches[arch].integrate_1d(**self.sphere.bai_1d_args)
             self.sphere.arches[int(idx)].integrate_1d(**self.sphere.bai_1d_args)
 
@@ -197,7 +205,7 @@ class fileHandlerThread(Qt.QtCore.QThread):
     def set_datafile(self):
         with self.file_lock:
             self.sphere.set_datafile(
-                self.fname, save_args = {'compression': None}
+                self.fname, save_args={'compression': None}
             )
         self.sigNewFile.emit(self.fname)
         self.sigUpdate.emit()
@@ -214,27 +222,37 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.sigUpdate.emit()
 
     def load_arches(self):
+        # ic(self.update_2d, self.arch_ids[:])
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
                 for idx in self.arch_ids:
                     try:
-                        # ic(idx, self.arch_ids)
                         arch = EwaldArch(idx=idx, static=True, gi=self.sphere.gi)
-                        # self.arch = self.arches[int(idx)]
-                        # self.arch.load_from_h5(file['arches'], load_2d=self.update_2d)
                         arch.load_from_h5(file['arches'], load_2d=self.update_2d)
                         self.data_1d[int(idx)] = arch.copy(include_2d=False)
-                        # ic(self.data_1d.keys())
                         if self.update_2d:
-                            # self.data_2d[int(idx)] = self.arch.map_raw, self.arch.mask, self.arch.int_2d
+                            try:
+                                if len(arch.int_2d.i_qChi) == 0:
+                                    pass
+                            except TypeError:
+                                arch.load_from_h5(file['arches'], load_2d=self.update_2d)
+
                             self.data_2d[int(idx)] = {'map_raw': arch.map_raw,
                                                       'mask': arch.mask,
                                                       'int_2d': arch.int_2d}
-                            # ic(self.data_2d.keys())
+
+                            if idx in self.arches['add_idxs']:
+                                self.arches['sum_int_2d'] += self.data_2d[int(idx)]['int_2d']
+                                self.arches['sum_map_raw'] += self.data_2d[int(idx)]['map_raw']
+                            elif idx in self.arches['sub_idxs']:
+                                self.arches['sum_int_2d'] -= self.data_2d[int(idx)]['int_2d']
+                                self.arches['sum_map_raw'] -= self.data_2d[int(idx)]['map_raw']
+
                     except KeyError:
                         pass
 
-                    # self.arches[idx] = self.arch
+                    # ic(self.data_1d.keys(), self.data_2d.keys())
+
             self.sigUpdate.emit()
 
         gc.collect()

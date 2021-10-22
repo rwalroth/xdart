@@ -119,7 +119,8 @@ def find_between_r( s, first, last ):
         return ""
 
 
-def get_fname_dir(fname):
+# def get_fname_dir(fname):
+def get_fname_dir():
     """
     Returns directory on local drive to save temporary h5 files in
 
@@ -130,8 +131,8 @@ def get_fname_dir(fname):
         path: {str} Path where h5 file is saved
     """
     home_path = str(Path.home())
-    today = datetime.today()
-    date = str(today.date())
+    # today = datetime.today()
+    # date = str(today.date())
 
     # path = os.path.join(home_path, 'xdart_processed_data', date, fname)
     path = os.path.join(home_path, 'xdart_processed_data')

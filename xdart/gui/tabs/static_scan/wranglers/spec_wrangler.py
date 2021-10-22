@@ -5,10 +5,10 @@
 
 # Standard library imports
 import os
-import sys
 import time
 import glob
 import numpy as np
+from pathlib import Path
 
 # pyFAI imports
 import fabio
@@ -25,6 +25,7 @@ from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from xdart.utils import read_image_file, get_image_meta_data
 from xdart.utils import split_file_name, get_scan_name, get_img_number, get_fname_dir
+from xdart.utils import write_xye, write_csv
 
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
@@ -319,7 +320,8 @@ class specWrangler(wranglerWidget):
         #ic(self.img_dir, self.scan_name, self.img_ext)
 
         # self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
-        fname_dir = get_fname_dir(self.scan_name)
+        # fname_dir = get_fname_dir(self.scan_name)
+        fname_dir = get_fname_dir()
         self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
         self.thread.fname = self.fname
 
@@ -1121,6 +1123,9 @@ class specProcess(wranglerProcess):
                     )
                     sphere.save_to_h5(data_only=True, replace=False)
 
+                # Save 1D integrated data in CSV and xye files
+                self.save_1d(sphere, arch, idx)
+
                 self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
                 if self.single_img:
@@ -1129,7 +1134,7 @@ class specProcess(wranglerProcess):
 
                 # print(f'wrangled: {i}')
                 i += 1
-                time.sleep(0.3)
+                time.sleep(0.1)
 
             # Check if terminate signal sent
             elif flag == 'TERMINATE' and data is None:
@@ -1154,7 +1159,6 @@ class specProcess(wranglerProcess):
                 index of the data, raw image array, metadata
                 dict associated with the image.
         """
-        #ic()
         self.signal_q.put(('message', f'Checking for {i}'))
 
         # Construct raw_file path from attributes and index
@@ -1162,13 +1166,11 @@ class specProcess(wranglerProcess):
             image_file = self._get_image_path(i)
         else:
             image_file = self.img_fname
-        #ic(image_file, i)
 
         # Read raw file into numpy array
         arr = read_image_file(image_file, im=i-1, return_float=True)
         if arr is None:
             return 'TERMINATE', None
-        #ic(arr.shape)
 
         meta_file = ''
         if self.meta_ext:
@@ -1203,7 +1205,6 @@ class specProcess(wranglerProcess):
         returns:
             image_file: str, absolute path to image file.
         """
-        #ic()
         im_base = '_'.join([
             self.scan_name,
             str(i).zfill(4)
@@ -1219,21 +1220,16 @@ class specProcess(wranglerProcess):
         """
         filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
         f_names = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
-        # f_names = sorted(glob.glob(os.path.join(
-        #     self.img_dir, f'{filters}[0-9][0-9][0-9][0-9].{self.img_ext}')))
-        #ic(filters, self.file_filter)
 
         if len(f_names) == 0:
             return None, None, None
 
         scan_names = sorted(list(set([get_scan_name(f) for f in f_names])))
         scan_names = [s for s in scan_names if s not in self.processed]
-        # #ic(scan_names)
 
         if len(scan_names) == 0:
             return None, None, None
 
-        #ic(filters, scan_names, self.processed)
         self.scan_name = scan_names[0]
         self.processed.append(self.scan_name)
 
@@ -1243,7 +1239,8 @@ class specProcess(wranglerProcess):
 
         self.img_fname = f_names[0]
         # self.fname = os.path.join(self.img_dir, self.scan_name + '.hdf5')
-        fname_dir = get_fname_dir(self.scan_name)
+        # fname_dir = get_fname_dir(self.scan_name)
+        fname_dir = get_fname_dir()
         self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
 
         return self.scan_name, self.img_fname, self.fname
@@ -1252,7 +1249,6 @@ class specProcess(wranglerProcess):
         """Get mask array from mask file
         """
         if (not self.mask_file) or (not os.path.exists(self.mask_file)):
-            # self.mask = None
             return None
 
         mask = fabio.open(self.mask_file).data
@@ -1261,12 +1257,10 @@ class specProcess(wranglerProcess):
     def get_background(self, image_meta):
         """Subtract background image if bg_file or bg_dir specified
         """
-        #ic()
         bg_file, bg_meta = None, None
 
         if self.bg_type == 'Single Bkg File':
             if self.bg_file:
-                #ic(self.bg_file)
                 bg_file = self.bg_file
         else:
             if self.bg_dir:
@@ -1275,20 +1269,16 @@ class specProcess(wranglerProcess):
                 filters = '*' + '*'.join(f for f in self.bg_file_filter.split()) + '*'
                 meta_files = sorted(glob.glob(os.path.join(
                     self.img_dir, f'{filters}[0-9][0-9][0-9][0-9].{self.meta_ext}')))
-                #ic(filters, meta_files)
 
                 for meta_file in meta_files:
                     bg_meta = get_image_meta_data(meta_file)
                     if bg_meta[self.bg_matching_par] == image_meta[self.bg_matching_par]:
                         bg_file = f'{os.path.splitext(meta_file)[0]}.{self.img_ext}'
-                        #ic(meta_file, bg_file)
-                        #ic(bg_meta[self.bg_matching_par], image_meta[self.bg_matching_par])
                         break
 
         if not bg_file:
             return 0.
 
-        #ic(bg_file)
         bg = read_image_file(self.bg_file, return_float=True)
         bg_meta_file = f'{os.path.splitext(self.bg_file)[0]}.{self.meta_ext}'
         bg_meta = get_image_meta_data(bg_meta_file)
@@ -1298,3 +1288,35 @@ class specProcess(wranglerProcess):
             bg *= (image_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
 
         return bg
+
+    @staticmethod
+    def save_1d(sphere, arch, idx):
+        """
+        Automatically save 1D integrated data
+        """
+        path = os.path.dirname(sphere.data_file)
+        path = os.path.join(path, sphere.name)
+        Path(path).mkdir(parents=True, exist_ok=True)
+        fname = os.path.join(path, sphere.name)
+
+        q, tth, intensity = arch.int_1d.q, arch.int_1d.ttheta, arch.int_1d.norm
+
+        # Write I(q) to xye
+        fname = os.path.join(path, f'iq_{sphere.name}_{str(idx).zfill(4)}.xye')
+        # xye_fname = f'iq_{fname}_{str(idx).zfill(4)}.xye'
+        write_xye(fname, q, intensity, np.sqrt(intensity))
+
+        # Write I(tth) to xye
+        fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.xye')
+        # xye_fname = f'itth_{fname}_{str(idx).zfill(4)}.xye'
+        write_xye(fname, tth, intensity, np.sqrt(intensity))
+
+        # Write I(q) to csv
+        fname = os.path.join(path, f'iq_{sphere.name}_{str(idx).zfill(4)}.csv')
+        # csv_fname = f'iq_{fname}_{str(idx).zfill(4)}.csv'
+        write_csv(fname, q, intensity)
+
+        # Write I(tth) to csv
+        fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.csv')
+        # csv_fname = f'itth_{fname}_{str(idx).zfill(4)}.csv'
+        write_csv(fname, tth, intensity)

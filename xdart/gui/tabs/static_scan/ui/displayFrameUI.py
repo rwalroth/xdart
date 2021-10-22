@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'displayFrameUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.15.2
+# Created by: PyQt5 UI code generator 5.15.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -314,7 +314,8 @@ class Ui_Form(object):
         self.yOffset = QtWidgets.QDoubleSpinBox(self.plotToolBar)
         self.yOffset.setEnabled(False)
         self.yOffset.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.yOffset.setDecimals(0)
+        self.yOffset.setDecimals(1)
+        self.yOffset.setMinimum(-100.0)
         self.yOffset.setSingleStep(5.0)
         self.yOffset.setProperty("value", 5.0)
         self.yOffset.setObjectName("yOffset")
