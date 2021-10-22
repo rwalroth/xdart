@@ -138,6 +138,6 @@ if __name__ == '__main__':
 
     try:
         os.killpg(os.getpid(), signal.SIGTERM)
-    except ProcessLookupError:
+    except AttributeError or ProcessLookupError:
         pass
     sys.exit(1)
