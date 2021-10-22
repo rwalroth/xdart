@@ -323,17 +323,13 @@ class H5Viewer(QWidget):
 
         if len(self.sphere.arches.index) > 1:
             if len(idxs) == len(self.sphere.arches.index):
-                # ic('len(idxs) = len(sphere)')
                 load_2d = False
-
-        # ic(self.arch_ids, idxs[:], load_2d)
 
         # idxs_memory = []
         if load_2d:
             idxs_memory = [int(idx) for idx in idxs if int(idx) in self.data_2d.keys()]
         else:
             idxs_memory = [int(idx) for idx in idxs if int(idx) in self.data_1d.keys()]
-        # ic(idxs_memory[:])
 
         # Remove 2d data from 'Sum' if for unselected keys
         if load_2d:
@@ -373,13 +369,11 @@ class H5Viewer(QWidget):
         self.file_thread.arch_ids = [int(idx) for idx in idxs
                                      if int(idx) not in idxs_memory]
 
-        # ic(self.data_2d.keys(), idxs_memory, self.file_thread.arch_ids[:])
         if len(self.file_thread.arch_ids) > 0:
             self.file_thread.update_2d = load_2d
             self.file_thread.queue.put("load_arches")
         else:
             self.sigUpdate.emit()
-        # ic(self.data_2d.keys())
 
     gc.collect()
 
