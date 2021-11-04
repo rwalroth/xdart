@@ -24,6 +24,9 @@ from .metadata import metadataWidget
 from .wranglers import specWrangler, wranglerWidget
 from xdart.utils._utils import FixSizeOrderedDict, get_fname_dir
 
+from icecream import ic
+ic.configureOutput(prefix='', includeContext=True)
+
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
 
@@ -124,8 +127,8 @@ class staticWidget(QWidget):
                                  self.ui.hdf5Frame)
         # self.h5viewer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
-        self.h5viewer.ui.listData.addItem('No data')
-        self.h5viewer.ui.listData.setCurrentRow(0)
+        # self.h5viewer.ui.listData.addItem('No data')
+        # self.h5viewer.ui.listData.setCurrentRow(0)
         self.h5viewer.update_scans()
 
         # H5Viewer signal connections
@@ -245,11 +248,13 @@ class staticWidget(QWidget):
     def thread_state_changed(self):
         """Called whenever a thread is started or finished.
         """
+        ic()
         wrangler_running = self.wrangler.thread.isRunning()
         integrator_running = self.integratorTree.integrator_thread.isRunning()
         loader_running = self.h5viewer.file_thread.running
         same_name = self.sphere.name == self.wrangler.scan_name
 
+        ic(loader_running, integrator_running, wrangler_running)
         if loader_running:
             self.h5viewer.ui.listData.setEnabled(False)
             self.h5viewer.ui.listScans.setEnabled(False)
@@ -292,6 +297,7 @@ class staticWidget(QWidget):
         is the same as the wrangler scan name, updates the data in
         memory.
         """
+        ic()
         with self.sphere.sphere_lock:
             # if self.sphere.name == self.wrangler.scan_name:
             self.h5viewer.file_thread.queue.put("update_sphere")
@@ -311,7 +317,9 @@ class staticWidget(QWidget):
         """Connected to h5viewer, sets the data in displayframe based
         on the selected image or overall data.
         """
+        ic()
 
+        ic(self.sphere.name, self.arch_ids)
         if self.sphere.name != 'null_main':
             self.displayframe.update()
             # # if (len(self.arches.keys()) > 0) and (len(self.sphere.arches.index) > 0):
@@ -319,7 +327,6 @@ class staticWidget(QWidget):
             #         (len(self.arch_ids) > 0) and
             #         (self.arch_ids[0] != 'No data') and
             #         (len(self.sphere.arches.index) > 0)):
-            #     self.displayframe.update()
 
             # if self.arch.idx is None:
             if len(self.arch_ids) == 0:
@@ -337,6 +344,7 @@ class staticWidget(QWidget):
     def close(self):
         """Tries a graceful close.
         """
+        ic()
         del self.sphere
         del self.displayframe.sphere
         del self.arch
@@ -354,6 +362,7 @@ class staticWidget(QWidget):
         """Updates all data in displays
         TODO: Currently taking the most time for the main gui thread
         """
+        ic()
         self.h5viewer.update_data()
         if self.displayframe.auto_last:
             self.h5viewer.ui.listData.setCurrentRow(
@@ -370,6 +379,7 @@ class staticWidget(QWidget):
         gc.collect()
 
     def integrator_thread_update(self, idx):
+        ic()
         self.thread_state_changed()
         if (len(self.data_2d) <= 1) or self.displayframe.auto_last:
             items = self.h5viewer.ui.listData.findItems(str(idx),
@@ -384,6 +394,7 @@ class staticWidget(QWidget):
         """Function connected to threadFinished signals for
         integratorThread
         """
+        ic()
         self.thread_state_changed()
         self.enable_integration(True)
         self.h5viewer.set_open_enabled(True)
@@ -400,6 +411,7 @@ class staticWidget(QWidget):
             name: str, scan name
             fname: str, path to data file for scan
         """
+        ic()
         # if self.sphere.name != name or self.sphere.name == 'null_main':
         self.h5viewer.dirname = os.path.dirname(fname)
         self.h5viewer.set_file(fname)
@@ -434,6 +446,7 @@ class staticWidget(QWidget):
             name: str, scan name
             fname: str, path to data file for scan
         """
+        ic()
         arch = EwaldArch(idx=arch_data['idx'], map_raw=arch_data['map_raw'],
                          mask=arch_data['mask'], scan_info=arch_data['scan_info'],
                          poni_file=arch_data['poni_file'], static=self.sphere.static, gi=self.sphere.gi)
@@ -446,6 +459,7 @@ class staticWidget(QWidget):
         """Sets up wrangler, ensures properly synced args, and starts
         the wrangler.thread main method.
         """
+        ic()
         # i_qChi = np.zeros((1000, 1000), dtype=float)
 
         self.ui.wranglerBox.setEnabled(False)
@@ -461,6 +475,7 @@ class staticWidget(QWidget):
         """Called by the wrangler finished signal. If current scan
         matches the wrangler scan, allows for integration.
         """
+        ic()
         self.thread_state_changed()
         if self.sphere.name == self.wrangler.scan_name:
             self.integrator_thread_finished()

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'integratorUI.ui'
+# Form implementation generated from reading ui file 'integratorUI_mac.ui'
 #
-# Created by: PyQt5 UI code generator 5.15.2
+# Created by: PyQt5 UI code generator 5.15.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1440, 430)
+        Form.resize(1440, 402)
         Form.setMaximumSize(QtCore.QSize(16777215, 430))
         self.verticalLayout = QtWidgets.QVBoxLayout(Form)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -408,7 +408,7 @@ class Ui_Form(object):
         self.label1D.setText(_translate("Form", "1-D"))
         self.axis1D.setItemText(0, _translate("Form", "Radial"))
         self.label_npts_1D.setText(_translate("Form", "Points"))
-        self.npts_1D.setText(_translate("Form", "1000"))
+        self.npts_1D.setText(_translate("Form", "3000"))
         self.npts_1D.setPlaceholderText(_translate("Form", "1000"))
         self.radial_autoRange_1D.setText(_translate("Form", "Auto"))
         self.unit_1D.setItemText(0, _translate("Form", "q (u\\u212Bu\\u207Bu\\u00B9)"))

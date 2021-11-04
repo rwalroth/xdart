@@ -838,7 +838,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
             #     self.integrator_thread.method = 'bai_1d_all'
             # else:
             #     self.integrator_thread.method = 'bai_1d_SI'
-        self.data_2d.clear()
+        self.data_1d.clear()
         self.setEnabled(False)
         self.integrator_thread.start()
 

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # ic.configureOutput(prefix='', includeContext=True)
 
 
-class EwaldSphere():
+class EwaldSphere:
     """Class for storing multiple arch objects, and stores a MultiGeometry
     integrator from pyFAI.
 

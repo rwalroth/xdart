@@ -28,8 +28,8 @@ import xdart.utils as ut
 from ...widgets import pgImageWidget, pmeshImageWidget
 from xdart.utils import split_file_name
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+from icecream import ic
+ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QInputDialog = QtWidgets.QInputDialog
@@ -137,7 +137,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.arches = arches
         # self.idxs = sorted(list(self.arches.keys()))
         self.arch_names = []
-        self.sphere_name = None
         self.data_1d = data_1d
         self.data_2d = data_2d
         self.bkg_1d = 0.
@@ -257,21 +256,25 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def get_idxs(self):
         """ Return selected arch indices
         """
+        ic()
         self.idxs, self.idxs_1d, self.idxs_2d = [], [], []
         if len(self.arch_ids) == 0 or self.arch_ids[0] == 'No data':
             return
 
-        with self.sphere.sphere_lock:
-            if 'Overall' in self.arch_ids:
-                self.overall = True
-                self.idxs = sorted(np.asarray(self.sphere.arches.index, dtype=int))
-            else:
-                self.overall = False
-                self.idxs = sorted(self.arch_ids)
+        # with self.sphere.sphere_lock:
+        # if 'Overall' in self.arch_ids:
+        if len(self.arch_ids) == len(self.sphere.arches.index):
+            self.overall = True
+            self.idxs = sorted(np.asarray(self.sphere.arches.index, dtype=int))
+        else:
+            self.overall = False
+            self.idxs = sorted(self.arch_ids)
 
         self.idxs = list(np.asarray(self.idxs, dtype=int))
         self.idxs_1d = [int(idx) for idx in self.idxs if idx in self.data_1d.keys()]
         self.idxs_2d = [int(idx) for idx in self.idxs if idx in self.data_2d.keys()]
+
+        ic(self.arch_ids, self.idxs, self.idxs_1d, self.idxs_2d, self.overall)
 
     def update_plot_range(self):
         if self.ui.slice.isChecked():
@@ -368,17 +371,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def _updated(self):
         """Check if there is data to update
         """
-        if (len(self.data_1d) == 0) or (len(self.idxs_1d) == 0):
-            return False
-        if self.ui.update2D.isChecked() and (len(self.idxs_2d) == 0):
-            return False
         if (len(self.arch_ids) == 0) or (self.sphere.name == 'null_main'):
             return False
-        # if (len(self.sphere.arches.index) == 1) and (self.arch_ids[0] == 'Overall'):
-        #     return False
-        if (self.arch_ids == 'Overall') and (self.sphere_name != self.sphere.name):
-            self.sphere_name = self.sphere.name
-            # return False
+        if (len(self.data_1d) == 0) or (len(self.idxs_1d) == 0):
+            return False
+        if self.ui.update2D.isChecked() and (len(self.idxs_2d) == 0) and (not self.overall):
+            return False
 
         return True
 
@@ -386,9 +384,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates image and plot frames based on toolbar options
         """
         # self.idxs = sorted(list(self.arches.keys()))
+        ic()
         self.get_idxs()
 
         if not self._updated():
+            ic('not updated')
             return True
 
         if self.ui.shareAxis.isChecked() and (self.ui.imageUnit.currentIndex() < 2):
@@ -441,7 +441,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if not self._updated():
             return True
 
-        if 'Overall' in self.arch_ids:
+        # if 'Overall' in self.arch_ids:
+        if self.overall:
             data = self.get_sphere_map_raw()
             # Apply Mask
             if self.sphere.global_mask is not None:
@@ -488,7 +489,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
             self.update_plot()
 
-        if 'Overall' in self.arch_ids:
+        # if 'Overall' in self.arch_ids:
+        if self.overall:
             intensity, xdata, ydata = self.get_sphere_data_2d()
         else:
             intensity, xdata, ydata = self.get_arches_data_2d()
@@ -526,7 +528,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates 2D Label
         """
         # Sets title text
-        if ('Overall' in self.arch_ids) or self.sphere.single_img:
+        # if ('Overall' in self.arch_ids) or self.sphere.single_img:
+        if self.overall or self.sphere.single_img:
             self.ui.labelCurrent.setText(self.sphere.name)
         elif len(self.arch_ids) > 1:
             self.ui.labelCurrent.setText(f'{self.sphere.name} [Average]')
@@ -960,7 +963,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if self.ui.setBkg.text() == 'Set Bkg':
             idxs = self.arch_ids
-            if 'Overall' in self.arch_ids:
+            # if 'Overall' in self.arch_ids:
+            if self.overall:
                 idxs = sorted(list(self.sphere.arches.index))
 
             self.bkg_1d, _ = self.get_arches_data_1d(idxs, rv='average')
