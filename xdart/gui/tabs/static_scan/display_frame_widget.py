@@ -28,8 +28,8 @@ import xdart.utils as ut
 from ...widgets import pgImageWidget, pmeshImageWidget
 from xdart.utils import split_file_name
 
-from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QInputDialog = QtWidgets.QInputDialog
@@ -257,7 +257,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def get_idxs(self):
         """ Return selected arch indices
         """
-        ic()
+        # ic()
         self.idxs, self.idxs_1d, self.idxs_2d = [], [], []
         if len(self.arch_ids) == 0 or self.arch_ids[0] == 'No data':
             return
@@ -271,11 +271,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.overall = False
             self.idxs = sorted(self.arch_ids)
 
-        self.idxs = list(np.asarray(self.idxs, dtype=int))
+        try:
+            self.idxs = list(np.asarray(self.idxs, dtype=int))
+        except ValueError:
+            return
         self.idxs_1d = [int(idx) for idx in self.idxs if idx in self.data_1d.keys()]
         self.idxs_2d = [int(idx) for idx in self.idxs if idx in self.data_2d.keys()]
 
-        ic(self.arch_ids, self.idxs, self.idxs_1d, self.idxs_2d, self.overall)
+        # ic(self.arch_ids, self.idxs, self.idxs_1d, self.idxs_2d, self.overall)
 
     def update_plot_range(self):
         if self.ui.slice.isChecked():
@@ -396,11 +399,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates image and plot frames based on toolbar options
         """
         # self.idxs = sorted(list(self.arches.keys()))
-        ic()
+        # ic()
         self.get_idxs()
 
         if not self._updated():
-            ic('not updated')
+            # ic('not updated')
             return True
 
         if self.ui.shareAxis.isChecked() and (self.ui.imageUnit.currentIndex() < 2):

@@ -24,8 +24,8 @@ from xdart import utils as ut
 
 import gc
 
-from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
 
 
 class integratorThread(Qt.QtCore.QThread):
@@ -243,17 +243,17 @@ class fileHandlerThread(Qt.QtCore.QThread):
         self.sigUpdate.emit()
 
     def load_arches(self):
-        ic()
+        # ic()
         with self.file_lock:
             with catch(self.sphere.data_file, 'r') as file:
-                ic(self.arch_ids)
+                # ic(self.arch_ids)
                 for idx in self.arch_ids:
                     try:
-                        ic(idx)
+                        # ic(idx)
                         arch = EwaldArch(idx=idx, static=True, gi=self.sphere.gi)
                         arch.load_from_h5(file['arches'], load_2d=self.update_2d)
                         self.data_1d[int(idx)] = arch.copy(include_2d=False)
-                        ic('loaded 1D data', self.data_1d.keys())
+                        # ic('loaded 1D data', self.data_1d.keys())
                         if self.update_2d:
                             try:
                                 if len(arch.int_2d.i_qChi) == 0:
@@ -275,7 +275,7 @@ class fileHandlerThread(Qt.QtCore.QThread):
                     except KeyError:
                         pass
 
-            ic(self.data_1d.keys(), self.data_2d.keys(), self.arches.keys())
+            # ic(self.data_1d.keys(), self.data_2d.keys(), self.arches.keys())
             self.sigUpdate.emit()
 
         gc.collect()

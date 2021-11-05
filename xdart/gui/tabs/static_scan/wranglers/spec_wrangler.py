@@ -31,8 +31,8 @@ from xdart.utils.containers.poni import get_poni_dict
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
-from icecream import ic
-ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic
+# ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QDialog = QtWidgets.QDialog
@@ -41,8 +41,6 @@ QPushButton = QtWidgets.QPushButton
 
 def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
 def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0005.tif'
-# def_poni_file = 'C:\\Users\\vthampy-a\\xdart_test_data\\Feng_Jun2021\\Calibration\\LaB6_insitu_detz150_10s_06102111_0001.poni'
-# def_img_file = 'C:\\Users\\vthampy-a\\xdart_test_data\\Feng_Jun2021\\Aborted Run\\DX001B2_3\\DX001B2_3_0001.tif'
 # def_poni_file = ''
 # def_img_file = ''
 
@@ -62,6 +60,7 @@ params = [
         NamedActionParameter(name='img_file_browse', title='Browse...'),
         {'name': 'img_dir', 'title': 'Directory', 'type': 'str', 'value': '', 'visible': False},
         NamedActionParameter(name='img_dir_browse', title='Browse...', visible=False),
+        {'name': 'include_subdir', 'title': 'Subdirectories', 'type': 'bool', 'value': False, 'visible': False},
         {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
         {'name': 'img_ext', 'title': 'File Type  ', 'type': 'list',
          'values': ['tif', 'raw', 'h5', 'mar3450'], 'value':'tif', 'visible': False},
@@ -191,6 +190,7 @@ class specWrangler(wranglerWidget):
         self.inp_type = self.parameters.child('Signal').child('inp_type').value()
         self.img_fname = self.parameters.child('Signal').child('File').value()
         self.img_dir = self.parameters.child('Signal').child('img_dir').value()
+        self.include_subdir = self.parameters.child('Signal').child('include_subdir').value()
         self.img_ext = self.parameters.child('Signal').child('img_ext').value()
         self.single_img = True if self.inp_type == 'Single Image' else False
         self.file_filter = self.parameters.child('Signal').child('Filter').value()
@@ -273,6 +273,7 @@ class specWrangler(wranglerWidget):
             self.inp_type,
             self.img_fname,
             self.img_dir,
+            self.include_subdir,
             self.img_ext,
             self.file_filter,
             self.mask_file,
@@ -319,6 +320,9 @@ class specWrangler(wranglerWidget):
         self.img_dir, _, self.img_ext = split_file_name(self.img_fname)
         self.thread.img_dir, self.thread.img_ext = self.img_dir, self.img_ext
 
+        self.include_subdir = self.parameters.child('Signal').child('include_subdir').value()
+        self.thread.include_subdir = self.include_subdir
+
         self.thread.meta_ext = self.meta_ext
         if self.meta_ext:
             self.get_scan_parameters()
@@ -326,8 +330,6 @@ class specWrangler(wranglerWidget):
         self.scan_name = get_scan_name(self.img_fname)
         self.thread.scan_name = self.scan_name
 
-        # fname_dir = get_fname_dir()
-        # self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
         self.thread.h5_dir = self.h5_dir
         self.fname = os.path.join(self.h5_dir, self.scan_name + '.hdf5')
         self.thread.fname = self.fname
@@ -420,6 +422,7 @@ class specWrangler(wranglerWidget):
         self.parameters.child('Signal').child('img_file_browse').show()
         self.parameters.child('Signal').child('img_dir').hide()
         self.parameters.child('Signal').child('img_dir_browse').hide()
+        self.parameters.child('Signal').child('include_subdir').hide()
         self.parameters.child('Signal').child('Filter').hide()
         self.parameters.child('Signal').child('img_ext').hide()
 
@@ -429,6 +432,7 @@ class specWrangler(wranglerWidget):
             self.parameters.child('Signal').child('img_file_browse').hide()
             self.parameters.child('Signal').child('img_dir').show()
             self.parameters.child('Signal').child('img_dir_browse').show()
+            self.parameters.child('Signal').child('include_subdir').show()
             self.parameters.child('Signal').child('Filter').show()
             self.parameters.child('Signal').child('img_ext').show()
 
@@ -719,6 +723,7 @@ class specThread(wranglerThread):
             inp_type,
             img_fname,
             img_dir,
+            include_subdir,
             img_ext,
             meta_ext,
             file_filter,
@@ -747,6 +752,7 @@ class specThread(wranglerThread):
         poni_file: str, poni file name
         img_fname: str, path to input image file
         img_dir: str, path to image directory
+        include_subdir: bool, flag to include subdirectories
         img_ext : str, extension of image file
         meta_ext : str, extension of metadata file
         timeout: float or int, how long to continue checking for new
@@ -764,6 +770,7 @@ class specThread(wranglerThread):
         self.inp_type = inp_type
         self.img_fname = img_fname
         self.img_dir = img_dir
+        self.include_subdir = include_subdir
         self.img_ext = img_ext
         self.meta_ext = meta_ext
         self.file_filter = file_filter
@@ -799,6 +806,7 @@ class specThread(wranglerThread):
             self.inp_type,
             self.img_fname,
             self.img_dir,
+            self.include_subdir,
             self.img_ext,
             self.meta_ext,
             self.file_filter,
@@ -879,6 +887,7 @@ class specProcess(wranglerProcess):
         poni_file: str, poni file name
         img_fname: str, path to input image file
         img_dir: str, path to image directory
+        include_subdir: bool, flag to include subdirectories
         sphere_args: dict, used as **kwargs in sphere initialization.
             see EwaldSphere.
         timeout: float or int, how long to continue checking for new
@@ -907,6 +916,7 @@ class specProcess(wranglerProcess):
             inp_type,
             img_fname,
             img_dir,
+            include_subdir,
             img_ext,
             meta_ext,
             file_filter,
@@ -935,6 +945,7 @@ class specProcess(wranglerProcess):
         file_lock: mp.Condition, process safe lock for file access
         poni_file: str, poni file name
         img_dir: str, path to image directory
+        include_subdir: bool, flag to include subdirectories
         timeout: float or int, how long to continue checking for new
             data.
         """
@@ -949,6 +960,7 @@ class specProcess(wranglerProcess):
         self.inp_type = inp_type
         self.img_fname = img_fname
         self.img_dir = img_dir
+        self.include_subdir = include_subdir
         self.img_ext = img_ext
         self.meta_ext = meta_ext
         self.file_filter = file_filter
@@ -1056,7 +1068,7 @@ class specProcess(wranglerProcess):
                 continue
 
             img_fname, img_number = self.get_next_image()
-            ic(img_fname, img_number)
+            # ic(img_fname, img_number)
             if img_fname is None:
                 self.signal_q.put(('message', f'Checking for next image'))
                 time.sleep(0.5)
@@ -1073,7 +1085,7 @@ class specProcess(wranglerProcess):
             self.scan_name = get_scan_name(img_fname)
 
             # Initialize sphere and save to disk, send update for new scan
-            ic(self.scan_name, sphere.name)
+            # ic(self.scan_name, sphere.name)
             if self.scan_name != sphere.name:
                 if sphere.name != 'null_main':
                     sphere.save_to_h5(data_only=True, replace=False)
@@ -1173,11 +1185,23 @@ class specProcess(wranglerProcess):
                                    (f >= self.img_fname) and (f not in self.processed) and
                                    (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}'))]
             else:
-                filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-                self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
+                if self.include_subdir:
+                    filters = ['*' + '*'.join(f for f in self.file_filter.split()) + '*'] if self.file_filter else '*'
+                    # ic(filters, self.img_dir, self.img_ext)
+                    # self.img_fnames = sorted([os.path.join(path.parent, path.name) for path
+                    #                           in Path(self.img_dir).rglob(f'{filters}.{self.img_ext}')])
+                    self.img_fnames = sorted(glob.glob(os.path.join(
+                        self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
+
+                    # ic(self.img_fnames, self.meta_ext, self.processed)
+                else:
+                    filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+                    self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
+
                 self.img_fnames = [f for f in self.img_fnames if
                                    (f not in self.processed) and
                                    (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}'))]
+                # ic(self.img_fnames)
 
         if len(self.img_fnames) > 0:
             img_fname = self.img_fnames[0]
