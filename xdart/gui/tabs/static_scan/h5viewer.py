@@ -22,8 +22,7 @@ from xdart.utils.containers import create_ai_from_dict
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets, QtCore
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QTreeWidget = QtWidgets.QTreeWidget
 QTreeWidgetItem = QtWidgets.QTreeWidgetItem
@@ -224,7 +223,7 @@ class H5Viewer(QWidget):
 
         if len(_idxs) == 0:
             self.ui.listData.clear()
-            self.ui.listData.addItem('No Data')
+            # self.ui.listData.addItem('No Data')
             return
 
         lw = self.ui.listData
@@ -353,6 +352,8 @@ class H5Viewer(QWidget):
         else:
             idxs = self.arch_ids
 
+        # ic(idxs, self.new_scan)
+
         if (len(idxs) == 0) or ('No data' in idxs):
             time.sleep(0.1)
             return
@@ -364,9 +365,9 @@ class H5Viewer(QWidget):
 
         # if self.new_scan and ('Overall' in idxs) and (len(self.data_1d) == 0):
         # if self.new_scan and ('Overall' in idxs):
-        if self.new_scan:
-            self.new_scan = False
-            return
+        # if self.new_scan:
+        #     self.new_scan = False
+        #     return
 
         # ic(idxs, self.new_scan, len(self.data_1d), len(self.data_2d), len(self.sphere.arches.index))
 
@@ -403,7 +404,7 @@ class H5Viewer(QWidget):
         arch_ids = [int(idx) for idx in idxs
                     if int(idx) not in idxs_memory]
 
-        # ic(self.file_thread.arch_ids, arch_ids)
+        # ic(arch_ids)
         # if len(self.file_thread.arch_ids) > 0:
         #     self.file_thread.update_2d = load_2d
         #     self.file_thread.queue.put("load_arches")
@@ -478,6 +479,7 @@ class H5Viewer(QWidget):
         args:
             file: h5py file or group object
         """
+        # ic()
         with catch(self.sphere.data_file, 'r') as file:
             # ic(arch_ids)
             for idx in arch_ids:
@@ -496,11 +498,14 @@ class H5Viewer(QWidget):
                         except TypeError:
                             arch.load_from_h5(file['arches'], load_2d=True)
 
+
                         self.data_1d[int(idx)] = arch.copy(include_2d=False)
                         self.data_2d[int(idx)] = {'map_raw': arch.map_raw,
                                                   'mask': arch.mask,
                                                   'int_2d': arch.int_2d}
 
+                        # ic('loaded 1 and 2D data', self.data_1d.keys(), self.data_2d.keys())
+                        # ic(idx, self.arches['add_idxs'], self.arches['sub_idxs'])
                         if idx in self.arches['add_idxs']:
                             self.arches['sum_int_2d'] += self.data_2d[int(idx)]['int_2d']
                             self.arches['sum_map_raw'] += self.data_2d[int(idx)]['map_raw']
@@ -541,11 +546,14 @@ class H5Viewer(QWidget):
                         arch.integrator = create_ai_from_dict(arch.poni_dict)
 
     def get_arches_sum(self, idxs, idxs_memory):
+        # ic()
         new_idxs = set([int(idx) for idx in idxs])
         old_idxs, data_keys = set(self.arches['idxs']), set(self.data_2d.keys())
 
         changed_idxs = new_idxs ^ old_idxs
         load_idxs = changed_idxs - data_keys
+
+        # ic(new_idxs, old_idxs, changed_idxs, load_idxs)
 
         add_from_data = (new_idxs - old_idxs) & data_keys
         add_from_h5 = new_idxs - old_idxs - data_keys

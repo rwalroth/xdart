@@ -10,8 +10,7 @@ from xdart.utils.containers import int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 from xdart import utils
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 
 class EwaldSphere:

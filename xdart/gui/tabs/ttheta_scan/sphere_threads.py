@@ -19,8 +19,7 @@ from pyqtgraph import Qt
 from xdart.utils import catch_h5py_file as catch
 from xdart import utils as ut
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 
 class integratorThread(Qt.QtCore.QThread):

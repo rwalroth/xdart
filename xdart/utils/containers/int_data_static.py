@@ -6,8 +6,7 @@ from scipy.interpolate import RectBivariateSpline
 
 from .. import _utils as utils
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 
 class int_1d_data_static:

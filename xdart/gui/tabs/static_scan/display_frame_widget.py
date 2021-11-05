@@ -28,8 +28,7 @@ import xdart.utils as ut
 from ...widgets import pgImageWidget, pmeshImageWidget
 from xdart.utils import split_file_name
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QInputDialog = QtWidgets.QInputDialog
@@ -71,7 +70,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     objects.
 
     attributes:
-        auto_last: bool, whether to automatically select latest arch
         curve1: pyqtgraph pen, overall data line
         curve2: pyqtgraph pen, individual arch data line
         histogram: pyqtgraph HistogramLUTWidget, used for adjusting min
@@ -159,9 +157,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.binned_data = (None, None)
         self.plot_data = (np.zeros(0), np.zeros(0))
         self.plot_data_range = [[0, 0], [0, 0]]
-
-        # State variable initialization
-        self.auto_last = True
 
         # Image pane setup
         self.image_layout = Qt.QtWidgets.QHBoxLayout(self.ui.imageFrame)
@@ -456,7 +451,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if not self._updated():
             return True
 
-        if self.overall:
+        if self.overall and len(self.arch_ids) > 1:
             data = self.get_sphere_map_raw()
             # Apply Mask
             if self.sphere.global_mask is not None:
@@ -504,7 +499,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.update_plot()
 
         # if 'Overall' in self.arch_ids:
-        if self.overall:
+        if self.overall and len(self.arch_ids) > 1:
             intensity, xdata, ydata = self.get_sphere_data_2d()
         else:
             intensity, xdata, ydata = self.get_arches_data_2d()

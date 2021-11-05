@@ -24,8 +24,7 @@ from xdart import utils as ut
 
 import gc
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 
 class integratorThread(Qt.QtCore.QThread):

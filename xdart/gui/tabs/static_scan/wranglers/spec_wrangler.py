@@ -31,8 +31,7 @@ from xdart.utils.containers.poni import get_poni_dict
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QDialog = QtWidgets.QDialog
