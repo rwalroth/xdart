@@ -41,6 +41,7 @@ class EwaldArch():
         mask: numpy array of indeces to be masked in array.
         poni: poni data for integration
         poni_file: raw poni_file name with path used for static detector integration
+        poni_dict: poni_file information saved in dictionary
         scan_info: dict, information from any relevant motors and
             sensors
         static: bool, flag to specify if detector is static
@@ -67,7 +68,8 @@ class EwaldArch():
 
     def __init__(self, idx=None, map_raw=None, poni=None, mask=None,
                  scan_info={}, ai_args={}, file_lock=Condition(),
-                 poni_file=None, static=False, poni_dict=None,
+                 # poni_file=None, static=False, poni_dict=None,
+                 static=False, poni_dict=None,
                  gi=False, th_mtr='th', tilt_angle=0
                  ):
         # pylint: disable=too-many-arguments
@@ -86,7 +88,7 @@ class EwaldArch():
             self.poni = PONI()
         else:
             self.poni = poni
-        self.poni_file = poni_file
+        # self.poni_file = poni_file
         self.poni_dict = poni_dict
         if mask is None and map_raw is not None:
             self.mask = np.arange(map_raw.size)[map_raw.flatten() < 0]
@@ -151,7 +153,7 @@ class EwaldArch():
         self.idx = None
         self.map_raw = None
         self.poni = PONI()
-        self.poni_file = None
+        # self.poni_file = None
         self.poni_dict = None
         self.mask = None
         self.scan_info = {}
@@ -391,7 +393,8 @@ class EwaldArch():
             grp.attrs['type'] = 'EwaldArch'
             lst_attr = [
                 "map_raw", "mask", "map_norm", "scan_info", "ai_args",
-                "poni_file", "gi", "static", "poni_dict"
+                # "poni_file", "gi", "static", "poni_dict"
+                "gi", "static", "poni_dict"
             ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
@@ -421,7 +424,8 @@ class EwaldArch():
                         if grp.attrs['type'] == 'EwaldArch':
                             lst_attr = [
                                 "map_raw", "mask", "map_norm", "scan_info", "ai_args",
-                                "poni_file", "gi", "static", "poni_dict"
+                                "gi", "static", "poni_dict"
+                                # "poni_file", "gi", "static", "poni_dict"
                             ]
                             utils.h5_to_attributes(self, grp, lst_attr)
                             self.int_1d.from_hdf5(grp['int_1d'])
@@ -468,7 +472,8 @@ class EwaldArch():
             copy.deepcopy(self.idx), None,
             copy.deepcopy(self.poni), None,
             copy.deepcopy(self.scan_info), copy.deepcopy(self.ai_args),
-            self.file_lock, poni_file=copy.deepcopy(self.poni_file), poni_dict=copy.deepcopy(self.poni_dict),
+            self.file_lock, poni_dict=copy.deepcopy(self.poni_dict),
+            # self.file_lock, poni_file=copy.deepcopy(self.poni_file), poni_dict=copy.deepcopy(self.poni_dict),
             static=copy.deepcopy(self.static), gi=copy.deepcopy(self.gi),
             th_mtr=copy.deepcopy(self.th_mtr)
         )

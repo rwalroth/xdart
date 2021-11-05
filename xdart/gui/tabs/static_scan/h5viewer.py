@@ -18,9 +18,6 @@ from xdart.utils.containers import int_2d_data_static
 from xdart.utils import catch_h5py_file as catch
 from xdart.utils.containers import create_ai_from_dict
 
-# pyFAI imports
-from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
-
 # Qt imports
 from pyqtgraph import Qt
 from pyqtgraph.Qt import QtWidgets, QtCore
@@ -81,6 +78,8 @@ class H5Viewer(QWidget):
         self.data_2d = data_2d
         self.new_scan = True
         self.update_2d = True
+        self.auto_last = True
+        self.new_scan_name = None
 
         # Link UI
         self.ui = Ui_Form()
@@ -192,7 +191,7 @@ class H5Viewer(QWidget):
         """Calls both update_scans and update_data.
         """
         ic()
-        self.update_scans()
+        # self.update_scans()
         self.update_data()
         
     def update_scans(self):
@@ -220,7 +219,7 @@ class H5Viewer(QWidget):
             return
 
         # with self.sphere.sphere_lock:
-        _idxs = list(self.sphere.arches.index)
+        _idxs = [str(i) for i in list(self.sphere.arches.index)]
         ic(_idxs, self.data_1d.keys())
 
         if len(_idxs) == 0:
@@ -228,7 +227,11 @@ class H5Viewer(QWidget):
             self.ui.listData.addItem('No Data')
             return
 
-        if (len(_idxs) > 1) and (len(_idxs) == self.ui.listData.count()):
+        lw = self.ui.listData
+        items = [lw.item(x).text() for x in range(lw.count())]
+        eq = _idxs == items
+        ic(_idxs, items, eq)
+        if (len(_idxs) > 1) and (len(_idxs) == (len(items))):
             return
 
         previous_loc = self.ui.listData.currentRow()
@@ -238,13 +241,14 @@ class H5Viewer(QWidget):
         ic(previous_loc, previous_sel)
 
         self.ui.listData.clear()
-        for idx in _idxs:
-            self.ui.listData.addItem(str(idx))
+        self.ui.listData.insertItems(0, _idxs)
+        # for idx in _idxs:
+        #     self.ui.listData.addItem(str(idx))
 
-        # Clear data 1d/1d objects if reintegrated
-        # if len(_idxs) < len(self.data_1d.keys()):
-        #     self.data_1d.clear()
-        #     self.data_2d.clear()
+        # if self.new_scan_name == self.sphere.name:
+
+        # for idx in _idxs:
+        #     self.ui.listData.addItem(str(idx))
 
         # if (len(_idxs) == 0) or (len(_idxs) > self.ui.listData.count() - 1):
         #     self.ui.listData.clear()
@@ -266,9 +270,6 @@ class H5Viewer(QWidget):
                 item.setSelected(True)
         self.ui.listData.itemSelectionChanged.connect(self.data_changed)
 
-        # self.ui.listData.setFocus()
-        # self.ui.listData.focusWidget()
-
     def show_all(self):
         ic()
 
@@ -277,6 +278,7 @@ class H5Viewer(QWidget):
             self.arch_ids += self.sphere.arches.index
 
         ic(self.arch_ids)
+        self.new_scan = False
         self.data_changed(show_all=True)
 
     def thread_finished(self, task):
@@ -351,8 +353,6 @@ class H5Viewer(QWidget):
         else:
             idxs = self.arch_ids
 
-        ic(self.arch_ids, idxs)
-
         if (len(idxs) == 0) or ('No data' in idxs):
             time.sleep(0.1)
             return
@@ -389,37 +389,12 @@ class H5Viewer(QWidget):
 
         # Remove 2d data from 'Sum' if for unselected keys
         if load_2d:
-            if len(self.arches) == 0:
+            if (len(self.arches) == 0) or (len(self.data_2d) == 0):
                 self.arches.update({'sum_int_2d': int_2d_data_static(), 'sum_map_raw': 0})
                 self.arches.update({'idxs': [], 'add_idxs': [], 'sub_idxs': []})
-            if len(self.data_2d) == 0:
-                self.arches.update({'idxs': [], 'add_idxs': [], 'sub_idxs': []})
 
-            new_idxs = set([int(idx) for idx in idxs])
-            old_idxs, data_keys = set(self.arches['idxs']), set(self.data_2d.keys())
-
-            changed_idxs = new_idxs ^ old_idxs
-            load_idxs = changed_idxs - data_keys
-
-            add_from_data = (new_idxs - old_idxs) & data_keys
-            add_from_h5 = new_idxs - old_idxs - data_keys
-            self.arches['add_idxs'] = [int(k) for k in add_from_h5]
-
-            sub_from_data = (old_idxs - new_idxs) & data_keys
-            sub_from_h5 = old_idxs - new_idxs - data_keys
-            self.arches['sub_idxs'] = [int(k) for k in sub_from_h5]
-
-            for x in load_idxs:
-                if int(x) in idxs_memory:
-                    idxs_memory.remove(int(x))
-
-            for k in add_from_data:
-                self.arches['sum_int_2d'] += self.data_2d[int(k)]['int_2d']
-                self.arches['sum_map_raw'] += self.data_2d[int(k)]['map_raw']
-
-            for k in sub_from_data:
-                self.arches['sum_int_2d'] -= self.data_2d[int(k)]['int_2d']
-                self.arches['sum_map_raw'] -= self.data_2d[int(k)]['map_raw']
+            if len(idxs) > 1:
+                self.get_arches_sum(idxs, idxs_memory)
 
             self.arches['idxs'] = [int(idx) for idx in idxs]
 
@@ -434,9 +409,8 @@ class H5Viewer(QWidget):
         #     self.file_thread.queue.put("load_arches")
         if len(arch_ids) > 0:
             self.load_arches_data(arch_ids, load_2d)
-            self.sigUpdate.emit()
-        else:
-            self.sigUpdate.emit()
+
+        self.sigUpdate.emit()
 
     gc.collect()
 
@@ -478,7 +452,7 @@ class H5Viewer(QWidget):
         self.paramMenu.setEnabled(enable)
         self.actionOpenFolder.setEnabled(enable)
         self.actionNewFile.setEnabled(enable)
-        self.ui.listScans.setEnabled(enable)
+        # self.ui.listScans.setEnabled(enable)
     
     def save_data_as(self):
         """Saves all data to hdf5 file. Also sets fname to be the
@@ -549,7 +523,7 @@ class H5Viewer(QWidget):
                     if load_2d:
                         lst_attr = [
                             "map_raw", "mask", "map_norm", "scan_info", "ai_args",
-                            "poni_file", "gi", "static", "poni_dict"
+                            "gi", "static", "poni_dict"
                         ]
                         utils.h5_to_attributes(arch, grp, lst_attr)
                         arch.int_1d.from_hdf5(grp['int_1d'])
@@ -557,7 +531,7 @@ class H5Viewer(QWidget):
                     else:
                         lst_attr = [
                             "scan_info", "ai_args",
-                            "poni_file", "gi", "static", "poni_dict"
+                            "gi", "static", "poni_dict"
                         ]
                         utils.h5_to_attributes(arch, grp, lst_attr)
                         arch.int_1d.from_hdf5(grp['int_1d'])
@@ -565,3 +539,38 @@ class H5Viewer(QWidget):
                     # if self.poni_file is not None:
                     if arch.poni_dict is not None:
                         arch.integrator = create_ai_from_dict(arch.poni_dict)
+
+    def get_arches_sum(self, idxs, idxs_memory):
+        new_idxs = set([int(idx) for idx in idxs])
+        old_idxs, data_keys = set(self.arches['idxs']), set(self.data_2d.keys())
+
+        changed_idxs = new_idxs ^ old_idxs
+        load_idxs = changed_idxs - data_keys
+
+        add_from_data = (new_idxs - old_idxs) & data_keys
+        add_from_h5 = new_idxs - old_idxs - data_keys
+        self.arches['add_idxs'] = [int(k) for k in add_from_h5]
+
+        sub_from_data = (old_idxs - new_idxs) & data_keys
+        sub_from_h5 = old_idxs - new_idxs - data_keys
+        self.arches['sub_idxs'] = [int(k) for k in sub_from_h5]
+
+        for x in load_idxs:
+            if int(x) in idxs_memory:
+                idxs_memory.remove(int(x))
+
+        for k in add_from_data:
+            try:
+                self.arches['sum_int_2d'] += self.data_2d[int(k)]['int_2d']
+                self.arches['sum_map_raw'] += self.data_2d[int(k)]['map_raw']
+            except ValueError:
+                self.arches['sum_int_2d'] = self.data_2d[int(k)]['int_2d']
+                self.arches['sum_map_raw'] = self.data_2d[int(k)]['map_raw']
+
+        for k in sub_from_data:
+            try:
+                self.arches['sum_int_2d'] -= self.data_2d[int(k)]['int_2d']
+                self.arches['sum_map_raw'] -= self.data_2d[int(k)]['map_raw']
+            except ValueError:
+                self.arches['sum_int_2d'] = self.data_2d[int(k)]['int_2d']
+                self.arches['sum_map_raw'] = self.data_2d[int(k)]['map_raw']

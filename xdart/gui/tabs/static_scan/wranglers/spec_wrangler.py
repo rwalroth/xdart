@@ -1042,6 +1042,7 @@ class specProcess(wranglerProcess):
                 command = self.command_q.get()
                 print(command)
                 if command == 'stop':
+                    sphere.save_to_h5(data_only=True, replace=False)
                     self.signal_q.put(('TERMINATE', None))
                     break
                 elif command == 'continue':
@@ -1093,7 +1094,6 @@ class specProcess(wranglerProcess):
             # Errors associated with image not yet taken
             # except (KeyError, FileNotFoundError, AttributeError, ValueError):
             #     self.signal_q.put(('message', f'Checking for {i}'))
-            #     ic(f'checking for {i}')
             #     time.sleep(0.5)
             #     elapsed = time.time() - start
             #     if elapsed > self.timeout:
@@ -1137,11 +1137,11 @@ class specProcess(wranglerProcess):
 
                 # Save 1D integrated data in CSV and xye files
                 self.save_1d(sphere, arch, idx)
-                ic('saved 1D data')
 
                 # self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
                 if self.single_img:
+                    sphere.save_to_h5(data_only=True, replace=False)
                     self.signal_q.put(('TERMINATE', None))
                     break
 
@@ -1149,12 +1149,12 @@ class specProcess(wranglerProcess):
 
             # Check if terminate signal sent
             elif flag == 'TERMINATE' and data is None:
+                sphere.save_to_h5(data_only=True, replace=False)
                 self.signal_q.put(('TERMINATE', None))
                 break
 
         # If loop ends, signal terminate to parent thread.
-        # if self.inp_type != 'Image Directory':
-        #     self.signal_q.put(('TERMINATE', None))
+        self.signal_q.put(('TERMINATE', None))
 
     def get_next_image(self):
         """ Gets next image in image series or in directory to process
@@ -1169,19 +1169,16 @@ class specProcess(wranglerProcess):
             if self.inp_type != 'Image Directory':
                 self.img_fnames = sorted(glob.glob(
                     os.path.join(self.img_dir, f'{self.scan_name}_*.{self.img_ext}')))
-                ic(self.img_fnames)
                 self.img_fnames = [f for f in self.img_fnames if
                                    (f >= self.img_fname) and (f not in self.processed) and
                                    (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}'))]
             else:
                 filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
                 self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
-                ic(self.img_fnames)
                 self.img_fnames = [f for f in self.img_fnames if
                                    (f not in self.processed) and
                                    (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}'))]
 
-        ic(self.img_fnames)
         if len(self.img_fnames) > 0:
             img_fname = self.img_fnames[0]
             self.processed.append(img_fname)

@@ -57,13 +57,16 @@ class integratorThread(Qt.QtCore.QThread):
     update = Qt.QtCore.Signal(int)
 
     def __init__(self, sphere, arch, file_lock,
-                 arches, arch_ids, parent=None):
+                 arches, arch_ids, data_1d, data_2d,
+                 parent=None):
         super().__init__(parent)
         self.sphere = sphere
         self.arch = arch
         self.file_lock = file_lock
         self.arches = arches
         self.arch_ids = arch_ids
+        self.data_1d = data_1d
+        self.data_2d = data_2d
         self.method = None
         self.lock = Condition()
         self.mg_1d_args = {}
@@ -85,6 +88,7 @@ class integratorThread(Qt.QtCore.QThread):
         directly, handles same functions but broken up for updates
         after each image.
         """
+        self.data_2d.clear()
         with self.sphere.sphere_lock:
             if self.sphere.static:
                 self.sphere.bai_2d = int_2d_data_static()
@@ -98,6 +102,12 @@ class integratorThread(Qt.QtCore.QThread):
             arch.integrate_2d(**self.sphere.bai_2d_args)
             self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_2d(arch)
+
+            self.data_2d[int(arch.idx)] = {
+                'map_raw': arch.map_raw,
+                'mask': arch.mask,
+                'int_2d': arch.int_2d
+            }
             self.update.emit(arch.idx)
         with self.file_lock:
             with catch(self.sphere.data_file, 'a') as file:
@@ -108,6 +118,7 @@ class integratorThread(Qt.QtCore.QThread):
         directly, handles same functions but broken up for updates
         after each image.
         """
+        self.data_1d.clear()
         with self.sphere.sphere_lock:
             if self.sphere.static:
                 self.sphere.bai_1d = int_1d_data_static()
@@ -121,6 +132,7 @@ class integratorThread(Qt.QtCore.QThread):
             arch.integrate_1d(**self.sphere.bai_1d_args)
             self.sphere.arches[arch.idx] = arch
             self.sphere._update_bai_1d(arch)
+            self.data_1d[int(arch.idx)] = arch.copy(include_2d=False)
             self.update.emit(arch.idx)
         with self.file_lock:
             with catch(self.sphere.data_file, 'a') as file:
@@ -137,6 +149,12 @@ class integratorThread(Qt.QtCore.QThread):
             # self.sphere.arches[arch].integrate_2d(**self.sphere.bai_2d_args)
             self.sphere.arches[int(idx)].integrate_2d(**self.sphere.bai_2d_args)
             # arch.integrate_2d(**self.sphere.bai_2d_args)
+            arch = self.sphere.arches[int(idx)]
+            self.data_2d[int(idx)] = {
+                'map_raw': arch.map_raw,
+                'mask': arch.mask,
+                'int_2d': arch.int_2d}
+            self.update.emit(idx)
 
     def bai_1d_SI(self):
         """Integrate the current arch, 1d.
@@ -148,6 +166,9 @@ class integratorThread(Qt.QtCore.QThread):
         for idx in idxs:
             # self.sphere.arches[arch].integrate_1d(**self.sphere.bai_1d_args)
             self.sphere.arches[int(idx)].integrate_1d(**self.sphere.bai_1d_args)
+            arch = self.sphere.arches[int(idx)]
+            self.data_1d[int(arch.idx)] = arch.copy(include_2d=False)
+            self.update.emit(arch.idx)
 
     def load(self):
         """Load data.
@@ -258,32 +279,6 @@ class fileHandlerThread(Qt.QtCore.QThread):
             self.sigUpdate.emit()
 
         gc.collect()
-
-    def parse_unit(self):
-        """ Returns EwaldArch Object updated with missing q/tth interpolated data
-        """
-        int_2d = self.arch.int_2d
-        wavelength = self.arch.poni.wavelength
-
-        if len(int_2d.i_qChi) == 0:
-            i_tthChi, tth, chi = int_2d.i_tthChi, int_2d.ttheta, int_2d.chi
-            tth_range = np.asarray([tth[0], tth[-1]])
-            q_range = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth_range / 2))
-            qtth = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth / 2))
-            self.arch.int_2d.q = q = np.linspace(q_range[0], q_range[1], len(tth))
-
-            spline = RectBivariateSpline(chi, qtth, i_tthChi)
-            self.arch.int_2d.i_qChi = spline(chi, q)
-
-        elif len(int_2d.i_tthChi) == 0:
-            i_qChi, q, chi = int_2d.i_qChi, int_2d.q, int_2d.chi
-            q_range = np.array([q[0], q[-1]])
-            tth_range = 2 * np.degrees(np.arcsin(q_range * (wavelength * 1e10) / (4 * np.pi)))
-            tthq = 2 * np.degrees(np.arcsin(q * (wavelength * 1e10) / (4 * np.pi)))
-            self.arch.int_2d.ttheta = tth = np.linspace(tth_range[0], tth_range[1], len(q))
-
-            spline = RectBivariateSpline(chi, tthq, i_qChi)
-            self.arch.int_2d.i_tthChi = spline(chi, tth)
 
     def save_data_as(self):
         if self.new_fname is not None and self.new_fname != "":

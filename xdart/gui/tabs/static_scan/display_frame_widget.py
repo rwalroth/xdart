@@ -199,6 +199,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # WF Plot pane setup
         # self.wf_widget = pgImageWidget()
         self.wf_widget = pmeshImageWidget()
+        self.setup_wf_widget()
         self.plot_layout.addWidget(self.wf_widget)
 
         # Waterfall Plot setup
@@ -291,6 +292,17 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.ui.wf_options.setEnabled(True)
             self.wf_yaxis_widget.setEnabled(False)
 
+    def setup_wf_widget(self):
+        self.plot_layout.addWidget(self.wf_widget)
+
+        # Waterfall Plot setup
+        if self.plotMethod == 'Waterfall':
+            self.plot_win.setParent(None)
+            self.plot_layout.addWidget(self.wf_widget)
+        else:
+            self.wf_widget.setParent(None)
+            self.plot_layout.addWidget(self.plot_win)
+
     def setup_wf_layout(self):
         """Setup the layout for WF plot
         """
@@ -375,8 +387,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             return False
         if (len(self.data_1d) == 0) or (len(self.idxs_1d) == 0):
             return False
-        if self.ui.update2D.isChecked() and (len(self.idxs_2d) == 0) and (not self.overall):
-            return False
+        # if self.ui.update2D.isChecked() and (len(self.idxs_2d) == 0) and (not self.overall):
+        #     return False
 
         return True
 
@@ -441,7 +453,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if not self._updated():
             return True
 
-        # if 'Overall' in self.arch_ids:
         if self.overall:
             data = self.get_sphere_map_raw()
             # Apply Mask
@@ -666,16 +677,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             # TODO: Fix below for more WF options
             if self.wf_yaxis == 'Time (s)':
-                # s_ydata = np.asarray([arch.scan_info['epoch'] for arch_id, arch in self.arches.items()])
                 s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])
                 s_ydata -= s_ydata.min()
             elif self.wf_yaxis == 'Time (minutes)':
                 s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])/60.
-                # s_ydata = np.asarray([arch.scan_info['epoch'] for arch_id, arch in self.arches.items()])/60.
                 s_ydata -= s_ydata.min()
             else:
                 s_ydata = np.asarray([self.data_1d[idx].scan_info[self.wf_yaxis] for idx in self.idxs])
-                # s_ydata = np.asarray([arch.scan_info[self.wf_yaxis] for arch_id, arch in self.arches.items()])
 
             s_ydata = s_ydata[self.wf_start::self.wf_step]
 
@@ -1013,6 +1021,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.arch_names.clear()
         self.arch_ids.clear()
         self.plot.clear()
+        # if self.plotMethod == 'Waterfall':
+        #     self.setup_1d_layout()
+        #     self.setup_wf_layout()
+        # self.setup_wf_widget()
 
     def update_legend(self):
         if not self.ui.showLegend.isChecked():

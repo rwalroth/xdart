@@ -5,8 +5,8 @@
 
 # Standard library imports
 import os
+import sys
 # import subprocess
-# import sys
 
 from xdart.utils.pyFAI_binaries import pyFAI_calib2_main
 from xdart.utils.pyFAI_binaries import pyFAI_drawmask_main
@@ -20,7 +20,11 @@ from pyqtgraph import Qt
 from pyqtgraph.parametertree import Parameter
 
 # This module imports
-from .ui.integratorUI import Ui_Form
+if sys.platform == 'win32':
+    from .ui.integratorUI_windows import Ui_Form
+else:
+    from .ui.integratorUI_mac import Ui_Form
+
 from .sphere_threads import integratorThread
 
 _translate = Qt.QtCore.QCoreApplication.translate
@@ -138,7 +142,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
             to match.
     """
     def __init__(self, sphere, arch, file_lock,
-                 arches, arch_ids, data_2d, parent=None):
+                 arches, arch_ids, data_1d, data_2d, parent=None):
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -147,6 +151,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.file_lock = file_lock
         self.arches = arches
         self.arch_ids = arch_ids
+        self.data_1d = data_1d
         self.data_2d = data_2d
         self.parameters = Parameter.create(
             name='integrator', type='group', children=params
@@ -190,7 +195,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
         self.integrator_thread = integratorThread(
             self.sphere, self.arch, self.file_lock,
-            self.arches, self.arch_ids
+            self.arches, self.arch_ids, self.data_1d, self.data_2d
         )
 
         # Connect Calibrate and Mask Buttons

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'integratorUI_windows.ui'
 #
-# Created by: PyQt5 UI code generator 5.15.4
+# Created by: PyQt5 UI code generator 5.12.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -408,8 +408,8 @@ class Ui_Form(object):
         self.label1D.setText(_translate("Form", "1-D"))
         self.axis1D.setItemText(0, _translate("Form", "Radial"))
         self.label_npts_1D.setText(_translate("Form", "Points"))
-        self.npts_1D.setText(_translate("Form", "3000"))
-        self.npts_1D.setPlaceholderText(_translate("Form", "1000"))
+        self.npts_1D.setText(_translate("Form", "2500"))
+        self.npts_1D.setPlaceholderText(_translate("Form", "500"))
         self.radial_autoRange_1D.setText(_translate("Form", "Auto"))
         self.unit_1D.setItemText(0, _translate("Form", "q (u\\u212Bu\\u207Bu\\u00B9)"))
         self.unit_1D.setItemText(1, _translate("Form", "2 u\\u03B8"))
@@ -427,9 +427,9 @@ class Ui_Form(object):
         self.axis2D.setItemText(0, _translate("Form", "Q-Chi"))
         self.axis2D.setItemText(1, _translate("Form", "Qz-Qxy"))
         self.label_npts_2D.setText(_translate("Form", "Points"))
-        self.npts_radial_2D.setText(_translate("Form", "1000"))
-        self.npts_radial_2D.setPlaceholderText(_translate("Form", "1000"))
-        self.npts_azim_2D.setText(_translate("Form", "1000"))
+        self.npts_radial_2D.setText(_translate("Form", "500"))
+        self.npts_radial_2D.setPlaceholderText(_translate("Form", "500"))
+        self.npts_azim_2D.setText(_translate("Form", "500"))
         self.radial_autoRange_2D.setText(_translate("Form", "Auto"))
         self.unit_2D.setItemText(0, _translate("Form", "q (u\\u212Bu\\u207Bu\\u00B9)"))
         self.unit_2D.setItemText(1, _translate("Form", "2 u\\u03B8"))
