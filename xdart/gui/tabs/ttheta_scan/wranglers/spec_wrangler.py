@@ -28,6 +28,8 @@ from .specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from ....widgets import MaskWidget
 
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+
 DETECTOR_DICT = {
     "Pilatus100k": {
         "shape": (195, 487)
@@ -105,6 +107,7 @@ class specWrangler(wranglerWidget):
         """fname: str, file path
         file_lock: mp.Condition, process safe lock
         """
+        ic()
         super().__init__(fname, file_lock, parent)
 
         # Setup gui elements
@@ -173,6 +176,7 @@ class specWrangler(wranglerWidget):
     def setup(self):
         """Sets up the child thread, syncs all parameters.
         """
+        ic()
         self.thread.mp_inputs.update(self._get_mp_inputs())
         lsf_inputs = self._get_lsf_inputs()
         self.thread.lsf_inputs.update(lsf_inputs)
@@ -206,6 +210,7 @@ class specWrangler(wranglerWidget):
     def set_spec_file(self):
         """Opens file dialogue and sets the spec data file
         """
+        ic()
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
         if fname != '':
             self.parameters.child('Spec File').setValue(fname)
@@ -213,6 +218,7 @@ class specWrangler(wranglerWidget):
     def set_image_dir(self):
         """Opens file dialogue and sets the image directory
         """
+        ic()
         dname = Qt.QtWidgets.QFileDialog.getExistingDirectory(self)
         if dname != '':
             self.parameters.child('Image Directory').setValue(dname)
@@ -220,6 +226,7 @@ class specWrangler(wranglerWidget):
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
         """
+        ic()
         fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
         if fname != '':
             self.parameters.child('Calibration PONI File').setValue(fname)
@@ -227,6 +234,7 @@ class specWrangler(wranglerWidget):
     def _get_mp_inputs(self):
         """Organizes inputs for MakePONI from parameters.
         """
+        ic()
         mp_inputs = OrderedDict(
             rotations = {
                 "rot1": None,
@@ -264,6 +272,7 @@ class specWrangler(wranglerWidget):
         """Organizes inputs for LoadSpecFile from parameters. No longer
         used.
         """
+        ic()
         dirname, fname = os.path.split(self.parameters.child('Spec File').value())
         lsf_inputs = OrderedDict(
             spec_file_path=dirname,
@@ -278,6 +287,7 @@ class specWrangler(wranglerWidget):
         args:
             enable: bool, True for enabled False for disabled.
         """
+        ic()
         self.tree.setEnabled(enable)
         self.ui.startButton.setEnabled(enable)
 
@@ -352,6 +362,7 @@ class specThread(wranglerThread):
         timeout: float or int, how long to continue checking for new
             data.
         """
+        ic()
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
         self.scan_name = scan_name
         self.scan_number = scan_number
@@ -365,6 +376,7 @@ class specThread(wranglerThread):
         """Initializes specProcess and watches for new commands from
         parent or signals from the process.
         """
+        ic()
         process = specProcess(
             self.command_q, 
             self.signal_q, 
@@ -415,6 +427,7 @@ class specThread(wranglerThread):
         args:
             q: Queue
         """
+        ic()
         while not q.empty():
             _ = q.get()
     
@@ -467,6 +480,7 @@ class specProcess(wranglerProcess):
         timeout: float or int, how long to continue checking for new
             data.
         """
+        ic()
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
                          *args, **kwargs)
         self.lsf_inputs = lsf_inputs
@@ -495,6 +509,7 @@ class specProcess(wranglerProcess):
         signal queue, and catches errors. Calls wrangle method for
         reading in data, then performs integration.
         """
+        ic()
         # Initialize sphere and save to disk, send update for new scan
         sphere = EwaldSphere(self.scan_name, data_file=self.fname,
                              **self.sphere_args)
@@ -528,7 +543,8 @@ class specProcess(wranglerProcess):
                 elif command == 'pause':
                     pause = True
                     continue
-            
+
+            ic(i, spec_path)
             # Get result from wrangle
             try:
                 flag, data = self.wrangle(i, spec_path, make_poni)
@@ -590,16 +606,19 @@ class specProcess(wranglerProcess):
                 index of the data, raw image array, metadata, and PONI
                 dict associated with the image.
         """
+        ic()
         self.signal_q.put(('message', f'Checking for {i}'))
         
         # reads in spec data file header
         self.specFile['header'] = get_spec_header(spec_path)
-        
+
         # reads in scan data
+        ic(self.scan_number)
         self.specFile['scans'][self.scan_number], \
-        self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
+            self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
             spec_path, self.scan_number, self.specFile['header']
         )
+        ic(self.specFile['scans'][self.scan_number], self.specFile['scans_meta'])
 
         # checks for user and spec_name information
         if self.user is None:
@@ -607,8 +626,11 @@ class specProcess(wranglerProcess):
         if self.spec_name is None:
             self.spec_name = self.specFile['header']['meta']['File'][0]
 
+        ic(self.user, self.spec_name)
+
         # Construct raw_file path from attributes and index
         raw_file = self._get_raw_path(i)
+        ic(raw_file)
 
         # Get scan meta data
         if self.scan_number in self.specFile['scans'].keys():
@@ -624,6 +646,7 @@ class specProcess(wranglerProcess):
         
         # Read raw file into numpy array
         arr = self.read_raw(raw_file)
+        ic(arr.shape, image_meta)
         
         self.signal_q.put(('message', f'Image {i} wrangled'))
 
@@ -639,12 +662,14 @@ class specProcess(wranglerProcess):
         returns:
             raw_file: str, absolute path to .raw image file.
         """
+        ic()
         im_base = '_'.join([
             self.user,
             self.spec_name,
             'scan' + str(self.scan_number),
             str(i).zfill(4)
         ])
+        ic(self.img_dir, im_base, self.scan_number, self.spec_name, self.user, i)
         return os.path.join(self.img_dir, im_base + '.raw')
     
     def read_raw(self, file, mask=True):
@@ -657,6 +682,7 @@ class specProcess(wranglerProcess):
         returns:
             map_raw: numpy array, image data.
         """
+        ic()
         with open(file, 'rb') as im:
             arr = np.fromstring(im.read(), dtype='int32')
             arr = arr.reshape((195, 487))

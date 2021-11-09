@@ -20,6 +20,8 @@ from xdart.utils import catch_h5py_file as catch
 
 from ...widgets import MaskWidget
 
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+
 PUSHBUTTON_STYLESHEET = """
             QPushButton {
               background-color: #505F69;
@@ -138,6 +140,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         update_plot: Updates plot data based on selections
     """
     def __init__(self, sphere, arch, parent=None):
+        ic()
         _translate = Qt.QtCore.QCoreApplication.translate
         super().__init__(parent)
         self.ui = Ui_Form()
@@ -209,6 +212,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update(self):
         """Updates image and plot frames based on toolbar options
         """
+        ic()
         # Sets title text
         if self.arch.idx is None:
             self.ui.labelCurrent.setText(self.sphere.name)
@@ -237,6 +241,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_image(self):
         """Updates image plotted in image frame
         """
+        ic()
         if self.sphere.name == 'null_main':
             data = np.arange(100).reshape(10,10)
             rect = Qt.QtCore.QRect(1,1,1,1)
@@ -266,6 +271,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def get_arch_data_2d(self):
         """Returns data and QRect for data in arch
         """
+        ic()
         with self.arch.arch_lock:
             int_data = self.arch.int_2d
         
@@ -300,6 +306,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def get_sphere_data_2d(self):
         """Returns data and QRect for data in sphere
         """
+        ic()
         with self.sphere.sphere_lock:
             if self.ui.imageMethod.currentIndex() == 0:
                 int_data = self.sphere.mgi_2d
@@ -321,6 +328,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_plot(self):
         """Updates data in plot frame
         """
+        ic()
         if self.sphere.name == 'null_main':
             data = (np.arange(100), np.arange(100))
             self.curve1.setData(data[0], data[1])
@@ -372,6 +380,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Saves currently displayed image. Formats are automatically
         grabbed from Qt. Also implements tiff saving.
         """
+        ic()
         ext_filter = "Images ("
         for f in formats:
             ext_filter += "*." + f + " "
@@ -394,6 +403,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Saves currently displayed data. Currently supports .xye
         and .csv.
         """
+        ic()
         fname, _ = QFileDialog.getSaveFileName(
             filter="XRD Files (*.xye *.csv)"
         )
@@ -507,6 +517,7 @@ def read_NRP(box, int_data):
         corners: tuple, the bounds of the non-zero region of the
             dataset
     """
+    ic()
     if box.currentIndex() == 0:
         nzarr = int_data.norm
         sigmanz = int_data.sigma
@@ -543,6 +554,7 @@ def get_xdata(box, int_data):
     returns:
         xdata: numpy array, x axis data for plot.
     """
+    ic()
     if box.currentIndex() == 0:
         xdata = int_data.ttheta
     elif box.currentIndex() == 1:
