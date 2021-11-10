@@ -10,14 +10,10 @@ from xdart.utils.containers import int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 from xdart import utils
 
-import logging
-logger = logging.getLogger(__name__)
-
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 
-class EwaldSphere():
+class EwaldSphere:
     """Class for storing multiple arch objects, and stores a MultiGeometry
     integrator from pyFAI.
 
@@ -64,8 +60,8 @@ class EwaldSphere():
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={},
                  static=False, gi=False, th_mtr='th',
-                 overall_raw=0, overall_norm=0, single_img=False,
-                 global_mask=None,
+                 overall_raw=0, single_img=False,
+                 global_mask=None, poni_dict={}
                  ):
         """name: string, name of sphere object.
         arches: list of EwaldArch object, data to intialize with
@@ -117,8 +113,8 @@ class EwaldSphere():
             self.bai_2d = int_2d_data()
 
         self.overall_raw = overall_raw
-        self.overall_norm = overall_norm
         self.global_mask = global_mask
+        self.poni_dict = poni_dict
 
     def reset(self):
         """Resets all held data objects to blank state, called when all
@@ -139,7 +135,6 @@ class EwaldSphere():
                 self.bai_1d = int_1d_data()
                 self.bai_2d = int_2d_data()
             self.overall_raw = 0
-            self.overall_norm = 0
 
     def add_arch(self, arch=None, calculate=True, update=True, get_sd=True,
                  set_mg=True, **kwargs):
@@ -201,7 +196,6 @@ class EwaldSphere():
                 )
 
             self.overall_raw += arch.map_raw
-            self.overall_norm += arch.map_raw / arch.map_norm
 
     def by_arch_integrate_1d(self, **args):
         """Integrates all arches individually, then sums the results for
@@ -304,7 +298,6 @@ class EwaldSphere():
                     self.bai_2d.qz = arch.int_2d.qz
                     self.bai_2d.qxy = arch.int_2d.qxy
             except AttributeError:
-                logger.error('**Error**')
                 pass
             self.save_bai_2d()
 
@@ -424,13 +417,13 @@ class EwaldSphere():
 
             if data_only:
                 lst_attr = [
-                    "scan_data", "global_mask", "overall_raw", "overall_norm",
+                    "scan_data", "global_mask", "overall_raw",
                 ]
             else:
                 lst_attr = [
                     "scan_data", "global_mask", "mg_args", "bai_1d_args",
-                    "bai_2d_args", "overall_raw", "overall_norm",
-                    "static", "gi", "th_mtr", "single_img"
+                    "bai_2d_args", "overall_raw",
+                    "static", "gi", "th_mtr", "single_img", "poni_dict"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
@@ -477,14 +470,14 @@ class EwaldSphere():
 
                     if data_only:
                         lst_attr = [
-                            "scan_data", "overall_raw", "overall_norm",
+                            "scan_data", "overall_raw",
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                     else:
                         lst_attr = [
                             "scan_data", "mg_args", "bai_1d_args",
-                            "bai_2d_args", "overall_raw", "overall_norm",
-                            "static", "gi", "th_mtr", "single_img"
+                            "bai_2d_args", "overall_raw",
+                            "static", "gi", "th_mtr", "single_img", "poni_dict"
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                         self._set_args(self.bai_1d_args)

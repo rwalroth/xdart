@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'h5viewerUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.15.2
+# Created by: PyQt5 UI code generator 5.15.4
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -16,9 +16,22 @@ class Ui_Form(object):
         Form.resize(1440, 842)
         Form.setMinimumSize(QtCore.QSize(0, 0))
         self.gridLayout = QtWidgets.QGridLayout(Form)
-        self.gridLayout.setContentsMargins(6, 6, 6, 6)
-        self.gridLayout.setVerticalSpacing(4)
         self.gridLayout.setObjectName("gridLayout")
+        self.label_3 = QtWidgets.QLabel(Form)
+        self.label_3.setMaximumSize(QtCore.QSize(16777215, 20))
+        self.label_3.setObjectName("label_3")
+        self.gridLayout.addWidget(self.label_3, 1, 0, 1, 1)
+        self.label_4 = QtWidgets.QLabel(Form)
+        self.label_4.setObjectName("label_4")
+        self.gridLayout.addWidget(self.label_4, 1, 1, 1, 1)
+        self.show_all = QtWidgets.QPushButton(Form)
+        self.show_all.setMaximumSize(QtCore.QSize(16777215, 25))
+        self.show_all.setObjectName("show_all")
+        self.gridLayout.addWidget(self.show_all, 3, 0, 1, 1)
+        self.auto_last = QtWidgets.QPushButton(Form)
+        self.auto_last.setMaximumSize(QtCore.QSize(16777215, 25))
+        self.auto_last.setObjectName("auto_last")
+        self.gridLayout.addWidget(self.auto_last, 3, 1, 1, 1)
         self.splitter = QtWidgets.QSplitter(Form)
         self.splitter.setMinimumSize(QtCore.QSize(0, 0))
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
@@ -44,19 +57,12 @@ class Ui_Form(object):
         self.listData.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.listData.setObjectName("listData")
         self.gridLayout.addWidget(self.splitter, 2, 0, 1, 2)
-        self.label = QtWidgets.QLabel(Form)
-        self.label.setMaximumSize(QtCore.QSize(16777215, 20))
-        self.label.setObjectName("label")
-        self.gridLayout.addWidget(self.label, 1, 0, 1, 1)
-        self.label_2 = QtWidgets.QLabel(Form)
-        self.label_2.setObjectName("label_2")
-        self.gridLayout.addWidget(self.label_2, 1, 1, 1, 1)
         self.frame = QtWidgets.QFrame(Form)
         self.frame.setMaximumSize(QtCore.QSize(16777215, 20))
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame.setObjectName("frame")
-        self.gridLayout.addWidget(self.frame, 0, 0, 1, 1)
+        self.gridLayout.addWidget(self.frame, 0, 0, 1, 2)
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -64,5 +70,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.label.setText(_translate("Form", "Scans"))
-        self.label_2.setText(_translate("Form", "Data"))
+        self.label_3.setText(_translate("Form", "Scans"))
+        self.label_4.setText(_translate("Form", "Data"))
+        self.show_all.setText(_translate("Form", "Show All"))
+        self.auto_last.setText(_translate("Form", "Auto Last"))

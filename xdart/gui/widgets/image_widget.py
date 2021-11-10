@@ -25,8 +25,7 @@ from pyqtgraph.graphicsItems.GradientEditorItem import Gradients
 from pyqtgraph.graphicsItems.GraphicsObject import GraphicsObject
 from pyqtgraph import getConfigOption
 
-# from icecream import ic
-# ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 

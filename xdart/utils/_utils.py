@@ -5,8 +5,6 @@
 
 # Standard library imports
 import time
-import sys
-import os
 
 # Other imports
 import numpy as np
@@ -16,7 +14,6 @@ from pathlib import Path
 from collections import OrderedDict
 
 from skimage import io
-import scipy
 import scipy.ndimage as ndimage
 from scipy.signal import medfilt2d
 
@@ -25,7 +22,6 @@ import yaml
 import json
 import h5py
 import fabio
-# import hdf5plugin
 
 # This module imports
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
@@ -164,15 +160,24 @@ def get_scan_name(fname):
         fname {str} -- full image file name with path
     Returns:
         scan_name {str}
-        nImage {int}
     """
     directory, root, ext = split_file_name(fname)
     try:
-        first_img = root[root.rindex('_') + 1:]
-        first_img = int(first_img)
-        root = root[:root.rindex('_')]
+        img_number = root[root.rindex('_') + 1:]
     except ValueError:
-        pass
+        img_number = ''
+
+    if img_number:
+        try:
+            _ = int(img_number)
+            return root[:root.rindex('_')]
+        except ValueError:
+            return root
+
+        #     first_img = int(first_img)
+        #     root = root[:root.rindex('_')]
+        # except ValueError:
+        #     pass
 
     return root
 
@@ -186,14 +191,15 @@ def get_img_number(fname):
         scan_name {str}
         nImage {int}
     """
-    directory, root, ext = split_file_name(fname)
+    # directory, root, ext = split_file_name(fname)
+    root = os.path.splitext(fname)[0]
     try:
-        first_img = root[root.rindex('_') + 1:]
-        first_img = int(first_img)
+        img_number = root[root.rindex('_') + 1:]
+        img_number = int(img_number)
     except ValueError:
-        first_img = None
+        img_number = ''
 
-    return first_img
+    return img_number
 
 
 def query(question):
@@ -943,8 +949,11 @@ def h5_to_attributes(obj, grp, lst_attr=None, **kwargs):
         lst_attr = grp.keys()
     for attr in lst_attr:
         if attr in obj.__dict__.keys():
-            data = h5_to_data(grp[attr], **kwargs)
-            setattr(obj, attr, data)
+            try:
+                data = h5_to_data(grp[attr], **kwargs)
+                setattr(obj, attr, data)
+            except KeyError:
+                pass
 
 
 def div0( a, b ):

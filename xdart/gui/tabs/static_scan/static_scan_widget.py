@@ -24,6 +24,8 @@ from .metadata import metadataWidget
 from .wranglers import specWrangler, wranglerWidget
 from xdart.utils._utils import FixSizeOrderedDict, get_fname_dir
 
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
 
@@ -113,6 +115,7 @@ class staticWidget(QWidget):
         self.arches = OrderedDict()
         self.data_1d = OrderedDict()
         self.data_2d = FixSizeOrderedDict(max=10)
+        self.last_wrangled_arc = 1
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -124,15 +127,17 @@ class staticWidget(QWidget):
                                  self.ui.hdf5Frame)
         # self.h5viewer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ui.hdf5Frame.setLayout(self.h5viewer.layout)
-        self.h5viewer.ui.listData.addItem('No data')
-        self.h5viewer.ui.listData.setCurrentRow(0)
+        # self.h5viewer.ui.listData.addItem('No data')
+        # self.h5viewer.ui.listData.setCurrentRow(0)
         self.h5viewer.update_scans()
 
         # H5Viewer signal connections
         self.h5viewer.sigUpdate.connect(self.set_data)
         self.h5viewer.file_thread.sigTaskStarted.connect(self.thread_state_changed)
         self.h5viewer.sigThreadFinished.connect(self.thread_state_changed)
-        self.h5viewer.ui.listData.itemClicked.connect(self.enable_last)
+        self.h5viewer.ui.listData.itemClicked.connect(self.disable_auto_last)
+        self.h5viewer.ui.auto_last.clicked.connect(self.enable_auto_last)
+        self.h5viewer.ui.auto_last.clicked.connect(self.last_arch)
 
         # DisplayFrame setup
         self.displayframe = displayFrameWidget(self.sphere, self.arch,
@@ -153,7 +158,7 @@ class staticWidget(QWidget):
         # IntegratorFrame setup
         self.integratorTree = integratorTree(
             self.sphere, self.arch, self.file_lock,
-            self.arches, self.arch_ids, self.data_2d)
+            self.arches, self.arch_ids, self.data_1d, self.data_2d)
         self.ui.integratorFrame.setLayout(self.integratorTree.ui.verticalLayout)
         if len(self.sphere.arches.index) > 0:
             self.integratorTree.update()
@@ -245,11 +250,14 @@ class staticWidget(QWidget):
     def thread_state_changed(self):
         """Called whenever a thread is started or finished.
         """
+        # ic()
+        return
         wrangler_running = self.wrangler.thread.isRunning()
         integrator_running = self.integratorTree.integrator_thread.isRunning()
         loader_running = self.h5viewer.file_thread.running
         same_name = self.sphere.name == self.wrangler.scan_name
 
+        # ic(loader_running, integrator_running, wrangler_running)
         if loader_running:
             self.h5viewer.ui.listData.setEnabled(False)
             self.h5viewer.ui.listScans.setEnabled(False)
@@ -287,31 +295,46 @@ class staticWidget(QWidget):
                 self.h5viewer.ui.listData.setCurrentRow(-1)
                 self.h5viewer.ui.listData.setCurrentRow(0)
 
-    def update_data(self, q):
+    def update_data(self, idx):
         """Called by signal from wrangler. If the current scan name
         is the same as the wrangler scan name, updates the data in
         memory.
         """
-        with self.sphere.sphere_lock:
+        # ic()
+        # with self.sphere.sphere_lock:
             # if self.sphere.name == self.wrangler.scan_name:
-            self.h5viewer.file_thread.queue.put("update_sphere")
+        self.h5viewer.file_thread.queue.put("update_sphere")
 
-            with self.file_lock:
-                self.update_all()
+        with self.file_lock:
+            self.update_all(idx)
 
-    def enable_last(self, q):
+        self.last_wrangled_arc = idx
+
+    def disable_auto_last(self, q):
         """
         Parameters
         ----------
         q : Qt.QtWidgets.QListWidgetItem
         """
         self.displayframe.auto_last = False
+        self.h5viewer.auto_last = False
+
+    def enable_auto_last(self, q):
+        """
+        Parameters
+        ----------
+        q : Qt.QtWidgets.QListWidgetItem
+        """
+        self.displayframe.auto_last = True
+        self.h5viewer.auto_last = True
 
     def set_data(self):
         """Connected to h5viewer, sets the data in displayframe based
         on the selected image or overall data.
         """
+        # ic()
 
+        # ic(self.sphere.name, self.arch_ids)
         if self.sphere.name != 'null_main':
             self.displayframe.update()
             # # if (len(self.arches.keys()) > 0) and (len(self.sphere.arches.index) > 0):
@@ -319,7 +342,6 @@ class staticWidget(QWidget):
             #         (len(self.arch_ids) > 0) and
             #         (self.arch_ids[0] != 'No data') and
             #         (len(self.sphere.arches.index) > 0)):
-            #     self.displayframe.update()
 
             # if self.arch.idx is None:
             if len(self.arch_ids) == 0:
@@ -337,6 +359,7 @@ class staticWidget(QWidget):
     def close(self):
         """Tries a graceful close.
         """
+        # ic()
         del self.sphere
         del self.displayframe.sphere
         del self.arch
@@ -350,40 +373,44 @@ class staticWidget(QWidget):
         """
         self.integratorTree.setEnabled(enable)
 
-    def update_all(self):
+    def update_all(self, idx=None):
         """Updates all data in displays
         TODO: Currently taking the most time for the main gui thread
         """
+        # ic()
         self.h5viewer.update_data()
-        if self.displayframe.auto_last:
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.count() - 1
-            )
-            # self.displayframe.update()
-        else:
-            self.displayframe.update()
-        self.metawidget.update()
+        if self.displayframe.auto_last or self.h5viewer.auto_last:
+            self.last_arch()
 
-        # self.h5viewer.ui.listData.setFocus()
-        # self.h5viewer.ui.listData.focusWidget()
+            # if idx is None:
+            #     self.h5viewer.ui.listData.setCurrentRow(self.h5viewer.ui.listData.count() - 1)
+            # else:
+            #     items = self.h5viewer.ui.listData.findItems(str(idx), QtCore.Qt.MatchExactly)
+            #     if len(items):
+            #         for item in items:
+            #             self.h5viewer.ui.listData.setCurrentItem(item)
+            #     else:
+            #         self.h5viewer.ui.listData.setCurrentRow(self.h5viewer.ui.listData.count() - 1)
+
+        self.displayframe.update()
+        self.metawidget.update()
 
         gc.collect()
 
     def integrator_thread_update(self, idx):
+        # ic()
         self.thread_state_changed()
-        if (len(self.data_2d) <= 1) or self.displayframe.auto_last:
-            items = self.h5viewer.ui.listData.findItems(str(idx),
-                                                        QtCore.Qt.MatchExactly)
-            for item in items:
-                self.h5viewer.ui.listData.setCurrentItem(item)
-            self.displayframe.auto_last = True
-        else:
-            self.displayframe.update()
+        if self.h5viewer.auto_last or self.displayframe.auto_last:
+            self.last_arch()
+            # self.h5viewer.auto_last = True
+
+        self.displayframe.update()
 
     def integrator_thread_finished(self):
         """Function connected to threadFinished signals for
         integratorThread
         """
+        # ic()
         self.thread_state_changed()
         self.enable_integration(True)
         self.h5viewer.set_open_enabled(True)
@@ -400,6 +427,7 @@ class staticWidget(QWidget):
             name: str, scan name
             fname: str, path to data file for scan
         """
+        # ic()
         # if self.sphere.name != name or self.sphere.name == 'null_main':
         self.h5viewer.dirname = os.path.dirname(fname)
         self.h5viewer.set_file(fname)
@@ -415,6 +443,10 @@ class staticWidget(QWidget):
 
         self.displayframe.set_image_units()
         self.displayframe.auto_last = True
+
+        self.h5viewer.scan_name = name
+        self.h5viewer.auto_last = True
+        self.h5viewer.update_scans()
         self.h5viewer.update()
 
     def update_scattering_geometry(self, gi):
@@ -434,6 +466,7 @@ class staticWidget(QWidget):
             name: str, scan name
             fname: str, path to data file for scan
         """
+        # ic()
         arch = EwaldArch(idx=arch_data['idx'], map_raw=arch_data['map_raw'],
                          mask=arch_data['mask'], scan_info=arch_data['scan_info'],
                          poni_file=arch_data['poni_file'], static=self.sphere.static, gi=self.sphere.gi)
@@ -446,6 +479,7 @@ class staticWidget(QWidget):
         """Sets up wrangler, ensures properly synced args, and starts
         the wrangler.thread main method.
         """
+        # ic()
         # i_qChi = np.zeros((1000, 1000), dtype=float)
 
         self.ui.wranglerBox.setEnabled(False)
@@ -455,12 +489,14 @@ class staticWidget(QWidget):
         self.wrangler.sphere_args = copy.deepcopy(args)
         self.wrangler.setup()
         self.displayframe.auto_last = True
+        self.h5viewer.auto_last = True
         self.wrangler.thread.start()
 
     def wrangler_finished(self):
         """Called by the wrangler finished signal. If current scan
         matches the wrangler scan, allows for integration.
         """
+        # ic()
         self.thread_state_changed()
         if self.sphere.name == self.wrangler.scan_name:
             self.integrator_thread_finished()
@@ -475,74 +511,21 @@ class staticWidget(QWidget):
         """
         self.h5viewer.update_2d = state
 
-    def next_arch(self):
-        """Advances to next arch in data list, updates displayframe
-        """
-        # if (self.arch == self.sphere.arches.iloc(-1).idx or
-        #         self.arch is None or
-        #         self.h5viewer.ui.listData.currentRow() == \
-        #         self.h5viewer.ui.listData.count() - 1):
-        if (len(self.arches) == 0 or
-                self.h5viewer.ui.listData.currentRow() > \
-                self.h5viewer.ui.listData.count() - 2):
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.count() - 1
-            )
-            self.displayframe.auto_last = True
-            # pass
-        else:
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.currentRow() + 1
-            )
-            self.displayframe.auto_last = False
-            # self.displayframe.ui.pushRightLast.setEnabled(True)
-
-    def prev_arch(self):
-        """Goes back one arch in data list, updates displayframe
-        """
-        # if (self.arch == self.sphere.arches.iloc(0).idx or
-        #         self.arch.idx is None or
-        #         self.h5viewer.ui.listData.currentRow() == 1):
-        #     pass
-        if (len(self.arches) == 0) or (self.h5viewer.ui.listData.currentRow() == 1):
-            pass
-        else:
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.currentRow() - 1
-            )
-            selected_items = self.ui.listData.selectedItems()
-            selected_items[0].setSelected(True)
-            self.displayframe.auto_last = False
-            # self.displayframe.ui.pushRightLast.setEnabled(True)
-
-    def first_arch(self):
-        """Goes to first arch in data list, updates displayframe
-        """
-        # if self.arch == self.sphere.arches.iloc(0).idx or self.arch.idx is None:
-        if len(self.arches) == 0:
-            pass
-        else:
-            self.h5viewer.ui.listData.setCurrentRow(1)
-            self.displayframe.auto_last = False
-            # self.displayframe.ui.pushRightLast.setEnabled(True)
-
     def last_arch(self):
         """Advances to last arch in data list, updates displayframe, and
         set auto_last to True
         """
         self.displayframe.auto_last = True
-        # if self.arch.idx is None:
-        if len(self.arches) == 0:
+        self.h5viewer.auto_last = True
+        if self.h5viewer.ui.listData.count() <= 1:
             pass
 
+        items = self.h5viewer.ui.listData.findItems(str(self.last_wrangled_arc), QtCore.Qt.MatchExactly)
+        if len(items):
+            for item in items:
+                self.h5viewer.ui.listData.setCurrentItem(item)
         else:
-            # if self.arch.idx == self.sphere.arches.index[-1]:
-            #     pass
-            #
-            # else:
-            self.h5viewer.ui.listData.setCurrentRow(
-                self.h5viewer.ui.listData.count() - 1
-            )
+            self.h5viewer.ui.listData.setCurrentRow(self.h5viewer.ui.listData.count()-1)
 
-            self.displayframe.auto_last = True
-            # self.displayframe.ui.pushRightLast.setEnabled(False)
+        if len(self.data_2d) <= 1:
+            self.h5viewer.ui.listData.setCurrentRow(self.h5viewer.ui.listData.count() - 1)

@@ -13,6 +13,7 @@ import pandas as pd
 # This module imports
 from xdart.utils import soft_list_eval
 
+
 def get_spec_header(file_path):
     """Gets the header information of a spec data file.
     
@@ -105,7 +106,8 @@ def get_spec_scan(file_path, scan_number, header):
     if df is None:
         raise KeyError("Scan not found")
     return df, meta
-                    
+
+
 def _parse_scan(line, header, df=None, meta=None):
     """Helper function to parse information from spec file into scan
     data.
@@ -165,4 +167,3 @@ def _parse_scan(line, header, df=None, meta=None):
         except IndexError:
             df.loc[0] = vals
     return df, meta
-                

@@ -1,6 +1,10 @@
 from pyFAI.detectors import Detector
 from pyFAI import detector_factory
+from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
+import pygix, pyFAI
 import yaml
+import numpy as np
+
 
 class PONI(object):
     """Container for values needed in AzimuthalIntegrator of pyFAI.
@@ -26,6 +30,7 @@ class PONI(object):
         'Rot3': 'rot3',
         'Wavelength': 'wavelength'
     }
+
     def __init__(self, dist=0, poni1=0, poni2=0, rot1=0, rot2=0, rot3=0, 
                  wavelength=1e-10, detector=Detector(100e-6, 100e-6)):
         """
@@ -48,7 +53,6 @@ class PONI(object):
         self.wavelength = wavelength
         self.detector = detector
 
-    
     def to_dict(self):
         """Converts all attributes to dictionary with pyFAI names
         """
@@ -133,6 +137,31 @@ class PONI(object):
             out = cls.from_yaml(file)
         return out
 
-        
-            
 
+def get_poni_dict(poni_file):
+    """ Read Poni File and convert to Dictionary"""
+    ai = pyFAI.load(poni_file)
+    poni_keys = ['_dist', '_rot1', '_rot2', '_rot3', '_poni1', '_poni2', 'detector', '_wavelength']
+
+    poni_dict = {k: ai.__getattribute__(k) for k in poni_keys}
+
+    return poni_dict
+
+
+def create_ai_from_dict(poni_dict, gi=False):
+    """Create Azimuthal Integrator object from Dictionary"""
+    ai = AzimuthalIntegrator()
+    for k, v in poni_dict.items():
+        ai.__setattr__(k, v)
+
+    if not gi:
+        ai._rot3 -= np.deg2rad(90)
+    else:
+        calib_pars = dict(
+            dist=ai._dist, poni1=ai._poni1, poni2=ai._poni2,
+            rot1=ai._rot1, rot2=ai._rot2, rot3=ai._rot3,
+            wavelength=ai._wavelength, detector=ai.detector)
+        ai = pygix.Transform(**calib_pars)
+        ai.sample_orientation = 3  # 1 is horizontal, 2 is vertical
+
+    return ai
