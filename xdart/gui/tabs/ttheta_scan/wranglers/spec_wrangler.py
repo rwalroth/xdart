@@ -47,7 +47,7 @@ params = [
     {'name': 'Timeout', 'type': 'float', 'value': 5},
     {'name': 'Rotation Motors', 'type': 'group', 'children': [
         {'name': 'Rot1', 'type': 'str', 'default': ''},
-        {'name': 'Rot2', 'type': 'str', 'default': 'TwoTheta'},
+        {'name': 'Rot2', 'type': 'str', 'default': 'tth', 'value': 'tth'},
         {'name': 'Rot3', 'type': 'str', 'default': ''}
     ]},
     {'name': 'Calibration Angles', 'type': 'group', 'children': [
@@ -196,7 +196,7 @@ class specWrangler(wranglerWidget):
         self.thread.mask = self.mask
 
         if self.parameters.child('Rotation Motors').child('Rot2').value() == '':
-            self.parameters.child('Rotation Motors').child('Rot2').setValue('TwoTheta')
+            self.parameters.child('Rotation Motors').child('Rot2').setValue('tth')
 
     def pause(self):
         if self.thread.isRunning():
@@ -241,7 +241,7 @@ class specWrangler(wranglerWidget):
         mp_inputs = OrderedDict(
             rotations = {
                 "rot1": None,
-                "rot2": None,
+                "rot2": 'tth',
                 "rot3": None
             },
             calib_rotations = {
@@ -594,7 +594,6 @@ class specProcess(wranglerProcess):
         # If loop ends, signal terminate to parent thread.
         self.signal_q.put(('TERMINATE', None))
 
-
     def wrangle(self, i, spec_path, make_poni):
         """Method for reading in data from raw files and spec file.
         
@@ -625,9 +624,9 @@ class specProcess(wranglerProcess):
         if self.user is None:
             self.user = self.specFile['header']['meta']['User']
         if self.spec_name is None:
-            self.spec_name = self.specFile['header']['meta']['File'][0]
+            self.spec_name = os.path.basename(self.specFile['header']['meta']['File'][0])
 
-        # ic(self.user, self.spec_name)
+        # ic(self.user, self.spec_name, self.scan_number, self.specFile['scans'].keys())
 
         # Construct raw_file path from attributes and index
         raw_file = self._get_raw_path(i)
@@ -639,12 +638,15 @@ class specProcess(wranglerProcess):
         
         else:
             image_meta = self.specFile['current_scan'].loc[i].to_dict()
-        
+        # ic(image_meta)
+
         # Get poni dict based on meta data
         make_poni.inputs['spec_dict'] = copy.deepcopy(image_meta)
         poni = copy.deepcopy(make_poni.run())
+        # ic(poni)
         
         # Read raw file into numpy array
+        # ic(raw_file)
         arr = self.read_raw(raw_file)
 
         self.signal_q.put(('message', f'Image {i} wrangled'))
@@ -682,7 +684,9 @@ class specProcess(wranglerProcess):
         """
         # ic()
         with open(file, 'rb') as im:
+            # ic('file opened')
             arr = np.fromstring(im.read(), dtype='int32')
+            # ic('converted to np')
             arr = arr.reshape((195, 487))
             if mask:
                 for i in range(0, 10):
