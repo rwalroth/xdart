@@ -949,8 +949,11 @@ def h5_to_attributes(obj, grp, lst_attr=None, **kwargs):
         lst_attr = grp.keys()
     for attr in lst_attr:
         if attr in obj.__dict__.keys():
-            data = h5_to_data(grp[attr], **kwargs)
-            setattr(obj, attr, data)
+            try:
+                data = h5_to_data(grp[attr], **kwargs)
+                setattr(obj, attr, data)
+            except KeyError:
+                pass
 
 
 def div0( a, b ):
