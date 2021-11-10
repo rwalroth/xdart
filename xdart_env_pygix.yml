@@ -1,0 +1,24 @@
+name: xdart_env_pygix
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python[version='>=3.9']
+  - h5py[version='>=2.10']
+  - scikit-learn
+  - silx
+  - qdarkstyle
+  - requests
+  - qtpy
+  - scipy
+  - matplotlib
+  - pyqtgraph[version='>=0.12']
+  - pandas
+  - pyyaml
+  - fabio
+  - pyfai
+  - pillow
+  - scikit-image
+  - lmfit
+  - pygix
+  - icecream
