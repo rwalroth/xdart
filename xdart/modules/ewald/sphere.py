@@ -298,7 +298,6 @@ class EwaldSphere:
                     self.bai_2d.qz = arch.int_2d.qz
                     self.bai_2d.qxy = arch.int_2d.qxy
             except AttributeError:
-                logger.error('**Error**')
                 pass
             self.save_bai_2d()
 

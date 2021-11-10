@@ -26,7 +26,7 @@ from .sphere_threads import integratorThread
 from .metadata import metadataWidget
 from .wranglers import specWrangler, liveSpecWrangler, wranglerWidget
 
-from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
@@ -93,7 +93,7 @@ class tthetaWidget(QWidget):
         load_sphere: 
     """
     def __init__(self, local_path=None, parent=None):
-        ic()
+        # ic()
         super().__init__(parent)
 
         # Data object initialization
@@ -196,7 +196,7 @@ class tthetaWidget(QWidget):
         args:
             qint: Qt int, index of the new wrangler
         """
-        ic()
+        # ic()
         if 'wrangler' in self.__dict__:
             self.disconnect_wrangler()
             
@@ -215,7 +215,7 @@ class tthetaWidget(QWidget):
     def disconnect_wrangler(self):
         """Disconnects all signals attached the the current wrangler
         """
-        ic()
+        # ic()
         for signal in (self.wrangler.sigStart,
                        self.wrangler.sigUpdateData,
                        self.wrangler.sigUpdateFile,
@@ -230,7 +230,7 @@ class tthetaWidget(QWidget):
     def thread_state_changed(self):
         """Called whenever a thread is started or finished.
         """
-        ic()
+        # ic()
         wrangler_running = self.wrangler.thread.isRunning()
         integrator_running = self.integratorTree.integrator_thread.isRunning()
         loader_running = self.h5viewer.file_thread.running
@@ -279,7 +279,7 @@ class tthetaWidget(QWidget):
         is the same as the wrangler scan name, updates the data in
         memory.
         """
-        ic()
+        # ic()
         with self.sphere.sphere_lock:
             if self.sphere.name == self.wrangler.scan_name:
                 self.h5viewer.file_thread.queue.put("update_sphere")
@@ -293,7 +293,7 @@ class tthetaWidget(QWidget):
         ----------
         q : Qt.QtWidgets.QListWidgetItem
         """
-        ic()
+        # ic()
         self.displayframe.auto_last = False
         self.displayframe.ui.pushRightLast.setEnabled(True)
 
@@ -301,7 +301,7 @@ class tthetaWidget(QWidget):
         """Connected to h5viewer, sets the data in displayframe based
         on the selected image or overall data.
         """
-        ic()
+        # ic()
         if self.sphere.name != 'null_main':
             self.displayframe.update()
             
@@ -327,7 +327,7 @@ class tthetaWidget(QWidget):
     def next_arch(self):
         """Advances to next arch in data list, updates displayframe
         """
-        ic()
+        # ic()
         if (self.arch == self.sphere.arches.iloc(-1).idx or
             self.arch is None or
             self.h5viewer.ui.listData.currentRow() == \
@@ -343,7 +343,7 @@ class tthetaWidget(QWidget):
     def prev_arch(self):
         """Goes back one arch in data list, updates displayframe
         """
-        ic()
+        # ic()
         if (self.arch == self.sphere.arches.iloc(0).idx or
             self.arch.idx is None or
             self.h5viewer.ui.listData.currentRow() == 1):
@@ -359,7 +359,7 @@ class tthetaWidget(QWidget):
         """Advances to last arch in data list, updates displayframe, and
         set auto_last to True
         """
-        ic()
+        # ic()
         if self.arch.idx is None:
             pass
 
@@ -378,7 +378,7 @@ class tthetaWidget(QWidget):
     def first_arch(self):
         """Goes to first arch in data list, updates displayframe
         """
-        ic()
+        # ic()
         if self.arch == self.sphere.arches.iloc(0).idx or self.arch.idx is None:
             pass
         else:
@@ -389,7 +389,7 @@ class tthetaWidget(QWidget):
     def close(self):
         """Tries a graceful close.
         """
-        ic()
+        # ic()
         del(self.sphere)
         del(self.displayframe.sphere)
         del(self.arch)
@@ -399,14 +399,14 @@ class tthetaWidget(QWidget):
     def enable_integration(self, enable=True):
         """Calls the integratorTree setEnabled function.
         """
-        ic()
+        # ic()
         self.integratorTree.setEnabled(enable)
 
     def update_all(self):
         """Updates all data in displays
         TODO: Currently taking the most time for the main gui thread
         """
-        ic()
+        # ic()
         self.h5viewer.update_data()
         if self.displayframe.auto_last:
             self.h5viewer.ui.listData.setCurrentRow(
@@ -431,7 +431,7 @@ class tthetaWidget(QWidget):
         """Function connected to threadFinished signals for
         integratorThread
         """
-        ic()
+        # ic()
         self.thread_state_changed()
         if self.integratorTree.integrator_thread.method in ["bai_1d_SI", "bai_2d_SI"]:
             self.displayframe.update()
@@ -449,7 +449,7 @@ class tthetaWidget(QWidget):
             name: str, scan name
             fname: str, path to data file for scan
         """
-        ic()
+        # ic()
         if self.sphere.name == name or self.sphere.name == 'null_main':
             self.h5viewer.dirname = os.path.dirname(fname)
             self.h5viewer.set_file(fname)
@@ -459,7 +459,7 @@ class tthetaWidget(QWidget):
         """Sets up wrangler, ensures properly synced args, and starts
         the wrangler.thread main method.
         """
-        ic()
+        # ic()
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
         args = {'bai_1d_args': self.sphere.bai_1d_args,
@@ -472,7 +472,7 @@ class tthetaWidget(QWidget):
         """Called by the wrangler finished signal. If current scan
         matches the wrangler scan, allows for integration.
         """
-        ic()
+        # ic()
         self.thread_state_changed()
         if self.sphere.name == self.wrangler.scan_name:
             self.integrator_thread_finished()

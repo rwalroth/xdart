@@ -4,7 +4,6 @@
 """
 
 # Standard library imports
-import inspect
 from queue import Queue
 import multiprocessing as mp
 import traceback

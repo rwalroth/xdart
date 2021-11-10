@@ -259,7 +259,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # with self.sphere.sphere_lock:
         # if 'Overall' in self.arch_ids:
-        if len(self.arch_ids) == len(self.sphere.arches.index):
+        if len(self.arch_ids) == len(self.sphere.arches.index) > 1:
             self.overall = True
             self.idxs = sorted(np.asarray(self.sphere.arches.index, dtype=int))
         else:
