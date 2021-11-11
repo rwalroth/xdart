@@ -78,7 +78,9 @@ class H5Viewer(QWidget):
         self.new_scan = True
         self.update_2d = True
         self.auto_last = True
-        self.new_scan_name = None
+        self.latest_idx = None
+        self.new_scan_loaded = False
+        # self.new_scan_name = None
 
         # Link UI
         self.ui = Ui_Form()
@@ -219,7 +221,7 @@ class H5Viewer(QWidget):
 
         # with self.sphere.sphere_lock:
         _idxs = [str(i) for i in list(self.sphere.arches.index)]
-        # ic(_idxs, self.data_1d.keys())
+        # ic(_idxs, self.data_1d.keys(), self.latest_idx, self.auto_last, self.new_scan_loaded)
 
         if len(_idxs) == 0:
             self.ui.listData.clear()
@@ -230,17 +232,47 @@ class H5Viewer(QWidget):
         items = [lw.item(x).text() for x in range(lw.count())]
         eq = _idxs == items
         # ic(_idxs, items, eq)
+
+        if (len(_idxs) > 1) and (_idxs == items):
+            if self.new_scan_loaded:
+                self.new_scan_loaded = False
+                self.ui.listData.setCurrentRow(-1)
+                self.arch_ids = []
+                return
+            if self.auto_last and (self.latest_idx in _idxs) and (len(self.latest_idx) == 1):
+                items = self.ui.listData.findItems(str(self.latest_idx), QtCore.Qt.MatchExactly)
+                # ic(self.latest_idx, items)
+                if len(items):
+                    for item in items:
+                        self.h5viewer.ui.listData.setCurrentItem(item)
+                return
         if (len(_idxs) > 1) and (len(_idxs) == (len(items))):
             return
 
         previous_loc = self.ui.listData.currentRow()
         previous_sel = self.ui.listData.selectedItems()
-        self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
+        # self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
 
         # ic(previous_loc, previous_sel)
 
         self.ui.listData.clear()
         self.ui.listData.insertItems(0, _idxs)
+
+        if self.new_scan_loaded:
+            self.new_scan_loaded = False
+            self.ui.listData.setCurrentRow(-1)
+            self.arch_ids.clear()
+            return
+
+        # ic(self.auto_last, self.latest_idx, _idxs)
+        if self.auto_last and isinstance(self.latest_idx, int) and (str(self.latest_idx) in _idxs):
+            items = self.ui.listData.findItems(str(self.latest_idx), QtCore.Qt.MatchExactly)
+            # ic(self.latest_idx, items)
+            # self.ui.listData.itemSelectionChanged.connect(self.data_changed)
+            if len(items):
+                for item in items:
+                    self.ui.listData.setCurrentItem(item)
+            return
         # for idx in _idxs:
         #     self.ui.listData.addItem(str(idx))
 
@@ -257,17 +289,16 @@ class H5Viewer(QWidget):
 
         # lw = self.ui.listData
         # items = [lw.item(x).text() for x in range(lw.count())]
-        # ic(items)
 
         if previous_loc > self.ui.listData.count() - 1:
             previous_loc = self.ui.listData.count() - 1
 
+        # self.ui.listData.itemSelectionChanged.connect(self.data_changed)
         if len(previous_sel) < 2:
             self.ui.listData.setCurrentRow(previous_loc)
         else:
             for item in previous_sel:
                 item.setSelected(True)
-        self.ui.listData.itemSelectionChanged.connect(self.data_changed)
 
     def show_all(self):
         # ic()
@@ -312,6 +343,7 @@ class H5Viewer(QWidget):
                     self.update_scans()
             elif q.data(0) != 'No scans':
                 self.set_file(os.path.join(self.dirname, q.data(0)))
+                self.new_scan_loaded = True
         except AttributeError:
             pass
     
@@ -497,7 +529,6 @@ class H5Viewer(QWidget):
                                 pass
                         except TypeError:
                             arch.load_from_h5(file['arches'], load_2d=True)
-
 
                         self.data_1d[int(idx)] = arch.copy(include_2d=False)
                         self.data_2d[int(idx)] = {'map_raw': arch.map_raw,

@@ -197,7 +197,7 @@ def get_img_number(fname):
         img_number = root[root.rindex('_') + 1:]
         img_number = int(img_number)
     except ValueError:
-        img_number = ''
+        img_number = 1
 
     return img_number
 
@@ -336,7 +336,7 @@ def get_motor_val(pdi_file, motor):
 
 def read_image_file(fname, orientation='horizontal',
                     flip=False, fliplr=False, transpose=False,
-                    shape_100K=(195, 487), shape_300K=(195, 1475),
+                    shape_100K=(195, 487), shape_300K=(195, 1475), shape_1M=(1043, 981),
                     return_float=False, im=0, verbose=False):
     """Read image file and return numpy array
 
@@ -348,6 +348,7 @@ def read_image_file(fname, orientation='horizontal',
         transpose (bool, optional): Flag to transpose the image (required by pyFAI at times). Defaults to False.
         shape_100K (tuple, optional): Shape of numpy array for Pilatus 100K. Defaults to (195, 487).
         shape_300K (tuple, optional): Shape of numpy array for Pilatus 300K. Defaults to (195,1475).
+        shape_1M (tuple, optional): Shape of numpy array for Pilatus 1M. Defaults to (1043,981).
         return_float (bool, optional): Convert array to float. Defaults to False.
         im (integer, optional): image number if input is h5 file from Eiger. Defaults to 0
         verbose (bool, optional): Print debug messages. Defaults to False.
@@ -373,11 +374,23 @@ def read_image_file(fname, orientation='horizontal',
     elif 'mar3450' in fname[-9:]:
         img = fabio.open(fname).data
     else:
-        try:
-            img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))
-        except ValueError:
-            img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_300K))
-            
+        img = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
+        if len(img) == np.prod(shape_100K):
+            img = img.reshape(shape_100K)
+        elif len(img) == np.prod(shape_300K):
+            img = img.reshape(shape_300K)
+        else:
+            img = img.reshape(shape_1M)
+            img[:, 487:487 + 7] = np.nan
+            for ii in range(1, 5):
+                mod_start = 195 * ii + 17 * (ii - 1)
+                img[mod_start:mod_start + 17] = np.nan
+
+        # try:
+        #     img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))
+        # except ValueError:
+        #     img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_300K))
+
     if return_float:
         img = np.asarray(img, dtype=float)
         
