@@ -480,9 +480,23 @@ class specWrangler(wranglerWidget):
         else:
             self.img_ext = self.parameters.child('Signal').child('img_ext').value()
             self.img_dir = self.parameters.child('Signal').child('img_dir').value()
-            filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-            fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
-            # ic(self.img_ext)
+            self.include_subdir = self.parameters.child('Signal').child('include_subdir').value()
+
+            if self.include_subdir:
+                filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+                filters = filters if filters != '**' else '*'
+                fnames = sorted(glob.glob(os.path.join(
+                    self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
+            else:
+                filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+                filters = filters if filters != '**' else '*'
+                # ic(filters)
+                fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
+
+            # filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+            # filters = filters if filters != '**' else '*'
+            # ic(filters, self.img_ext, self.img_dir)
+            # fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
 
             # Check if metadata file exists
             if self.img_ext in ['h5', 'mar3450']:  # If Eiger or other detector File
@@ -492,15 +506,18 @@ class specWrangler(wranglerWidget):
                 img_found = False
                 for fname in fnames:
                     meta_ext = self.get_meta_ext(fname)
+                    # ic(meta_ext)
                     if meta_ext:
                         self.img_fname = fname
                         self.meta_ext = meta_ext
+                        # ic(self.img_fname, meta_ext)
                         img_found = True
                         break
                 if not img_found:
                     self.img_fname = ''
                     self.meta_ext = None
 
+        # ic(self.img_fname, old_fname)
         if (((self.img_fname != old_fname) or (self.img_fname and (len(self.scan_parameters) < 1)))
                 and self.meta_ext):
             self.get_scan_parameters()
@@ -1204,13 +1221,15 @@ class specProcess(wranglerProcess):
             else:
                 # ic('in directory', self.include_subdir)
                 if self.include_subdir:
-                    filters = ['*' + '*'.join(f for f in self.file_filter.split()) + '*'] if self.file_filter else '*'
+                    filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+                    filters = filters if filters != '**' else '*'
                     # self.img_fnames = sorted([os.path.join(path.parent, path.name) for path
                     #                           in Path(self.img_dir).rglob(f'{filters}.{self.img_ext}')])
                     self.img_fnames = sorted(glob.glob(os.path.join(
                         self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
                 else:
                     filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+                    filters = filters if filters != '**' else '*'
                     # ic(filters)
                     self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
 
