@@ -436,11 +436,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             return True
 
         self.cmap = self.ui.cmap.currentText()
-        self.scale = self.ui.scale.currentText()
-
         self.plotMethod = self.ui.plotMethod.currentText()
-        if len(self.plot_data[1] > 20):
-            self.plotMethod = 'Waterfall'
+        self.scale = self.ui.scale.currentText()
 
         if self.ui.update2D.isChecked():
             self.update_image_view()
@@ -592,9 +589,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.curves.clear()
 
         self.plotMethod = self.ui.plotMethod.currentText()
-        if len(self.plot_data[1] > 20):
-            self.plotMethod = 'Waterfall'
-
         self.ui.yOffset.setEnabled(False)
         if (self.plotMethod in ['Overlay', 'Single']) and (len(self.arch_names) > 1):
             self.ui.yOffset.setEnabled(True)
