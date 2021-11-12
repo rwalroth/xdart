@@ -16,12 +16,12 @@ import fabio
 
 # Qt imports
 from pyqtgraph import Qt
-from pyqtgraph.Qt import QtWidgets, QtGui
+from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
 from xdart.modules.ewald import EwaldArch, EwaldSphere
-from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
+from .wrangler_widget import wranglerWidget, wranglerThread
 from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from xdart.utils import read_image_file, get_image_meta_data
@@ -154,7 +154,8 @@ class specWrangler(wranglerWidget):
         # Setup gui elements
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        self.ui.startButton.clicked.connect(self.sigStart.emit)
+        # self.ui.startButton.clicked.connect(self.sigStart.emit)
+        self.ui.startButton.clicked.connect(self.start)
         self.ui.pauseButton.clicked.connect(self.pause)
         self.ui.stopButton.clicked.connect(self.stop)
         self.ui.continueButton.clicked.connect(self.cont)
@@ -401,24 +402,24 @@ class specWrangler(wranglerWidget):
         commandLine.send_command(self.specCommandLine)
 
     def start(self):
-        if self.img_fname is None:
-            self.setup()
+        self.command = 'start'
+        self.thread.command = 'start'
         self.sigStart.emit()
 
     def pause(self):
         self.command = 'pause'
         if self.thread.isRunning():
-            self.command_queue.put('pause')
+            self.thread.command = 'pause'
 
     def cont(self):
         self.command = 'continue'
         if self.thread.isRunning():
-            self.command_queue.put('continue')
+            self.thread.command = 'continue'
 
     def stop(self):
         self.command = 'stop'
         if self.thread.isRunning():
-            self.command_queue.put('stop')
+            self.thread.command = 'stop'
 
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
@@ -841,7 +842,7 @@ class specThread(wranglerThread):
         self.img_fnames = []
         self.processed = []
 
-        self.poni_dict = get_poni_dict(self.poni_file)
+        self.poni_dict = None
 
     def run(self):
         """Initializes specProcess and watches for new commands from
@@ -865,7 +866,7 @@ class specThread(wranglerThread):
         # ic()
         sphere = EwaldSphere()
 
-        pause = False
+        # pause = False
         start = time.time()
         while True:
             # Check for commands, or wait if paused
@@ -874,15 +875,18 @@ class specThread(wranglerThread):
             if command == 'stop':
                 sphere.save_to_h5(data_only=True, replace=False)
                 break
-            elif command == 'continue':
-                pause = False
             elif command == 'pause':
-                pause = True
+                # pause = True
+                time.sleep(0.5)
                 continue
+            # elif command == 'continue':
+            #     pause = False
+            else:
+                pass
 
-            if pause:
-                time.sleep(1)
-                continue
+            # if pause:
+            #     time.sleep(1)
+            #     continue
 
             img_fname, img_number = self.get_next_image()
             if img_fname is None:
