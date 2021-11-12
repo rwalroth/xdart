@@ -31,7 +31,7 @@ from xdart.utils.containers.poni import get_poni_dict
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
-# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QDialog = QtWidgets.QDialog
@@ -314,8 +314,6 @@ class specWrangler(wranglerWidget):
         self.thread.img_fname = self.img_fname
 
         self.thread.single_img = self.single_img
-
-        self.img_dir, _, self.img_ext = split_file_name(self.img_fname)
         self.thread.img_dir, self.thread.img_ext = self.img_dir, self.img_ext
 
         self.include_subdir = self.parameters.child('Signal').child('include_subdir').value()
@@ -490,13 +488,7 @@ class specWrangler(wranglerWidget):
             else:
                 filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
                 filters = filters if filters != '**' else '*'
-                # ic(filters)
                 fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
-
-            # filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-            # filters = filters if filters != '**' else '*'
-            # ic(filters, self.img_ext, self.img_dir)
-            # fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
 
             # Check if metadata file exists
             if self.img_ext in ['h5', 'mar3450']:  # If Eiger or other detector File
@@ -517,7 +509,6 @@ class specWrangler(wranglerWidget):
                     self.img_fname = ''
                     self.meta_ext = None
 
-        # ic(self.img_fname, old_fname)
         if (((self.img_fname != old_fname) or (self.img_fname and (len(self.scan_parameters) < 1)))
                 and self.meta_ext):
             self.get_scan_parameters()
@@ -1019,61 +1010,11 @@ class specProcess(wranglerProcess):
         reading in data, then performs integration.
         """
         self.process_scan()
-        return
-
-        if self.inp_type != 'Image Directory':
-            self.process_scan()
-        else:
-            pause = False
-            start = time.time()
-            while True:
-                # Check for commands, or wait if paused
-                if not self.command_q.empty() or pause:
-                    command = self.command_q.get()
-                    print(command)
-                    if command == 'stop':
-                        self.signal_q.put(('TERMINATE', None))
-                        break
-                    elif command == 'continue':
-                        pause = False
-                    elif command == 'pause':
-                        pause = True
-                        continue
-
-                self.scan_name, self.img_fname, self.fname = self._get_new_scan_info()
-                if self.scan_name:
-                    self.signal_q.put(('message', f"New Scan: {self.scan_name}"))
-                    time.sleep(2)
-                    rv = self.process_scan()
-                    if rv == 'Stop':
-                        self.signal_q.put(('TERMINATE', None))
-                        break
-                else:
-                    time.sleep(0.5)
-                    elapsed = time.time() - start
-                    if elapsed > self.timeout:
-                        self.signal_q.put(('message', "Timeout occurred"))
-                        self.signal_q.put(('TERMINATE', None))
-                        break
-                    else:
-                        continue
-                start = time.time()
-
-            # If loop ends, signal terminate to parent thread.
-            self.signal_q.put(('TERMINATE', None))
 
     def process_scan(self):
         """Go through series of images in a scan and process them individually
         """
         sphere = EwaldSphere()
-
-        # first_img = get_img_number(self.img_fname)
-        # if (first_img is None) and (self.img_ext not in ['h5', 'hdf5']):
-        #     self.single_img = True
-        #     first_img = 1
-
-        # Enter main loop
-        # i = first_img
 
         pause = False
         start = time.time()
@@ -1114,8 +1055,8 @@ class specProcess(wranglerProcess):
             self.scan_name = get_scan_name(img_fname)
 
             # Initialize sphere and save to disk, send update for new scan
-            # ic(self.scan_name, sphere.name)
             if self.scan_name != sphere.name:
+                ic(self.scan_name, sphere.name)
                 if sphere.name != 'null_main':
                     sphere.save_to_h5(data_only=True, replace=False)
 
@@ -1154,7 +1095,6 @@ class specProcess(wranglerProcess):
                 idx, map_raw, scan_info = data
                 mask = self.get_mask()  # Get Mask
                 arch = EwaldArch(
-                    # idx, map_raw, poni_file=self.poni_file,
                     idx, map_raw, poni_dict=self.poni_dict,
                     scan_info=scan_info, static=True, gi=self.gi,
                     mask=mask, th_mtr=self.th_mtr,
@@ -1219,21 +1159,17 @@ class specProcess(wranglerProcess):
                                        (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
                                         os.path.exists(f'{os.path.splitext(f)}.{self.meta_ext}'))]
             else:
-                # ic('in directory', self.include_subdir)
                 if self.include_subdir:
                     filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
                     filters = filters if filters != '**' else '*'
-                    # self.img_fnames = sorted([os.path.join(path.parent, path.name) for path
-                    #                           in Path(self.img_dir).rglob(f'{filters}.{self.img_ext}')])
                     self.img_fnames = sorted(glob.glob(os.path.join(
                         self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
                 else:
                     filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
                     filters = filters if filters != '**' else '*'
-                    # ic(filters)
                     self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
 
-                # ic(self.img_fnames)
+                ic(len(self.img_fnames))
 
                 if self.meta_ext is not None:
                     self.img_fnames = [f for f in self.img_fnames if f not in self.processed]
