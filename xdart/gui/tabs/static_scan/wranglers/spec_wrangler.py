@@ -848,6 +848,7 @@ class specThread(wranglerThread):
         parent or signals from the process.
         """
         # ic()
+        t0 = time.time()
         if (self.poni_file == '') or (self.img_fname == ''):
             return
 
@@ -856,6 +857,7 @@ class specThread(wranglerThread):
         self.poni_dict = get_poni_dict(self.poni_file)
 
         self.process_scan()
+        print(f'Total Time: {time.time() - t0}')
 
     def process_scan(self):
         """Go through series of images in a scan and process them individually
@@ -1336,7 +1338,6 @@ class specThread(wranglerThread):
 #             flag, data = self.wrangle(img_fname, img_number)
 #
 #             # Unpack data and load into sphere
-#             # TODO: Test how long integrating vs io takes
 #             if flag == 'image':
 #                 idx, map_raw, scan_info = data
 #                 mask = self.get_mask()  # Get Mask
