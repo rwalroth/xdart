@@ -1056,7 +1056,6 @@ class specProcess(wranglerProcess):
 
             # Initialize sphere and save to disk, send update for new scan
             if self.scan_name != sphere.name:
-                ic(self.scan_name, sphere.name)
                 if sphere.name != 'null_main':
                     sphere.save_to_h5(data_only=True, replace=False)
 
@@ -1169,7 +1168,7 @@ class specProcess(wranglerProcess):
                     filters = filters if filters != '**' else '*'
                     self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
 
-                ic(len(self.img_fnames))
+                # ic(len(self.img_fnames))
 
                 if self.meta_ext is not None:
                     self.img_fnames = [f for f in self.img_fnames if f not in self.processed]
