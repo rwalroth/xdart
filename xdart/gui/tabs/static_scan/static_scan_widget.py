@@ -179,6 +179,7 @@ class staticWidget(QWidget):
                 w(
                     self.fname,
                     self.file_lock,
+                    self.data_1d, self.data_2d
                 )
             )
             self.ui.wranglerBox.addItem(name)

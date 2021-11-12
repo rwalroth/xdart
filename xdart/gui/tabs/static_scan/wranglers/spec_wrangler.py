@@ -7,6 +7,7 @@
 import os
 import time
 import glob
+import copy
 import numpy as np
 from pathlib import Path
 
@@ -39,7 +40,7 @@ QMessageBox = QtWidgets.QMessageBox
 QPushButton = QtWidgets.QPushButton
 
 def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
-def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0005.tif'
+def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0005.tif'
 
 if not os.path.exists(def_poni_file):
     def_poni_file = ''
@@ -134,11 +135,13 @@ class specWrangler(wranglerWidget):
     """
     showLabel = Qt.QtCore.Signal(str)
 
-    def __init__(self, fname, file_lock, parent=None):
+    def __init__(self, fname, file_lock, data_1d={}, data_2d={}, parent=None):
         """fname: str, file path
         file_lock: mp.Condition, process safe lock
         """
         super().__init__(fname, file_lock, parent)
+        self.data_1d = data_1d
+        self.data_2d = data_2d
 
         # Scan Parameters
         self.meta_exts = ['txt', 'pdi', 'raw.pdi']
@@ -146,6 +149,7 @@ class specWrangler(wranglerWidget):
         self.scan_parameters = []
         self.counters = []
         self.motors = []
+        self.command = None
 
         # Setup gui elements
         self.ui = Ui_Form()
@@ -285,6 +289,9 @@ class specWrangler(wranglerWidget):
             self.gi,
             self.th_mtr,
             self.timeout,
+            self.command,
+            self.data_1d,
+            self.data_2d,
             self
         )
 
@@ -370,8 +377,13 @@ class specWrangler(wranglerWidget):
         self.timeout = self.parameters.child('Timeout').value()
         self.thread.timeout = self.timeout
 
+        self.thread.command = self.command
+
         self.thread.file_lock = self.file_lock
         self.thread.sphere_args = self.sphere_args
+
+        self.thread.data_1d = self.data_1d
+        self.thread.data_2d = self.data_2d
 
     def send_command(self):
         """Sends command in command line to spec, and calls
@@ -388,15 +400,23 @@ class specWrangler(wranglerWidget):
 
         commandLine.send_command(self.specCommandLine)
 
+    def start(self):
+        if self.img_fname is None:
+            self.setup()
+        self.sigStart.emit()
+
     def pause(self):
+        self.command = 'pause'
         if self.thread.isRunning():
             self.command_queue.put('pause')
 
     def cont(self):
+        self.command = 'continue'
         if self.thread.isRunning():
             self.command_queue.put('continue')
 
     def stop(self):
+        self.command = 'stop'
         if self.thread.isRunning():
             self.command_queue.put('stop')
 
@@ -721,6 +741,8 @@ class specThread(wranglerThread):
             see EwaldSphere.
         timeout: float or int, how long to continue checking for new
             data.
+        command: command passed to stop, pause, continue etc.
+        data_1d/2d: Dictionaries to store processed data for plotting
 
     signals:
         showLabel: str, sends out text to be used in specLabel
@@ -759,6 +781,9 @@ class specThread(wranglerThread):
             gi,
             th_mtr,
             timeout,
+            command,
+            data_1d,
+            data_2d,
             parent=None):
 
         """command_queue: mp.Queue, queue for commands sent from parent
@@ -777,6 +802,7 @@ class specThread(wranglerThread):
         meta_ext : str, extension of metadata file
         timeout: float or int, how long to continue checking for new
             data.
+        command: command passed to stop, pause, continue etc.
         gi: bool, grazing incidence flag to determine if pyGIX is to be used
         th_mtr: float, incidence angle
         """
@@ -806,196 +832,9 @@ class specThread(wranglerThread):
         self.gi = gi
         self.th_mtr = th_mtr
         self.timeout = timeout
-
-    def run(self):
-        """Initializes specProcess and watches for new commands from
-        parent or signals from the process.
-        """
-        # ic()
-
-        process = specProcess(
-            self.command_q,
-            self.signal_q,
-            self.sphere_args,
-            self.file_lock,
-            self.fname,
-            self.h5_dir,
-            self.scan_name,
-            self.single_img,
-            self.poni_file,
-            self.inp_type,
-            self.img_fname,
-            self.img_dir,
-            self.include_subdir,
-            self.img_ext,
-            self.meta_ext,
-            self.file_filter,
-            self.mask_file,
-            self.write_mode,
-            self.bg_type,
-            self.bg_file,
-            self.bg_dir,
-            self.bg_matching_par,
-            self.bg_file_filter,
-            self.bg_scale,
-            self.bg_norm_channel,
-            self.gi,
-            self.th_mtr,
-            self.timeout
-        )
-
-        if (self.poni_file == '') or (self.img_fname == ''):
-            return
-
-        process.start()
-        last = False
-        # Main loop
-        while True:
-            # Check for new commands
-            if not self.input_q.empty():
-                command = self.input_q.get()
-                self.command_q.put(command)
-
-            # Check for new updates
-            if not self.signal_q.empty():
-                signal, data = self.signal_q.get()
-                if signal == 'update':
-                    self.sigUpdate.emit(data)
-                elif signal == 'updateArch':
-                    self.sigUpdateArch.emit(data)
-                elif signal == 'message':
-                    self.showLabel.emit(data)
-                elif signal == 'new_scan':
-                    self.sigUpdateFile.emit(*data)
-                elif signal == 'TERMINATE':
-                    last = True
-
-            # Breaks on signal from process
-            if last:
-                break
-
-        # Empty queues of any other items after main loop ends.
-        self._empty_q(self.signal_q)
-        self._empty_q(self.command_q)
-        process.join()
-
-    def _empty_q(self, q):
-        """Empties out a given queue.
-        args:
-            q: Queue
-        """
-        while not q.empty():
-            _ = q.get()
-
-
-class specProcess(wranglerProcess):
-    """Process for integrating scanning area detector data. Checks for
-    a specified scan in a spec file, and then searches for associated
-    raw files. Data is stored with an EwaldSphere object, saving all
-    data to an hdf5 file.
-
-    attributes:
-        command_q: mp.Queue, queue for commands from parent thread.
-        file_lock: mp.Condition, process safe lock for file access
-        scan_name: str, name of current scan
-        img_ext : str, extension of image file
-        meta_ext : str, extension of metadata file
-        signal_q: queue to place signals back to parent thread.
-        fname: str, path to data file
-        h5_dir: str, data file directory
-        single_img: bool, True if there is only one image
-        poni_file: str, poni file name
-        img_fname: str, path to input image file
-        img_dir: str, path to image directory
-        include_subdir: bool, flag to include subdirectories
-        sphere_args: dict, used as **kwargs in sphere initialization.
-            see EwaldSphere.
-        timeout: float or int, how long to continue checking for new
-            data.
-        user: str, user name from spec file
-
-    methods:
-        _main: Controls flow of integration, checking for commands,
-            providing updates, and catching errors.
-        read_raw: method for reading in binary .raw files and returning
-            data as a numpy array.
-        wrangle: Method which handles data loading from files.
-    """
-
-    def __init__(
-            self,
-            command_q,
-            signal_q,
-            sphere_args,
-            file_lock,
-            fname,
-            h5_dir,
-            scan_name,
-            single_img,
-            poni_file,
-            inp_type,
-            img_fname,
-            img_dir,
-            include_subdir,
-            img_ext,
-            meta_ext,
-            file_filter,
-            mask_file,
-            write_mode,
-            bg_type,
-            bg_file,
-            bg_dir,
-            bg_matching_par,
-            bg_file_filter,
-            bg_scale,
-            bg_norm_channel,
-            gi,
-            th_mtr,
-            timeout,
-            *args, ** kwargs):
-
-        """command_q: mp.Queue, queue for commands from parent thread.
-        signal_q: queue to place signals back to parent thread.
-        sphere_args: dict, used as **kwargs in sphere initialization.
-            see EwaldSphere.
-        scan_name: str, name of current scan
-        single_img: bool, True if there is only one image
-        fname: str, path to data file
-        h5_dir: str, data file directory
-        file_lock: mp.Condition, process safe lock for file access
-        poni_file: str, poni file name
-        img_dir: str, path to image directory
-        include_subdir: bool, flag to include subdirectories
-        timeout: float or int, how long to continue checking for new
-            data.
-        """
-        # ic()
-        super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
-                         *args, **kwargs)
-
-        self.h5_dir = h5_dir
-        self.scan_name = scan_name
-        self.single_img = single_img
-        self.poni_file = poni_file
-        self.inp_type = inp_type
-        self.img_fname = img_fname
-        self.img_dir = img_dir
-        self.include_subdir = include_subdir
-        self.img_ext = img_ext
-        self.meta_ext = meta_ext
-        self.file_filter = file_filter
-        self.mask_file = mask_file
-        self.write_mode = write_mode
-        self.bg_type = bg_type
-        self.bg_file = bg_file
-        self.bg_dir = bg_dir
-        self.bg_matching_par = bg_matching_par
-        self.bg_file_filter = bg_file_filter
-        self.bg_scale = bg_scale
-        self.bg_norm_channel = bg_norm_channel
-        self.gi = gi
-        self.th_mtr = th_mtr
-        self.timeout = timeout
+        self.command = command
+        self.data_1d = data_1d
+        self.data_2d = data_2d
 
         self.user = None
         self.mask = None
@@ -1004,50 +843,54 @@ class specProcess(wranglerProcess):
 
         self.poni_dict = get_poni_dict(self.poni_file)
 
-    def _main(self):
-        """Checks for commands in queue, sends back updates through
-        signal queue, and catches errors. Calls wrangle method for
-        reading in data, then performs integration.
+    def run(self):
+        """Initializes specProcess and watches for new commands from
+        parent or signals from the process.
         """
+        # ic()
+        if (self.poni_file == '') or (self.img_fname == ''):
+            return
+
+        self.img_fnames = []
+        self.processed = []
+        self.poni_dict = get_poni_dict(self.poni_file)
+
         self.process_scan()
 
     def process_scan(self):
         """Go through series of images in a scan and process them individually
         """
+        # ic()
         sphere = EwaldSphere()
 
         pause = False
         start = time.time()
         while True:
             # Check for commands, or wait if paused
-            if not self.command_q.empty() or pause:
-                command = self.command_q.get()
-                print(command)
-                if command == 'stop':
-                    sphere.save_to_h5(data_only=True, replace=False)
-                    self.signal_q.put(('TERMINATE', None))
-                    break
-                elif command == 'continue':
-                    pause = False
-                elif command == 'pause':
-                    pause = True
-                    continue
+            command = self.command
+            # ic(command)
+            if command == 'stop':
+                sphere.save_to_h5(data_only=True, replace=False)
+                break
+            elif command == 'continue':
+                pause = False
+            elif command == 'pause':
+                pause = True
+                continue
 
             if pause:
                 time.sleep(1)
                 continue
 
             img_fname, img_number = self.get_next_image()
-            # ic(img_fname, img_number)
             if img_fname is None:
-                self.signal_q.put(('message', f'Checking for next image'))
+                self.showLabel.emit(f'Checking for next image')
                 time.sleep(0.5)
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
                     if sphere.name != 'null_main':
                         sphere.save_to_h5(data_only=True, replace=False)
-                    self.signal_q.put(('message', "Timeout occurred"))
-                    self.signal_q.put(('TERMINATE', None))
+                    self.showLabel.emit(f'Timeout occurred')
                     break
                 else:
                     continue
@@ -1061,29 +904,8 @@ class specProcess(wranglerProcess):
 
                 sphere = self.initialize_sphere()
 
-            # if i in list(sphere.arches.index):
-            if img_number in list(sphere.arches.index):  # and (self.write_mode != 'Overwrite'):
+            if img_number in list(sphere.arches.index):
                 continue
-
-            # Get result from wrangle
-            # flag, data = self.wrangle(img_fname, img_number)
-            # try:
-            #     # flag, data = self.wrangle(i)
-            #     flag, data = self.wrangle(img_fname, img_number)
-
-            # Errors associated with image not yet taken
-            # except (KeyError, FileNotFoundError, AttributeError, ValueError):
-            #     self.signal_q.put(('message', f'Checking for {i}'))
-            #     time.sleep(0.5)
-            #     elapsed = time.time() - start
-            #     if elapsed > self.timeout:
-            #         if self.inp_type != 'Image Directory':
-            #             self.signal_q.put(('message', "Timeout occurred"))
-            #             self.signal_q.put(('TERMINATE', None))
-            #         break
-            #     else:
-            #         continue
-            # start = time.time()
 
             # Get result from wrangle
             flag, data = self.wrangle(img_fname, img_number)
@@ -1103,25 +925,26 @@ class specProcess(wranglerProcess):
                 arch.integrate_1d(**sphere.bai_1d_args)
                 arch.integrate_2d(**sphere.bai_2d_args)
 
+                self.data_1d[int(idx)] = arch.copy(include_2d=False)
+                self.data_2d[int(idx)] = {'map_raw': copy.deepcopy(arch.map_raw),
+                                          'mask': copy.deepcopy(arch.mask),
+                                          'int_2d': copy.deepcopy(arch.int_2d)}
+                # ic(self.data_1d.keys(), self.data_2d.keys())
+
                 # Add arch copy to sphere, save to file
                 with self.file_lock:
-                    # arch_copy = arch.copy()
                     sphere.add_arch(
-                        # arch=arch_copy, calculate=False, update=True,
                         arch=arch, calculate=False, update=True,
                         get_sd=True, set_mg=False, static=True, gi=self.gi,
                         th_mtr=self.th_mtr
                     )
-                    # sphere.save_to_h5(data_only=True, replace=False)
 
                 # Save 1D integrated data in CSV and xye files
                 self.save_1d(sphere, arch, idx)
 
-                # self.signal_q.put(('message', f'Image {i} integrated'))
-                self.signal_q.put(('update', idx))
+                self.sigUpdate.emit(idx)
                 if self.single_img:
                     sphere.save_to_h5(data_only=True, replace=False)
-                    self.signal_q.put(('TERMINATE', None))
                     break
 
                 time.sleep(0.1)
@@ -1129,11 +952,7 @@ class specProcess(wranglerProcess):
             # Check if terminate signal sent
             elif flag == 'TERMINATE' and data is None:
                 sphere.save_to_h5(data_only=True, replace=False)
-                self.signal_q.put(('TERMINATE', None))
                 break
-
-        # If loop ends, signal terminate to parent thread.
-        self.signal_q.put(('TERMINATE', None))
 
     def get_next_image(self):
         """ Gets next image in image series or in directory to process
@@ -1168,8 +987,6 @@ class specProcess(wranglerProcess):
                     filters = filters if filters != '**' else '*'
                     self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
 
-                # ic(len(self.img_fnames))
-
                 if self.meta_ext is not None:
                     self.img_fnames = [f for f in self.img_fnames if f not in self.processed]
                 else:
@@ -1177,6 +994,7 @@ class specProcess(wranglerProcess):
                                        (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
                                         os.path.exists(f'{os.path.splitext(f)}.{self.meta_ext}'))]
 
+        # ic(self.img_fnames, self.processed)
         if len(self.img_fnames) > 0:
             img_fname = self.img_fnames[0]
             self.processed.append(img_fname)
@@ -1197,14 +1015,6 @@ class specProcess(wranglerProcess):
                 index of the data, raw image array, metadata
                 dict associated with the image.
         """
-        # self.signal_q.put(('message', f'Checking for {i}'))
-
-        # Construct raw_file path from attributes and index
-        # if (not self.single_img) and (self.img_ext not in ['h5', 'hdf5']):
-        #     image_file = self._get_image_path(i)
-        # else:
-        #     image_file = self.img_fname
-
         # Read raw file into numpy array
         arr = read_image_file(image_file, im=i-1, return_float=True)
         if arr is None:
@@ -1224,57 +1034,13 @@ class specProcess(wranglerProcess):
 
         fname = os.path.splitext(os.path.basename(image_file))[0]
         if self.img_ext not in ['h5', 'hdf5']:
-            self.signal_q.put(('message', f'{fname} wrangled'))
+            # self.signal_q.put(('message', f'{fname} wrangled'))
+            self.showLabel.emit(f'{fname} wrangled')
         else:
-            self.signal_q.put(('message', f'Image {i} wrangled'))
+            # self.signal_q.put(('message', f'Image {i} wrangled'))
+            self.showLabel.emit(f'Image {i} wrangled')
 
         return 'image', (i, arr, image_meta)
-
-    def _get_image_path(self, i):
-        """Creates raw path name from attributes, following spec
-        convention.
-
-        args:
-            i: int, index of image
-
-        returns:
-            image_file: str, absolute path to image file.
-        """
-        im_base = '_'.join([
-            self.scan_name,
-            str(i).zfill(4)
-        ])
-        return os.path.join(self.img_dir, f'{im_base}.{self.img_ext}')
-
-    def _get_new_scan_info(self):
-        """ Gets all unique file roots in a directory that are used
-        as scan_names
-
-        Returns:
-            scan_names {list, str}: list of scan names in directory
-        """
-        filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-        f_names = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
-
-        if len(f_names) == 0:
-            return None, None, None
-
-        scan_names = sorted(list(set([get_scan_name(f) for f in f_names])))
-        scan_names = [s for s in scan_names if s not in self.processed]
-
-        if len(scan_names) == 0:
-            return None, None, None
-
-        self.scan_name = scan_names[0]
-        self.processed.append(self.scan_name)
-
-        f_names = sorted(glob.glob(os.path.join(self.img_dir, f'{self.scan_name}*.{self.img_ext}')))
-
-        self.img_fname = f_names[0]
-        fname_dir = get_fname_dir()
-        self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
-
-        return self.scan_name, self.img_fname, self.fname
 
     def initialize_sphere(self):
         """ If scan changes, initialize new EwaldSphere object
@@ -1303,17 +1069,18 @@ class specProcess(wranglerProcess):
             else:
                 sphere.save_to_h5(replace=True)
 
-        self.signal_q.put(('new_scan',
-                           (self.scan_name, fname,
-                            self.gi, self.th_mtr,
-                            self.single_img)))
+        # self.signal_q.put(('new_scan',
+        #                    (self.scan_name, fname,
+        #                     self.gi, self.th_mtr,
+        #                     self.single_img)))
+        data = (
+            self.scan_name, fname,
+            self.gi, self.th_mtr,
+            self.single_img
+        )
+        self.sigUpdateFile.emit(*data)
 
         return sphere
-
-        # sphere.load_from_h5(replace=False, mode='a')
-        # existing_arches = sphere.arches.index
-        # if len(existing_arches) == 0:
-        #     sphere.save_to_h5(replace=True)
 
     def get_mask(self):
         """Get mask array from mask file
@@ -1387,3 +1154,482 @@ class specProcess(wranglerProcess):
         # Write I(tth) to csv
         fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.csv')
         write_csv(fname, tth, intensity)
+
+#
+# class specProcess(wranglerProcess):
+#     """Process for integrating scanning area detector data. Checks for
+#     a specified scan in a spec file, and then searches for associated
+#     raw files. Data is stored with an EwaldSphere object, saving all
+#     data to an hdf5 file.
+#
+#     attributes:
+#         command_q: mp.Queue, queue for commands from parent thread.
+#         file_lock: mp.Condition, process safe lock for file access
+#         scan_name: str, name of current scan
+#         img_ext : str, extension of image file
+#         meta_ext : str, extension of metadata file
+#         signal_q: queue to place signals back to parent thread.
+#         fname: str, path to data file
+#         h5_dir: str, data file directory
+#         single_img: bool, True if there is only one image
+#         poni_file: str, poni file name
+#         img_fname: str, path to input image file
+#         img_dir: str, path to image directory
+#         include_subdir: bool, flag to include subdirectories
+#         sphere_args: dict, used as **kwargs in sphere initialization.
+#             see EwaldSphere.
+#         timeout: float or int, how long to continue checking for new
+#             data.
+#         user: str, user name from spec file
+#
+#     methods:
+#         _main: Controls flow of integration, checking for commands,
+#             providing updates, and catching errors.
+#         read_raw: method for reading in binary .raw files and returning
+#             data as a numpy array.
+#         wrangle: Method which handles data loading from files.
+#     """
+#
+#     def __init__(
+#             self,
+#             command_q,
+#             signal_q,
+#             sphere_args,
+#             file_lock,
+#             fname,
+#             h5_dir,
+#             scan_name,
+#             single_img,
+#             poni_file,
+#             inp_type,
+#             img_fname,
+#             img_dir,
+#             include_subdir,
+#             img_ext,
+#             meta_ext,
+#             file_filter,
+#             mask_file,
+#             write_mode,
+#             bg_type,
+#             bg_file,
+#             bg_dir,
+#             bg_matching_par,
+#             bg_file_filter,
+#             bg_scale,
+#             bg_norm_channel,
+#             gi,
+#             th_mtr,
+#             timeout,
+#             *args, ** kwargs):
+#
+#         """command_q: mp.Queue, queue for commands from parent thread.
+#         signal_q: queue to place signals back to parent thread.
+#         sphere_args: dict, used as **kwargs in sphere initialization.
+#             see EwaldSphere.
+#         scan_name: str, name of current scan
+#         single_img: bool, True if there is only one image
+#         fname: str, path to data file
+#         h5_dir: str, data file directory
+#         file_lock: mp.Condition, process safe lock for file access
+#         poni_file: str, poni file name
+#         img_dir: str, path to image directory
+#         include_subdir: bool, flag to include subdirectories
+#         timeout: float or int, how long to continue checking for new
+#             data.
+#         """
+#         # ic()
+#         super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
+#                          *args, **kwargs)
+#
+#         self.h5_dir = h5_dir
+#         self.scan_name = scan_name
+#         self.single_img = single_img
+#         self.poni_file = poni_file
+#         self.inp_type = inp_type
+#         self.img_fname = img_fname
+#         self.img_dir = img_dir
+#         self.include_subdir = include_subdir
+#         self.img_ext = img_ext
+#         self.meta_ext = meta_ext
+#         self.file_filter = file_filter
+#         self.mask_file = mask_file
+#         self.write_mode = write_mode
+#         self.bg_type = bg_type
+#         self.bg_file = bg_file
+#         self.bg_dir = bg_dir
+#         self.bg_matching_par = bg_matching_par
+#         self.bg_file_filter = bg_file_filter
+#         self.bg_scale = bg_scale
+#         self.bg_norm_channel = bg_norm_channel
+#         self.gi = gi
+#         self.th_mtr = th_mtr
+#         self.timeout = timeout
+#
+#         self.user = None
+#         self.mask = None
+#         self.img_fnames = []
+#         self.processed = []
+#
+#         self.poni_dict = get_poni_dict(self.poni_file)
+#
+#     def _main(self):
+#         """Checks for commands in queue, sends back updates through
+#         signal queue, and catches errors. Calls wrangle method for
+#         reading in data, then performs integration.
+#         """
+#         self.process_scan()
+#
+#     def process_scan(self):
+#         """Go through series of images in a scan and process them individually
+#         """
+#         sphere = EwaldSphere()
+#
+#         pause = False
+#         start = time.time()
+#         while True:
+#             # Check for commands, or wait if paused
+#             if not self.command_q.empty() or pause:
+#                 command = self.command_q.get()
+#                 print(command)
+#                 if command == 'stop':
+#                     sphere.save_to_h5(data_only=True, replace=False)
+#                     self.signal_q.put(('TERMINATE', None))
+#                     break
+#                 elif command == 'continue':
+#                     pause = False
+#                 elif command == 'pause':
+#                     pause = True
+#                     continue
+#
+#             if pause:
+#                 time.sleep(1)
+#                 continue
+#
+#             img_fname, img_number = self.get_next_image()
+#             # ic(img_fname, img_number)
+#             if img_fname is None:
+#                 self.signal_q.put(('message', f'Checking for next image'))
+#                 time.sleep(0.5)
+#                 elapsed = time.time() - start
+#                 if elapsed > self.timeout:
+#                     if sphere.name != 'null_main':
+#                         sphere.save_to_h5(data_only=True, replace=False)
+#                     self.signal_q.put(('message', "Timeout occurred"))
+#                     self.signal_q.put(('TERMINATE', None))
+#                     break
+#                 else:
+#                     continue
+#
+#             self.scan_name = get_scan_name(img_fname)
+#
+#             # Initialize sphere and save to disk, send update for new scan
+#             if self.scan_name != sphere.name:
+#                 if sphere.name != 'null_main':
+#                     sphere.save_to_h5(data_only=True, replace=False)
+#
+#                 sphere = self.initialize_sphere()
+#
+#             if img_number in list(sphere.arches.index):
+#                 continue
+#
+#             # Get result from wrangle
+#             flag, data = self.wrangle(img_fname, img_number)
+#
+#             # Unpack data and load into sphere
+#             # TODO: Test how long integrating vs io takes
+#             if flag == 'image':
+#                 idx, map_raw, scan_info = data
+#                 mask = self.get_mask()  # Get Mask
+#                 arch = EwaldArch(
+#                     idx, map_raw, poni_dict=self.poni_dict,
+#                     scan_info=scan_info, static=True, gi=self.gi,
+#                     mask=mask, th_mtr=self.th_mtr,
+#                 )
+#
+#                 # integrate image to 1d and 2d arrays
+#                 arch.integrate_1d(**sphere.bai_1d_args)
+#                 arch.integrate_2d(**sphere.bai_2d_args)
+#
+#                 # Add arch copy to sphere, save to file
+#                 with self.file_lock:
+#                     # arch_copy = arch.copy()
+#                     sphere.add_arch(
+#                         # arch=arch_copy, calculate=False, update=True,
+#                         arch=arch, calculate=False, update=True,
+#                         get_sd=True, set_mg=False, static=True, gi=self.gi,
+#                         th_mtr=self.th_mtr
+#                     )
+#
+#                 # Save 1D integrated data in CSV and xye files
+#                 self.save_1d(sphere, arch, idx)
+#
+#                 # self.signal_q.put(('message', f'Image {i} integrated'))
+#                 self.signal_q.put(('update', idx))
+#                 if self.single_img:
+#                     sphere.save_to_h5(data_only=True, replace=False)
+#                     self.signal_q.put(('TERMINATE', None))
+#                     break
+#
+#                 time.sleep(0.1)
+#
+#             # Check if terminate signal sent
+#             elif flag == 'TERMINATE' and data is None:
+#                 sphere.save_to_h5(data_only=True, replace=False)
+#                 self.signal_q.put(('TERMINATE', None))
+#                 break
+#
+#         # If loop ends, signal terminate to parent thread.
+#         self.signal_q.put(('TERMINATE', None))
+#
+#     def get_next_image(self):
+#         """ Gets next image in image series or in directory to process
+#
+#         Returns:
+#             image_name {str}: image file path
+#         """
+#         # ic()
+#         if self.single_img:
+#             return self.img_fname, 1
+#
+#         if len(self.img_fnames) == 0:
+#             if self.inp_type != 'Image Directory':
+#                 self.img_fnames = sorted(glob.glob(
+#                     os.path.join(self.img_dir, f'{self.scan_name}_*.{self.img_ext}')))
+#                 if self.meta_ext is not None:
+#                     self.img_fnames = [f for f in self.img_fnames if
+#                                        (f >= self.img_fname) and (f not in self.processed)]
+#                 else:
+#                     self.img_fnames = [f for f in self.img_fnames if
+#                                        (f >= self.img_fname) and (f not in self.processed) and
+#                                        (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
+#                                         os.path.exists(f'{os.path.splitext(f)}.{self.meta_ext}'))]
+#             else:
+#                 if self.include_subdir:
+#                     filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+#                     filters = filters if filters != '**' else '*'
+#                     self.img_fnames = sorted(glob.glob(os.path.join(
+#                         self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
+#                 else:
+#                     filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+#                     filters = filters if filters != '**' else '*'
+#                     self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
+#
+#                 # ic(len(self.img_fnames))
+#
+#                 if self.meta_ext is not None:
+#                     self.img_fnames = [f for f in self.img_fnames if f not in self.processed]
+#                 else:
+#                     self.img_fnames = [f for f in self.img_fnames if (f not in self.processed) and
+#                                        (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
+#                                         os.path.exists(f'{os.path.splitext(f)}.{self.meta_ext}'))]
+#
+#         if len(self.img_fnames) > 0:
+#             img_fname = self.img_fnames[0]
+#             self.processed.append(img_fname)
+#             self.img_fnames = self.img_fnames[1:]
+#             return img_fname, get_img_number(img_fname)
+#
+#         return None, None
+#
+#     def wrangle(self, image_file, i):
+#         """Method for reading in data from raw files and spec file.
+#
+#         args:
+#             i: int, index of image to check
+#
+#         returns:
+#             flag: str, signal for what kind of data to expect.
+#             data: tuple (int, numpy array, dict, dict), the
+#                 index of the data, raw image array, metadata
+#                 dict associated with the image.
+#         """
+#         # self.signal_q.put(('message', f'Checking for {i}'))
+#
+#         # Construct raw_file path from attributes and index
+#         # if (not self.single_img) and (self.img_ext not in ['h5', 'hdf5']):
+#         #     image_file = self._get_image_path(i)
+#         # else:
+#         #     image_file = self.img_fname
+#
+#         # Read raw file into numpy array
+#         arr = read_image_file(image_file, im=i-1, return_float=True)
+#         if arr is None:
+#             return 'TERMINATE', None
+#
+#         meta_file = ''
+#         if self.meta_ext:
+#             meta_file = f'{os.path.splitext(image_file)[0]}.{self.meta_ext}'
+#         if os.path.exists(meta_file):
+#             image_meta = get_image_meta_data(meta_file)
+#         else:
+#             image_meta = {}
+#
+#         # Subtract background if any
+#         bg = self.get_background(image_meta)
+#         arr -= bg
+#
+#         fname = os.path.splitext(os.path.basename(image_file))[0]
+#         if self.img_ext not in ['h5', 'hdf5']:
+#             self.signal_q.put(('message', f'{fname} wrangled'))
+#         else:
+#             self.signal_q.put(('message', f'Image {i} wrangled'))
+#
+#         return 'image', (i, arr, image_meta)
+#
+#     def _get_image_path(self, i):
+#         """Creates raw path name from attributes, following spec
+#         convention.
+#
+#         args:
+#             i: int, index of image
+#
+#         returns:
+#             image_file: str, absolute path to image file.
+#         """
+#         im_base = '_'.join([
+#             self.scan_name,
+#             str(i).zfill(4)
+#         ])
+#         return os.path.join(self.img_dir, f'{im_base}.{self.img_ext}')
+#
+#     def _get_new_scan_info(self):
+#         """ Gets all unique file roots in a directory that are used
+#         as scan_names
+#
+#         Returns:
+#             scan_names {list, str}: list of scan names in directory
+#         """
+#         filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+#         f_names = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
+#
+#         if len(f_names) == 0:
+#             return None, None, None
+#
+#         scan_names = sorted(list(set([get_scan_name(f) for f in f_names])))
+#         scan_names = [s for s in scan_names if s not in self.processed]
+#
+#         if len(scan_names) == 0:
+#             return None, None, None
+#
+#         self.scan_name = scan_names[0]
+#         self.processed.append(self.scan_name)
+#
+#         f_names = sorted(glob.glob(os.path.join(self.img_dir, f'{self.scan_name}*.{self.img_ext}')))
+#
+#         self.img_fname = f_names[0]
+#         fname_dir = get_fname_dir()
+#         self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
+#
+#         return self.scan_name, self.img_fname, self.fname
+#
+#     def initialize_sphere(self):
+#         """ If scan changes, initialize new EwaldSphere object
+#         If mode is overwrite, replace existing HDF5 file, else append to it
+#         """
+#         fname = os.path.join(self.h5_dir, self.scan_name + '.hdf5')
+#         sphere = EwaldSphere(self.scan_name,
+#                              data_file=fname,
+#                              static=True,
+#                              gi=self.gi,
+#                              th_mtr=self.th_mtr,
+#                              single_img=self.single_img,
+#                              global_mask=self.get_mask(),
+#                              **self.sphere_args)
+#
+#         write_mode = self.write_mode
+#         if not os.path.exists(fname):
+#             write_mode = 'Overwrite'
+#
+#         with self.file_lock:
+#             if write_mode == 'Append':
+#                 sphere.load_from_h5(replace=False, mode='a')
+#                 existing_arches = sphere.arches.index
+#                 if len(existing_arches) == 0:
+#                     sphere.save_to_h5(replace=True)
+#             else:
+#                 sphere.save_to_h5(replace=True)
+#
+#         self.signal_q.put(('new_scan',
+#                            (self.scan_name, fname,
+#                             self.gi, self.th_mtr,
+#                             self.single_img)))
+#
+#         return sphere
+#
+#         # sphere.load_from_h5(replace=False, mode='a')
+#         # existing_arches = sphere.arches.index
+#         # if len(existing_arches) == 0:
+#         #     sphere.save_to_h5(replace=True)
+#
+#     def get_mask(self):
+#         """Get mask array from mask file
+#         """
+#         if (not self.mask_file) or (not os.path.exists(self.mask_file)):
+#             return None
+#
+#         mask = fabio.open(self.mask_file).data
+#         return np.flatnonzero(mask)
+#
+#     def get_background(self, image_meta):
+#         """Subtract background image if bg_file or bg_dir specified
+#         """
+#         bg_file, bg_meta = None, None
+#
+#         if self.bg_type == 'Single Bkg File':
+#             if self.bg_file:
+#                 bg_file = self.bg_file
+#         else:
+#             if self.bg_dir:
+#                 if self.bg_file_filter == '':
+#                     self.bg_file_filter = 'bg'
+#                 filters = '*' + '*'.join(f for f in self.bg_file_filter.split()) + '*'
+#                 filters = filters if filters != '**' else '*'
+#                 meta_files = sorted(glob.glob(os.path.join(
+#                     # self.img_dir, f'{filters}[0-9][0-9][0-9][0-9].{self.meta_ext}')))
+#                     self.img_dir, f'{filters}.{self.meta_ext}')))
+#
+#                 for meta_file in meta_files:
+#                     bg_meta = get_image_meta_data(meta_file)
+#                     if bg_meta[self.bg_matching_par] == image_meta[self.bg_matching_par]:
+#                         bg_file = f'{os.path.splitext(meta_file)[0]}.{self.img_ext}'
+#                         break
+#
+#         if not bg_file:
+#             return 0.
+#
+#         bg = read_image_file(self.bg_file, return_float=True)
+#         bg_meta_file = f'{os.path.splitext(self.bg_file)[0]}.{self.meta_ext}'
+#         bg_meta = get_image_meta_data(bg_meta_file)
+#
+#         bg *= self.bg_scale
+#         if self.bg_norm_channel != 'None':
+#             bg *= (image_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
+#
+#         return bg
+#
+#     @staticmethod
+#     def save_1d(sphere, arch, idx):
+#         """
+#         Automatically save 1D integrated data
+#         """
+#         path = os.path.dirname(sphere.data_file)
+#         path = os.path.join(path, sphere.name)
+#         Path(path).mkdir(parents=True, exist_ok=True)
+#
+#         q, tth, intensity = arch.int_1d.q, arch.int_1d.ttheta, arch.int_1d.norm
+#
+#         # Write I(q) to xye
+#         fname = os.path.join(path, f'iq_{sphere.name}_{str(idx).zfill(4)}.xye')
+#         write_xye(fname, q, intensity, np.sqrt(intensity))
+#
+#         # Write I(tth) to xye
+#         fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.xye')
+#         write_xye(fname, tth, intensity, np.sqrt(intensity))
+#
+#         # Write I(q) to csv
+#         fname = os.path.join(path, f'iq_{sphere.name}_{str(idx).zfill(4)}.csv')
+#         write_csv(fname, q, intensity)
+#
+#         # Write I(tth) to csv
+#         fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.csv')
+#         write_csv(fname, tth, intensity)
