@@ -302,6 +302,12 @@ class specWrangler(wranglerWidget):
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
         self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
         self.thread.sigUpdateGI.connect(self.sigUpdateGI.emit)
+
+        # Enable/disable buttons initially
+        self.ui.pauseButton.setEnabled(False)
+        self.ui.continueButton.setEnabled(False)
+        self.ui.stopButton.setEnabled(False)
+
         self.setup()
 
     def setup(self):
@@ -404,22 +410,31 @@ class specWrangler(wranglerWidget):
     def start(self):
         self.command = 'start'
         self.thread.command = 'start'
+        self.ui.pauseButton.setEnabled(True)
+        self.ui.continueButton.setEnabled(False)
+        self.ui.stopButton.setEnabled(True)
         self.sigStart.emit()
 
     def pause(self):
         self.command = 'pause'
-        if self.thread.isRunning():
-            self.thread.command = 'pause'
+        self.thread.command = 'pause'
+        # if self.thread.isRunning():
+        self.ui.pauseButton.setEnabled(False)
+        self.ui.continueButton.setEnabled(True)
 
     def cont(self):
         self.command = 'continue'
-        if self.thread.isRunning():
-            self.thread.command = 'continue'
+        self.thread.command = 'continue'
+        # if self.thread.isRunning():
+        self.ui.pauseButton.setEnabled(True)
+        self.ui.continueButton.setEnabled(False)
 
     def stop(self):
         self.command = 'stop'
-        if self.thread.isRunning():
-            self.thread.command = 'stop'
+        self.thread.command = 'stop'
+        # if self.thread.isRunning():
+        self.ui.pauseButton.setEnabled(False)
+        self.ui.continueButton.setEnabled(False)
 
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
@@ -709,6 +724,7 @@ class specWrangler(wranglerWidget):
         # ic()
         self.tree.setEnabled(enable)
         self.ui.startButton.setEnabled(enable)
+        self.ui.stopButton.setEnabled(not enable)
 
     def stylize_ParameterTree(self):
         self.tree.setStyleSheet("""
@@ -876,11 +892,9 @@ class specThread(wranglerThread):
                 sphere.save_to_h5(data_only=True, replace=False)
                 break
             elif command == 'pause':
-                # pause = True
+                self.showLabel.emit(f'Paused')
                 time.sleep(0.5)
                 continue
-            # elif command == 'continue':
-            #     pause = False
             else:
                 pass
 
@@ -894,8 +908,6 @@ class specThread(wranglerThread):
                 time.sleep(0.5)
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
-                    if sphere.name != 'null_main':
-                        sphere.save_to_h5(data_only=True, replace=False)
                     self.showLabel.emit(f'Timeout occurred')
                     break
                 else:
@@ -905,9 +917,8 @@ class specThread(wranglerThread):
 
             # Initialize sphere and save to disk, send update for new scan
             if self.scan_name != sphere.name:
-                if sphere.name != 'null_main':
-                    sphere.save_to_h5(data_only=True, replace=False)
-
+                # if sphere.name != 'null_main':
+                #     sphere.save_to_h5(data_only=True, replace=False)
                 sphere = self.initialize_sphere()
 
             if img_number in list(sphere.arches.index):
@@ -944,20 +955,21 @@ class specThread(wranglerThread):
                         get_sd=True, set_mg=False, static=True, gi=self.gi,
                         th_mtr=self.th_mtr
                     )
+                sphere.save_to_h5(data_only=True, replace=False)
 
                 # Save 1D integrated data in CSV and xye files
                 self.save_1d(sphere, arch, idx)
 
                 self.sigUpdate.emit(idx)
                 if self.single_img:
-                    sphere.save_to_h5(data_only=True, replace=False)
+                    # sphere.save_to_h5(data_only=True, replace=False)
                     break
 
                 time.sleep(0.1)
 
             # Check if terminate signal sent
             elif flag == 'TERMINATE' and data is None:
-                sphere.save_to_h5(data_only=True, replace=False)
+                # sphere.save_to_h5(data_only=True, replace=False)
                 break
 
     def get_next_image(self):

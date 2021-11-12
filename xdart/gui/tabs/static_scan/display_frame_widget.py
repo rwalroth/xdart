@@ -6,6 +6,7 @@
 # Standard library imports
 import os
 import time
+import copy
 
 # Other imports
 import matplotlib.pyplot as plt
@@ -28,7 +29,7 @@ import xdart.utils as ut
 from ...widgets import pgImageWidget, pmeshImageWidget
 from xdart.utils import split_file_name
 
-# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QInputDialog = QtWidgets.QInputDialog
@@ -155,7 +156,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Image and Binned 2D Data
         self.image_data = (None, None)
         self.binned_data = (None, None)
-        self.plot_data = (np.zeros(0), np.zeros(0))
+        self.plot_data = [np.zeros(0), np.zeros(0)]
         self.plot_data_range = [[0, 0], [0, 0]]
 
         # Image pane setup
@@ -589,6 +590,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.curves.clear()
 
         self.plotMethod = self.ui.plotMethod.currentText()
+        # if clear and self.plotMethod == 'Waterfall':
+        #     self.plotMethod = 'Sum'
+
         self.ui.yOffset.setEnabled(False)
         if (self.plotMethod in ['Overlay', 'Single']) and (len(self.arch_names) > 1):
             self.ui.yOffset.setEnabled(True)
@@ -663,11 +667,15 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         data = data[self.wf_start::self.wf_step, :]
 
+        ic(data.shape, s_xdata.shape)
+
         x_max, x_min = np.max(s_xdata), np.min(s_xdata)
         x_step = (x_max - x_min)/len(s_xdata)
         s_xdata = np.append(s_xdata, [x_max + x_step])
         s_xdata -= x_step/2
         s_xdata = np.tile(s_xdata, (data.shape[0]+1, 1)).T
+
+        ic(data.shape, s_xdata.shape)
 
         # Set YAxis Unit
         if self.wf_yaxis == 'Frame #':
@@ -683,16 +691,19 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             else:
                 s_ydata = np.asarray([self.data_1d[idx].scan_info[self.wf_yaxis] for idx in self.idxs])
 
+            ic(s_ydata.shape)
             s_ydata = s_ydata[self.wf_start::self.wf_step]
+            ic(s_ydata.shape)
 
         y_max, y_min = np.max(s_ydata), np.min(s_ydata)
         y_step = (y_max - y_min)/len(s_ydata)
         s_ydata = np.append(s_ydata, [y_max + y_step])
         s_ydata -= y_step/2.
         s_ydata = np.tile(s_ydata, (data.shape[1]+1, 1))
+        ic(s_ydata.shape)
 
         # self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
-        levels = np.nanpercentile(data, (1, 99))
+        levels = np.nanpercentile(data, (1, 98))
         self.wf_widget.imageItem.setLevels(levels)
         self.wf_widget.imageItem.setData(s_xdata, s_ydata, data.T)
         self.wf_widget.imageItem.informViewBoundsChanged()
@@ -739,6 +750,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """
         with self.sphere.sphere_lock:
             map_raw = np.asarray(self.sphere.overall_raw, dtype=float)
+            if map_raw.ndim < 2:
+                self.sphere.load_from_h5(data_only=True)
+                map_raw = np.asarray(self.sphere.overall_raw, dtype=float)
 
             norm_fac = len(self.sphere.arches.index)
             normChannel = self.ui.normChannel.currentText()
@@ -1018,11 +1032,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """
         self.arch_names.clear()
         self.arch_ids.clear()
+        self.plot_data = [np.zeros(0), np.zeros(0)]
+        self.setup_1d_layout()
         self.plot.clear()
-        # if self.plotMethod == 'Waterfall':
-        #     self.setup_1d_layout()
-        #     self.setup_wf_layout()
-        # self.setup_wf_widget()
 
     def update_legend(self):
         if not self.ui.showLegend.isChecked():

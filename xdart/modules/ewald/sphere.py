@@ -10,7 +10,7 @@ from xdart.utils.containers import int_1d_data, int_2d_data
 from xdart.utils.containers import int_1d_data_static, int_2d_data_static
 from xdart import utils
 
-# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 
 class EwaldSphere:
@@ -158,6 +158,7 @@ class EwaldSphere:
 
         returns None
         """
+        # ic()
         with self.sphere_lock:
             if arch is None:
                 arch = EwaldArch(**kwargs)
@@ -195,6 +196,7 @@ class EwaldSphere:
                     [a.integrator for a in self.arches], **self.mg_args
                 )
 
+            # ic(arch.map_raw.shape)
             self.overall_raw += arch.map_raw
 
     def by_arch_integrate_1d(self, **args):
