@@ -359,32 +359,35 @@ def read_image_file(fname, orientation='horizontal',
     if verbose:
         print('Reading image data into numpy array..')
 
-    if 'tif' in fname[-5:]:
-        img = np.asarray(io.imread(fname))
-    elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
-        with h5py.File(fname, mode='r') as f:
-            try:
-                img = np.asarray(f['entry']['data']['data'][im], dtype=float)
-            except IndexError:
-                return None
-            img[514:551, :] = np.nan
+    try:
+        if 'tif' in fname[-5:]:
+            img = np.asarray(io.imread(fname))
+        elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
+            with h5py.File(fname, mode='r') as f:
+                try:
+                    img = np.asarray(f['entry']['data']['data'][im], dtype=float)
+                except IndexError:
+                    return None
+                img[514:551, :] = np.nan
 
-            # Hot pixel in SSRL Eiger 1M detector
-            img[0, 1029] = np.nan
-    elif 'mar3450' in fname[-9:]:
-        img = fabio.open(fname).data
-    else:
-        img = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
-        if len(img) == np.prod(shape_100K):
-            img = img.reshape(shape_100K)
-        elif len(img) == np.prod(shape_300K):
-            img = img.reshape(shape_300K)
+                # Hot pixel in SSRL Eiger 1M detector
+                img[0, 1029] = np.nan
+        elif 'mar3450' in fname[-9:]:
+            img = fabio.open(fname).data
         else:
-            img = img.reshape(shape_1M)
-            img[:, 487:487 + 7] = np.nan
-            for ii in range(1, 5):
-                mod_start = 195 * ii + 17 * (ii - 1)
-                img[mod_start:mod_start + 17] = np.nan
+            img = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
+            if len(img) == np.prod(shape_100K):
+                img = img.reshape(shape_100K)
+            elif len(img) == np.prod(shape_300K):
+                img = img.reshape(shape_300K)
+            else:
+                img = img.reshape(shape_1M)
+                img[:, 487:487 + 7] = np.nan
+                for ii in range(1, 5):
+                    mod_start = 195 * ii + 17 * (ii - 1)
+                    img[mod_start:mod_start + 17] = np.nan
+    except ValueError:
+        return None
 
         # try:
         #     img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>402</height>
+    <height>430</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -227,7 +227,7 @@
                 <set>Qt::ImhDigitsOnly</set>
                </property>
                <property name="text">
-                <string>2500</string>
+                <string>3000</string>
                </property>
                <property name="placeholderText">
                 <string>1000</string>

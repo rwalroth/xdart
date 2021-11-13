@@ -813,6 +813,7 @@ class specThread(wranglerThread):
         """
         # ic()
 
+        t0 = time.time()
         process = specProcess(
             self.command_q,
             self.signal_q,
@@ -878,6 +879,8 @@ class specThread(wranglerThread):
         self._empty_q(self.signal_q)
         self._empty_q(self.command_q)
         process.join()
+
+        print(f'Total Processing Time: {time.time() - t0:0.1f}')
 
     def _empty_q(self, q):
         """Empties out a given queue.
@@ -1066,26 +1069,6 @@ class specProcess(wranglerProcess):
                 continue
 
             # Get result from wrangle
-            # flag, data = self.wrangle(img_fname, img_number)
-            # try:
-            #     # flag, data = self.wrangle(i)
-            #     flag, data = self.wrangle(img_fname, img_number)
-
-            # Errors associated with image not yet taken
-            # except (KeyError, FileNotFoundError, AttributeError, ValueError):
-            #     self.signal_q.put(('message', f'Checking for {i}'))
-            #     time.sleep(0.5)
-            #     elapsed = time.time() - start
-            #     if elapsed > self.timeout:
-            #         if self.inp_type != 'Image Directory':
-            #             self.signal_q.put(('message', "Timeout occurred"))
-            #             self.signal_q.put(('TERMINATE', None))
-            #         break
-            #     else:
-            #         continue
-            # start = time.time()
-
-            # Get result from wrangle
             flag, data = self.wrangle(img_fname, img_number)
 
             # Unpack data and load into sphere
@@ -1127,10 +1110,10 @@ class specProcess(wranglerProcess):
                 time.sleep(0.1)
 
             # Check if terminate signal sent
-            elif flag == 'TERMINATE' and data is None:
-                sphere.save_to_h5(data_only=True, replace=False)
-                self.signal_q.put(('TERMINATE', None))
-                break
+            elif flag == 'Skip' or (data is None):
+                self.signal_q.put(('message', f'Invalid Image File. Skipping...'))
+                time.sleep(1)
+                continue
 
         # If loop ends, signal terminate to parent thread.
         self.signal_q.put(('TERMINATE', None))
@@ -1208,7 +1191,8 @@ class specProcess(wranglerProcess):
         # Read raw file into numpy array
         arr = read_image_file(image_file, im=i-1, return_float=True)
         if arr is None:
-            return 'TERMINATE', None
+            # return 'TERMINATE', None
+            return 'Skip', None
 
         meta_file = ''
         if self.meta_ext:
@@ -1229,52 +1213,6 @@ class specProcess(wranglerProcess):
             self.signal_q.put(('message', f'Image {i} wrangled'))
 
         return 'image', (i, arr, image_meta)
-
-    def _get_image_path(self, i):
-        """Creates raw path name from attributes, following spec
-        convention.
-
-        args:
-            i: int, index of image
-
-        returns:
-            image_file: str, absolute path to image file.
-        """
-        im_base = '_'.join([
-            self.scan_name,
-            str(i).zfill(4)
-        ])
-        return os.path.join(self.img_dir, f'{im_base}.{self.img_ext}')
-
-    def _get_new_scan_info(self):
-        """ Gets all unique file roots in a directory that are used
-        as scan_names
-
-        Returns:
-            scan_names {list, str}: list of scan names in directory
-        """
-        filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-        f_names = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
-
-        if len(f_names) == 0:
-            return None, None, None
-
-        scan_names = sorted(list(set([get_scan_name(f) for f in f_names])))
-        scan_names = [s for s in scan_names if s not in self.processed]
-
-        if len(scan_names) == 0:
-            return None, None, None
-
-        self.scan_name = scan_names[0]
-        self.processed.append(self.scan_name)
-
-        f_names = sorted(glob.glob(os.path.join(self.img_dir, f'{self.scan_name}*.{self.img_ext}')))
-
-        self.img_fname = f_names[0]
-        fname_dir = get_fname_dir()
-        self.fname = os.path.join(fname_dir, self.scan_name + '.hdf5')
-
-        return self.scan_name, self.img_fname, self.fname
 
     def initialize_sphere(self):
         """ If scan changes, initialize new EwaldSphere object
