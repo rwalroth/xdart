@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>402</height>
+    <height>384</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -227,7 +227,7 @@
                 <set>Qt::ImhDigitsOnly</set>
                </property>
                <property name="text">
-                <string>2500</string>
+                <string>3000</string>
                </property>
                <property name="placeholderText">
                 <string>500</string>
@@ -971,6 +971,13 @@
         <property name="spacing">
          <number>6</number>
         </property>
+        <item>
+         <widget class="QPushButton" name="raw_to_tif">
+          <property name="text">
+           <string>Raw -&gt; Tif</string>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QPushButton" name="pyfai_calib">
           <property name="minimumSize">
