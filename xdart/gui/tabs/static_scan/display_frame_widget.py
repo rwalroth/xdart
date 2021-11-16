@@ -539,7 +539,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """
         # Sets title text
         # if ('Overall' in self.arch_ids) or self.sphere.single_img:
-        if self.overall or self.sphere.single_img:
+        if (self.overall or self.sphere.single_img) and (len(self.arch_ids) > 1):
             self.ui.labelCurrent.setText(self.sphere.name)
         elif len(self.arch_ids) > 1:
             self.ui.labelCurrent.setText(f'{self.sphere.name} [Average]')

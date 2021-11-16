@@ -1027,7 +1027,7 @@ class specProcess(wranglerProcess):
                 command = self.command_q.get()
                 print(command)
                 if command == 'stop':
-                    sphere.save_to_h5(data_only=True, replace=False)
+                    # sphere.save_to_h5(data_only=True, replace=False)
                     self.signal_q.put(('TERMINATE', None))
                     break
                 elif command == 'continue':
@@ -1047,8 +1047,8 @@ class specProcess(wranglerProcess):
                 time.sleep(0.5)
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
-                    if sphere.name != 'null_main':
-                        sphere.save_to_h5(data_only=True, replace=False)
+                    # if sphere.name != 'null_main':
+                    #     sphere.save_to_h5(data_only=True, replace=False)
                     self.signal_q.put(('message', "Timeout occurred"))
                     self.signal_q.put(('TERMINATE', None))
                     break
@@ -1059,13 +1059,16 @@ class specProcess(wranglerProcess):
 
             # Initialize sphere and save to disk, send update for new scan
             if self.scan_name != sphere.name:
-                if sphere.name != 'null_main':
-                    sphere.save_to_h5(data_only=True, replace=False)
+                # if sphere.name != 'null_main':
+                #     sphere.save_to_h5(data_only=True, replace=False)
 
                 sphere = self.initialize_sphere()
 
             # if i in list(sphere.arches.index):
             if img_number in list(sphere.arches.index):  # and (self.write_mode != 'Overwrite'):
+                if self.single_img:
+                    self.signal_q.put(('TERMINATE', None))
+                    break
                 continue
 
             # Get result from wrangle
@@ -1095,7 +1098,7 @@ class specProcess(wranglerProcess):
                         get_sd=True, set_mg=False, static=True, gi=self.gi,
                         th_mtr=self.th_mtr
                     )
-                    # sphere.save_to_h5(data_only=True, replace=False)
+                    sphere.save_to_h5(data_only=True, replace=False)
 
                 # Save 1D integrated data in CSV and xye files
                 self.save_1d(sphere, arch, idx)
@@ -1103,7 +1106,7 @@ class specProcess(wranglerProcess):
                 # self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
                 if self.single_img:
-                    sphere.save_to_h5(data_only=True, replace=False)
+                    # sphere.save_to_h5(data_only=True, replace=False)
                     self.signal_q.put(('TERMINATE', None))
                     break
 
@@ -1126,7 +1129,7 @@ class specProcess(wranglerProcess):
         """
         # ic()
         if self.single_img:
-            return self.img_fname, 1
+            return self.img_fname, get_img_number(self.img_fname)
 
         if len(self.img_fnames) == 0:
             if self.inp_type != 'Image Directory':
