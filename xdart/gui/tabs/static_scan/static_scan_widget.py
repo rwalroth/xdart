@@ -571,3 +571,4 @@ class staticWidget(QWidget):
 
         out_dialog = QMessageBox()
         out_dialog.setText(message)
+        out_dialog.exec_()
