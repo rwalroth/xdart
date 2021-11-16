@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1440, 430)
+        Form.resize(1440, 384)
         Form.setMaximumSize(QtCore.QSize(16777215, 430))
         self.verticalLayout = QtWidgets.QVBoxLayout(Form)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -355,6 +355,9 @@ class Ui_Form(object):
         self.horizontalLayout_13 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_13.setSpacing(6)
         self.horizontalLayout_13.setObjectName("horizontalLayout_13")
+        self.raw_to_tif = QtWidgets.QPushButton(self.frame_3)
+        self.raw_to_tif.setObjectName("raw_to_tif")
+        self.horizontalLayout_13.addWidget(self.raw_to_tif)
         self.pyfai_calib = QtWidgets.QPushButton(self.frame_3)
         self.pyfai_calib.setMinimumSize(QtCore.QSize(0, 20))
         font = QtGui.QFont()
@@ -443,5 +446,6 @@ class Ui_Form(object):
         self.radial_high_2D.setText(_translate("Form", "5"))
         self.integrate2D.setText(_translate("Form", "Re-Integrate"))
         self.advanced2D.setText(_translate("Form", "Advanced..."))
+        self.raw_to_tif.setText(_translate("Form", "Raw -> Tif"))
         self.pyfai_calib.setText(_translate("Form", "Calibrate"))
         self.get_mask.setText(_translate("Form", "Make Mask"))

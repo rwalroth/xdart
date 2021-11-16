@@ -10,6 +10,7 @@ import copy
 import os
 from collections import OrderedDict
 import gc
+import imageio
 
 # Qt imports
 from pyqtgraph.Qt import QtWidgets, QtCore
@@ -22,12 +23,14 @@ from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .metadata import metadataWidget
 from .wranglers import specWrangler, wranglerWidget
-from xdart.utils._utils import FixSizeOrderedDict, get_fname_dir
+from xdart.utils._utils import FixSizeOrderedDict, get_fname_dir, read_image_file
 
 # from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
+QFileDialog = QtWidgets.QFileDialog
+QMessageBox = QtWidgets.QMessageBox
 
 wranglers = {
     'SPEC': specWrangler
@@ -166,6 +169,7 @@ class staticWidget(QWidget):
         self.integratorTree.integrator_thread.started.connect(self.thread_state_changed)
         self.integratorTree.integrator_thread.update.connect(self.integrator_thread_update)
         self.integratorTree.integrator_thread.finished.connect(self.integrator_thread_finished)
+        self.integratorTree.ui.raw_to_tif.clicked.connect(self.raw_to_tiff)
 
         # Metadata setup
         self.metawidget = metadataWidget(self.sphere, self.arch,
@@ -546,3 +550,23 @@ class staticWidget(QWidget):
 
         # if len(self.data_2d) <= 1:
         #     self.h5viewer.ui.listData.setCurrentRow(self.h5viewer.ui.listData.count() - 1)
+
+    @staticmethod
+    def raw_to_tiff():
+        rawFile, _ = QFileDialog().getOpenFileName(
+            filter='RAW (*.raw)',
+            caption='Choose Raw File',
+            options=QFileDialog.DontUseNativeDialog
+        )
+
+        if os.path.isfile(rawFile):
+            img = read_image_file(rawFile, return_float=False)
+            tifFile = os.path.splitext(rawFile)[0] + '.tif'
+            imageio.imwrite(tifFile, img)
+            message = f'{os.path.basename(tifFile)} saved'
+        else:
+            message = 'Invalid Raw File'
+
+        out_dialog = QMessageBox()
+        out_dialog.setText(message)
+        out_dialog.exec_()

@@ -6,6 +6,7 @@
 # Standard library imports
 import os
 import time
+import copy
 
 # Other imports
 import matplotlib.pyplot as plt
@@ -155,7 +156,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Image and Binned 2D Data
         self.image_data = (None, None)
         self.binned_data = (None, None)
-        self.plot_data = (np.zeros(0), np.zeros(0))
+        self.plot_data = [np.zeros(0), np.zeros(0)]
         self.plot_data_range = [[0, 0], [0, 0]]
 
         # Image pane setup
@@ -692,7 +693,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         s_ydata = np.tile(s_ydata, (data.shape[1]+1, 1))
 
         # self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
-        levels = np.nanpercentile(data, (1, 99))
+        levels = np.nanpercentile(data, (1, 98))
         self.wf_widget.imageItem.setLevels(levels)
         self.wf_widget.imageItem.setData(s_xdata, s_ydata, data.T)
         self.wf_widget.imageItem.informViewBoundsChanged()
@@ -739,6 +740,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """
         with self.sphere.sphere_lock:
             map_raw = np.asarray(self.sphere.overall_raw, dtype=float)
+            if map_raw.ndim < 2:
+                self.sphere.load_from_h5(data_only=True)
+                map_raw = np.asarray(self.sphere.overall_raw, dtype=float)
 
             norm_fac = len(self.sphere.arches.index)
             normChannel = self.ui.normChannel.currentText()
@@ -1018,11 +1022,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """
         self.arch_names.clear()
         self.arch_ids.clear()
+        self.plot_data = [np.zeros(0), np.zeros(0)]
+        self.setup_1d_layout()
         self.plot.clear()
-        # if self.plotMethod == 'Waterfall':
-        #     self.setup_1d_layout()
-        #     self.setup_wf_layout()
-        # self.setup_wf_widget()
 
     def update_legend(self):
         if not self.ui.showLegend.isChecked():
