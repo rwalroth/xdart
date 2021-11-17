@@ -6,7 +6,7 @@
 # Standard library imports
 import os
 import sys
-# import subprocess
+import subprocess
 
 from xdart.utils.pyFAI_binaries import pyFAI_calib2_main
 from xdart.utils.pyFAI_binaries import pyFAI_drawmask_main
@@ -864,16 +864,16 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     @staticmethod
     def run_pyfai_calib():
-        pyFAI_calib2_main()
+        # pyFAI_calib2_main()
         # launch(f'{current_directory}/pyFAI-calib2-xdart')
         # if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         #     current_directory = sys._MEIPASS
         #     launch(f'{current_directory}/pyFAI-calib2')
         # else:
         #     pyFAI_calib2_main()
-        # process = subprocess.run(['pyFAI-calib2'], check=True, shell=True,
-        #                          stdout=subprocess.PIPE, universal_newlines=True)
-        # _ = process.stdout
+        process = subprocess.run(['pyFAI-calib2'], check=True, shell=True,
+                                 stdout=subprocess.PIPE, universal_newlines=True)
+        _ = process.stdout
 
     # @staticmethod
     def run_pyfai_drawmask(self):

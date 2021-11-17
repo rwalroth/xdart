@@ -976,6 +976,12 @@
           <property name="text">
            <string>Raw -&gt; Tif</string>
           </property>
+          <property name="font">
+           <font>
+            <family>MS Shell Dlg 2</family>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
          </widget>
         </item>
         <item>

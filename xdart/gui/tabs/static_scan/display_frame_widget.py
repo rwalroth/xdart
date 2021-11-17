@@ -193,8 +193,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.trackMouse()
 
         # WF Plot pane setup
-        # self.wf_widget = pgImageWidget()
-        self.wf_widget = pmeshImageWidget()
+        self.wf_widget = pgImageWidget()
+        # self.wf_widget = pmeshImageWidget()
         self.setup_wf_widget()
         self.plot_layout.addWidget(self.wf_widget)
 
@@ -538,8 +538,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates 2D Label
         """
         # Sets title text
-        # if ('Overall' in self.arch_ids) or self.sphere.single_img:
-        if self.overall or self.sphere.single_img:
+        if (self.overall or self.sphere.single_img) and (len(self.arch_ids) > 1):
             self.ui.labelCurrent.setText(self.sphere.name)
         elif len(self.arch_ids) > 1:
             self.ui.labelCurrent.setText(f'{self.sphere.name} [Average]')
@@ -594,7 +593,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if (self.plotMethod in ['Overlay', 'Single']) and (len(self.arch_names) > 1):
             self.ui.yOffset.setEnabled(True)
 
-        if (self.plotMethod == 'Waterfall') and (len(self.plot_data[1]) > 3):
+        # Only switch to WF plot if more than three curves. Definitely switch if more than 25!
+        if (self.plotMethod == 'Waterfall' and len(self.plot_data[1]) > 3) or len(self.plot_data[1]) > 25:
             self.update_wf()
         else:
             self.update_1d_view()
@@ -661,53 +661,37 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         xdata_, data_ = self.plot_data
         s_xdata, data = xdata_.copy(), data_.copy()
-
         data = data[self.wf_start::self.wf_step, :]
-
-        x_max, x_min = np.max(s_xdata), np.min(s_xdata)
-        x_step = (x_max - x_min)/len(s_xdata)
-        s_xdata = np.append(s_xdata, [x_max + x_step])
-        s_xdata -= x_step/2
-        s_xdata = np.tile(s_xdata, (data.shape[0]+1, 1)).T
 
         # Set YAxis Unit
         if self.wf_yaxis == 'Frame #':
             s_ydata = np.asarray(np.arange(data.shape[0]) + self.wf_start + 1, dtype=float)
         else:
             # TODO: Fix below for more WF options
-            if self.wf_yaxis == 'Time (s)':
-                s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])
-                s_ydata -= s_ydata.min()
-            elif self.wf_yaxis == 'Time (minutes)':
-                s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])/60.
-                s_ydata -= s_ydata.min()
-            else:
-                s_ydata = np.asarray([self.data_1d[idx].scan_info[self.wf_yaxis] for idx in self.idxs])
+            try:
+                if self.wf_yaxis == 'Time (s)':
+                    s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])
+                    s_ydata -= s_ydata.min()
+                elif self.wf_yaxis == 'Time (minutes)':
+                    s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])/60.
+                    s_ydata -= s_ydata.min()
+                else:
+                    s_ydata = np.asarray([self.data_1d[idx].scan_info[self.wf_yaxis] for idx in self.idxs])
 
-            s_ydata = s_ydata[self.wf_start::self.wf_step]
-
-        y_max, y_min = np.max(s_ydata), np.min(s_ydata)
-        y_step = (y_max - y_min)/len(s_ydata)
-        s_ydata = np.append(s_ydata, [y_max + y_step])
-        s_ydata -= y_step/2.
-        s_ydata = np.tile(s_ydata, (data.shape[1]+1, 1))
-
-        # self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
-        levels = np.nanpercentile(data, (1, 98))
-        self.wf_widget.imageItem.setLevels(levels)
-        self.wf_widget.imageItem.setData(s_xdata, s_ydata, data.T)
-        self.wf_widget.imageItem.informViewBoundsChanged()
+                s_ydata = s_ydata[self.wf_start::self.wf_step]
+            except KeyError:
+                print('Counter not present in metadata')
 
         # rect = get_rect(s_xdata, np.arange(data.shape[0]))
-        rect = get_rect(s_xdata[:, 0], s_ydata[0])
+        rect = get_rect(s_xdata, s_ydata)
+
+        self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
         self.wf_widget.setRect(rect)
 
         plotUnit = self.ui.plotUnit.currentIndex()
         self.wf_widget.image_plot.setLabel("bottom", x_labels_1D[plotUnit],
                                            units=x_units_1D[plotUnit])
         self.wf_widget.image_plot.setLabel("left", self.wf_yaxis)
-
-        return data
 
     def get_arches_map_raw(self, idxs=None):
         """Return 2D arch data for multiple arches (averaged)"""
@@ -1319,3 +1303,57 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         else:
             self.pos_label.setText('')
             self.plot_win.setCursor(pyQt.ArrowCursor)
+
+    def update_wf_pmesh(self):
+        """Updates data in 1D plot Frame
+        """
+        self.setup_wf_layout()
+
+        xdata_, data_ = self.plot_data
+        s_xdata, data = xdata_.copy(), data_.copy()
+        data = data[self.wf_start::self.wf_step, :]
+
+        x_max, x_min = np.max(s_xdata), np.min(s_xdata)
+        x_step = (x_max - x_min)/len(s_xdata)
+        s_xdata = np.append(s_xdata, [x_max + x_step])
+        s_xdata -= x_step/2
+        s_xdata = np.tile(s_xdata, (data.shape[0]+1, 1)).T
+
+        # Set YAxis Unit
+        if self.wf_yaxis == 'Frame #':
+            s_ydata = np.asarray(np.arange(data.shape[0]) + self.wf_start + 1, dtype=float)
+        else:
+            # TODO: Fix below for more WF options
+            if self.wf_yaxis == 'Time (s)':
+                s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])
+                s_ydata -= s_ydata.min()
+            elif self.wf_yaxis == 'Time (minutes)':
+                s_ydata = np.asarray([self.data_1d[idx].scan_info['epoch'] for idx in self.idxs])/60.
+                s_ydata -= s_ydata.min()
+            else:
+                s_ydata = np.asarray([self.data_1d[idx].scan_info[self.wf_yaxis] for idx in self.idxs])
+
+            s_ydata = s_ydata[self.wf_start::self.wf_step]
+
+        y_max, y_min = np.max(s_ydata), np.min(s_ydata)
+        y_step = (y_max - y_min)/len(s_ydata)
+        s_ydata = np.append(s_ydata, [y_max + y_step])
+        s_ydata -= y_step/2.
+        s_ydata = np.tile(s_ydata, (data.shape[1]+1, 1))
+
+        # self.wf_widget.setImage(data.T, scale=self.scale, cmap=self.cmap)
+        levels = np.nanpercentile(data, (1, 98))
+        self.wf_widget.imageItem.setLevels(levels)
+        self.wf_widget.imageItem.setData(s_xdata, s_ydata, data.T)
+        self.wf_widget.imageItem.informViewBoundsChanged()
+
+        # rect = get_rect(s_xdata, np.arange(data.shape[0]))
+        rect = get_rect(s_xdata[:, 0], s_ydata[0])
+        self.wf_widget.setRect(rect)
+
+        plotUnit = self.ui.plotUnit.currentIndex()
+        self.wf_widget.image_plot.setLabel("bottom", x_labels_1D[plotUnit],
+                                           units=x_units_1D[plotUnit])
+        self.wf_widget.image_plot.setLabel("left", self.wf_yaxis)
+
+        return data

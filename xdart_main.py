@@ -11,6 +11,13 @@ import gc
 import os
 import signal
 
+# Qt imports
+from pyqtgraph.Qt import QtGui, QtWidgets
+
+# This module imports
+from xdart.gui.mainWindow import Ui_MainWindow
+from xdart.gui import tabs
+
 # Other imports
 import multiprocessing
 multiprocessing.freeze_support()
@@ -18,13 +25,6 @@ try:
     multiprocessing.set_start_method('spawn')
 except RuntimeError:
     pass
-
-# Qt imports
-from pyqtgraph.Qt import QtGui, QtWidgets
-
-# This module imports
-from xdart.gui.mainWindow import Ui_MainWindow
-from xdart.gui import tabs
 
 
 def setup_data_folders(exp_list):
