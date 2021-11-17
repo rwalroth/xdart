@@ -973,6 +973,12 @@
         </property>
         <item>
          <widget class="QPushButton" name="raw_to_tif">
+          <property name="font">
+           <font>
+            <family>Arial</family>
+            <pointsize>14</pointsize>
+           </font>
+          </property>
           <property name="text">
            <string>Raw -&gt; Tif</string>
           </property>

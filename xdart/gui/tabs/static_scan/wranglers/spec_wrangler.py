@@ -15,7 +15,7 @@ import fabio
 
 # Qt imports
 from pyqtgraph import Qt
-from pyqtgraph.Qt import QtWidgets, QtGui
+from pyqtgraph.Qt import QtWidgets
 from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
@@ -31,7 +31,7 @@ from xdart.utils.containers.poni import get_poni_dict
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
-from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QDialog = QtWidgets.QDialog
@@ -39,7 +39,7 @@ QMessageBox = QtWidgets.QMessageBox
 QPushButton = QtWidgets.QPushButton
 
 def_poni_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/test_xfc.poni'
-def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images_0005.tif'
+def_img_file = '/Users/vthampy/SSRL_Data/RDA/static_det_test_data/test_xfc_data/images/images_0005.tif'
 
 if not os.path.exists(def_poni_file):
     def_poni_file = ''
@@ -68,17 +68,19 @@ params = [
     ], 'expanded': True},
     {'name': 'BG', 'title': 'Background', 'type': 'group', 'children': [
         {'name': 'bg_type', 'title': '', 'type': 'list',
-         'values': ['Single Bkg File', 'Bkg Directory'], 'value': 'Single Bkg'},
-        {'name': 'File', 'title': 'Bkg File', 'type': 'str', 'value': ''},
-        NamedActionParameter(name='bg_file_browse', title='Browse...'),
+         'values': ['None', 'Single BG File', 'BG Directory'], 'value': 'None'},
+        {'name': 'File', 'title': 'BG File', 'type': 'str', 'value': '', 'visible': False},
+        NamedActionParameter(name='bg_file_browse', title='Browse...', visible=False),
         {'name': 'Match', 'title': 'Match Parameter', 'type': 'group', 'children': [
-            {'name': 'Parameter', 'type': 'list', 'values': ['File Root'], 'value': 'File Root'},
+            {'name': 'Parameter', 'type': 'list', 'values': ['None'], 'value': 'None'},
+            {'name': 'match_fname', 'title': 'Match File Root', 'type': 'bool', 'value': False},
             {'name': 'bg_dir', 'title': 'Directory', 'type': 'str', 'value': ''},
             NamedActionParameter(name='bg_dir_browse', title='Browse...'),
             {'name': 'Filter', 'type': 'str', 'value': ''},
         ], 'expanded': True, 'visible': False},
-        {'name': 'Scale', 'type': 'float', 'value': 1},
-        {'name': 'norm_channel', 'title': 'Normalize', 'type': 'list', 'values': ['bstop'], 'value': 'bstop'},
+        {'name': 'Scale', 'type': 'float', 'value': 1, 'visible': False},
+        {'name': 'norm_channel', 'title': 'Normalize', 'type': 'list', 'values': ['bstop'], 'value': 'bstop',
+         'visible': False},
     ], 'expanded': False},
     {'name': 'GI', 'title': 'Grazing Incidence', 'type': 'group', 'children': [
         {'name': 'Grazing', 'type': 'bool', 'value': False},
@@ -203,6 +205,7 @@ class specWrangler(wranglerWidget):
         self.bg_file = self.parameters.child('BG').child('File').value()
         self.bg_dir = self.parameters.child('BG').child('Match').child('bg_dir').value()
         self.bg_matching_par = self.parameters.child('BG').child('Match').child('Parameter').value()
+        self.bg_match_fname = self.parameters.child('BG').child('Match').child('match_fname').value()
         self.bg_file_filter = self.parameters.child('BG').child('Match').child('Filter').value()
         self.bg_scale = self.parameters.child('BG').child('Scale').value()
         self.bg_norm_channel = self.parameters.child('BG').child('norm_channel').value()
@@ -279,6 +282,7 @@ class specWrangler(wranglerWidget):
             self.bg_file,
             self.bg_dir,
             self.bg_matching_par,
+            self.bg_match_fname,
             self.bg_file_filter,
             self.bg_scale,
             self.bg_norm_channel,
@@ -349,6 +353,9 @@ class specWrangler(wranglerWidget):
 
         self.bg_dir = self.parameters.child('BG').child('Match').child('bg_dir').value()
         self.thread.bg_dir = self.bg_dir
+
+        self.bg_match_fname = self.parameters.child('BG').child('Match').child('match_fname').value()
+        self.thread.bg_match_fname = self.bg_match_fname
 
         self.bg_file_filter = self.parameters.child('BG').child('Match').child('Filter').value()
         self.thread.bg_file_filter = self.bg_file_filter
@@ -555,15 +562,21 @@ class specWrangler(wranglerWidget):
         """Change Parameter Names depending on BG Type
         """
         # ic()
-        self.parameters.child('BG').child('File').show()
-        self.parameters.child('BG').child('bg_file_browse').show()
-        self.parameters.child('BG').child('Match').hide()
+        for child in self.parameters.child('BG').children():
+            child.hide()
+        self.parameters.child('BG').child('bg_type').show()
 
         self.bg_type = self.parameters.child('BG').child('bg_type').value()
-        if self.bg_type != 'Single Bkg File':
-            self.parameters.child('BG').child('File').hide()
-            self.parameters.child('BG').child('bg_file_browse').hide()
+        if self.bg_type == 'None':
+            return
+        elif self.bg_type == 'Single BG File':
+            self.parameters.child('BG').child('File').show()
+            self.parameters.child('BG').child('bg_file_browse').show()
+        else:
             self.parameters.child('BG').child('Match').show()
+
+        self.parameters.child('BG').child('Scale').show()
+        self.parameters.child('BG').child('norm_channel').show()
 
     def set_bg_file(self):
         """Opens file dialogue and sets the background file
@@ -579,7 +592,7 @@ class specWrangler(wranglerWidget):
         """
         # ic()
         path = QFileDialog().getExistingDirectory(
-            caption='Choose Bkg Directory',
+            caption='Choose BG Directory',
             directory='',
             options=QFileDialog.ShowDirsOnly
             # options =(QFileDialog.ShowDirsOnly)
@@ -607,11 +620,11 @@ class specWrangler(wranglerWidget):
         """
         # ic()
         pars = [p for p in self.scan_parameters if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
-        pars.insert(0, 'File Root')
+        pars.insert(0, 'None')
         if 'TEMP' in pars:
             pars.insert(1, pars.pop(pars.index('TEMP')))
 
-        value = 'TEMP' if 'TEMP' in pars else 'File Root'
+        value = 'None'
         opts = {'values': pars, 'limits': pars, 'value': value}
         self.parameters.child('BG').child('Match').child('Parameter').setOpts(**opts)
 
@@ -620,6 +633,8 @@ class specWrangler(wranglerWidget):
         """
         # ic()
         self.bg_matching_par = self.parameters.child('BG').child('Match').child('Parameter').value()
+        if self.bg_matching_par == 'None':
+            self.bg_matching_par = None
 
     def set_bg_norm_options(self):
         """Counter Values used to normalize and subtract background
@@ -753,6 +768,7 @@ class specThread(wranglerThread):
             bg_file,
             bg_dir,
             bg_matching_par,
+            bg_match_fname,
             bg_file_filter,
             bg_scale,
             bg_norm_channel,
@@ -800,6 +816,7 @@ class specThread(wranglerThread):
         self.bg_file = bg_file
         self.bg_dir = bg_dir
         self.bg_matching_par = bg_matching_par
+        self.bg_match_fname = bg_match_fname
         self.bg_file_filter = bg_file_filter
         self.bg_scale = bg_scale
         self.bg_norm_channel = bg_norm_channel
@@ -837,6 +854,7 @@ class specThread(wranglerThread):
             self.bg_file,
             self.bg_dir,
             self.bg_matching_par,
+            self.bg_match_fname,
             self.bg_file_filter,
             self.bg_scale,
             self.bg_norm_channel,
@@ -880,7 +898,7 @@ class specThread(wranglerThread):
         self._empty_q(self.command_q)
         process.join()
 
-        print(f'Total Processing Time: {time.time() - t0:0.1f}')
+        print(f'Total Processing Time: {time.time() - t0:0.1f}\n')
 
     def _empty_q(self, q):
         """Empties out a given queue.
@@ -949,6 +967,7 @@ class specProcess(wranglerProcess):
             bg_file,
             bg_dir,
             bg_matching_par,
+            bg_match_fname,
             bg_file_filter,
             bg_scale,
             bg_norm_channel,
@@ -993,6 +1012,7 @@ class specProcess(wranglerProcess):
         self.bg_file = bg_file
         self.bg_dir = bg_dir
         self.bg_matching_par = bg_matching_par
+        self.bg_match_fname = bg_match_fname
         self.bg_file_filter = bg_file_filter
         self.bg_scale = bg_scale
         self.bg_norm_channel = bg_norm_channel
@@ -1027,7 +1047,6 @@ class specProcess(wranglerProcess):
                 command = self.command_q.get()
                 print(command)
                 if command == 'stop':
-                    # sphere.save_to_h5(data_only=True, replace=False)
                     self.signal_q.put(('TERMINATE', None))
                     break
                 elif command == 'continue':
@@ -1041,14 +1060,11 @@ class specProcess(wranglerProcess):
                 continue
 
             img_fname, img_number = self.get_next_image()
-            # ic(img_fname, img_number)
             if img_fname is None:
                 self.signal_q.put(('message', f'Checking for next image'))
                 time.sleep(0.5)
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
-                    # if sphere.name != 'null_main':
-                    #     sphere.save_to_h5(data_only=True, replace=False)
                     self.signal_q.put(('message', "Timeout occurred"))
                     self.signal_q.put(('TERMINATE', None))
                     break
@@ -1059,14 +1075,11 @@ class specProcess(wranglerProcess):
 
             # Initialize sphere and save to disk, send update for new scan
             if self.scan_name != sphere.name:
-                # if sphere.name != 'null_main':
-                #     sphere.save_to_h5(data_only=True, replace=False)
-
                 sphere = self.initialize_sphere()
 
-            # if i in list(sphere.arches.index):
             if img_number in list(sphere.arches.index):  # and (self.write_mode != 'Overwrite'):
                 if self.single_img:
+                    self.signal_q.put(('update', img_number))
                     self.signal_q.put(('TERMINATE', None))
                     break
                 continue
@@ -1091,7 +1104,6 @@ class specProcess(wranglerProcess):
 
                 # Add arch copy to sphere, save to file
                 with self.file_lock:
-                    # arch_copy = arch.copy()
                     sphere.add_arch(
                         # arch=arch_copy, calculate=False, update=True,
                         arch=arch, calculate=False, update=True,
@@ -1103,10 +1115,9 @@ class specProcess(wranglerProcess):
                 # Save 1D integrated data in CSV and xye files
                 self.save_1d(sphere, arch, idx)
 
-                # self.signal_q.put(('message', f'Image {i} integrated'))
                 self.signal_q.put(('update', idx))
+                print(f'Processed {os.path.basename(img_fname)}')
                 if self.single_img:
-                    # sphere.save_to_h5(data_only=True, replace=False)
                     self.signal_q.put(('TERMINATE', None))
                     break
 
@@ -1154,8 +1165,6 @@ class specProcess(wranglerProcess):
                     filters = filters if filters != '**' else '*'
                     self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
 
-                # ic(len(self.img_fnames))
-
                 if self.meta_ext is not None:
                     self.img_fnames = [f for f in self.img_fnames if f not in self.processed]
                 else:
@@ -1171,7 +1180,7 @@ class specProcess(wranglerProcess):
 
         return None, None
 
-    def wrangle(self, image_file, i):
+    def wrangle(self, img_file, i):
         """Method for reading in data from raw files and spec file.
 
         args:
@@ -1187,29 +1196,32 @@ class specProcess(wranglerProcess):
 
         # Construct raw_file path from attributes and index
         # if (not self.single_img) and (self.img_ext not in ['h5', 'hdf5']):
-        #     image_file = self._get_image_path(i)
+        #     img_file = self._get_image_path(i)
         # else:
-        #     image_file = self.img_fname
+        #     img_file = self.img_fname
 
         # Read raw file into numpy array
-        arr = read_image_file(image_file, im=i-1, return_float=True)
+        arr = read_image_file(img_file, im=i-1, return_float=True)
         if arr is None:
-            # return 'TERMINATE', None
             return 'Skip', None
 
         meta_file = ''
         if self.meta_ext:
-            meta_file = f'{os.path.splitext(image_file)[0]}.{self.meta_ext}'
+            meta_file = f'{os.path.splitext(img_file)[0]}.{self.meta_ext}'
         if os.path.exists(meta_file):
             image_meta = get_image_meta_data(meta_file)
         else:
             image_meta = {}
 
         # Subtract background if any
-        bg = self.get_background(image_meta)
-        arr -= bg
+        if self.bg_type != 'None':
+            bg = self.get_background(img_file, i, image_meta)
+            try:
+                arr -= bg
+            except ValueError:
+                pass
 
-        fname = os.path.splitext(os.path.basename(image_file))[0]
+        fname = os.path.splitext(os.path.basename(img_file))[0]
         if self.img_ext not in ['h5', 'hdf5']:
             self.signal_q.put(('message', f'{fname} wrangled'))
         else:
@@ -1251,11 +1263,6 @@ class specProcess(wranglerProcess):
 
         return sphere
 
-        # sphere.load_from_h5(replace=False, mode='a')
-        # existing_arches = sphere.arches.index
-        # if len(existing_arches) == 0:
-        #     sphere.save_to_h5(replace=True)
-
     def get_mask(self):
         """Get mask array from mask file
         """
@@ -1265,37 +1272,52 @@ class specProcess(wranglerProcess):
         mask = fabio.open(self.mask_file).data
         return np.flatnonzero(mask)
 
-    def get_background(self, image_meta):
+    def get_background(self, img_file, img_number, image_meta):
         """Subtract background image if bg_file or bg_dir specified
         """
         bg_file, bg_meta = None, None
 
-        if self.bg_type == 'Single Bkg File':
+        if self.bg_type == 'Single BG File':
             if self.bg_file:
                 bg_file = self.bg_file
         else:
-            if self.bg_dir:
-                if self.bg_file_filter == '':
-                    self.bg_file_filter = 'bg'
-                filters = '*' + '*'.join(f for f in self.bg_file_filter.split()) + '*'
+            if self.bg_dir and (self.bg_match_fname or self.bg_matching_par):
+                bg_file_filter = 'bg' if not self.bg_file_filter else self.bg_file_filter
+                if self.bg_match_fname:
+                    bg_file_filter = f'{self.scan_name} {bg_file_filter}'
+                filters = '*' + '*'.join(f for f in bg_file_filter.split()) + '*'
                 filters = filters if filters != '**' else '*'
+
                 meta_files = sorted(glob.glob(os.path.join(
                     # self.img_dir, f'{filters}[0-9][0-9][0-9][0-9].{self.meta_ext}')))
                     self.img_dir, f'{filters}.{self.meta_ext}')))
 
                 for meta_file in meta_files:
-                    bg_meta = get_image_meta_data(meta_file)
-                    if bg_meta[self.bg_matching_par] == image_meta[self.bg_matching_par]:
-                        bg_file = f'{os.path.splitext(meta_file)[0]}.{self.img_ext}'
-                        break
+                    bg_file = f'{os.path.splitext(meta_file)[0]}.{self.img_ext}'
+                    if bg_file == img_file:
+                        bg_file = None
+                        continue
 
-        if not bg_file:
+                    bg_meta = get_image_meta_data(meta_file)
+                    if self.bg_match_fname:
+                        if img_number == get_img_number(meta_file):
+                            break
+                    else:
+                        try:
+                            if bg_meta[self.bg_matching_par] == image_meta[self.bg_matching_par]:
+                                break
+                        except KeyError:
+                            bg_file = None
+                            continue
+
+        if bg_file is None:
             return 0.
 
-        bg = read_image_file(self.bg_file, return_float=True)
-        bg_meta_file = f'{os.path.splitext(self.bg_file)[0]}.{self.meta_ext}'
-        bg_meta = get_image_meta_data(bg_meta_file)
+        bg = read_image_file(bg_file, return_float=True)
+        if bg is None:
+            return 0.
 
+        print(f'Subtracted {os.path.basename(bg_file)} from {os.path.basename(img_file)}')
         bg *= self.bg_scale
         if self.bg_norm_channel != 'None':
             bg *= (image_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
