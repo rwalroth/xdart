@@ -26,6 +26,14 @@ import fabio
 # This module imports
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
 
+# Detector File Sizes
+detector_file_sizes = {
+    'Rayonix MX225': 18878464,
+    'Rayonix SX165': 8392704,
+    'Pilatus 100k': 379860,
+    'Pilatus 1M': 4092732,
+}
+
 
 def write_xye(fname, xdata, ydata, variance=None):
     """Saves data to an xye file. Variance is the square root of the
@@ -202,6 +210,18 @@ def get_img_number(fname):
     return img_number
 
 
+def match_img_detector(img_file, poni_dict):
+    """Check if the file is created by the detector specified"""
+    detector_name = poni_dict['detector'].name
+    if detector_name not in detector_file_sizes.keys():
+        return True
+
+    if os.stat(img_file).st_size == detector_file_sizes[detector_name]:
+        return True
+
+    return False
+
+
 def query(question):
     """Ask a question with allowed options via input()
     and return their answer.
@@ -210,7 +230,7 @@ def query(question):
     return input()
 
     
-def get_image_meta_data(meta_file, rv='all'):
+def get_img_meta(meta_file, rv='all'):
     """Get image meta data from pdi/txt files for different beamlines
 
     Args:
@@ -220,13 +240,15 @@ def get_image_meta_data(meta_file, rv='all'):
     Returns:
         [dict]: Dictionary with all the meta data
     """
+    if not os.path.exists(meta_file):
+        return {}
 
     with open(meta_file, 'r') as f:
         data = f.read()
 
     image_meta_data = {}
     meta_ext = os.path.splitext(meta_file)[1][1:]
-    # if BL == '2-1':
+
     if meta_ext == 'pdi':  # Pilatus Image
         data = data.replace('\n', ';')
 
@@ -334,10 +356,11 @@ def get_motor_val(pdi_file, motor):
     return Motors[motor]
 
 
-def read_image_file(fname, orientation='horizontal',
-                    flip=False, fliplr=False, transpose=False,
-                    shape_100K=(195, 487), shape_300K=(195, 1475), shape_1M=(1043, 981),
-                    return_float=False, im=0, verbose=False):
+def get_img_data(
+        fname, detector, orientation='horizontal',
+        flip=False, fliplr=False, transpose=False,
+        return_float=False, im=0, verbose=False):
+        # shape_100K=(195, 487), shape_300K=(195, 1475), shape_1M=(1043, 981),
     """Read image file and return numpy array
 
     Args:
@@ -356,57 +379,69 @@ def read_image_file(fname, orientation='horizontal',
     Returns:
         ndarray: Image data read into numpy array
     """
-    if verbose:
-        print('Reading image data into numpy array..')
-
     try:
-        if 'tif' in fname[-5:]:
-            img = np.asarray(io.imread(fname))
-        elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
+        img_data = fabio.open(fname).data
+    except OSError:
+        if detector.name == 'Eiger 1M':
             with h5py.File(fname, mode='r') as f:
                 try:
-                    img = np.asarray(f['entry']['data']['data'][im], dtype=float)
+                    img_data = np.asarray(f['entry']['data']['data'][im], dtype=float)
                 except IndexError:
                     return None
-                img[514:551, :] = np.nan
+                # img_data[514:551, :] = np.nan
 
-                # Hot pixel in SSRL Eiger 1M detector
-                img[0, 1029] = np.nan
-        elif 'mar3450' in fname[-9:]:
-            img = fabio.open(fname).data
         else:
-            img = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
-            if len(img) == np.prod(shape_100K):
-                img = img.reshape(shape_100K)
-            elif len(img) == np.prod(shape_300K):
-                img = img.reshape(shape_300K)
-            else:
-                img = img.reshape(shape_1M)
-                img[:, 487:487 + 7] = np.nan
-                for ii in range(1, 5):
-                    mod_start = 195 * ii + 17 * (ii - 1)
-                    img[mod_start:mod_start + 17] = np.nan
+            img_data = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
+            try:
+                img_data = img_data.reshape(detector.shape)
+            except ValueError:
+                return None
     except ValueError:
         return None
 
-        # try:
-        #     img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))
-        # except ValueError:
-        #     img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_300K))
+    if img_data.shape != detector.shape:
+        return None
+
+        # if 'tif' in fname[-5:]:
+        #     img_data = np.asarray(io.imread(fname))
+        # elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
+        #     with h5py.File(fname, mode='r') as f:
+        #         try:
+        #             img_data = np.asarray(f['entry']['data']['data'][im], dtype=float)
+        #         except IndexError:
+        #             return None
+        #         img_data[514:551, :] = np.nan
+        #
+        #         # Hot pixel in SSRL Eiger 1M detector
+        #         img_data[0, 1029] = np.nan
+        # elif 'mar3450' in fname[-9:]:
+        #     img_data = fabio.open(fname).data
+        # else:
+        #     img_data = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
+        #     if len(img_data) == np.prod(shape_100K):
+        #         img_data = img_data.reshape(shape_100K)
+        #     elif len(img_data) == np.prod(shape_300K):
+        #         img_data = img_data.reshape(shape_300K)
+        #     else:
+        #         img_data = img_data.reshape(shape_1M)
+        #         img_data[:, 487:487 + 7] = np.nan
+        #         for ii in range(1, 5):
+        #             mod_start = 195 * ii + 17 * (ii - 1)
+        #             img_data[mod_start:mod_start + 17] = np.nan
 
     if return_float:
-        img = np.asarray(img, dtype=float)
+        img_data = np.asarray(img_data, dtype=float)
         
     if (orientation == 'vertical') or transpose:
-        img = img.T
+        img_data = img_data.T
 
     if flip:
-        img = np.flipud(img)
+        img_data = np.flipud(img_data)
 
     if fliplr:
-        img = np.fliplr(img)
+        img_data = np.fliplr(img_data)
 
-    return img
+    return img_data
 
 
 def smooth_img(img, kernel_size=3, window_size=3, order=0):
@@ -510,7 +545,7 @@ def fit_images_2D(fname, tth, function='gaussian',
     """
     if verbose:
         print(f'Processing {fname}')
-    img = read_image_file(fname, return_float=True, verbose=False, **kwargs)
+    img = get_img_data(fname, return_float=True, verbose=False, **kwargs)
     
     smooth_img(img, kernel_size=kernel_size, window_size=window_size, order=order)
     fit_result, init_params, img_fit = get_fit(img, function=function)

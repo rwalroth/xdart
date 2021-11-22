@@ -143,9 +143,11 @@ def get_poni_dict(poni_file):
     ai = pyFAI.load(poni_file)
     poni_keys = ['_dist', '_rot1', '_rot2', '_rot3', '_poni1', '_poni2', 'detector', '_wavelength']
 
-    poni_dict = {k: ai.__getattribute__(k) for k in poni_keys}
-
-    return poni_dict
+    try:
+        poni_dict = {k: ai.__getattribute__(k) for k in poni_keys}
+        return poni_dict
+    except KeyError:
+        return None
 
 
 def create_ai_from_dict(poni_dict, gi=False):

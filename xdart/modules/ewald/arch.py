@@ -7,8 +7,6 @@ Created on Mon Aug 26 14:21:58 2019
 import copy
 from threading import Condition
 
-import pyFAI
-import pygix
 from pyFAI.azimuthalIntegrator import AzimuthalIntegrator
 from pyFAI.containers import Integrate1dResult, Integrate2dResult
 from pyFAI import units

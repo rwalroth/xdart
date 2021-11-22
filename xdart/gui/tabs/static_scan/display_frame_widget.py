@@ -593,8 +593,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if (self.plotMethod in ['Overlay', 'Single']) and (len(self.arch_names) > 1):
             self.ui.yOffset.setEnabled(True)
 
-        # Only switch to WF plot if more than three curves. Definitely switch if more than 25!
-        if (self.plotMethod == 'Waterfall' and len(self.plot_data[1]) > 3) or len(self.plot_data[1]) > 25:
+        # Only switch to WF plot if more than three curves. Definitely switch if more than 15!
+        if (self.plotMethod == 'Waterfall' and len(self.plot_data[1]) > 3) or len(self.plot_data[1]) > 15:
             self.update_wf()
         else:
             self.update_1d_view()

@@ -11,6 +11,7 @@ import os
 from collections import OrderedDict
 import gc
 import imageio
+import pyFAI
 
 # Qt imports
 from pyqtgraph.Qt import QtWidgets, QtCore
@@ -23,7 +24,7 @@ from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .metadata import metadataWidget
 from .wranglers import specWrangler, wranglerWidget
-from xdart.utils._utils import FixSizeOrderedDict, get_fname_dir, read_image_file
+from xdart.utils._utils import FixSizeOrderedDict, get_fname_dir, get_img_data
 
 # from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
@@ -31,6 +32,9 @@ QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
 QFileDialog = QtWidgets.QFileDialog
 QMessageBox = QtWidgets.QMessageBox
+QDialog = QtWidgets.QDialog
+QInputDialog = QtWidgets.QInputDialog
+QCombo = QtWidgets.QComboBox
 
 wranglers = {
     'SPEC': specWrangler
@@ -121,6 +125,10 @@ class staticWidget(QWidget):
 
         self.ui = Ui_Form()
         self.ui.setupUi(self)
+
+        self.detector_dialog = QDialog()
+        self.detector_widget = QCombo()
+        self.detector = None
 
         # H5Viewer setup
         self.h5viewer = H5Viewer(self.file_lock, self.local_path, self.dirname,
@@ -512,6 +520,7 @@ class staticWidget(QWidget):
         """
         # ic()
         self.thread_state_changed()
+        self.wrangler.stop()
         if self.sphere.name == self.wrangler.scan_name:
             self.integrator_thread_finished()
         else:
@@ -551,8 +560,50 @@ class staticWidget(QWidget):
         # if len(self.data_2d) <= 1:
         #     self.h5viewer.ui.listData.setCurrentRow(self.h5viewer.ui.listData.count() - 1)
 
-    @staticmethod
-    def raw_to_tiff():
+    def raw_to_tiff(self):
+        self.popup_detector_options()
+
+    def popup_detector_options(self):
+        """
+        Popup Qt Window to select options for Waterfall Plot
+        Options include Y-axis unit and number of points to skip
+        """
+        if self.detector_dialog.layout() is None:
+            self.setup_detector_options_widget()
+
+        self.detector_dialog.show()
+
+    def setup_detector_options_widget(self):
+        """
+        Setup y-axis option for Waterfall plot
+        Setup first image and step size for wf and overlay plots
+        """
+        layout = QtWidgets.QGridLayout()
+        self.detector_dialog.setLayout(layout)
+
+        self.detector_widget = QCombo()
+        accept_button = QtWidgets.QPushButton('Okay')
+        cancel_button = QtWidgets.QPushButton('Cancel')
+
+        layout.addWidget(QtWidgets.QLabel('Choose Detector'), 0, 0)
+        layout.addWidget(self.detector_widget, 1, 0)
+        layout.addWidget(accept_button, 2, 1)
+        layout.addWidget(cancel_button, 2, 2)
+
+        counters = ['Pilatus 1M', 'Pilatus 100K', 'Pilatus 300K']
+        self.detector_widget.addItems(counters)
+
+        accept_button.clicked.connect(self.set_detector)
+        cancel_button.clicked.connect(self.close_detector_popup)
+
+    def close_detector_popup(self):
+        self.detector_dialog.close()
+
+    def set_detector(self):
+        detector_name = self.detector_widget.currentText()
+        self.detector = pyFAI.detector_factory(name=detector_name)
+        self.detector_dialog.close()
+
         rawFile, _ = QFileDialog().getOpenFileName(
             filter='RAW (*.raw)',
             caption='Choose Raw File',
@@ -560,10 +611,13 @@ class staticWidget(QWidget):
         )
 
         if os.path.isfile(rawFile):
-            img = read_image_file(rawFile, return_float=False)
-            tifFile = os.path.splitext(rawFile)[0] + '.tif'
-            imageio.imwrite(tifFile, img)
-            message = f'{os.path.basename(tifFile)} saved'
+            img = get_img_data(rawFile, self.detector, return_float=False)
+            if img is not None:
+                tifFile = os.path.splitext(rawFile)[0] + '.tif'
+                imageio.imwrite(tifFile, img)
+                message = f'{os.path.basename(tifFile)} saved'
+            else:
+                message = 'File does not match detector..'
         else:
             message = 'Invalid Raw File'
 

@@ -21,4 +21,5 @@ dependencies:
   - scikit-image
   - lmfit
   - pygix
+  - pyopencl
   - icecream

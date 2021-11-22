@@ -33,7 +33,7 @@ if __name__ == '__main__':
         sys.path.append(xdart_dir)
     
 from xdart.utils import get_from_pdi, get_motor_val, query, query_yes_no
-from xdart.utils import read_image_file, smooth_img, get_fit, fit_images_2D
+from xdart.utils import get_img_data, smooth_img, get_fit, fit_images_2D
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand, wait_until_SPECfinished, get_console_output
 
 
@@ -319,20 +319,20 @@ def get_TTh_w_direct_beam(img_path, img_fnames, pdi_path, pdi_fnames):
         tuple -- 2th values, image and PDI filenames of points that see direct beam
     """
     # Get Range of TTh Values that see Direct Beam
-    img_mean_vals = [ np.mean(read_image_file( os.path.join(img_path, img_fname),
+    img_mean_vals = [ np.mean(get_img_data( os.path.join(img_path, img_fname),
                                               return_float=True ))
                      for img_fname in img_fnames]
     median_mean_vals = np.median( np.asarray(img_mean_vals) )
 
     for (idx, img_fname) in enumerate(img_fnames):
-        img = read_image_file( os.path.join(img_path, img_fname), return_float=True )
+        img = get_img_data( os.path.join(img_path, img_fname), return_float=True )
         if np.mean(img) > median_mean_vals/2.:
             break
     if idx > 0:
         img_fnames = img_fnames[idx:-idx]
     
     for (idx, img_fname) in enumerate(img_fnames[::-1]):
-        img = read_image_file( os.path.join(img_path, img_fname), return_float=True )
+        img = get_img_data( os.path.join(img_path, img_fname), return_float=True )
         if np.mean(img) > median_mean_vals/2.:
             break
     if idx > 0:

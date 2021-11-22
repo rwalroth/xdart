@@ -7,8 +7,10 @@
 import os
 import time
 import glob
+import fnmatch
 import numpy as np
 from pathlib import Path
+from collections import deque
 
 # pyFAI imports
 import fabio
@@ -23,8 +25,9 @@ from xdart.modules.ewald import EwaldArch, EwaldSphere
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
-from xdart.utils import read_image_file, get_image_meta_data
+from xdart.utils import get_img_data, get_img_meta
 from xdart.utils import split_file_name, get_scan_name, get_img_number, get_fname_dir
+from xdart.utils import match_img_detector
 from xdart.utils import write_xye, write_csv
 from xdart.utils.containers.poni import get_poni_dict
 
@@ -47,7 +50,7 @@ if not os.path.exists(def_poni_file):
 
 params = [
     {'name': 'Calibration', 'type': 'group', 'children': [
-        {'name': 'PONI File', 'title': 'PONI   ', 'type': 'str', 'value': def_poni_file},
+        {'name': 'poni_file', 'title': 'PONI File    ', 'type': 'str', 'value': def_poni_file},
         NamedActionParameter(name='poni_file_browse', title='Browse...'),
     ], 'expanded': True},
     {'name': 'Signal', 'type': 'group', 'children': [
@@ -58,14 +61,16 @@ params = [
         {'name': 'img_dir', 'title': 'Directory', 'type': 'str', 'value': '', 'visible': False},
         NamedActionParameter(name='img_dir_browse', title='Browse...', visible=False),
         {'name': 'include_subdir', 'title': 'Subdirectories', 'type': 'bool', 'value': False, 'visible': False},
-        {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
         {'name': 'img_ext', 'title': 'File Type  ', 'type': 'list',
          'values': ['tif', 'raw', 'h5', 'mar3450'], 'value':'tif', 'visible': False},
+        {'name': 'meta_ext', 'title': 'Meta Ext', 'type': 'list',
+         'values': ['None', 'txt', 'pdi'], 'value':'txt'},
+        {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
         {'name': 'write_mode', 'title': 'Write Mode  ', 'type': 'list',
          'values': ['Append', 'Overwrite'], 'value':'Append'},
         {'name': 'mask_file', 'title': 'Mask File', 'type': 'str', 'value': ''},
         NamedActionParameter(name='mask_file_browse', title='Browse...'),
-    ], 'expanded': True},
+    ], 'expanded': True, 'visible': False},
     {'name': 'BG', 'title': 'Background', 'type': 'group', 'children': [
         {'name': 'bg_type', 'title': '', 'type': 'list',
          'values': ['None', 'Single BG File', 'BG Directory'], 'value': 'None'},
@@ -81,14 +86,14 @@ params = [
         {'name': 'Scale', 'type': 'float', 'value': 1, 'visible': False},
         {'name': 'norm_channel', 'title': 'Normalize', 'type': 'list', 'values': ['bstop'], 'value': 'bstop',
          'visible': False},
-    ], 'expanded': False},
+    ], 'expanded': False, 'visible': False},
     {'name': 'GI', 'title': 'Grazing Incidence', 'type': 'group', 'children': [
         {'name': 'Grazing', 'type': 'bool', 'value': False},
         {'name': 'th_motor', 'title': 'Theta Motor', 'type': 'list', 'values': ['th'], 'value': 'th'},
-    ], 'expanded': False},
-    {'name': 'h5_dir', 'title': 'Save Path', 'type': 'str', 'value': get_fname_dir()},
-    NamedActionParameter(name='h5_dir_browse', title='Browse...'),
-    {'name': 'Timeout', 'type': 'float', 'value': 1},
+    ], 'expanded': False, 'visible': False},
+    {'name': 'h5_dir', 'title': 'Save Path', 'type': 'str', 'value': get_fname_dir(), 'enabled': False},
+    NamedActionParameter(name='h5_dir_browse', title='Browse...', visible=False),
+    {'name': 'Timeout', 'type': 'float', 'value': 1, 'visible': False},
 ]
 
 
@@ -143,8 +148,8 @@ class specWrangler(wranglerWidget):
         super().__init__(fname, file_lock, parent)
 
         # Scan Parameters
-        self.meta_exts = ['txt', 'pdi', 'raw.pdi']
-        self.meta_ext = 'txt'
+        self.poni_dict = None
+        # self.detector = None
         self.scan_parameters = []
         self.counters = []
         self.motors = []
@@ -152,7 +157,8 @@ class specWrangler(wranglerWidget):
         # Setup gui elements
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        self.ui.startButton.clicked.connect(self.sigStart.emit)
+        self.ui.startButton.clicked.connect(self.start)
+        # self.ui.startButton.clicked.connect(self.sigStart.emit)
         self.ui.pauseButton.clicked.connect(self.pause)
         self.ui.stopButton.clicked.connect(self.stop)
         self.ui.continueButton.clicked.connect(self.cont)
@@ -183,7 +189,8 @@ class specWrangler(wranglerWidget):
 
         # Set attributes from Parameter Tree and a couple more
         # Calibration
-        self.poni_file = self.parameters.child('Calibration').child('PONI File').value()
+        self.poni_file = self.parameters.child('Calibration').child('poni_file').value()
+        self.get_poni_dict()
 
         # Signal
         self.inp_type = self.parameters.child('Signal').child('inp_type').value()
@@ -193,6 +200,9 @@ class specWrangler(wranglerWidget):
         self.img_ext = self.parameters.child('Signal').child('img_ext').value()
         self.single_img = True if self.inp_type == 'Single Image' else False
         self.file_filter = self.parameters.child('Signal').child('Filter').value()
+        self.meta_ext = self.parameters.child('Signal').child('meta_ext').value()
+        if self.meta_ext == 'None':
+            self.meta_ext = None
 
         # Mask
         self.mask_file = self.parameters.child('Signal').child('mask_file').value()
@@ -226,6 +236,9 @@ class specWrangler(wranglerWidget):
         self.parameters.child('Calibration').child('poni_file_browse').sigActivated.connect(
             self.set_poni_file
         )
+        self.parameters.child('Calibration').child('poni_file').sigValueChanged.connect(
+            self.get_poni_dict
+        )
         self.parameters.child('Signal').child('inp_type').sigValueChanged.connect(
             self.set_inp_type
         )
@@ -237,6 +250,9 @@ class specWrangler(wranglerWidget):
         )
         self.parameters.child('Signal').child('mask_file_browse').sigActivated.connect(
             self.set_mask_file
+        )
+        self.parameters.child('Signal').child('meta_ext').sigValueChanged.connect(
+            self.set_meta_ext
         )
         self.parameters.child('BG').child('bg_type').sigValueChanged.connect(
             self.set_bg_type
@@ -269,7 +285,8 @@ class specWrangler(wranglerWidget):
             self.h5_dir,
             self.scan_name,
             self.single_img,
-            self.poni_file,
+            self.poni_dict,
+            # self.detector,
             self.inp_type,
             self.img_fname,
             self.img_dir,
@@ -298,6 +315,12 @@ class specWrangler(wranglerWidget):
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
         self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
         self.thread.sigUpdateGI.connect(self.sigUpdateGI.emit)
+
+        # Enable/disable buttons initially
+        self.ui.pauseButton.setEnabled(False)
+        self.ui.continueButton.setEnabled(False)
+        self.ui.stopButton.setEnabled(False)
+
         self.setup()
 
     def setup(self):
@@ -305,8 +328,10 @@ class specWrangler(wranglerWidget):
         """
         # ic()
         # Calibration
-        self.poni_file = self.parameters.child('Calibration').child('PONI File').value()
-        self.thread.poni_file = self.poni_file
+        self.poni_file = self.parameters.child('Calibration').child('poni_file').value()
+        self.thread.poni_dict = self.poni_dict
+
+        # self.thread.detector = self.detector
 
         # Signal
         self.file_filter = self.parameters.child('Signal').child('Filter').value()
@@ -324,8 +349,6 @@ class specWrangler(wranglerWidget):
         self.thread.include_subdir = self.include_subdir
 
         self.thread.meta_ext = self.meta_ext
-        if self.meta_ext:
-            self.get_scan_parameters()
 
         self.scan_name = get_scan_name(self.img_fname)
         self.thread.scan_name = self.scan_name
@@ -395,17 +418,30 @@ class specWrangler(wranglerWidget):
 
         commandLine.send_command(self.specCommandLine)
 
+    def start(self):
+        self.ui.pauseButton.setEnabled(True)
+        self.ui.continueButton.setEnabled(False)
+        self.ui.stopButton.setEnabled(True)
+        self.sigStart.emit()
+
     def pause(self):
         if self.thread.isRunning():
             self.command_queue.put('pause')
+        self.ui.pauseButton.setEnabled(False)
+        self.ui.continueButton.setEnabled(True)
 
     def cont(self):
         if self.thread.isRunning():
             self.command_queue.put('continue')
+        self.ui.pauseButton.setEnabled(True)
+        self.ui.continueButton.setEnabled(False)
 
     def stop(self):
         if self.thread.isRunning():
             self.command_queue.put('stop')
+        self.ui.pauseButton.setEnabled(False)
+        self.ui.continueButton.setEnabled(False)
+        self.ui.stopButton.setEnabled(False)
 
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
@@ -415,8 +451,32 @@ class specWrangler(wranglerWidget):
             filter="PONI (*.poni *.PONI)"
         )
         if fname != '':
-            self.parameters.child('Calibration').child('PONI File').setValue(fname)
-        self.poni_file = fname
+            self.parameters.child('Calibration').child('poni_file').setValue(fname)
+            self.poni_file = fname
+
+    def get_poni_dict(self):
+        """Opens file dialogue and sets the calibration file
+        """
+        # ic()
+        if not os.path.exists(self.poni_file):
+            for child in self.parameters.children():
+                child.hide()
+            self.parameters.child('Calibration').show()
+            return
+
+        self.poni_dict = get_poni_dict(self.poni_file)
+        if self.poni_dict is None:
+            print('Invalid Poni File')
+            self.thread.signal_q.put(('message', 'Invalid Poni File'))
+            return
+
+        # self.detector = self.poni_dict['detector'].get_name()
+        # detector = detector[:detector.find('Pixel')].rstrip()
+        # if detector.find('Detector'):
+        #     detector = detector[len('Detector'):].lstrip()
+        # self.detector = detector
+        for child in self.parameters.children():
+            child.show()
 
     def set_inp_type(self):
         """Change Parameter Names depending on Input Type
@@ -475,53 +535,87 @@ class specWrangler(wranglerWidget):
         """
         # ic()
         old_fname = self.img_fname
-        # ic(self.img_fname, self.inp_type)
         if self.inp_type != 'Image Directory':
             img_fname = self.parameters.child('Signal').child('File').value()
             if os.path.exists(img_fname):
                 self.img_fname = img_fname
                 self.img_dir, _, self.img_ext = split_file_name(self.img_fname)
-                self.meta_ext = self.get_meta_ext(self.img_fname)
+                # self.meta_ext = self.get_meta_ext(self.img_fname)
+
         else:
             self.img_ext = self.parameters.child('Signal').child('img_ext').value()
             self.img_dir = self.parameters.child('Signal').child('img_dir').value()
             self.include_subdir = self.parameters.child('Signal').child('include_subdir').value()
 
-            if self.include_subdir:
-                filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-                filters = filters if filters != '**' else '*'
-                fnames = sorted(glob.glob(os.path.join(
-                    self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
-            else:
-                filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-                filters = filters if filters != '**' else '*'
-                fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
+            filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+            filters = filters if filters != '**' else '*'
+
+            for subdir, dirs, files in os.walk(self.img_dir):
+                for file in files:
+                    fname = os.path.join(subdir, file)
+                    if fnmatch.fnmatch(fname, f'{filters}.{self.img_ext}'):
+                        if match_img_detector(fname, self.poni_dict):
+                            if self.meta_ext:
+                                if self.exists_meta_file(fname):
+                                    self.img_fname = fname
+                                    break
+                                else:
+                                    continue
+                            else:
+                                self.img_fname = fname
+                                break
+                            # self.meta_ext = self.get_meta_ext(fname)
+                if not self.include_subdir:
+                    break
+
+            # if self.include_subdir:
+            #     fnames = sorted(glob.glob(os.path.join(
+            #         self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
+            # else:
+            #     fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
 
             # Check if metadata file exists
-            if self.img_ext in ['h5', 'mar3450']:  # If Eiger or other detector File
-                self.img_fname = fnames[0]
-                self.meta_ext = self.get_meta_ext(self.img_fname)
-            else:
-                img_found = False
-                for fname in fnames:
-                    meta_ext = self.get_meta_ext(fname)
-                    # ic(meta_ext)
-                    if meta_ext:
-                        self.img_fname = fname
-                        self.meta_ext = meta_ext
-                        # ic(self.img_fname, meta_ext)
-                        img_found = True
-                        break
-                if not img_found:
-                    self.img_fname = ''
-                    self.meta_ext = None
+            # if self.img_ext in ['h5', 'mar3450']:  # If Eiger or other detector File
+            #     self.img_fname = fnames[0]
+            #     self.meta_ext = self.get_meta_ext(self.img_fname)
+            # else:
+            #     img_found = False
+            #     for fname in fnames:
+            #         meta_ext = self.get_meta_ext(fname)
+            #         # ic(meta_ext)
+            #         if meta_ext:
+            #             self.img_fname = fname
+            #             self.meta_ext = meta_ext
+            #             # ic(self.img_fname, meta_ext)
+            #             img_found = True
+            #             break
+            #     if not img_found:
+            #         self.img_fname = ''
+            #         self.meta_ext = None
 
         if (((self.img_fname != old_fname) or (self.img_fname and (len(self.scan_parameters) < 1)))
                 and self.meta_ext):
-            self.get_scan_parameters()
-            self.set_bg_matching_options()
-            self.set_gi_motor_options()
-            self.set_bg_norm_options()
+            self.set_pars_from_meta()
+
+    def set_meta_ext(self):
+        self.meta_ext = self.parameters.child('Signal').child('meta_ext').value()
+        if self.meta_ext == 'None':
+            self.meta_ext = None
+        # ic(self.meta_ext)
+        self.get_img_fname()
+
+    def exists_meta_file(self, img_fname):
+        """Checks for existence of meta file for image file"""
+        meta_file = f'{os.path.splitext(img_fname)[0]}.{self.meta_ext}'
+        if os.path.exists(meta_file):
+            return True
+        return False
+
+    def set_pars_from_meta(self):
+        self.get_scan_parameters()
+        self.set_bg_matching_options()
+        self.set_gi_motor_options()
+        self.set_bg_norm_options()
 
     def get_meta_ext(self, img_fname):
         """
@@ -685,13 +779,13 @@ class specWrangler(wranglerWidget):
         if not os.path.exists(meta_file):
             return
 
-        image_meta_data = get_image_meta_data(meta_file)
+        image_meta_data = get_img_meta(meta_file)
         self.scan_parameters = list(image_meta_data.keys())
 
-        counters = get_image_meta_data(meta_file, rv='Counters')
+        counters = get_img_meta(meta_file, rv='Counters')
         self.counters = list(counters.keys())
 
-        motors = get_image_meta_data(meta_file, rv='Motors')
+        motors = get_img_meta(meta_file, rv='Motors')
         self.motors = list(motors.keys())
 
     def enabled(self, enable):
@@ -729,7 +823,8 @@ class specThread(wranglerThread):
         img_dir: str, path to image directory
         img_ext : str, extension of image file
         meta_ext : str, extension of metadata file
-        poni_file: str, Poni File name
+        poni_dict: str, Poni File name
+        detector: str, Detector name
         input_q: mp.Queue, queue for commands sent from parent
         signal_q: mp.Queue, queue for commands sent from process
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -754,7 +849,8 @@ class specThread(wranglerThread):
             h5_dir,
             scan_name,
             single_img,
-            poni_file,
+            poni_dict,
+            # detector,
             inp_type,
             img_fname,
             img_dir,
@@ -785,7 +881,8 @@ class specThread(wranglerThread):
         file_lock: mp.Condition, process safe lock for file access
         scan_name: str, name of current scan
         single_img: bool, True if there is only one image
-        poni_file: str, poni file name
+        poni_dict: str, poni file name
+        detector: str, Detector name
         img_fname: str, path to input image file
         img_dir: str, path to image directory
         include_subdir: bool, flag to include subdirectories
@@ -802,7 +899,8 @@ class specThread(wranglerThread):
         self.h5_dir = h5_dir
         self.scan_name = scan_name
         self.single_img = single_img
-        self.poni_file = poni_file
+        self.poni_dict = poni_dict
+        # self.detector = detector
         self.inp_type = inp_type
         self.img_fname = img_fname
         self.img_dir = img_dir
@@ -840,7 +938,8 @@ class specThread(wranglerThread):
             self.h5_dir,
             self.scan_name,
             self.single_img,
-            self.poni_file,
+            self.poni_dict,
+            # self.detector,
             self.inp_type,
             self.img_fname,
             self.img_dir,
@@ -863,7 +962,7 @@ class specThread(wranglerThread):
             self.timeout
         )
 
-        if (self.poni_file == '') or (self.img_fname == ''):
+        if (self.poni_dict is None) or (self.img_fname == ''):
             return
 
         process.start()
@@ -925,7 +1024,8 @@ class specProcess(wranglerProcess):
         fname: str, path to data file
         h5_dir: str, data file directory
         single_img: bool, True if there is only one image
-        poni_file: str, poni file name
+        poni_dict: str, poni file name
+        detector: str, Detector name
         img_fname: str, path to input image file
         img_dir: str, path to image directory
         include_subdir: bool, flag to include subdirectories
@@ -953,7 +1053,8 @@ class specProcess(wranglerProcess):
             h5_dir,
             scan_name,
             single_img,
-            poni_file,
+            poni_dict,
+            # detector,
             inp_type,
             img_fname,
             img_dir,
@@ -985,7 +1086,8 @@ class specProcess(wranglerProcess):
         fname: str, path to data file
         h5_dir: str, data file directory
         file_lock: mp.Condition, process safe lock for file access
-        poni_file: str, poni file name
+        poni_dict: str, poni file name
+        detector: str, Detector name
         img_dir: str, path to image directory
         include_subdir: bool, flag to include subdirectories
         timeout: float or int, how long to continue checking for new
@@ -998,7 +1100,8 @@ class specProcess(wranglerProcess):
         self.h5_dir = h5_dir
         self.scan_name = scan_name
         self.single_img = single_img
-        self.poni_file = poni_file
+        self.poni_dict = poni_dict
+        # self.detector = detector
         self.inp_type = inp_type
         self.img_fname = img_fname
         self.img_dir = img_dir
@@ -1022,10 +1125,9 @@ class specProcess(wranglerProcess):
 
         self.user = None
         self.mask = None
+        self.detector = self.poni_dict['detector']
         self.img_fnames = []
         self.processed = []
-
-        self.poni_dict = get_poni_dict(self.poni_file)
 
     def _main(self):
         """Checks for commands in queue, sends back updates through
@@ -1037,7 +1139,7 @@ class specProcess(wranglerProcess):
     def process_scan(self):
         """Go through series of images in a scan and process them individually
         """
-        sphere = EwaldSphere()
+        sphere = None
 
         pause = False
         start = time.time()
@@ -1052,17 +1154,20 @@ class specProcess(wranglerProcess):
                 elif command == 'continue':
                     pause = False
                 elif command == 'pause':
+                    self.signal_q.put(('message', f'Paused'))
+                    time.sleep(0.5)
                     pause = True
                     continue
 
-            if pause:
-                time.sleep(1)
-                continue
+            img_fname, img_number, img_data = self.get_next_image()
+            # ic(img_fname, img_number)
+            if img_data is None:
+                if img_fname is None:
+                    self.signal_q.put(('message', f'Checking for next image'))
+                    time.sleep(0.5)
+                else:
+                    print(f'Invalid Image File {os.path.basename(img_fname)}. Skipping...')
 
-            img_fname, img_number = self.get_next_image()
-            if img_fname is None:
-                self.signal_q.put(('message', f'Checking for next image'))
-                time.sleep(0.5)
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
                     self.signal_q.put(('message', "Timeout occurred"))
@@ -1074,60 +1179,73 @@ class specProcess(wranglerProcess):
             self.scan_name = get_scan_name(img_fname)
 
             # Initialize sphere and save to disk, send update for new scan
-            if self.scan_name != sphere.name:
+            if (sphere is None) or (self.scan_name != sphere.name):
                 sphere = self.initialize_sphere()
 
-            if img_number in list(sphere.arches.index):  # and (self.write_mode != 'Overwrite'):
+            if img_number in list(sphere.arches.index):
                 if self.single_img:
                     self.signal_q.put(('update', img_number))
                     self.signal_q.put(('TERMINATE', None))
                     break
                 continue
 
-            # Get result from wrangle
-            flag, data = self.wrangle(img_fname, img_number)
+            # Get Meta Data
+            img_meta = self.get_meta_data(img_fname) if self.meta_ext else {}
 
+            # Subtract Background
+            if self.bg_type != 'None':
+                self.subtract_bg(img_data, img_fname, img_number, img_meta)
+
+            # Get result from wrangle
+            # flag, data = self.wrangle(img_fname, img_number)
             # Unpack data and load into sphere
             # TODO: Test how long integrating vs io takes
-            if flag == 'image':
-                idx, map_raw, scan_info = data
-                mask = self.get_mask()  # Get Mask
-                arch = EwaldArch(
-                    idx, map_raw, poni_dict=self.poni_dict,
-                    scan_info=scan_info, static=True, gi=self.gi,
-                    mask=mask, th_mtr=self.th_mtr,
+            # if flag == 'image':
+
+            # idx, map_raw, scan_info = data
+            arch = EwaldArch(
+                # idx, img_data, poni_dict=self.poni_dict,
+                img_number, img_data, poni_dict=self.poni_dict,
+                # scan_info=scan_info, static=True, gi=self.gi,
+                scan_info=img_meta, static=True, gi=self.gi,
+                mask=self.get_mask(), th_mtr=self.th_mtr,
+            )
+
+            # integrate image to 1d and 2d arrays
+            arch.integrate_1d(**sphere.bai_1d_args)
+            arch.integrate_2d(**sphere.bai_2d_args)
+
+            # Add arch copy to sphere, save to file
+            with self.file_lock:
+                sphere.add_arch(
+                    arch=arch, calculate=False, update=True,
+                    get_sd=True, set_mg=False, static=True, gi=self.gi,
+                    th_mtr=self.th_mtr
                 )
+                sphere.save_to_h5(data_only=True, replace=False)
 
-                # integrate image to 1d and 2d arrays
-                arch.integrate_1d(**sphere.bai_1d_args)
-                arch.integrate_2d(**sphere.bai_2d_args)
+            # Save 1D integrated data in CSV and xye files
+            self.save_1d(sphere, arch, img_number)
 
-                # Add arch copy to sphere, save to file
-                with self.file_lock:
-                    sphere.add_arch(
-                        # arch=arch_copy, calculate=False, update=True,
-                        arch=arch, calculate=False, update=True,
-                        get_sd=True, set_mg=False, static=True, gi=self.gi,
-                        th_mtr=self.th_mtr
-                    )
-                    sphere.save_to_h5(data_only=True, replace=False)
+            fname = os.path.splitext(os.path.basename(img_fname))[0]
+            print(f'Processed {fname}')
+            if len(fname) > 40:
+                fname = f'...{fname[-37:]}'
+            self.signal_q.put(('message', f'{fname}'))
+            self.signal_q.put(('update', img_number))
 
-                # Save 1D integrated data in CSV and xye files
-                self.save_1d(sphere, arch, idx)
+            if self.single_img:
+                self.signal_q.put(('TERMINATE', None))
+                break
 
-                self.signal_q.put(('update', idx))
-                print(f'Processed {os.path.basename(img_fname)}')
-                if self.single_img:
-                    self.signal_q.put(('TERMINATE', None))
-                    break
-
-                time.sleep(0.1)
+            time.sleep(0.1)
+            start = time.time()
 
             # Check if terminate signal sent
-            elif flag == 'Skip' or (data is None):
-                self.signal_q.put(('message', f'Invalid Image File. Skipping...'))
-                time.sleep(1)
-                continue
+            # elif flag == 'Skip' or (data is None):
+            #     self.signal_q.put(('message', f'Invalid Image File. Skipping...'))
+            #     time.sleep(1)
+            #     continue
 
         # If loop ends, signal terminate to parent thread.
         self.signal_q.put(('TERMINATE', None))
@@ -1137,48 +1255,50 @@ class specProcess(wranglerProcess):
 
         Returns:
             image_name {str}: image file path
+            image_number {int}: image file number (if part of series)
+            image_data {np.ndarray}: image file data array
         """
-        # ic()
         if self.single_img:
             return self.img_fname, get_img_number(self.img_fname)
 
         if len(self.img_fnames) == 0:
             if self.inp_type != 'Image Directory':
-                self.img_fnames = sorted(glob.glob(
-                    os.path.join(self.img_dir, f'{self.scan_name}_*.{self.img_ext}')))
-                if self.meta_ext is not None:
-                    self.img_fnames = [f for f in self.img_fnames if
-                                       (f >= self.img_fname) and (f not in self.processed)]
-                else:
-                    self.img_fnames = [f for f in self.img_fnames if
-                                       (f >= self.img_fname) and (f not in self.processed) and
-                                       (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
-                                        os.path.exists(f'{os.path.splitext(f)}.{self.meta_ext}'))]
+                first_img = self.img_fname
+                self.img_fnames = Path(self.img_dir).glob(f'{self.scan_name}_*.{self.img_ext}')
             else:
+                first_img = ''
+                filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+                filters = filters if filters != '**' else '*'
                 if self.include_subdir:
-                    filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-                    filters = filters if filters != '**' else '*'
-                    self.img_fnames = sorted(glob.glob(os.path.join(
-                        self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
+                    self.img_fnames = sorted(list(Path(self.img_dir).rglob(f'{filters}.{self.img_ext}')))
                 else:
-                    filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-                    filters = filters if filters != '**' else '*'
-                    self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
+                    self.img_fnames = sorted(list(Path(self.img_dir).glob(f'{filters}.{self.img_ext}')))
 
-                if self.meta_ext is not None:
-                    self.img_fnames = [f for f in self.img_fnames if f not in self.processed]
-                else:
-                    self.img_fnames = [f for f in self.img_fnames if (f not in self.processed) and
-                                       (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
-                                        os.path.exists(f'{os.path.splitext(f)}.{self.meta_ext}'))]
+            if self.meta_ext is None:
+                self.img_fnames = [str(f) for f in self.img_fnames if
+                                   (str(f) >= first_img) and (str(f) not in self.processed)]
+            else:
+                self.img_fnames = [str(f) for f in self.img_fnames if
+                                   (str(f) >= first_img) and (str(f) not in self.processed) and
+                                   (os.path.exists(f.with_suffix(f'.{self.meta_ext}')) or
+                                    os.path.exists(f'{f}.{self.meta_ext}'))]
 
-        if len(self.img_fnames) > 0:
+        # ic(self.img_fnames, self.processed)
+        self.img_fnames = deque(sorted(self.img_fnames))
+        for nn in range(len(self.img_fnames)):
             img_fname = self.img_fnames[0]
             self.processed.append(img_fname)
-            self.img_fnames = self.img_fnames[1:]
-            return img_fname, get_img_number(img_fname)
+            self.img_fnames.popleft()
 
-        return None, None
+            img_number = get_img_number(img_fname)
+            img_data = get_img_data(img_fname, self.detector, im=img_number-1, return_float=True)
+            if img_data is not None:
+                return img_fname, img_number, img_data
+
+            # if match_img_detector(img_fname, self.poni_dict):
+            #     return img_fname, get_img_number(img_fname)
+
+        return None, None, None
 
     def wrangle(self, img_file, i):
         """Method for reading in data from raw files and spec file.
@@ -1192,16 +1312,8 @@ class specProcess(wranglerProcess):
                 index of the data, raw image array, metadata
                 dict associated with the image.
         """
-        # self.signal_q.put(('message', f'Checking for {i}'))
-
-        # Construct raw_file path from attributes and index
-        # if (not self.single_img) and (self.img_ext not in ['h5', 'hdf5']):
-        #     img_file = self._get_image_path(i)
-        # else:
-        #     img_file = self.img_fname
-
         # Read raw file into numpy array
-        arr = read_image_file(img_file, im=i-1, return_float=True)
+        arr = get_img_data(img_file, self.detector, im=i-1, return_float=True)
         if arr is None:
             return 'Skip', None
 
@@ -1209,7 +1321,7 @@ class specProcess(wranglerProcess):
         if self.meta_ext:
             meta_file = f'{os.path.splitext(img_file)[0]}.{self.meta_ext}'
         if os.path.exists(meta_file):
-            image_meta = get_image_meta_data(meta_file)
+            image_meta = get_img_meta(meta_file)
         else:
             image_meta = {}
 
@@ -1228,6 +1340,17 @@ class specProcess(wranglerProcess):
             self.signal_q.put(('message', f'Image {i} wrangled'))
 
         return 'image', (i, arr, image_meta)
+
+    def get_meta_data(self, img_file):
+        meta_file = f'{os.path.splitext(img_file)[0]}.{self.meta_ext}'
+        return get_img_meta(meta_file)
+
+    def subtract_bg(self, img_data, img_file, img_number, img_meta):
+        bg = self.get_background(img_file, img_number, img_meta)
+        try:
+            img_data -= bg
+        except ValueError:
+            pass
 
     def initialize_sphere(self):
         """ If scan changes, initialize new EwaldSphere object
@@ -1266,11 +1389,11 @@ class specProcess(wranglerProcess):
     def get_mask(self):
         """Get mask array from mask file
         """
-        if (not self.mask_file) or (not os.path.exists(self.mask_file)):
-            return None
+        if self.mask_file and os.path.exists(self.mask_file):
+            mask = fabio.open(self.mask_file).data
+            return np.flatnonzero(mask)
 
-        mask = fabio.open(self.mask_file).data
-        return np.flatnonzero(mask)
+        return None
 
     def get_background(self, img_file, img_number, image_meta):
         """Subtract background image if bg_file or bg_dir specified
@@ -1298,7 +1421,7 @@ class specProcess(wranglerProcess):
                         bg_file = None
                         continue
 
-                    bg_meta = get_image_meta_data(meta_file)
+                    bg_meta = get_img_meta(meta_file)
                     if self.bg_match_fname:
                         if img_number == get_img_number(meta_file):
                             break
@@ -1313,7 +1436,7 @@ class specProcess(wranglerProcess):
         if bg_file is None:
             return 0.
 
-        bg = read_image_file(bg_file, return_float=True)
+        bg = get_img_data(bg_file, self.detector, return_float=True)
         if bg is None:
             return 0.
 
@@ -1350,3 +1473,75 @@ class specProcess(wranglerProcess):
         # Write I(tth) to csv
         fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.csv')
         write_csv(fname, tth, intensity)
+
+    def get_next_image_(self):
+        """ Gets next image in image series or in directory to process
+
+        Returns:
+            image_name {str}: image file path
+        """
+        # ic()
+        if self.single_img:
+            return self.img_fname, get_img_number(self.img_fname)
+
+        if len(self.img_fnames) == 0:
+            if self.inp_type != 'Image Directory':
+                # self.img_fnames = sorted(glob.glob(
+                #     os.path.join(self.img_dir, f'{self.scan_name}_*.{self.img_ext}')))
+                self.img_fnames = Path(self.img_dir).glob(f'{self.scan_name}_*.{self.img_ext}')
+                # if self.meta_ext is None:
+                #     self.img_fnames = [str(f) for f in self.img_fnames if
+                #                        (str(f) >= self.img_fname) and (str(f) not in self.processed)]
+                # else:
+                #     self.img_fnames = [str(f) for f in self.img_fnames if
+                #                        (str(f) >= self.img_fname) and (str(f) not in self.processed) and
+                #                        (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
+                #                         os.path.exists(f'{os.path.splitext(f)}.{self.meta_ext}'))]
+            else:
+                filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
+                filters = filters if filters != '**' else '*'
+                if self.include_subdir:
+                    # self.img_fnames = sorted(glob.glob(os.path.join(
+                    #     self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
+                    self.img_fnames = sorted(list(Path(self.img_dir).rglob(f'{filters}.{self.img_ext}')))
+                else:
+                    # self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
+                    self.img_fnames = sorted(list(Path(self.img_dir).glob(f'{filters}.{self.img_ext}')))
+
+                # if self.meta_ext is None:
+                #     self.img_fnames = [str(f) for f in self.img_fnames if str(f) not in self.processed]
+                # else:
+                #     self.img_fnames = [str(f) for f in self.img_fnames if (str(f) not in self.processed) and
+                #                        (os.path.exists(f.with_suffix(f'.{self.meta_ext}')) or
+                #                         os.path.exists(f'{f}.{self.meta_ext}'))]
+                                       # (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
+                                       #  os.path.exists(f'{f}.{self.meta_ext}'))]
+
+        if self.meta_ext is None:
+            self.img_fnames = [str(f) for f in self.img_fnames if
+                               (str(f) >= self.img_fname) and (str(f) not in self.processed)]
+        else:
+            self.img_fnames = [str(f) for f in self.img_fnames if
+                               (str(f) >= self.img_fname) and (str(f) not in self.processed) and
+                               (os.path.exists(f.with_suffix(f'.{self.meta_ext}')) or
+                                os.path.exists(f'{f}.{self.meta_ext}'))]
+
+        # if len(self.img_fnames) > 0:
+        #     img_fname = self.img_fnames[0]
+        #     self.processed.append(img_fname)
+        #     self.img_fnames = self.img_fnames[1:]
+        #     if match_img_detector(img_fname, self.detector):
+        #         return None, None
+        #     return img_fname, get_img_number(img_fname)
+
+        # ic(self.img_fnames, self.processed)
+        self.img_fnames = deque(sorted(self.img_fnames))
+        for nn in range(len(self.img_fnames)):
+            img_fname = self.img_fnames[0]
+            self.processed.append(img_fname)
+            self.img_fnames.popleft()
+            # self.img_fnames.remove(img_fname)
+            if match_img_detector(img_fname, self.poni_dict):
+                return img_fname, get_img_number(img_fname)
+
+        return None, None
