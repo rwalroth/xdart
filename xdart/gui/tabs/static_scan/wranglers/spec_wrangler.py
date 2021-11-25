@@ -8,10 +8,10 @@ import os
 import time
 import glob
 import fnmatch
+from copy import deepcopy
 import numpy as np
 from pathlib import Path
 from collections import deque
-from copy import deepcopy
 
 # pyFAI imports
 import fabio
@@ -35,7 +35,7 @@ from xdart.utils.containers.poni import get_poni_dict
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
-from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QDialog = QtWidgets.QDialog
@@ -142,7 +142,7 @@ class specWrangler(wranglerWidget):
     """
     showLabel = Qt.QtCore.Signal(str)
 
-    def __init__(self, fname, file_lock, parent=None):
+    def __init__(self, fname, file_lock, sphere, data_1d, data_2d, parent=None):
         """fname: str, file path
         file_lock: mp.Condition, process safe lock
         """
@@ -150,10 +150,13 @@ class specWrangler(wranglerWidget):
 
         # Scan Parameters
         self.poni_dict = None
-        # self.detector = None
         self.scan_parameters = []
         self.counters = []
         self.motors = []
+        self.command = None
+        self.sphere = sphere
+        self.data_1d = data_1d
+        self.data_2d = data_2d
 
         # Setup gui elements
         self.ui = Ui_Form()
@@ -287,7 +290,6 @@ class specWrangler(wranglerWidget):
             self.scan_name,
             self.single_img,
             self.poni_dict,
-            # self.detector,
             self.inp_type,
             self.img_fname,
             self.img_dir,
@@ -307,6 +309,10 @@ class specWrangler(wranglerWidget):
             self.gi,
             self.th_mtr,
             self.timeout,
+            self.command,
+            self.sphere,
+            self.data_1d,
+            self.data_2d,
             self
         )
 
@@ -331,8 +337,6 @@ class specWrangler(wranglerWidget):
         # Calibration
         self.poni_file = self.parameters.child('Calibration').child('poni_file').value()
         self.thread.poni_dict = self.poni_dict
-
-        # self.thread.detector = self.detector
 
         # Signal
         self.file_filter = self.parameters.child('Signal').child('Filter').value()
@@ -401,8 +405,14 @@ class specWrangler(wranglerWidget):
         self.timeout = self.parameters.child('Timeout').value()
         self.thread.timeout = self.timeout
 
+        self.thread.command = self.command
+
         self.thread.file_lock = self.file_lock
         self.thread.sphere_args = self.sphere_args
+
+        self.thread.sphere = self.sphere
+        self.thread.data_1d = self.data_1d
+        self.thread.data_2d = self.data_2d
 
     def send_command(self):
         """Sends command in command line to spec, and calls
@@ -420,26 +430,31 @@ class specWrangler(wranglerWidget):
         commandLine.send_command(self.specCommandLine)
 
     def start(self):
+        self.command = 'start'
+        self.thread.command = 'start'
         self.ui.pauseButton.setEnabled(True)
         self.ui.continueButton.setEnabled(False)
         self.ui.stopButton.setEnabled(True)
         self.sigStart.emit()
 
     def pause(self):
-        if self.thread.isRunning():
-            self.command_queue.put('pause')
+        self.command = 'pause'
+        self.thread.command = 'pause'
+        # if self.thread.isRunning():
         self.ui.pauseButton.setEnabled(False)
         self.ui.continueButton.setEnabled(True)
 
     def cont(self):
-        if self.thread.isRunning():
-            self.command_queue.put('continue')
+        self.command = 'continue'
+        self.thread.command = 'continue'
+        # if self.thread.isRunning():
         self.ui.pauseButton.setEnabled(True)
         self.ui.continueButton.setEnabled(False)
 
     def stop(self):
-        if self.thread.isRunning():
-            self.command_queue.put('stop')
+        self.command = 'stop'
+        self.thread.command = 'stop'
+        # if self.thread.isRunning():
         self.ui.pauseButton.setEnabled(False)
         self.ui.continueButton.setEnabled(False)
         self.ui.stopButton.setEnabled(False)
@@ -447,7 +462,6 @@ class specWrangler(wranglerWidget):
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
         """
-        # ic()
         fname, _ = QFileDialog().getOpenFileName(
             filter="PONI (*.poni *.PONI)"
         )
@@ -458,7 +472,6 @@ class specWrangler(wranglerWidget):
     def get_poni_dict(self):
         """Opens file dialogue and sets the calibration file
         """
-        # ic()
         if not os.path.exists(self.poni_file):
             for child in self.parameters.children():
                 child.hide()
@@ -471,11 +484,6 @@ class specWrangler(wranglerWidget):
             self.thread.signal_q.put(('message', 'Invalid Poni File'))
             return
 
-        # self.detector = self.poni_dict['detector'].get_name()
-        # detector = detector[:detector.find('Pixel')].rstrip()
-        # if detector.find('Detector'):
-        #     detector = detector[len('Detector'):].lstrip()
-        # self.detector = detector
         for child in self.parameters.children():
             child.show()
 
@@ -743,19 +751,6 @@ class specWrangler(wranglerWidget):
         motors = get_img_meta(self.img_fname, self.meta_ext, rv='Motors')
         self.motors = list(motors.keys())
 
-        # meta_file = f'{os.path.splitext(self.img_fname)[0]}.{self.meta_ext}'
-        # if not os.path.exists(meta_file):
-        #     return
-        #
-        # image_meta_data = get_img_meta(meta_file)
-        # self.scan_parameters = list(image_meta_data.keys())
-        #
-        # counters = get_img_meta(meta_file, rv='Counters')
-        # self.counters = list(counters.keys())
-        #
-        # motors = get_img_meta(meta_file, rv='Motors')
-        # self.motors = list(motors.keys())
-
     def enabled(self, enable):
         """Sets tree and start button to enable.
 
@@ -799,6 +794,8 @@ class specThread(wranglerThread):
             see EwaldSphere.
         timeout: float or int, how long to continue checking for new
             data.
+        command: command passed to stop, pause, continue etc.
+        data_1d/2d: Dictionaries to store processed data for plotting
 
     signals:
         showLabel: str, sends out text to be used in specLabel
@@ -818,7 +815,6 @@ class specThread(wranglerThread):
             scan_name,
             single_img,
             poni_dict,
-            # detector,
             inp_type,
             img_fname,
             img_dir,
@@ -839,6 +835,10 @@ class specThread(wranglerThread):
             gi,
             th_mtr,
             timeout,
+            command,
+            sphere,
+            data_1d,
+            data_2d,
             parent=None):
 
         """command_queue: mp.Queue, queue for commands sent from parent
@@ -858,6 +858,7 @@ class specThread(wranglerThread):
         meta_ext : str, extension of metadata file
         timeout: float or int, how long to continue checking for new
             data.
+        command: command passed to stop, pause, continue etc.
         gi: bool, grazing incidence flag to determine if pyGIX is to be used
         th_mtr: float, incidence angle
         """
@@ -868,7 +869,6 @@ class specThread(wranglerThread):
         self.scan_name = scan_name
         self.single_img = single_img
         self.poni_dict = poni_dict
-        # self.detector = detector
         self.inp_type = inp_type
         self.img_fname = img_fname
         self.img_dir = img_dir
@@ -889,221 +889,33 @@ class specThread(wranglerThread):
         self.gi = gi
         self.th_mtr = th_mtr
         self.timeout = timeout
+        self.command = command
+        self.sphere = sphere
+        self.data_1d = data_1d
+        self.data_2d = data_2d
+
+        self.user = None
+        self.mask = None
+        self.detector = None
+        self.img_fnames = []
+        self.processed = []
 
     def run(self):
         """Initializes specProcess and watches for new commands from
         parent or signals from the process.
         """
         # ic()
-
         t0 = time.time()
-        process = specProcess(
-            self.command_q,
-            self.signal_q,
-            self.sphere_args,
-            self.file_lock,
-            self.fname,
-            self.h5_dir,
-            self.scan_name,
-            self.single_img,
-            self.poni_dict,
-            # self.detector,
-            self.inp_type,
-            self.img_fname,
-            self.img_dir,
-            self.include_subdir,
-            self.img_ext,
-            self.meta_ext,
-            self.file_filter,
-            self.mask_file,
-            self.write_mode,
-            self.bg_type,
-            self.bg_file,
-            self.bg_dir,
-            self.bg_matching_par,
-            self.bg_match_fname,
-            self.bg_file_filter,
-            self.bg_scale,
-            self.bg_norm_channel,
-            self.gi,
-            self.th_mtr,
-            self.timeout
-        )
-
-        if (self.poni_dict is None) or (self.img_fname == ''):
+        if (self.poni_dict == '') or (self.img_fname == ''):
             return
 
-        process.start()
-        last = False
-        # Main loop
-        while True:
-            # Check for new commands
-            if not self.input_q.empty():
-                command = self.input_q.get()
-                self.command_q.put(command)
-
-            # Check for new updates
-            if not self.signal_q.empty():
-                signal, data = self.signal_q.get()
-                if signal == 'update':
-                    self.sigUpdate.emit(data)
-                # elif signal == 'updateArch':
-                #     self.sigUpdateArch.emit(data)
-                elif signal == 'message':
-                    self.showLabel.emit(data)
-                elif signal == 'new_scan':
-                    self.sigUpdateFile.emit(*data)
-                elif signal == 'TERMINATE':
-                    last = True
-
-            # Breaks on signal from process
-            if last:
-                break
-
-        # Empty queues of any other items after main loop ends.
-        self._empty_q(self.signal_q)
-        self._empty_q(self.command_q)
-        process.join()
-
-        print(f'Total Processing Time: {time.time() - t0:0.1f}\n')
-
-    def _empty_q(self, q):
-        """Empties out a given queue.
-        args:
-            q: Queue
-        """
-        while not q.empty():
-            _ = q.get()
-
-
-class specProcess(wranglerProcess):
-    """Process for integrating scanning area detector data. Checks for
-    a specified scan in a spec file, and then searches for associated
-    raw files. Data is stored with an EwaldSphere object, saving all
-    data to an hdf5 file.
-
-    attributes:
-        command_q: mp.Queue, queue for commands from parent thread.
-        file_lock: mp.Condition, process safe lock for file access
-        scan_name: str, name of current scan
-        img_ext : str, extension of image file
-        meta_ext : str, extension of metadata file
-        signal_q: queue to place signals back to parent thread.
-        fname: str, path to data file
-        h5_dir: str, data file directory
-        single_img: bool, True if there is only one image
-        poni_dict: str, poni file name
-        detector: str, Detector name
-        img_fname: str, path to input image file
-        img_dir: str, path to image directory
-        include_subdir: bool, flag to include subdirectories
-        sphere_args: dict, used as **kwargs in sphere initialization.
-            see EwaldSphere.
-        timeout: float or int, how long to continue checking for new
-            data.
-        user: str, user name from spec file
-
-    methods:
-        _main: Controls flow of integration, checking for commands,
-            providing updates, and catching errors.
-        read_raw: method for reading in binary .raw files and returning
-            data as a numpy array.
-        wrangle: Method which handles data loading from files.
-    """
-
-    def __init__(
-            self,
-            command_q,
-            signal_q,
-            sphere_args,
-            file_lock,
-            fname,
-            h5_dir,
-            scan_name,
-            single_img,
-            poni_dict,
-            # detector,
-            inp_type,
-            img_fname,
-            img_dir,
-            include_subdir,
-            img_ext,
-            meta_ext,
-            file_filter,
-            mask_file,
-            write_mode,
-            bg_type,
-            bg_file,
-            bg_dir,
-            bg_matching_par,
-            bg_match_fname,
-            bg_file_filter,
-            bg_scale,
-            bg_norm_channel,
-            gi,
-            th_mtr,
-            timeout,
-            *args, ** kwargs):
-
-        """command_q: mp.Queue, queue for commands from parent thread.
-        signal_q: queue to place signals back to parent thread.
-        sphere_args: dict, used as **kwargs in sphere initialization.
-            see EwaldSphere.
-        scan_name: str, name of current scan
-        single_img: bool, True if there is only one image
-        fname: str, path to data file
-        h5_dir: str, data file directory
-        file_lock: mp.Condition, process safe lock for file access
-        poni_dict: str, poni file name
-        detector: str, Detector name
-        img_dir: str, path to image directory
-        include_subdir: bool, flag to include subdirectories
-        timeout: float or int, how long to continue checking for new
-            data.
-        """
-        # ic()
-        super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
-                         *args, **kwargs)
-
-        self.h5_dir = h5_dir
-        self.scan_name = scan_name
-        self.single_img = single_img
-        self.poni_dict = poni_dict
-        # self.detector = detector
-        self.inp_type = inp_type
-        self.img_fname = img_fname
-        self.img_dir = img_dir
-        self.include_subdir = include_subdir
-        self.img_ext = img_ext
-        self.meta_ext = meta_ext
-        self.file_filter = file_filter
-        self.mask_file = mask_file
-        self.write_mode = write_mode
-        self.bg_type = bg_type
-        self.bg_file = bg_file
-        self.bg_dir = bg_dir
-        self.bg_matching_par = bg_matching_par
-        self.bg_match_fname = bg_match_fname
-        self.bg_file_filter = bg_file_filter
-        self.bg_scale = bg_scale
-        self.bg_norm_channel = bg_norm_channel
-        self.gi = gi
-        self.th_mtr = th_mtr
-        self.timeout = timeout
-
-        self.user = None
-        self.mask = None
+        self.img_fnames.clear()
+        self.processed.clear()
         self.detector = self.poni_dict['detector']
-        self.img_fnames = []
-        self.processed = []
         self.get_mask()
 
-    def _main(self):
-        """Checks for commands in queue, sends back updates through
-        signal queue, and catches errors. Calls wrangle method for
-        reading in data, then performs integration.
-        """
         self.process_scan()
+        print(f'Total Time: {time.time() - t0}')
 
     def process_scan(self):
         """Go through series of images in a scan and process them individually
@@ -1111,34 +923,31 @@ class specProcess(wranglerProcess):
         sphere = None
         files_processed = 0
 
-        pause = False
         start = time.time()
         while True:
             # Check for commands, or wait if paused
-            if not self.command_q.empty() or pause:
-                command = self.command_q.get()
-                print(command)
-                if command == 'stop':
-                    break
-                elif command == 'continue':
-                    pause = False
-                elif command == 'pause':
-                    self.signal_q.put(('message', f'Paused'))
-                    time.sleep(0.5)
-                    pause = True
-                    continue
+            command = self.command
+            # ic(command)
+            if command == 'stop':
+                break
+            elif command == 'pause':
+                self.showLabel.emit(f'Paused')
+                time.sleep(0.5)
+                continue
+            else:
+                pass
 
             img_fname, img_number, img_data = self.get_next_image()
             if img_data is None:
                 if img_fname is None:
-                    self.signal_q.put(('message', f'Checking for next image'))
+                    self.showLabel.emit(f'Checking for next image')
                     time.sleep(0.5)
                 else:
                     print(f'Invalid Image File {os.path.basename(img_fname)}. Skipping...')
 
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
-                    self.signal_q.put(('message', "Timeout occurred"))
+                    self.showLabel.emit(f'Timeout occurred')
                     break
                 else:
                     continue
@@ -1151,7 +960,7 @@ class specProcess(wranglerProcess):
 
             if img_number in list(sphere.arches.index):
                 if self.single_img:
-                    self.signal_q.put(('update', img_number))
+                    self.sigUpdate.emit(img_number)
                     break
                 continue
 
@@ -1173,6 +982,13 @@ class specProcess(wranglerProcess):
             arch.integrate_1d(global_mask=self.mask, **sphere.bai_1d_args)
             arch.integrate_2d(global_mask=self.mask, **sphere.bai_2d_args)
 
+            self.data_1d[int(img_number)] = arch.copy(include_2d=False)
+            self.data_2d[int(img_number)] = {
+                'map_raw': deepcopy(arch.map_raw),
+                'mask': deepcopy(arch.mask),
+                'int_2d': deepcopy(arch.int_2d)
+            }
+
             # Add arch copy to sphere, save to file
             with self.file_lock:
                 sphere.add_arch(
@@ -1189,8 +1005,9 @@ class specProcess(wranglerProcess):
             print(f'Processed {fname}')
             if len(fname) > 40:
                 fname = f'{fname[:8]}....{fname[-30:]}'
-            self.signal_q.put(('message', f'{fname}'))
-            self.signal_q.put(('update', img_number))
+            # self.signal_q.put(('message', f'{fname}'))
+            self.showLabel.emit(f'{fname}')
+            self.sigUpdate.emit(img_number)
             files_processed += 1
 
             if self.single_img:
@@ -1201,7 +1018,6 @@ class specProcess(wranglerProcess):
 
         # If loop ends, signal terminate to parent thread.
         print(f'\nTotal Files Processed: {files_processed}')
-        self.signal_q.put(('TERMINATE', None))
 
     def get_next_image(self):
         """ Gets next image in image series or in directory to process
@@ -1294,10 +1110,15 @@ class specProcess(wranglerProcess):
             else:
                 sphere.save_to_h5(replace=True)
 
-        self.signal_q.put(('new_scan',
-                           (self.scan_name, fname,
-                            self.gi, self.th_mtr,
-                            self.single_img)))
+        self.sigUpdateFile.emit(
+            self.scan_name, fname,
+            self.gi, self.th_mtr, self.single_img
+        )
+        print(f'\n***** New Scan *****')
+        # self.signal_q.put(('new_scan',
+        #                    (self.scan_name, fname,
+        #                     self.gi, self.th_mtr,
+        #                     self.single_img)))
 
         return sphere
 

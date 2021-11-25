@@ -27,6 +27,8 @@ import fabio
 # This module imports
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
 
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+
 # Detector File Sizes
 detector_file_sizes = {
     'Rayonix MX225': 18878464,
@@ -429,6 +431,7 @@ def get_img_data(
     Returns:
         ndarray: Image data read into numpy array
     """
+    # ic(fname, detector.name, detector.shape)
     try:
         img_data = fabio.open(fname).data
     except OSError:

@@ -187,8 +187,8 @@ class staticWidget(QWidget):
         for name, w in wranglers.items():
             self.ui.wranglerStack.addWidget(
                 w(
-                    self.fname,
-                    self.file_lock,
+                    self.fname, self.file_lock,
+                    self.sphere, self.data_1d, self.data_2d,
                 )
             )
             self.ui.wranglerBox.addItem(name)

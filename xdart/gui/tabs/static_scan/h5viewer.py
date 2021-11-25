@@ -405,9 +405,9 @@ class H5Viewer(QWidget):
 
         # Put 'Overall' first in list
         load_2d = self.update_2d
-        if 'Overall' in self.arch_ids:
-            self.arch_ids.insert(0, self.arch_ids.pop(self.arch_ids.index('Overall')))
-            idxs = self.sphere.arches.index
+        # if 'Overall' in self.arch_ids:
+        #     self.arch_ids.insert(0, self.arch_ids.pop(self.arch_ids.index('Overall')))
+        #     idxs = self.sphere.arches.index
 
         if len(self.sphere.arches.index) > 1:
             if len(idxs) == len(self.sphere.arches.index):

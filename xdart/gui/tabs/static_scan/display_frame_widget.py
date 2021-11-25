@@ -276,8 +276,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.idxs_1d = [int(idx) for idx in self.idxs if idx in self.data_1d.keys()]
         self.idxs_2d = [int(idx) for idx in self.idxs if idx in self.data_2d.keys()]
 
-        # ic(self.arch_ids, self.idxs, self.idxs_1d, self.idxs_2d, self.overall)
-
     def update_plot_range(self):
         if self.ui.slice.isChecked():
             self.update_plot()
@@ -401,7 +399,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.get_idxs()
 
         if not self._updated():
-            # ic('not updated')
             return True
 
         if self.ui.shareAxis.isChecked() and (self.ui.imageUnit.currentIndex() < 2):
@@ -412,6 +409,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.plot.setXLink(None)
             self.ui.plotUnit.setEnabled(True)
 
+        try:
+            self.update_plot()
+        except TypeError:
+            return False
+
         if self.ui.update2D.isChecked():
             try:
                 self.update_image()
@@ -421,10 +423,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 self.update_binned()
             except TypeError:
                 return False
-        try:
-            self.update_plot()
-        except TypeError:
-            return False
 
         # Apply label to 2D view
         if self.ui.update2D.isChecked():
@@ -470,12 +468,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Apply Mask
         global_mask = self.sphere.global_mask if self.sphere.global_mask is not None else []
         mask = mask if mask is not None else []
-        mask = np.unique(np.append(mask, global_mask))
+        mask = np.asarray(np.unique(np.append(mask, global_mask)), dtype=int)
         if len(mask) > 0:
             mask = np.unravel_index(mask, data.shape)
             data[mask] = np.nan
 
-    # Subtract background
+        # Subtract background
         data -= self.bkg_map_raw
 
         # Get Bounding Rectangle
@@ -755,22 +753,26 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             xdata, ydata = self.get_xydata(self.arches['sum_int_2d'])
             return intensity, xdata, ydata
 
-        intensity, n_arches = 0., 0
-        for nn, idx in enumerate(idxs):
-            arch_1d = self.data_1d[int(idx)]
-            arch_2d = self.data_2d[int(idx)]
-            arch_intensity = self.get_int_2d(arch_2d['int_2d'], arch_1d)
-            if arch_intensity.shape[0] != 0:
-                intensity += arch_intensity
-                arch_xy = arch_2d
-                n_arches += 1
+        # intensity, n_arches = 0., 0
+        # for nn, idx in enumerate(idxs):
+        idx = idxs[0]
+        arch_1d = self.data_1d[int(idx)]
+        arch_2d = self.data_2d[int(idx)]
+        # arch_intensity = self.get_int_2d(arch_2d['int_2d'], arch_1d)
+        intensity = self.get_int_2d(arch_2d['int_2d'], arch_1d)
+        # if (arch_intensity.ndim > 1) and (arch_intensity.shape[0] != 0):
+        #     intensity += arch_intensity
+        #     arch_xy = arch_2d
+        #     n_arches += 1
 
-        if n_arches == 0:
+        # if n_arches == 0:
+        if intensity.ndim != 2:
             return None, None, None
 
-        intensity /= n_arches
+        # intensity /= n_arches
 
-        xdata, ydata = self.get_xydata(arch_xy['int_2d'])
+        # xdata, ydata = self.get_xydata(arch_xy['int_2d'])
+        xdata, ydata = self.get_xydata(arch_2d['int_2d'])
         return np.asarray(intensity, dtype=float), xdata, ydata
 
     def get_sphere_data_2d(self):
@@ -817,9 +819,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             intensity_2d = int_2d.i_tthChi
         else:
             intensity_2d = int_2d.i_QxyQz
-
-        intensity = intensity_2d.copy()
-        intensity = np.asarray(intensity, dtype=float)
+        intensity = np.asarray(intensity_2d.copy(), dtype=float)
 
         if normalize:
             if arch_1d is not None:
@@ -850,6 +850,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if arch_2d is None:
             return None, None
 
+        # If a particular Chi Range is chosen...
         intensity = self.get_int_2d(arch_2d['int_2d'], arch, normalize=False)
         q, tth, chi = arch_2d['int_2d'].q, arch_2d['int_2d'].ttheta, arch_2d['int_2d'].chi
 
