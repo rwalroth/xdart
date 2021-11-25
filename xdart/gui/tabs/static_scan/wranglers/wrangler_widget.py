@@ -51,7 +51,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
     """
     sigStart = Qt.QtCore.Signal()
     sigUpdateData = Qt.QtCore.Signal(int)
-    sigUpdateArch = Qt.QtCore.Signal(dict)
+    # sigUpdateArch = Qt.QtCore.Signal(dict)
     sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str, bool)
     sigUpdateGI = Qt.QtCore.Signal(bool)
     finished = Qt.QtCore.Signal()
@@ -76,7 +76,7 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         self.thread.finished.connect(self.finished.emit)
         self.thread.started.connect(self.started.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
-        self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
+        # self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
         self.thread.sigUpdateGI.connect(self.sigUpdateGI.emit)
 
     def enabled(self, enable):
@@ -130,7 +130,7 @@ class wranglerThread(Qt.QtCore.QThread):
         sigUpdateGI: bool, signals the grazing incidence condition has changed.
     """
     sigUpdate = Qt.QtCore.Signal(int)
-    sigUpdateArch = Qt.QtCore.Signal(dict)
+    # sigUpdateArch = Qt.QtCore.Signal(dict)
     sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str, bool)
     sigUpdateGI = Qt.QtCore.Signal(bool)
 

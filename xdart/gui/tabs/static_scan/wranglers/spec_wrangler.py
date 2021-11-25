@@ -314,7 +314,7 @@ class specWrangler(wranglerWidget):
         self.thread.sigUpdateFile.connect(self.sigUpdateFile.emit)
         self.thread.finished.connect(self.finished.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
-        self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
+        # self.thread.sigUpdateArch.connect(self.sigUpdateArch.emit)
         self.thread.sigUpdateGI.connect(self.sigUpdateGI.emit)
 
         # Enable/disable buttons initially
@@ -947,8 +947,8 @@ class specThread(wranglerThread):
                 signal, data = self.signal_q.get()
                 if signal == 'update':
                     self.sigUpdate.emit(data)
-                elif signal == 'updateArch':
-                    self.sigUpdateArch.emit(data)
+                # elif signal == 'updateArch':
+                #     self.sigUpdateArch.emit(data)
                 elif signal == 'message':
                     self.showLabel.emit(data)
                 elif signal == 'new_scan':
@@ -1251,9 +1251,6 @@ class specProcess(wranglerProcess):
             if img_data is not None:
                 return img_fname, img_number, img_data
 
-            # if match_img_detector(img_fname, self.poni_dict):
-            #     return img_fname, get_img_number(img_fname)
-
         return None, None, None
 
     def get_meta_data(self, img_file):
@@ -1267,7 +1264,6 @@ class specProcess(wranglerProcess):
             min_int = img_data.min()
             if min_int < 0:
                 img_data -= min_int
-                # ic(np.isnan(img_data).sum())
         except ValueError:
             pass
 
@@ -1374,7 +1370,7 @@ class specProcess(wranglerProcess):
         if bg is None:
             return 0.
 
-        print(f'Subtracted {os.path.basename(bg_file)} from {os.path.basename(img_file)}')
+        print(f'\nSubtracted {os.path.basename(bg_file)} from {os.path.basename(img_file)}')
         bg *= self.bg_scale
         if self.bg_norm_channel != 'None':
             try:

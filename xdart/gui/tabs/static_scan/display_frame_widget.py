@@ -473,7 +473,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         mask = np.unique(np.append(mask, global_mask))
         if len(mask) > 0:
             mask = np.unravel_index(mask, data.shape)
-        data[mask] = np.nan
+            data[mask] = np.nan
 
     # Subtract background
         data -= self.bkg_map_raw

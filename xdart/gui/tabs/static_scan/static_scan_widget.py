@@ -232,7 +232,7 @@ class staticWidget(QWidget):
         self.wrangler.sigStart.connect(self.start_wrangler)
         self.wrangler.sigUpdateData.connect(self.update_data)
         self.wrangler.sigUpdateFile.connect(self.new_scan)
-        self.wrangler.sigUpdateArch.connect(self.new_arch)
+        # self.wrangler.sigUpdateArch.connect(self.new_arch)
         self.wrangler.sigUpdateGI.connect(self.update_scattering_geometry)
         self.wrangler.started.connect(self.thread_state_changed)
         self.wrangler.finished.connect(self.wrangler_finished)

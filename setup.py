@@ -141,7 +141,8 @@ setup(
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
     install_requires=['pyfai', 'pygix', 'pyqtgraph', 'pyqt5', 'pandas',
             'scikit-image', 'lmfit', 'pyyaml', 'numpy', 'scipy', 'silx',
-            'fabio', 'matplotlib', 'requests', 'h5py', 'pyopencl'],  # Optional
+            'fabio', 'matplotlib', 'requests', 'h5py', 'pyopencl',
+            'ipympl', 'ipywidgets'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
