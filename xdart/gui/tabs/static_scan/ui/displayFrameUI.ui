@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>842</height>
+    <height>814</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -44,10 +44,16 @@
       <number>2</number>
      </property>
      <widget class="QFrame" name="imageWindow">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="minimumSize">
        <size>
         <width>0</width>
-        <height>440</height>
+        <height>400</height>
        </size>
       </property>
       <property name="frameShape">
@@ -701,6 +707,12 @@
       </layout>
      </widget>
      <widget class="QFrame" name="plotWindow">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="minimumSize">
        <size>
         <width>0</width>

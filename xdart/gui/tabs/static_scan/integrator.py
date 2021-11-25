@@ -877,7 +877,9 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     # @staticmethod
     def run_pyfai_drawmask(self):
+        filters = f'Images (*.tif *tiff)'
         processFile, _ = QFileDialog().getOpenFileName(
+            filter=filters,
             caption='Choose Image File',
             options=QFileDialog.DontUseNativeDialog
         )

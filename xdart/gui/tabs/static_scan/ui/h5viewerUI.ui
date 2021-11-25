@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>786</height>
+    <height>842</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -20,6 +20,21 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <property name="leftMargin">
+    <number>8</number>
+   </property>
+   <property name="topMargin">
+    <number>8</number>
+   </property>
+   <property name="rightMargin">
+    <number>8</number>
+   </property>
+   <property name="bottomMargin">
+    <number>12</number>
+   </property>
+   <property name="spacing">
+    <number>-1</number>
+   </property>
    <item row="1" column="0">
     <widget class="QLabel" name="label_3">
      <property name="maximumSize">
@@ -29,14 +44,23 @@
       </size>
      </property>
      <property name="text">
-      <string>Scans</string>
+      <string>  Scans</string>
      </property>
     </widget>
    </item>
    <item row="1" column="1">
     <widget class="QLabel" name="label_4">
+     <property name="maximumSize">
+      <size>
+       <width>70</width>
+       <height>16777215</height>
+      </size>
+     </property>
      <property name="text">
       <string>Data</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
    </item>
@@ -86,22 +110,31 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>50</width>
+        <width>30</width>
         <height>0</height>
        </size>
+      </property>
+      <property name="resizeMode">
+       <enum>QListView::Adjust</enum>
       </property>
      </widget>
      <widget class="QListWidget" name="listData">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+       <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
       <property name="minimumSize">
        <size>
-        <width>50</width>
+        <width>40</width>
         <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>50</width>
+        <height>16777215</height>
        </size>
       </property>
       <property name="focusPolicy">

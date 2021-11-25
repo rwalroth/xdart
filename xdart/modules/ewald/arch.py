@@ -166,7 +166,7 @@ class EwaldArch():
     def get_mask(self, global_mask=None):
         if global_mask is not None:
             mask_idx = np.unique(np.append(self.mask, global_mask))
-            mask_idx.sort()
+            # mask_idx.sort()
         else:
             mask_idx = self.mask
         mask = np.zeros(self.map_raw.size, dtype=int)

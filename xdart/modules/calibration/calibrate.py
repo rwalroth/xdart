@@ -4,27 +4,19 @@
 """
 
 # Standard library imports
-import sys, os, glob, fnmatch, re, time
+import sys, os, fnmatch, time
 
 # Other Imports
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
 import numpy as np
-import scipy
 
 from collections import OrderedDict
-from copy import deepcopy
-
 from joblib import Parallel, delayed
 import multiprocessing as mp
 
 # This module imports
-from lmfit import Model, Parameters
-from lmfit.models import LinearModel, GaussianModel, PseudoVoigtModel
+from lmfit.models import LinearModel
 
 import pyFAI
-from pyFAI.multi_geometry import MultiGeometry
 from silx.io.specfile import SpecFile
 
 xdart_dir = os.getcwd().split('xdart')[0] + 'xdart'
@@ -32,8 +24,8 @@ if __name__ == '__main__':
     if xdart_dir not in sys.path:
         sys.path.append(xdart_dir)
     
-from xdart.utils import get_from_pdi, get_motor_val, query, query_yes_no
-from xdart.utils import get_img_data, smooth_img, get_fit, fit_images_2D
+from xdart.utils import get_motor_val, query, query_yes_no
+from xdart.utils import get_img_data, fit_images_2D
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand, wait_until_SPECfinished, get_console_output
 
 

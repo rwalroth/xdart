@@ -183,8 +183,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.plot_layout.addWidget(self.plot_win)
         self.plot_viewBox = RectViewBox()
         self.plot = self.plot_win.addPlot(viewBox=self.plot_viewBox)
-        self.legend = self.plot.addLegend()
         self.curves = []
+        self.legend = self.plot.addLegend()
+        self.legend.setFlag(self.legend.ItemIgnoresTransformations, False)
+        # self.legend.setLabelTextSize('10pt')
 
         self.pos_label = pg.LabelItem(justify='right')
         self.plot_win.addItem(self.pos_label)
@@ -236,7 +238,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # Save Image/Data Buttons
         self.ui.save_2D.clicked.connect(self.save_image)
-        self.ui.save_1D.clicked.connect(self.save_array)
+        self.ui.save_1D.clicked.connect(self.save_1D)
 
         # Initialize image units
         self.set_image_units()
@@ -452,26 +454,28 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if not self._updated():
             return True
 
+        mask = None
         if self.overall and len(self.arch_ids) > 1:
             data = self.get_sphere_map_raw()
-            # Apply Mask
-            if self.sphere.global_mask is not None:
-                mask = np.unravel_index(self.sphere.global_mask, data.shape)
-                data[mask] = np.nan
         else:
             data = self.get_arches_map_raw()
             if data is None:
                 return
 
             # Apply Mask
-            # arch = self.arches[self.idxs[0]]
             arch_2d = self.data_2d[self.idxs_2d[0]]
-            # mask = np.unravel_index(arch.mask, data.shape)
-            mask = np.unravel_index(arch_2d['mask'], data.shape)
-            data[mask] = np.nan
+            mask = arch_2d['mask']
         data = np.asarray(data, dtype=float)
 
-        # Subtract background
+        # Apply Mask
+        global_mask = self.sphere.global_mask if self.sphere.global_mask is not None else []
+        mask = mask if mask is not None else []
+        mask = np.unique(np.append(mask, global_mask))
+        if len(mask) > 0:
+            mask = np.unravel_index(mask, data.shape)
+        data[mask] = np.nan
+
+    # Subtract background
         data -= self.bkg_map_raw
 
         # Get Bounding Rectangle
@@ -538,12 +542,16 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Updates 2D Label
         """
         # Sets title text
+        label = self.sphere.name
+        if len(label) > 40:
+            label = f'{label[:10]}.....{label[-30:]}'
+
         if (self.overall or self.sphere.single_img) and (len(self.arch_ids) > 1):
-            self.ui.labelCurrent.setText(self.sphere.name)
+            self.ui.labelCurrent.setText(label)
         elif len(self.arch_ids) > 1:
-            self.ui.labelCurrent.setText(f'{self.sphere.name} [Average]')
+            self.ui.labelCurrent.setText(f'{label} [Average]')
         else:
-            self.ui.labelCurrent.setText(f'{self.sphere.name}_{self.arch_ids[0]}')
+            self.ui.labelCurrent.setText(f'{label}_{self.arch_ids[0]}')
 
     def update_plot(self):
         """Updates data in plot frame
@@ -576,7 +584,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.plot_data_range = [[xdata.min(), xdata.max()], [ydata.min(), ydata.max()]]
         self.update_plot_view()
 
-        # self.save_array(auto=True)
+        # self.save_1D(auto=True)
 
     def update_plot_view(self):
         """Updates 1D view of data in plot frame
@@ -1170,7 +1178,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         save_fname = os.path.join(directory, base_name)
         np.save(f'{save_fname}.npy', data)
 
-    def save_array(self, auto=False):
+    def save_1D(self, auto=False):
         """Saves currently displayed data. Currently supports .xye
         and .csv.
         """
@@ -1225,11 +1233,11 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             exporter = pyqtgraph.exporters.ImageExporter(scene)
             h = exporter.params.param('height').value()
             w = exporter.params.param('width').value()
-            h_new = 800
+            h_new = 600
             w_new = int(np.round(w/h * h_new, 0))
             exporter.params.param('height').setValue(h_new)
             exporter.params.param('width').setValue(w_new)
-            exporter.export(fname + '.tif')
+            exporter.export(fname + '.png')
 
     def get_colors(self):
         # Define color tuples

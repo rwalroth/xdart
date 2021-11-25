@@ -19,12 +19,12 @@ from xdart.gui.mainWindow import Ui_MainWindow
 from xdart.gui import tabs
 
 # Other imports
-import multiprocessing
-multiprocessing.freeze_support()
-try:
-    multiprocessing.set_start_method('spawn')
-except RuntimeError:
-    pass
+# import multiprocessing
+# multiprocessing.freeze_support()
+# try:
+#     multiprocessing.set_start_method('spawn')
+# except RuntimeError:
+#     pass
 
 
 def setup_data_folders(exp_list):
@@ -41,7 +41,7 @@ def setup_data_folders(exp_list):
     tab_paths : dict, paths for tabs to store data
     """
     current_directory = os.path.dirname(__file__)
-    data_directory = os.path.join(current_directory, "data")
+    data_directory = os.path.join(current_directory, "../data")
     if not os.path.isdir(data_directory):
         os.mkdir(data_directory)
     tab_paths = {}
@@ -126,8 +126,8 @@ class Main(QMainWindow):
         gc.collect()
 
 
-if __name__ == '__main__':
-    multiprocessing.freeze_support()
+def main():
+    # multiprocessing.freeze_support()
     os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     tab_paths = setup_data_folders(tabs.exp_list)
     app = QtGui.QApplication(sys.argv)
@@ -136,8 +136,11 @@ if __name__ == '__main__':
     mw.show()
     app.exec_()
 
-    try:
-        os.killpg(os.getpid(), signal.SIGTERM)
-    except AttributeError or ProcessLookupError:
-        pass
-    sys.exit(1)
+    # try:
+    #     os.killpg(os.getpid(), signal.SIGTERM)
+    # except AttributeError or ProcessLookupError:
+    #     pass
+
+
+if __name__ == '__main__':
+    sys.exit(main())

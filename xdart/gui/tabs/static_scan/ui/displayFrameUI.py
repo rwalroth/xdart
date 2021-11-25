@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'displayFrameUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.15.4
+# Created by: PyQt5 UI code generator 5.15.6
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -28,7 +28,12 @@ class Ui_Form(object):
         self.splitter.setHandleWidth(2)
         self.splitter.setObjectName("splitter")
         self.imageWindow = QtWidgets.QFrame(self.splitter)
-        self.imageWindow.setMinimumSize(QtCore.QSize(0, 440))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.imageWindow.sizePolicy().hasHeightForWidth())
+        self.imageWindow.setSizePolicy(sizePolicy)
+        self.imageWindow.setMinimumSize(QtCore.QSize(0, 400))
         self.imageWindow.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.imageWindow.setFrameShadow(QtWidgets.QFrame.Raised)
         self.imageWindow.setLineWidth(3)
@@ -208,6 +213,11 @@ class Ui_Form(object):
         self.horizontalLayout_2.addWidget(self.save_2D)
         self.verticalLayout_3.addWidget(self.imageToolbar)
         self.plotWindow = QtWidgets.QFrame(self.splitter)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.plotWindow.sizePolicy().hasHeightForWidth())
+        self.plotWindow.setSizePolicy(sizePolicy)
         self.plotWindow.setMinimumSize(QtCore.QSize(0, 400))
         self.plotWindow.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.plotWindow.setFrameShadow(QtWidgets.QFrame.Raised)

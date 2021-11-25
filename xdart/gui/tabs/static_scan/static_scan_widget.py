@@ -161,9 +161,7 @@ class staticWidget(QWidget):
         self.h5viewer.actionSaveImage.triggered.connect(
             self.displayframe.save_image
         )
-        self.h5viewer.actionSaveArray.triggered.connect(
-            self.displayframe.save_array
-        )
+        self.h5viewer.actionSaveArray.triggered.connect(self.displayframe.save_1D)
 
         # IntegratorFrame setup
         self.integratorTree = integratorTree(

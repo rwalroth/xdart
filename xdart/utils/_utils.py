@@ -12,6 +12,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from collections import OrderedDict
+from silx.io.specfile import SpecFile
 
 from skimage import io
 import scipy.ndimage as ndimage
@@ -229,116 +230,169 @@ def query(question):
     sys.stdout.write(question)
     return input()
 
-    
-def get_img_meta(meta_file, rv='all'):
+
+def get_spec_file(img_fname):
+    """Check if SPEC file exists for an image file and return path if yes"""
+    fpath = Path(img_fname)
+    fname = fpath.stem
+    match = re.search(f'_scan\d+_\d+.', fname)
+    if match is None:
+        return None
+    spec_fname = fname[fname.find('_') + 1:match.start()]
+
+    for nn in range(3):
+        s = os.path.join(fpath.parents[nn], spec_fname)
+        if os.path.isfile(s):
+            return s
+
+    return None
+
+
+def get_img_meta(img_file, meta_ext, spec_path=None, rv='all'):
     """Get image meta data from pdi/txt files for different beamlines
 
     Args:
-        meta_file (str): Meta file name with path
+        img_file (str): Image file for which meta data is required
+        meta_ext (str): Extension of Meta file
+        spec_path (str): Path of spec file if not in regular path
         rv (str, optional): Return values (Counters, motors or all)
 
     Returns:
         [dict]: Dictionary with all the meta data
     """
-    if not os.path.exists(meta_file):
-        return {}
+    if meta_ext == 'SPEC':
+        Counters, Motors, Extras = get_meta_from_spec(img_file, spec_path)
+    else:
+        meta_file = f'{os.path.splitext(img_file)[0]}.{meta_ext}'
+        meta_file = meta_file if os.path.exists(meta_file) else f'{img_file}.{meta_ext}'
 
-    with open(meta_file, 'r') as f:
-        data = f.read()
+        if not os.path.exists(meta_file):
+            return {}
 
-    image_meta_data = {}
-    meta_ext = os.path.splitext(meta_file)[1][1:]
-
-    if meta_ext == 'pdi':  # Pilatus Image
-        data = data.replace('\n', ';')
-
-        try:
-            counters = re.search('All Counters;(.*);;# All Motors', data).group(1)
-            cts = re.split(';|=', counters)
-            Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-
-            motors = re.search('All Motors;(.*);#', data).group(1)
-            cts = re.split(';|=', motors)
-            Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-        except AttributeError:
-            ss1 = '# Diffractometer Motor Positions for image;# '
-            ss2 = ';# Calculated Detector Calibration Parameters for image:'
-
-            try:
-                motors = re.search(f'{ss1}(.*){ss2}', data).group(1)
-                cts = re.split(';|=', motors)
-                Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-                Motors['TwoTheta'] = Motors['2Theta']
-            except AttributeError:
-                Motors = {'TwoTheta': float(0.0), 'Theta': float(0.0)}
-            Counters = {}
-
-        if len(data[data.rindex(';')+1:]) > 0:
-            image_meta_data['epoch'] = data[data.rindex(';')+1:]
-
-    else:  # if BL == '11-3':
-
-        counters = re.search('# Counters\n(.*)\n', data).group(1)
-        cts = re.split(',|=', counters)
-        Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-
-        motors = re.search('# Motors\n(.*)\n', data).group(1)
-        cts = re.split(',|=', motors)
-        Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-        
-        # image_meta_data['User'] = (data[data.index('User: ')+5: data.index(', time')]).strip()
-        # image_meta_data['Time'] = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
-        Time = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
-        
-        # d = datetime.strptime(image_meta_data['Time'], "%a %b %d %H:%M:%S %Y")
-        d = datetime.strptime(Time, "%a %b %d %H:%M:%S %Y")
-        image_meta_data['epoch'] = time.mktime(d.timetuple())
-
-    image_meta_data.update(Counters)
-    image_meta_data.update(Motors)
+        if meta_ext == 'pdi':  # Pilatus Image
+            Counters, Motors, Extras = get_meta_from_pdi(meta_file)
+        else:
+            Counters, Motors, Extras = get_meta_from_txt(meta_file)
 
     if rv == 'Counters':
         return Counters
     elif rv == 'Motors':
         return Motors
 
-    return image_meta_data
+    return Extras | Counters | Motors
 
 
-def get_from_pdi(pdi_file):
+def get_meta_from_spec(img_file, spec_path=None):
+    spec_file, scan_number = get_specFile_scanNumber(img_file, spec_path)
+    if spec_file is None:
+        return {}, {}, {}
+    img_number = get_img_number(img_file)
+
+    sf = SpecFile(spec_file)[scan_number - 1]
+    Counters = {c: v for c, v in zip(sf.labels, sf.data_line(img_number))}
+    Motors = {m: v for m, v in zip(sf.motor_names, sf.motor_positions)}
+
+    Extras = {}
+    return Counters, Motors, Extras
+
+
+def get_specFile_scanNumber(img_file, spec_path=None):
+    img_file = Path(img_file)
+    img_fname = os.path.basename(img_file)
+    img_ext = img_file.suffix[1:]
+
+    match = re.search(f'_scan\d+_\d+.{img_ext}', img_fname)
+    if match is None:
+        return None, None
+
+    spec_fname = img_fname[img_fname.find('_') + 1:match.start()]
+    scan_number = int(img_fname[match.start() + 5: img_fname.rfind('_')])
+    # print(f'{img_fname} \n{spec_fname} \n{match.group()} \n{img_ext} \n{scan_number}')
+
+    if spec_path is not None:
+        s = os.path.join(spec_path, spec_fname)
+        if os.path.exists(s):
+            return s, scan_number
+    else:
+        for nn in range(2):
+            s = os.path.join(img_file.parents[nn], spec_fname)
+            if os.path.isfile(s):
+                return s, scan_number
+
+    return None, None
+
+
+def get_meta_from_pdi(pdi_file):
     """Get motor and counter names and values from PDI file
 
     Args:
         pdi_file (str): PDI file name with path
 
     Returns:
-        [dict]: Tupe of two dictionaries containing Counters and Motors
+        [dict]: Tuple of two dictionaries containing Counters and Motors
     """
-
     with open(pdi_file, 'r') as f:
-        pdi_data = f.read()
-
-    pdi_data = pdi_data.replace('\n', ';')
+        data = f.read()
+    data = data.replace('\n', ';')
 
     try:
-        counters = re.search('All Counters;(.*);;# All Motors', pdi_data).group(1)
+        counters = re.search('All Counters;(.*);;# All Motors', data).group(1)
         cts = re.split(';|=', counters)
         Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
 
-        motors = find_between(pdi_data, 'All Motors;', ';#')
+        motors = re.search('All Motors;(.*);#', data).group(1)
         cts = re.split(';|=', motors)
         Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-    except:
+    except AttributeError:
         ss1 = '# Diffractometer Motor Positions for image;# '
         ss2 = ';# Calculated Detector Calibration Parameters for image:'
 
-        motors = re.search(f'{ss1}(.*){ss2}', pdi_data).group(1)
-        cts = re.split(';|=', motors)
-        Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-        Motors['TwoTheta'] = Motors['2Theta']
+        try:
+            motors = re.search(f'{ss1}(.*){ss2}', data).group(1)
+            cts = re.split(';|=', motors)
+            Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+            Motors['TwoTheta'] = Motors['2Theta']
+        except AttributeError:
+            Motors = {'TwoTheta': float(0.0), 'Theta': float(0.0)}
         Counters = {}
 
-    return Counters, Motors
+    Extras = {}
+    if len(data[data.rindex(';') + 1:]) > 0:
+        Extras['epoch'] = data[data.rindex(';') + 1:]
+
+    return Counters, Motors, Extras
+
+
+def get_meta_from_txt(txt_file):
+    """Get motor and counter names and values from PDI file
+
+    Args:
+        txt_file (str): Txt meta file name with path
+
+    Returns:
+        [dict]: Tuple of two dictionaries containing Counters and Motors
+    """
+    with open(txt_file, 'r') as f:
+        data = f.read()
+
+    counters = re.search('# Counters\n(.*)\n', data).group(1)
+    cts = re.split(',|=', counters)
+    Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+
+    motors = re.search('# Motors\n(.*)\n', data).group(1)
+    cts = re.split(',|=', motors)
+    Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+
+    # image_meta_data['User'] = (data[data.index('User: ')+5: data.index(', time')]).strip()
+    # image_meta_data['Time'] = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
+    Time = (data[data.index('time: ') + 5: data.index('# Temp') - 2]).strip()
+
+    # d = datetime.strptime(image_meta_data['Time'], "%a %b %d %H:%M:%S %Y")
+    Extras = {}
+    d = datetime.strptime(Time, "%a %b %d %H:%M:%S %Y")
+    Extras['epoch'] = time.mktime(d.timetuple())
+
+    return Counters, Motors, Extras
 
 
 def get_motor_val(pdi_file, motor):
@@ -351,7 +405,7 @@ def get_motor_val(pdi_file, motor):
     Returns:
         float: Motor position
     """
-    _, Motors = get_from_pdi(pdi_file)
+    _, Motors = get_meta_from_pdi(pdi_file)
 
     return Motors[motor]
 
@@ -359,22 +413,18 @@ def get_motor_val(pdi_file, motor):
 def get_img_data(
         fname, detector, orientation='horizontal',
         flip=False, fliplr=False, transpose=False,
-        return_float=False, im=0, verbose=False):
-        # shape_100K=(195, 487), shape_300K=(195, 1475), shape_1M=(1043, 981),
+        return_float=False, im=0):
     """Read image file and return numpy array
 
     Args:
         fname (str): File Name with path
+        detector (detector object): pyFAI detector object
         orientation (str, optional): Orientation of detector. Options: 'horizontal', 'vertical'. Defaults to 'horizontal'.
         flip (bool, optional): Flag to flip the image up-down (required by pyFAI at times). Defaults to False.
         fliplr (bool, optional): Flag to flip the image left-right (required by pyFAI at times). Defaults to False.
         transpose (bool, optional): Flag to transpose the image (required by pyFAI at times). Defaults to False.
-        shape_100K (tuple, optional): Shape of numpy array for Pilatus 100K. Defaults to (195, 487).
-        shape_300K (tuple, optional): Shape of numpy array for Pilatus 300K. Defaults to (195,1475).
-        shape_1M (tuple, optional): Shape of numpy array for Pilatus 1M. Defaults to (1043,981).
         return_float (bool, optional): Convert array to float. Defaults to False.
         im (integer, optional): image number if input is h5 file from Eiger. Defaults to 0
-        verbose (bool, optional): Print debug messages. Defaults to False.
 
     Returns:
         ndarray: Image data read into numpy array
@@ -431,7 +481,7 @@ def get_img_data(
 
     if return_float:
         img_data = np.asarray(img_data, dtype=float)
-        
+
     if (orientation == 'vertical') or transpose:
         img_data = img_data.T
 

@@ -232,8 +232,11 @@ class fileHandlerThread(Qt.QtCore.QThread):
     
     def update_sphere(self):
         with self.file_lock:
-            self.sphere.load_from_h5(replace=False, data_only=True,
-                                     set_mg=False)
+            try:
+                self.sphere.load_from_h5(replace=False, data_only=True,
+                                         set_mg=False)
+            except KeyError:
+                pass
 
     def load_arch(self):
         with self.file_lock:

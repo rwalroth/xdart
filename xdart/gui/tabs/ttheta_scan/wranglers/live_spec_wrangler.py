@@ -31,7 +31,7 @@ from ....gui_utils import NamedActionParameter
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.watcher import Watcher
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
-from xdart.utils import get_from_pdi
+from xdart.utils import get_meta_from_pdi
 
 from .spec_wrangler import DETECTOR_DICT, MaskWidget
 
@@ -626,7 +626,7 @@ class liveSpecProcess(wranglerProcess):
         return scan_name, idx
     
     def read_pdi(self, pdi_file):
-        """Gets the metadata from the pdi file. Uses get_from_pdi, but
+        """Gets the metadata from the pdi file. Uses get_meta_from_pdi, but
         returns a single dictionary rather than two.
         
         args:
@@ -635,7 +635,7 @@ class liveSpecProcess(wranglerProcess):
         returns:
             image_meta: dict, dictionary with metadata
         """
-        counters, motors = get_from_pdi(pdi_file)
+        counters, motors = get_meta_from_pdi(pdi_file)
         image_meta = {}
         image_meta.update(counters)
         image_meta.update(motors)
