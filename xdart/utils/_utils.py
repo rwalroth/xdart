@@ -854,7 +854,13 @@ def arr_to_h5(data, grp, key, compression):
         key: str, name of new Group or Dataset
         compression: str, compression algorithm to use. See h5py docs.
     """
-    arr = np.array(data)
+    if key in ['map_raw', 'bg_raw']:
+        arr = np.array(data, dtype='int32')
+    elif key in ['i_tthChi', 'i_qChi', 'i_QxyQz']:
+        arr = np.array(data, dtype='float32')
+    else:
+        arr = np.array(data)
+
     if key in grp:
         if check_encoded(grp[key], 'arr'):
             if grp[key].dtype == arr.dtype:
