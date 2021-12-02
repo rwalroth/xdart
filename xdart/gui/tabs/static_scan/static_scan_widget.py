@@ -588,8 +588,8 @@ class staticWidget(QWidget):
         layout.addWidget(accept_button, 2, 1)
         layout.addWidget(cancel_button, 2, 2)
 
-        counters = ['Pilatus 1M', 'Pilatus 100K', 'Pilatus 300K']
-        self.detector_widget.addItems(counters)
+        detectors = ['Pilatus 1M', 'Pilatus 100k', 'Pilatus 300kw']
+        self.detector_widget.addItems(detectors)
 
         accept_button.clicked.connect(self.set_detector)
         cancel_button.clicked.connect(self.close_detector_popup)

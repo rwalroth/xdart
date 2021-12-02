@@ -303,6 +303,8 @@ def get_meta_from_spec(img_file, spec_path=None):
 def get_specFile_scanNumber(img_file, spec_path=None):
     img_file = Path(img_file)
     img_fname = os.path.basename(img_file)
+    if img_fname[0:2] == 'b_':
+        img_fname = img_fname[2:]
     img_ext = img_file.suffix[1:]
 
     match = re.search(f'_scan\d+_\d+.{img_ext}', img_fname)

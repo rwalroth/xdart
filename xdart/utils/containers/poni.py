@@ -157,7 +157,8 @@ def create_ai_from_dict(poni_dict, gi=False):
         ai.__setattr__(k, v)
 
     if not gi:
-        ai._rot3 -= np.deg2rad(90)
+        if 'MX225' in ai.detector.name:
+            ai._rot3 -= np.deg2rad(90)
     else:
         calib_pars = dict(
             dist=ai._dist, poni1=ai._poni1, poni2=ai._poni2,
