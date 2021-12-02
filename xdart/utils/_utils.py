@@ -5,6 +5,9 @@
 
 # Standard library imports
 import time
+import os
+import subprocess
+import sys
 
 # Other imports
 import numpy as np
@@ -14,7 +17,6 @@ from pathlib import Path
 from collections import OrderedDict
 from silx.io.specfile import SpecFile
 
-from skimage import io
 import scipy.ndimage as ndimage
 from scipy.signal import medfilt2d
 
@@ -1171,11 +1173,6 @@ class FixSizeOrderedDict(OrderedDict):
                     self.popitem(False)
 
         OrderedDict.__setitem__(self, key, value)
-
-
-import os
-import subprocess
-import sys
 
 
 def launch(program):
