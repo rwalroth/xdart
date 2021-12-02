@@ -196,7 +196,7 @@ class EwaldSphere:
                     [a.integrator for a in self.arches], **self.mg_args
                 )
 
-            self.overall_raw += arch.map_raw
+            self.overall_raw += (arch.map_raw - arch.bg_raw)
 
     def by_arch_integrate_1d(self, **args):
         """Integrates all arches individually, then sums the results for

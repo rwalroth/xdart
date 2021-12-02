@@ -198,7 +198,7 @@ class specWrangler(wranglerWidget):
 
         # Signal
         self.inp_type = self.parameters.child('Signal').child('inp_type').value()
-        self.img_fname = self.parameters.child('Signal').child('File').value()
+        self.img_file = self.parameters.child('Signal').child('File').value()
         self.img_dir = self.parameters.child('Signal').child('img_dir').value()
         self.include_subdir = self.parameters.child('Signal').child('include_subdir').value()
         self.img_ext = self.parameters.child('Signal').child('img_ext').value()
@@ -291,7 +291,7 @@ class specWrangler(wranglerWidget):
             self.single_img,
             self.poni_dict,
             self.inp_type,
-            self.img_fname,
+            self.img_file,
             self.img_dir,
             self.include_subdir,
             self.img_ext,
@@ -344,8 +344,12 @@ class specWrangler(wranglerWidget):
 
         self.inp_type = self.parameters.child('Signal').child('inp_type').value()
         self.thread.inp_type = self.inp_type
+
         self.get_img_fname()
-        self.thread.img_fname = self.img_fname
+        self.thread.img_file = self.img_file
+
+        self.scan_name = get_scan_name(self.img_file)
+        self.thread.scan_name = self.scan_name
 
         self.thread.single_img = self.single_img
         self.thread.img_dir, self.thread.img_ext = self.img_dir, self.img_ext
@@ -354,9 +358,6 @@ class specWrangler(wranglerWidget):
         self.thread.include_subdir = self.include_subdir
 
         self.thread.meta_ext = self.meta_ext
-
-        self.scan_name = get_scan_name(self.img_fname)
-        self.thread.scan_name = self.scan_name
 
         self.thread.h5_dir = self.h5_dir
         self.fname = os.path.join(self.h5_dir, self.scan_name + '.hdf5')
@@ -543,13 +544,13 @@ class specWrangler(wranglerWidget):
         """Sets file name based on chosen options
         """
         # ic()
-        old_fname = self.img_fname
+        old_fname = self.img_file
         if self.inp_type != 'Image Directory':
-            img_fname = self.parameters.child('Signal').child('File').value()
-            if os.path.exists(img_fname):
-                self.img_fname = img_fname
-                self.img_dir, _, self.img_ext = split_file_name(self.img_fname)
-                # self.meta_ext = self.get_meta_ext(self.img_fname)
+            img_file = self.parameters.child('Signal').child('File').value()
+            if os.path.exists(img_file):
+                self.img_file = img_file
+                self.img_dir, _, self.img_ext = split_file_name(self.img_file)
+                # self.meta_ext = self.get_meta_ext(self.img_file)
 
         else:
             self.img_ext = self.parameters.child('Signal').child('img_ext').value()
@@ -566,18 +567,18 @@ class specWrangler(wranglerWidget):
                         if match_img_detector(fname, self.poni_dict):
                             if self.meta_ext:
                                 if self.exists_meta_file(fname):
-                                    self.img_fname = fname
+                                    self.img_file = fname
                                     break
                                 else:
                                     continue
                             else:
-                                self.img_fname = fname
+                                self.img_file = fname
                                 break
                             # self.meta_ext = self.get_meta_ext(fname)
                 if not self.include_subdir:
                     break
 
-        if (((self.img_fname != old_fname) or (self.img_fname and (len(self.scan_parameters) < 1)))
+        if (((self.img_file != old_fname) or (self.img_file and (len(self.scan_parameters) < 1)))
                 and self.meta_ext):
             self.set_pars_from_meta()
 
@@ -587,17 +588,17 @@ class specWrangler(wranglerWidget):
             self.meta_ext = None
         self.get_img_fname()
 
-    def exists_meta_file(self, img_fname):
+    def exists_meta_file(self, img_file):
         """Checks for existence of meta file for image file"""
         if self.meta_ext != 'SPEC':
             meta_files = [
-                f'{os.path.splitext(img_fname)[0]}.{self.meta_ext}',
-                f'{os.path.splitext(img_fname)}.{self.meta_ext}'
+                f'{os.path.splitext(img_file)[0]}.{self.meta_ext}',
+                f'{os.path.splitext(img_file)}.{self.meta_ext}'
             ]
             if os.path.exists(meta_files[0]) or os.path.exists(meta_files[1]):
                 return True
         else:
-            meta_file = get_spec_file(img_fname)
+            meta_file = get_spec_file(img_file)
             if meta_file and os.path.exists(meta_file):
                 return True
 
@@ -643,7 +644,9 @@ class specWrangler(wranglerWidget):
         """Opens file dialogue and sets the background file
         """
         # ic()
-        fname, _ = QFileDialog().getOpenFileName()
+        fname, _ = QFileDialog().getOpenFileName(
+            filter=f"Images (*.{self.img_ext})"
+            )
         if fname != '':
             self.parameters.child('BG').child('File').setValue(fname)
         self.bg_file = fname
@@ -739,16 +742,16 @@ class specWrangler(wranglerWidget):
         """Reads image metadata to populate matching parameters
         """
         # ic()
-        if not self.img_fname:
+        if not self.img_file:
             return
 
-        img_meta = get_img_meta(self.img_fname, self.meta_ext)
+        img_meta = get_img_meta(self.img_file, self.meta_ext)
         self.scan_parameters = list(img_meta.keys())
 
-        counters = get_img_meta(self.img_fname, self.meta_ext, rv='Counters')
+        counters = get_img_meta(self.img_file, self.meta_ext, rv='Counters')
         self.counters = list(counters.keys())
 
-        motors = get_img_meta(self.img_fname, self.meta_ext, rv='Motors')
+        motors = get_img_meta(self.img_file, self.meta_ext, rv='Motors')
         self.motors = list(motors.keys())
 
     def enabled(self, enable):
@@ -782,7 +785,7 @@ class specThread(wranglerThread):
         scan_name: str, name of current scan
         fname: str, full path to data file.
         h5_dir: str, data file directory.
-        img_fname: str, path to image file
+        img_file: str, path to image file
         img_dir: str, path to image directory
         img_ext : str, extension of image file
         meta_ext : str, extension of metadata file
@@ -816,7 +819,7 @@ class specThread(wranglerThread):
             single_img,
             poni_dict,
             inp_type,
-            img_fname,
+            img_file,
             img_dir,
             include_subdir,
             img_ext,
@@ -851,7 +854,7 @@ class specThread(wranglerThread):
         single_img: bool, True if there is only one image
         poni_dict: str, poni file name
         detector: str, Detector name
-        img_fname: str, path to input image file
+        img_file: str, path to input image file
         img_dir: str, path to image directory
         include_subdir: bool, flag to include subdirectories
         img_ext : str, extension of image file
@@ -870,7 +873,7 @@ class specThread(wranglerThread):
         self.single_img = single_img
         self.poni_dict = poni_dict
         self.inp_type = inp_type
-        self.img_fname = img_fname
+        self.img_file = img_file
         self.img_dir = img_dir
         self.include_subdir = include_subdir
         self.img_ext = img_ext
@@ -899,6 +902,7 @@ class specThread(wranglerThread):
         self.detector = None
         self.img_fnames = []
         self.processed = []
+        self.sub_label = ''
 
     def run(self):
         """Initializes specProcess and watches for new commands from
@@ -906,16 +910,17 @@ class specThread(wranglerThread):
         """
         # ic()
         t0 = time.time()
-        if (self.poni_dict == '') or (self.img_fname == ''):
+        if (self.poni_dict == '') or (self.img_file == ''):
             return
 
         self.img_fnames.clear()
         self.processed.clear()
         self.detector = self.poni_dict['detector']
+        self.sub_label = ''
         self.get_mask()
 
         self.process_scan()
-        print(f'Total Time: {time.time() - t0}')
+        print(f'Total Time: {time.time() - t0:0.2f}')
 
     def process_scan(self):
         """Go through series of images in a scan and process them individually
@@ -924,6 +929,8 @@ class specThread(wranglerThread):
         files_processed = 0
 
         start = time.time()
+        # start1 = time.time()
+        # print(f'Start time: {time.time() - start1:0.2f}')
         while True:
             # Check for commands, or wait if paused
             command = self.command
@@ -937,13 +944,13 @@ class specThread(wranglerThread):
             else:
                 pass
 
-            img_fname, img_number, img_data = self.get_next_image()
+            img_file, img_number, img_data = self.get_next_image()
             if img_data is None:
-                if img_fname is None:
+                if img_file is None:
                     self.showLabel.emit(f'Checking for next image')
                     time.sleep(0.5)
                 else:
-                    print(f'Invalid Image File {os.path.basename(img_fname)}. Skipping...')
+                    print(f'Invalid Image File {os.path.basename(img_file)}. Skipping...')
 
                 elapsed = time.time() - start
                 if elapsed > self.timeout:
@@ -952,7 +959,7 @@ class specThread(wranglerThread):
                 else:
                     continue
 
-            self.scan_name = get_scan_name(img_fname)
+            self.scan_name = get_scan_name(img_file)
 
             # Initialize sphere and save to disk, send update for new scan
             if (sphere is None) or (self.scan_name != sphere.name):
@@ -965,29 +972,36 @@ class specThread(wranglerThread):
                 continue
 
             # Get Meta Data
-            img_meta = get_img_meta(img_fname, self.meta_ext) if self.meta_ext else {}
+            img_meta = get_img_meta(img_file, self.meta_ext) if self.meta_ext else {}
+            # print(f'Image meta: {time.time() - start1:0.2f}')
 
-            # Subtract Background
-            if self.bg_type != 'None':
-                self.subtract_bg(img_data, img_fname, img_number, img_meta)
+            # Get Background
+            # if self.bg_type != 'None':
+            bg_raw = self.get_background(img_file, img_number, img_meta)
+                # bg_raw = self.get_background()
+                # self.subtract_bg(img_data, img_file, img_number, img_meta)
+            # print(f'Subtracted BG: {time.time() - start1:0.2f}')
 
             arch = EwaldArch(
                 img_number, img_data, poni_dict=self.poni_dict,
                 scan_info=img_meta, static=True, gi=self.gi,
                 # mask=self.mask, th_mtr=self.th_mtr,
-                th_mtr=self.th_mtr,
+                th_mtr=self.th_mtr, bg_raw=bg_raw,
             )
 
             # integrate image to 1d and 2d arrays
             arch.integrate_1d(global_mask=self.mask, **sphere.bai_1d_args)
+            # print(f'Integrated 1D: {time.time() - start1:0.2f}')
             arch.integrate_2d(global_mask=self.mask, **sphere.bai_2d_args)
+            # print(f'Integrated 2D: {time.time() - start1:0.2f}')
 
-            self.data_1d[int(img_number)] = arch.copy(include_2d=False)
-            self.data_2d[int(img_number)] = {
-                'map_raw': deepcopy(arch.map_raw),
-                'mask': deepcopy(arch.mask),
-                'int_2d': deepcopy(arch.int_2d)
-            }
+            # self.data_1d[int(img_number)] = arch.copy(include_2d=False)
+            # self.data_2d[int(img_number)] = {
+            #     'map_raw': deepcopy(arch.map_raw),
+            #     'mask': deepcopy(arch.mask),
+            #     'int_2d': deepcopy(arch.int_2d)
+            # }
+            # print(f'Copied data to Data dicts: {time.time() - start1:0.2f}')
 
             # Add arch copy to sphere, save to file
             with self.file_lock:
@@ -996,24 +1010,27 @@ class specThread(wranglerThread):
                     get_sd=True, set_mg=False, static=True, gi=self.gi,
                     th_mtr=self.th_mtr
                 )
+                # print(f'Added arch data to sphere: {time.time() - start1:0.2f}')
                 sphere.save_to_h5(data_only=True, replace=False)
+            # print(f'Saved data to h5: {time.time() - start1:0.2f}')
 
             # Save 1D integrated data in CSV and xye files
             self.save_1d(sphere, arch, img_number)
+            # print(f'Saved 1D data: {time.time() - start1:0.2f}')
 
-            fname = os.path.splitext(os.path.basename(img_fname))[0]
-            print(f'Processed {fname}')
+            fname = os.path.splitext(os.path.basename(img_file))[0]
+            print(f'Processed {fname} {self.sub_label}')
             if len(fname) > 40:
                 fname = f'{fname[:8]}....{fname[-30:]}'
-            # self.signal_q.put(('message', f'{fname}'))
             self.showLabel.emit(f'{fname}')
             self.sigUpdate.emit(img_number)
             files_processed += 1
 
             if self.single_img:
+                self.sigUpdate.emit(img_number)
                 break
 
-            time.sleep(0.1)
+            time.sleep(0.02)
             start = time.time()
 
         # If loop ends, signal terminate to parent thread.
@@ -1028,12 +1045,12 @@ class specThread(wranglerThread):
             image_data {np.ndarray}: image file data array
         """
         if self.single_img:
-            img_data = get_img_data(self.img_fname, self.detector,return_float=True)
-            return self.img_fname, get_img_number(self.img_fname), img_data
+            img_data = get_img_data(self.img_file, self.detector,return_float=True)
+            return self.img_file, get_img_number(self.img_file), img_data
 
         if len(self.img_fnames) == 0:
             if self.inp_type != 'Image Directory':
-                first_img = self.img_fname
+                first_img = self.img_file
                 self.img_fnames = Path(self.img_dir).glob(f'{self.scan_name}_*.{self.img_ext}')
             else:
                 first_img = ''
@@ -1046,26 +1063,18 @@ class specThread(wranglerThread):
 
             self.img_fnames = [str(f) for f in self.img_fnames if
                                (str(f) >= first_img) and (str(f) not in self.processed)]
-            # if self.meta_ext is None:
-            #     self.img_fnames = [str(f) for f in self.img_fnames if
-            #                        (str(f) >= first_img) and (str(f) not in self.processed)]
-            # else:
-            #     self.img_fnames = [str(f) for f in self.img_fnames if
-            #                        (str(f) >= first_img) and (str(f) not in self.processed) and
-            #                        (os.path.exists(f.with_suffix(f'.{self.meta_ext}')) or
-            #                         os.path.exists(f'{f}.{self.meta_ext}'))]
 
         # ic(self.img_fnames, self.processed)
         self.img_fnames = deque(sorted(self.img_fnames))
         for nn in range(len(self.img_fnames)):
-            img_fname = self.img_fnames[0]
-            self.processed.append(img_fname)
+            img_file = self.img_fnames[0]
+            self.processed.append(img_file)
             self.img_fnames.popleft()
 
-            img_number = get_img_number(img_fname)
-            img_data = get_img_data(img_fname, self.detector, im=img_number-1, return_float=True)
+            img_number = get_img_number(img_file)
+            img_data = get_img_data(img_file, self.detector, im=img_number-1, return_float=True)
             if img_data is not None:
-                return img_fname, img_number, img_data
+                return img_file, img_number, img_data
 
         return None, None, None
 
@@ -1077,9 +1086,9 @@ class specThread(wranglerThread):
         bg = self.get_background(img_file, img_number, img_meta)
         try:
             img_data -= bg
-            min_int = img_data.min()
-            if min_int < 0:
-                img_data -= min_int
+            # min_int = img_data.min()
+            # if min_int < 0:
+            #     img_data -= min_int
         except ValueError:
             pass
 
@@ -1115,10 +1124,6 @@ class specThread(wranglerThread):
             self.gi, self.th_mtr, self.single_img
         )
         print(f'\n***** New Scan *****')
-        # self.signal_q.put(('new_scan',
-        #                    (self.scan_name, fname,
-        #                     self.gi, self.th_mtr,
-        #                     self.single_img)))
 
         return sphere
 
@@ -1148,11 +1153,16 @@ class specThread(wranglerThread):
     def get_background(self, img_file, img_number, img_meta):
         """Subtract background image if bg_file or bg_dir specified
         """
-        bg_file, bg_meta = None, None
+        if self.bg_type == 'None':
+            return 0
+
+        bg_file, bg_meta, norm_factor = None, None, 1
+        self.sub_label, norm_label, bg_scale_label = '', '', ''
 
         if self.bg_type == 'Single BG File':
             if self.bg_file:
                 bg_file = self.bg_file
+                bg_meta = get_img_meta(bg_file, self.meta_ext)
         else:
             if self.bg_dir and (self.bg_match_fname or self.bg_matching_par):
                 bg_file_filter = 'bg' if not self.bg_file_filter else self.bg_file_filter
@@ -1172,7 +1182,7 @@ class specThread(wranglerThread):
                         continue
 
                     # bg_meta = get_img_meta(meta_file)
-                    bg_meta = get_img_meta(img_file, self.meta_ext)
+                    bg_meta = get_img_meta(bg_file, self.meta_ext)
                     if self.bg_match_fname:
                         if img_number == get_img_number(meta_file):
                             break
@@ -1191,14 +1201,19 @@ class specThread(wranglerThread):
         if bg is None:
             return 0.
 
-        print(f'\nSubtracted {os.path.basename(bg_file)} from {os.path.basename(img_file)}')
-        bg *= self.bg_scale
+        if self.bg_scale != 1:
+            bg *= self.bg_scale
+            bg_scale_label = f'{self.bg_scale:0.2f} [Scale] x '
         if self.bg_norm_channel != 'None':
             try:
-                bg *= (img_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
-            except KeyError:
+                if bg_meta[self.bg_norm_channel] != 0:
+                    norm_factor = (img_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
+                    bg *= norm_factor
+                    norm_label = f'{norm_factor:0.2f} [Normalized to Channel - {self.bg_norm_channel}] x '
+            except (KeyError, TypeError):
                 pass
 
+        self.sub_label = f'[Subtracted {bg_scale_label}{norm_label}{os.path.basename(bg_file)}]'
         return bg
 
     @staticmethod
@@ -1214,11 +1229,11 @@ class specThread(wranglerThread):
 
         # Write I(q) to xye
         fname = os.path.join(path, f'iq_{sphere.name}_{str(idx).zfill(4)}.xye')
-        write_xye(fname, q, intensity, np.sqrt(intensity))
+        write_xye(fname, q, intensity, np.sqrt(abs(intensity)))
 
         # Write I(tth) to xye
         fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.xye')
-        write_xye(fname, tth, intensity, np.sqrt(intensity))
+        write_xye(fname, tth, intensity, np.sqrt(abs(intensity)))
 
         # Write I(q) to csv
         fname = os.path.join(path, f'iq_{sphere.name}_{str(idx).zfill(4)}.csv')
@@ -1227,144 +1242,3 @@ class specThread(wranglerThread):
         # Write I(tth) to csv
         fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.csv')
         write_csv(fname, tth, intensity)
-
-    # def get_next_image_(self):
-    #     """ Gets next image in image series or in directory to process
-    #
-    #     Returns:
-    #         image_name {str}: image file path
-    #     """
-    #     # ic()
-    #     if self.single_img:
-    #         return self.img_fname, get_img_number(self.img_fname)
-    #
-    #     if len(self.img_fnames) == 0:
-    #         if self.inp_type != 'Image Directory':
-    #             # self.img_fnames = sorted(glob.glob(
-    #             #     os.path.join(self.img_dir, f'{self.scan_name}_*.{self.img_ext}')))
-    #             self.img_fnames = Path(self.img_dir).glob(f'{self.scan_name}_*.{self.img_ext}')
-    #             # if self.meta_ext is None:
-    #             #     self.img_fnames = [str(f) for f in self.img_fnames if
-    #             #                        (str(f) >= self.img_fname) and (str(f) not in self.processed)]
-    #             # else:
-    #             #     self.img_fnames = [str(f) for f in self.img_fnames if
-    #             #                        (str(f) >= self.img_fname) and (str(f) not in self.processed) and
-    #             #                        (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
-    #             #                         os.path.exists(f'{os.path.splitext(f)}.{self.meta_ext}'))]
-    #         else:
-    #             filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
-    #             filters = filters if filters != '**' else '*'
-    #             if self.include_subdir:
-    #                 # self.img_fnames = sorted(glob.glob(os.path.join(
-    #                 #     self.img_dir, '**', f'{filters}.{self.img_ext}'), recursive=True))
-    #                 self.img_fnames = sorted(list(Path(self.img_dir).rglob(f'{filters}.{self.img_ext}')))
-    #             else:
-    #                 # self.img_fnames = sorted(glob.glob(os.path.join(self.img_dir, f'{filters}.{self.img_ext}')))
-    #                 self.img_fnames = sorted(list(Path(self.img_dir).glob(f'{filters}.{self.img_ext}')))
-    #
-    #             # if self.meta_ext is None:
-    #             #     self.img_fnames = [str(f) for f in self.img_fnames if str(f) not in self.processed]
-    #             # else:
-    #             #     self.img_fnames = [str(f) for f in self.img_fnames if (str(f) not in self.processed) and
-    #             #                        (os.path.exists(f.with_suffix(f'.{self.meta_ext}')) or
-    #             #                         os.path.exists(f'{f}.{self.meta_ext}'))]
-    #                                    # (os.path.exists(f'{os.path.splitext(f)[0]}.{self.meta_ext}') or
-    #                                    #  os.path.exists(f'{f}.{self.meta_ext}'))]
-    #
-    #     if self.meta_ext is None:
-    #         self.img_fnames = [str(f) for f in self.img_fnames if
-    #                            (str(f) >= self.img_fname) and (str(f) not in self.processed)]
-    #     else:
-    #         self.img_fnames = [str(f) for f in self.img_fnames if
-    #                            (str(f) >= self.img_fname) and (str(f) not in self.processed) and
-    #                            (os.path.exists(f.with_suffix(f'.{self.meta_ext}')) or
-    #                             os.path.exists(f'{f}.{self.meta_ext}'))]
-    #
-    #     # if len(self.img_fnames) > 0:
-    #     #     img_fname = self.img_fnames[0]
-    #     #     self.processed.append(img_fname)
-    #     #     self.img_fnames = self.img_fnames[1:]
-    #     #     if match_img_detector(img_fname, self.detector):
-    #     #         return None, None
-    #     #     return img_fname, get_img_number(img_fname)
-    #
-    #     # ic(self.img_fnames, self.processed)
-    #     self.img_fnames = deque(sorted(self.img_fnames))
-    #     for nn in range(len(self.img_fnames)):
-    #         img_fname = self.img_fnames[0]
-    #         self.processed.append(img_fname)
-    #         self.img_fnames.popleft()
-    #         # self.img_fnames.remove(img_fname)
-    #         if match_img_detector(img_fname, self.poni_dict):
-    #             return img_fname, get_img_number(img_fname)
-    #
-    #     return None, None
-    #
-    #
-    # def wrangle(self, img_file, i):
-    #     """Method for reading in data from raw files and spec file.
-    #
-    #     args:
-    #         i: int, index of image to check
-    #
-    #     returns:
-    #         flag: str, signal for what kind of data to expect.
-    #         data: tuple (int, numpy array, dict, dict), the
-    #             index of the data, raw image array, metadata
-    #             dict associated with the image.
-    #     """
-    #     # Read raw file into numpy array
-    #     arr = get_img_data(img_file, self.detector, im=i-1, return_float=True)
-    #     if arr is None:
-    #         return 'Skip', None
-    #
-    #     # meta_file = ''
-    #     img_meta = {}
-    #     if self.meta_ext:
-    #         img_meta = get_img_meta(img_file, self.meta_ext)
-    #     #     meta_file = f'{os.path.splitext(img_file)[0]}.{self.meta_ext}'
-    #     # if os.path.exists(meta_file):
-    #     #     img_meta = get_img_meta(meta_file)
-    #     # else:
-    #     #     img_meta = {}
-    #
-    #     # Subtract background if any
-    #     if self.bg_type != 'None':
-    #         bg = self.get_background(img_file, i, img_meta)
-    #         try:
-    #             arr -= bg
-    #         except ValueError:
-    #             pass
-    #
-    #     fname = os.path.splitext(os.path.basename(img_file))[0]
-    #     if self.img_ext not in ['h5', 'hdf5']:
-    #         self.signal_q.put(('message', f'{fname} wrangled'))
-    #     else:
-    #         self.signal_q.put(('message', f'Image {i} wrangled'))
-    #
-    #     return 'image', (i, arr, img_meta)
-    #
-    # def get_meta_ext(self, img_fname):
-    #     """
-    #     Get the extension of the metadata file corresponding to image file
-    #     Args:
-    #         img_fname: {str} Path of image file
-    #
-    #     """
-    #     # ic()
-    #     img_root = os.path.splitext(img_fname)[0]
-    #     fnames = glob.glob(f'{img_root}.*')
-    #     # ic(img_root, fnames, os.path.splitext(img_fname))
-    #
-    #     # exts = [f.replace(img_root, '')[1:] for f in fnames if f != img_fname]
-    #     exts = [os.path.splitext(f)[1][1:] for f in fnames if f != img_fname]
-    #     # ic(exts)
-    #
-    #     meta_ext = None
-    #     for ext in exts:
-    #         if ext in self.meta_exts:
-    #             meta_ext = ext
-    #             break
-    #
-    #     # ic(meta_ext)
-    #     return meta_ext

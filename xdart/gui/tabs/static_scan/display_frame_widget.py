@@ -712,7 +712,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             arch_2d = self.data_2d[int(idx)]
             for kk in range(3):
                 try:
-                    intensity += self.normalize(arch_2d['map_raw'], arch_1d.scan_info)
+                    intensity += self.normalize(arch_2d['map_raw']-arch_2d['bg_raw'],
+                                                arch_1d.scan_info)
                     ctr += 1
                     break
                 except ValueError:

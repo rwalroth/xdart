@@ -50,7 +50,7 @@ def write_xye(fname, xdata, ydata, variance=None):
         ydata: intensity
     """
     if variance is None:
-        _variance = np.sqrt(ydata)
+        _variance = np.sqrt(abs(ydata))
     else:
         _variance = variance
     with open(fname, "w") as file:
@@ -71,7 +71,7 @@ def write_csv(fname, xdata, ydata, variance=None):
         ydata: intensity
     """
     if variance is None:
-        _variance = np.sqrt(ydata)
+        _variance = np.sqrt(abs(ydata))
     else:
         _variance = variance
     with open(fname, 'w') as file:

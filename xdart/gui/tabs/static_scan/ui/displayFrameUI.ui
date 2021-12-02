@@ -292,6 +292,12 @@
              </property>
              <item>
               <widget class="QLabel" name="labelCurrent">
+               <property name="maximumSize">
+                <size>
+                 <width>600</width>
+                 <height>16777215</height>
+                </size>
+               </property>
                <property name="font">
                 <font>
                  <pointsize>15</pointsize>

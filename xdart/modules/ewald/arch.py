@@ -34,10 +34,10 @@ class EwaldArch():
         int_2d: int_2d_data/_static object from containers (for scanning/static detectors)
         integrator: AzimuthalIntegrator object from pyFAI
         map_raw: numpy 2d array of the unprocessed image data
+        bg_raw: numpy 2d array of the unprocessed image data for BG
         map_norm: float, normalization constant
         mask: numpy array of indeces to be masked in array.
         poni: poni data for integration
-        poni_file: raw poni_file name with path used for static detector integration
         poni_dict: poni_file information saved in dictionary
         scan_info: dict, information from any relevant motors and
             sensors
@@ -65,13 +65,13 @@ class EwaldArch():
 
     def __init__(self, idx=None, map_raw=None, poni=None, mask=None,
                  scan_info={}, ai_args={}, file_lock=Condition(),
-                 # poni_file=None, static=False, poni_dict=None,
-                 static=False, poni_dict=None,
+                 static=False, poni_dict=None, bg_raw=0,
                  gi=False, th_mtr='th', tilt_angle=0
                  ):
         # pylint: disable=too-many-arguments
         """idx: int, name of the arch.
         map_raw: numpy array, raw image data
+        bg_raw: numpy array, raw image data for BG
         poni: PONI object, calibration data
         mask: None or numpy array, indices of pixels to mask
         scan_info: dict, metadata about scan
@@ -81,11 +81,11 @@ class EwaldArch():
         super(EwaldArch, self).__init__()
         self.idx = idx
         self.map_raw = map_raw
+        self.bg_raw = bg_raw
         if poni is None:
             self.poni = PONI()
         else:
             self.poni = poni
-        # self.poni_file = poni_file
         self.poni_dict = poni_dict
         if mask is None and map_raw is not None:
             self.mask = np.arange(map_raw.size)[map_raw.flatten() < 0]
@@ -114,22 +114,8 @@ class EwaldArch():
 
     def setup_integrator(self):
         """Sets up integrator object"""
-        # if self.poni_file is not None:
         if self.poni_dict is not None:
-            # poni_dict = get_poni_dict(self.poni_file)
             integrator = create_ai_from_dict(self.poni_dict, self.gi)
-            # if not self.gi:
-            #     integrator = pyFAI.load(self.poni_file)
-            #     integrator._rot3 -= np.deg2rad(90)
-            # else:
-            #     pFAI = pyFAI.load(self.poni_file)
-            #     calib_pars = dict(
-            #         dist=pFAI.dist, poni1=pFAI.poni1, poni2=pFAI.poni2,
-            #         rot1=pFAI.rot1, rot2=pFAI.rot2, rot3=pFAI.rot3,
-            #         wavelength=pFAI.wavelength, detector=pFAI.detector)
-            #     integrator = pygix.Transform(**calib_pars)
-            #     integrator.sample_orientation = 3  # 1 is horizontal, 2 is vertical
-
         else:
             integrator = AzimuthalIntegrator(
                 dist=self.poni.dist,
@@ -149,8 +135,8 @@ class EwaldArch():
         """
         self.idx = None
         self.map_raw = None
+        self.bg_raw = None
         self.poni = PONI()
-        # self.poni_file = None
         self.poni_dict = None
         self.mask = None
         self.scan_info = {}
@@ -207,7 +193,8 @@ class EwaldArch():
 
             if not self.gi:
                 result = self.integrator.integrate1d(
-                    self.map_raw/self.map_norm, numpoints, unit=unit,
+                    # self.map_raw/self.map_norm, numpoints, unit=unit,
+                    (self.map_raw-self.bg_raw)/self.map_norm, numpoints, unit=unit,
                     radial_range=radial_range, mask=self.get_mask(global_mask),
                     **kwargs
                 )
@@ -231,7 +218,8 @@ class EwaldArch():
                 self.integrator.tilt_angle = self.tilt_angle
 
                 Intensity, qAxis = self.integrator.integrate_1d(
-                        self.map_raw/self.map_norm, numpoints, unit='q_A^-1',
+                        # self.map_raw/self.map_norm, numpoints, unit='q_A^-1',
+                        (self.map_raw-self.bg_raw)/self.map_norm, numpoints, unit='q_A^-1',
                         p0_range=radial_range, p1_range=kwargs['azimuth_range'],
                         mask=self.get_mask(global_mask), **pg_args
                 )
@@ -288,7 +276,8 @@ class EwaldArch():
 
             if not self.gi:
                 result = self.integrator.integrate2d(
-                    self.map_raw/self.map_norm, npt_rad, npt_azim, unit=unit,
+                    # self.map_raw/self.map_norm, npt_rad, npt_azim, unit=unit,
+                    (self.map_raw-self.bg_raw)/self.map_norm, npt_rad, npt_azim, unit=unit,
                     mask=self.get_mask(global_mask), radial_range=radial_range,
                     azimuth_range=azimuth_range, **kwargs
                 )
@@ -312,14 +301,14 @@ class EwaldArch():
 
                 # Transform to polar (Q-Chi) coordinates
                 i_qchi, Q, Chi = self.integrator.transform_image(
-                    self.map_raw, process='polar', npt=(npt_rad, npt_azim),
+                    self.map_raw-self.bg_raw, process='polar', npt=(npt_rad, npt_azim),
                     x_range=radial_range, y_range=azimuth_range, unit='q_A^-1',
                     mask=self.get_mask(global_mask), all=False, **pg_args)
                 result = Integrate2dResult(i_qchi, Q, Chi)
 
                 # Transform to reciprocal (Qz-Qxy) coordinates
                 i_QxyQz, qxy, qz = self.integrator.transform_image(
-                    self.map_raw, process='reciprocal', npt=(npt_rad, npt_azim),
+                    self.map_raw-self.bg_raw, process='reciprocal', npt=(npt_rad, npt_azim),
                     x_range=x_range, y_range=y_range, unit='q_A^-1',
                     mask=self.get_mask(), all=False, **pg_args)
 
@@ -390,8 +379,7 @@ class EwaldArch():
             grp.attrs['type'] = 'EwaldArch'
             lst_attr = [
                 "map_raw", "mask", "map_norm", "scan_info", "ai_args",
-                # "poni_file", "gi", "static", "poni_dict"
-                "gi", "static", "poni_dict"
+                "gi", "static", "poni_dict", "bg_raw"
             ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
@@ -421,8 +409,7 @@ class EwaldArch():
                         if grp.attrs['type'] == 'EwaldArch':
                             lst_attr = [
                                 "map_raw", "mask", "map_norm", "scan_info", "ai_args",
-                                "gi", "static", "poni_dict"
-                                # "poni_file", "gi", "static", "poni_dict"
+                                "gi", "static", "poni_dict", "bg_raw"
                             ]
                             utils.h5_to_attributes(self, grp, lst_attr)
                             self.int_1d.from_hdf5(grp['int_1d'])
@@ -432,23 +419,8 @@ class EwaldArch():
                                 utils.h5_to_dict(grp['poni'])
                             )
 
-                            # if self.poni_file is not None:
                             if self.poni_dict is not None:
                                 self.integrator = create_ai_from_dict(self.poni_dict)
-                                # if not self.gi:
-                                #     self.integrator = pyFAI.load(self.poni_file)
-                                #     self.integrator._rot3 -= np.deg2rad(90)
-                                # else:
-                                #     pFAI = pyFAI.load(self.poni_file)
-                                #     calib_pars = dict(
-                                #         dist=pFAI.dist, poni1=pFAI.poni1, poni2=pFAI.poni2,
-                                #         rot1=pFAI.rot1, rot2=pFAI.rot2, rot3=pFAI.rot3,
-                                #         wavelength=pFAI.wavelength, detector=pFAI.detector)
-                                #     self.integrator = pygix.Transform(**calib_pars)
-                                #     self.integrator.sample_orientation = 3  # 1 is horizontal, 2 is vertical
-                                #     self.integrator.incident_angle = 1  # incident angle in deg
-                                #     self.integrator.tilt_angle = 0  # tilt angle of sample in deg (misalignment in "chi")
-
                             else:
                                 self.integrator = AzimuthalIntegrator(
                                     dist=self.poni.dist,
@@ -470,7 +442,6 @@ class EwaldArch():
             copy.deepcopy(self.poni), None,
             copy.deepcopy(self.scan_info), copy.deepcopy(self.ai_args),
             self.file_lock, poni_dict=copy.deepcopy(self.poni_dict),
-            # self.file_lock, poni_file=copy.deepcopy(self.poni_file), poni_dict=copy.deepcopy(self.poni_dict),
             static=copy.deepcopy(self.static), gi=copy.deepcopy(self.gi),
             th_mtr=copy.deepcopy(self.th_mtr)
         )
@@ -479,6 +450,7 @@ class EwaldArch():
         arch_copy.int_1d = copy.deepcopy(self.int_1d)
         if include_2d:
             arch_copy.map_raw = copy.deepcopy(self.map_raw)
+            arch_copy.bg_raw = copy.deepcopy(self.bg_raw)
             arch_copy.mask = copy.deepcopy(self.mask),
             arch_copy.map_norm = copy.deepcopy(self.map_norm)
             arch_copy.int_2d = copy.deepcopy(self.int_2d)

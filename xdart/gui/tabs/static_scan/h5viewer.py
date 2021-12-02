@@ -363,7 +363,7 @@ class H5Viewer(QWidget):
                 self.ui.listData.itemSelectionChanged.disconnect(self.data_changed)
                 self.ui.listData.clear()
                 self.ui.listData.addItem('Loading...')
-                self.set_open_enabled(False)
+                # self.set_open_enabled(False)
                 self.file_thread.fname = fname
                 self.file_thread.queue.put("set_datafile")
                 self.ui.listData.itemSelectionChanged.connect(self.data_changed)
@@ -532,6 +532,7 @@ class H5Viewer(QWidget):
 
                         self.data_1d[int(idx)] = arch.copy(include_2d=False)
                         self.data_2d[int(idx)] = {'map_raw': arch.map_raw,
+                                                  'bg_raw': arch.bg_raw,
                                                   'mask': arch.mask,
                                                   'int_2d': arch.int_2d}
 
@@ -539,10 +540,14 @@ class H5Viewer(QWidget):
                         # ic(idx, self.arches['add_idxs'], self.arches['sub_idxs'])
                         if idx in self.arches['add_idxs']:
                             self.arches['sum_int_2d'] += self.data_2d[int(idx)]['int_2d']
-                            self.arches['sum_map_raw'] += self.data_2d[int(idx)]['map_raw']
+                            # self.arches['sum_map_raw'] += self.data_2d[int(idx)]['map_raw']
+                            self.arches['sum_map_raw'] += (self.data_2d[int(idx)]['map_raw'] -
+                                                           self.data_2d[int(idx)]['bg_raw'])
                         elif idx in self.arches['sub_idxs']:
                             self.arches['sum_int_2d'] -= self.data_2d[int(idx)]['int_2d']
-                            self.arches['sum_map_raw'] -= self.data_2d[int(idx)]['map_raw']
+                            # self.arches['sum_map_raw'] -= self.data_2d[int(idx)]['map_raw']
+                            self.arches['sum_map_raw'] -= (self.data_2d[int(idx)]['map_raw'] -
+                                                           self.data_2d[int(idx)]['bg_raw'])
 
                 except KeyError:
                     pass
@@ -559,7 +564,7 @@ class H5Viewer(QWidget):
                     if load_2d:
                         lst_attr = [
                             "map_raw", "mask", "map_norm", "scan_info", "ai_args",
-                            "gi", "static", "poni_dict"
+                            "gi", "static", "poni_dict", "bg_raw"
                         ]
                         utils.h5_to_attributes(arch, grp, lst_attr)
                         arch.int_1d.from_hdf5(grp['int_1d'])
