@@ -29,7 +29,7 @@ import xdart.utils as ut
 from ...widgets import pgImageWidget, pmeshImageWidget
 from xdart.utils import split_file_name
 
-# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QInputDialog = QtWidgets.QInputDialog
@@ -96,8 +96,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     methods:
         get_arches_map_raw: Gets averaged 2D raw data from arches
         get_sphere_map_raw: Gets averaged (and normalized) 2D raw data for all images
-        get_arches_data_2d: Gets averaged 2D rebinned data from arches
-        get_sphere_data_2d: Gets overall 2D data for the sphere
+        get_arches_int_2d: Gets averaged 2D rebinned data from arches
+        get_sphere_int_2d: Gets overall 2D data for the sphere
         update: Updates the displayed image and plot
         update_image: Updates image data based on selections
         update_plot: Updates plot data based on selections
@@ -209,7 +209,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             self.plot_layout.addWidget(self.plot_win)
 
         # All Windows Signal connections
-        self.ui.normChannel.activated.connect(self.update)
+        self.ui.normChannel.activated.connect(self.normUpdate)
         self.ui.setBkg.clicked.connect(self.setBkg)
         self.ui.scale.currentIndexChanged.connect(self.update_views)
         self.ui.cmap.currentIndexChanged.connect(self.update_views)
@@ -226,7 +226,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.yOffset.valueChanged.connect(self.update_plot_view)
         self.ui.plotUnit.activated.connect(self._set_slice_range)
         self.ui.plotUnit.activated.connect(self.update_plot)
-        self.ui.showLegend.stateChanged.connect(self.update_plot_view)
+        # self.ui.showLegend.stateChanged.connect(self.update_plot_view)
+        self.ui.showLegend.stateChanged.connect(self.update_legend)
         self.ui.slice.stateChanged.connect(self.update_plot)
         self.ui.slice.stateChanged.connect(self._update_slice_range)
         self.ui.slice_center.valueChanged.connect(self.update_plot_range)
@@ -394,7 +395,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update(self):
         """Updates image and plot frames based on toolbar options
         """
-        # self.idxs = sorted(list(self.arches.keys()))
         # ic()
         self.get_idxs()
 
@@ -449,9 +449,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_image(self):
         """Updates image plotted in image frame
         """
-        if not self._updated():
-            return True
-
         mask = None
         if self.overall and len(self.arch_ids) > 1:
             data = self.get_sphere_map_raw()
@@ -476,6 +473,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         # Subtract background
         data -= self.bkg_map_raw
 
+        data = data.T[:, ::-1]
+
         # Get Bounding Rectangle
         rect = get_rect(np.arange(data.shape[0]), np.arange(data.shape[1]))
 
@@ -485,7 +484,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_image_view(self):
         data, rect = self.image_data
 
-        self.image_widget.setImage(data.T[:, ::-1], scale=self.scale, cmap=self.cmap)
+        # self.image_widget.setImage(data.T[:, ::-1], scale=self.scale, cmap=self.cmap)
+        self.image_widget.setImage(data, scale=self.scale, cmap=self.cmap)
         self.image_widget.setRect(rect)
 
         self.image_widget.image_plot.setLabel("bottom", 'x (Pixels)')
@@ -494,18 +494,15 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
     def update_binned(self):
         """Updates image plotted in image frame
         """
-        if not self._updated():
-            return True
-
         if self.ui.shareAxis.isChecked() and (self.ui.imageUnit.currentIndex() < 2):
             self.ui.plotUnit.setCurrentIndex(self.ui.imageUnit.currentIndex())
             self.update_plot()
 
         # if 'Overall' in self.arch_ids:
         if self.overall and len(self.arch_ids) > 1:
-            intensity, xdata, ydata = self.get_sphere_data_2d()
+            intensity, xdata, ydata = self.get_sphere_int_2d()
         else:
-            intensity, xdata, ydata = self.get_arches_data_2d()
+            intensity, xdata, ydata = self.get_arches_int_2d()
 
         if intensity is None:
             return
@@ -559,7 +556,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             return data
 
         # Get 1D data for all arches
-        ydata, xdata = self.get_arches_data_1d()
+        ydata, xdata = self.get_arches_int_1d()
         arch_names = [f'{self.sphere.name}_{i}' for i in self.idxs]
 
         # Subtract background
@@ -736,15 +733,14 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 map_raw = np.asarray(self.sphere.overall_raw, dtype=float)
 
             norm_fac = len(self.sphere.arches.index)
-            normChannel = self.ui.normChannel.currentText()
-            if normChannel in self.sphere.scan_data.columns:
-                norm = self.sphere.scan_data[normChannel].sum()
-                if (norm > 0) and (norm != 0.):
+            if self.normChannel:
+                norm = self.sphere.scan_data[self.normChannel].sum()
+                if norm > 0:
                     norm_fac = norm
 
             return map_raw/norm_fac
 
-    def get_arches_data_2d(self, idxs=None):
+    def get_arches_int_2d(self, idxs=None):
         """Return 2D arch data for multiple arches (averaged)"""
         if idxs is None:
             idxs = self.idxs_2d
@@ -776,7 +772,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         xdata, ydata = self.get_xydata(arch_2d['int_2d'])
         return np.asarray(intensity, dtype=float), xdata, ydata
 
-    def get_sphere_data_2d(self):
+    def get_sphere_int_2d(self):
         """Returns data and QRect for data in sphere
         """
         with self.sphere.sphere_lock:
@@ -787,7 +783,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         xdata, ydata = self.get_xydata(int_2d)
         return intensity, xdata, ydata
 
-    def get_arches_data_1d(self, idxs=None, rv='all'):
+    def get_arches_int_1d(self, idxs=None, rv='all'):
         """Return 1D data for multiple arches"""
         if idxs is None:
             idxs = self.idxs_1d
@@ -827,9 +823,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
                 intensity = self.normalize(intensity, arch_1d.scan_info)
             else:
                 norm_fac = len(self.sphere.arches.index)
-                normChannel = self.ui.normChannel.currentText()
-                if normChannel in self.sphere.scan_data.columns:
-                    norm = self.sphere.scan_data[normChannel].sum()
+                if self.normChannel:
+                    norm = self.sphere.scan_data[self.normChannel].sum()
                     if norm > 0:
                         norm_fac = norm
                 intensity /= norm_fac
@@ -943,21 +938,40 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         except AttributeError:
             return np.zeros((10, 10))
 
-        normChannel = self.ui.normChannel.currentText()
-        if normChannel in scan_info.keys():
-            self.normChannel = normChannel
-        elif normChannel.upper() in scan_info.keys():
-            self.normChannel = normChannel.upper()
-        elif normChannel.lower() in scan_info.keys():
-            self.normChannel = normChannel.lower()
-        else:
-            self.normChannel = None
+        # normChannel = self.ui.normChannel.currentText()
+        # if normChannel in scan_info.keys():
+        #     self.normChannel = normChannel
+        # elif normChannel.upper() in scan_info.keys():
+        #     self.normChannel = normChannel.upper()
+        # elif normChannel.lower() in scan_info.keys():
+        #     self.normChannel = normChannel.lower()
+        # else:
+        #     self.normChannel = None
 
-        if self.normChannel:
-            if scan_info[normChannel] > 0:
-                intensity /= scan_info[normChannel]
+        normChannel = self.get_normChannel(scan_data_keys=scan_info.keys())
+        if normChannel and (scan_info[normChannel] > 0):
+            intensity /= scan_info[normChannel]
 
         return intensity
+
+    def get_normChannel(self, scan_data_keys=None):
+        """Check to see if normalization channel exists in metadata and return name"""
+        normChannel = self.ui.normChannel.currentText()
+        if normChannel == 'sec':
+            normChannel = {'sec', 'seconds', 'Seconds', 'Sec', 'SECONDS', 'SEC'}
+        else:
+            normChannel = {normChannel, normChannel.lower(), normChannel.upper()}
+        if scan_data_keys is None:
+            scan_data_keys = self.sphere.scan_data.columns
+        normChannel = normChannel.intersection(scan_data_keys)
+        return normChannel.pop() if len(normChannel) > 0 else None
+
+    def normUpdate(self):
+        """Update plots if norm channel exists"""
+        self.normChannel = self.get_normChannel()
+        if self.normChannel and (self.sphere.scan_data[self.normChannel].sum() == 0.):
+            self.normChannel = None
+        self.update()
 
     def setBkg(self):
         """Sets selected points as background.
@@ -971,8 +985,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             if self.overall:
                 idxs = sorted(list(self.sphere.arches.index))
 
-            self.bkg_1d, _ = self.get_arches_data_1d(idxs, rv='average')
-            self.bkg_2d, _, _ = self.get_arches_data_2d(idxs)
+            self.bkg_1d, _ = self.get_arches_int_1d(idxs, rv='average')
+            self.bkg_2d, _, _ = self.get_arches_int_2d(idxs)
             self.bkg_map_raw = self.get_arches_map_raw(idxs)
             if self.bkg_map_raw is None:
                 self.bkg_map_raw = 0.
@@ -1022,16 +1036,9 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
     def update_legend(self):
         if not self.ui.showLegend.isChecked():
-            self.legend_items = self.legend.items
-            self.plot.scene().removeItem(self.legend)
-            # self.legend_items = self.legend.items
-            # self.legend.scene().removeItem(self.legend)
+            self.legend.hide()
         else:
-            self.legend = self.plot.addLegend()
-            [self.legend.addItem(item[0], item[1]) for item in self.legend_items]
-            # self.legend = self.plot.scene().addItem(self.legend)
-            # self.legend.setParent(self.plot.vb)
-            # self.legend.scene().addItem(self.legend)
+            self.legend.show()
 
     def _set_slice_range(self, _=None, initialize=False):
         if self.ui.plotUnit.currentIndex() == 2:

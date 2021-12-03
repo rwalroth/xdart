@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1440, 814)
+        Form.resize(1440, 842)
         Form.setMinimumSize(QtCore.QSize(0, 0))
         self.gridLayout = QtWidgets.QGridLayout(Form)
         self.gridLayout.setContentsMargins(8, 8, 8, 12)
@@ -54,8 +54,8 @@ class Ui_Form(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.listData.sizePolicy().hasHeightForWidth())
         self.listData.setSizePolicy(sizePolicy)
-        self.listData.setMinimumSize(QtCore.QSize(40, 0))
-        self.listData.setMaximumSize(QtCore.QSize(50, 16777215))
+        self.listData.setMinimumSize(QtCore.QSize(45, 0))
+        self.listData.setMaximumSize(QtCore.QSize(60, 16777215))
         self.listData.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.listData.setTabKeyNavigation(False)
         self.listData.setAlternatingRowColors(True)

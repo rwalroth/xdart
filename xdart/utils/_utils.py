@@ -10,6 +10,8 @@ import subprocess
 import sys
 
 # Other imports
+import xml.etree.ElementTree
+
 import numpy as np
 import re
 from datetime import datetime
@@ -435,9 +437,10 @@ def get_img_data(
     Returns:
         ndarray: Image data read into numpy array
     """
-    # ic(fname, detector.name, detector.shape)
     try:
         img_data = fabio.open(fname).data
+    except xml.etree.ElementTree.ParseError:
+        return None
     except OSError:
         if detector.name == 'Eiger 1M':
             with h5py.File(fname, mode='r') as f:
@@ -445,8 +448,6 @@ def get_img_data(
                     img_data = np.asarray(f['entry']['data']['data'][im], dtype=float)
                 except IndexError:
                     return None
-                # img_data[514:551, :] = np.nan
-
         else:
             img_data = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
             try:

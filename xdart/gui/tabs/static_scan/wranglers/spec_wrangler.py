@@ -1204,9 +1204,11 @@ class specThread(wranglerThread):
         if self.bg_scale != 1:
             bg *= self.bg_scale
             bg_scale_label = f'{self.bg_scale:0.2f} [Scale] x '
-        if self.bg_norm_channel != 'None':
+        if (self.bg_norm_channel != 'None') and (img_meta is not None) and (bg_meta is not None):
             try:
-                if bg_meta[self.bg_norm_channel] != 0:
+                if ((self.bg_norm_channel in img_meta.keys()) and
+                        (self.bg_norm_channel in bg_meta.keys()) and
+                        (bg_meta[self.bg_norm_channel] != 0)):
                     norm_factor = (img_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
                     bg *= norm_factor
                     norm_label = f'{norm_factor:0.2f} [Normalized to Channel - {self.bg_norm_channel}] x '
