@@ -755,6 +755,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         idx = idxs[0]
         arch_1d = self.data_1d[int(idx)]
         arch_2d = self.data_2d[int(idx)]
+        ic(arch_2d['int_2d'].ttheta, arch_2d['int_2d'].i_tthChi)
         # arch_intensity = self.get_int_2d(arch_2d['int_2d'], arch_1d)
         intensity = self.get_int_2d(arch_2d['int_2d'], arch_1d)
         # if (arch_intensity.ndim > 1) and (arch_intensity.shape[0] != 0):

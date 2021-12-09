@@ -456,6 +456,8 @@ def get_img_data(
                 return None
     except ValueError:
         return None
+    except:
+        return None
 
     if img_data.shape != detector.shape:
         return None
@@ -500,6 +502,28 @@ def get_img_data(
         img_data = np.fliplr(img_data)
 
     return img_data
+
+
+def get_norm_fac(normChannel, scan_data, arch_ids=None, return_sum=True):
+    """Check to see if normalization channel exists in metadata and return name"""
+    normChannel = get_normChannel(normChannel, scan_data_keys=scan_data.columns)
+    if arch_ids is None:
+        arch_ids = scan_data.index
+    norm_fac = scan_data[normChannel][arch_ids] if normChannel else 1
+    if return_sum and not isinstance(norm_fac, int):
+        norm_fac = norm_fac.mean()
+
+    return norm_fac
+
+
+def get_normChannel(normChannel, scan_data_keys):
+    """Check to see if normalization channel exists in metadata and return name"""
+    if normChannel == 'sec':
+        normChannel = {'sec', 'seconds', 'Seconds', 'Sec', 'SECONDS', 'SEC'}
+    else:
+        normChannel = {normChannel, normChannel.lower(), normChannel.upper()}
+    normChannel = normChannel.intersection(scan_data_keys)
+    return normChannel.pop() if len(normChannel) > 0 else None
 
 
 def smooth_img(img, kernel_size=3, window_size=3, order=0):

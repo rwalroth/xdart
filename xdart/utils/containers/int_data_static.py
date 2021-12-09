@@ -214,7 +214,9 @@ class int_2d_data_static(int_1d_data_static):
             self.q = q = result.radial
             self.q_from_tth = False
             # if isinstance(self.i_tthChi, int) or self.tth_from_q:
+            ic(self.tth_from_q)
             if self.tth_from_q:
+                ic('converting to tth')
                 q_range = np.array([q[0], q[-1]])
                 tth_range = 2 * np.degrees(np.arcsin(q_range * (wavelength * 1e10) / (4 * np.pi)))
                 tthq = 2 * np.degrees(np.arcsin(q * (wavelength * 1e10) / (4 * np.pi)))
