@@ -27,15 +27,15 @@ from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from xdart.utils import get_img_data, get_img_meta
-from xdart.utils import split_file_name, get_scan_name, get_img_number, get_fname_dir
-from xdart.utils import match_img_detector, get_spec_file
+from xdart.utils import split_file_name, get_scan_name, get_img_number, get_fname_dir, get_sname_img_number
+from xdart.utils import match_img_detector, get_spec_file, get_series_avg
 from xdart.utils import write_xye, write_csv
 from xdart.utils.containers.poni import get_poni_dict
 
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
 
-# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QDialog = QtWidgets.QDialog
@@ -64,6 +64,7 @@ params = [
         {'name': 'include_subdir', 'title': 'Subdirectories', 'type': 'bool', 'value': False, 'visible': False},
         {'name': 'img_ext', 'title': 'File Type  ', 'type': 'list',
          'values': ['tif', 'raw', 'h5', 'mar3450'], 'value':'tif', 'visible': False},
+        {'name': 'series_average', 'title': 'Average Scan', 'type': 'bool', 'value': False, 'visible': True},
         {'name': 'meta_ext', 'title': 'Meta File', 'type': 'list',
          'values': ['None', 'txt', 'pdi', 'SPEC'], 'value':'txt'},
         {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
@@ -74,7 +75,7 @@ params = [
     ], 'expanded': True, 'visible': False},
     {'name': 'BG', 'title': 'Background', 'type': 'group', 'children': [
         {'name': 'bg_type', 'title': '', 'type': 'list',
-         'values': ['None', 'Single BG File', 'BG Directory'], 'value': 'None'},
+         'values': ['None', 'Single BG File', 'Series Average', 'BG Directory'], 'value': 'None'},
         {'name': 'File', 'title': 'BG File', 'type': 'str', 'value': '', 'visible': False},
         NamedActionParameter(name='bg_file_browse', title='Browse...', visible=False),
         {'name': 'Match', 'title': 'Match Parameter', 'type': 'group', 'children': [
@@ -133,9 +134,9 @@ class specWrangler(wranglerWidget):
         sigStart: Tells tthetaWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
-        sigUpdateFile: (str, str, bool, str, bool), sends new scan_name, file name
-            GI flag (grazing incidence), theta motor for GI, and
-             single_image flag to static_scan_Widget.
+        sigUpdateFile: (str, str, bool, str, bool, bool), sends new scan_name, file name
+            GI flag (grazing incidence), theta motor for GI, single_image and
+            series_average flag to static_scan_Widget.
         sigUpdateGI: bool, signals the grazing incidence condition has changed.
         showLabel: str, connected to thread showLabel signal, sets text
             in specLabel
@@ -204,6 +205,7 @@ class specWrangler(wranglerWidget):
         self.img_ext = self.parameters.child('Signal').child('img_ext').value()
         self.single_img = True if self.inp_type == 'Single Image' else False
         self.file_filter = self.parameters.child('Signal').child('Filter').value()
+        self.series_average = self.parameters.child('Signal').child('series_average').value()
         self.meta_ext = self.parameters.child('Signal').child('meta_ext').value()
         if self.meta_ext == 'None':
             self.meta_ext = None
@@ -255,6 +257,9 @@ class specWrangler(wranglerWidget):
         self.parameters.child('Signal').child('mask_file_browse').sigActivated.connect(
             self.set_mask_file
         )
+        self.parameters.child('Signal').child('series_average').sigValueChanged.connect(
+            self.set_series_average
+        )
         self.parameters.child('Signal').child('meta_ext').sigValueChanged.connect(
             self.set_meta_ext
         )
@@ -295,6 +300,8 @@ class specWrangler(wranglerWidget):
             self.img_dir,
             self.include_subdir,
             self.img_ext,
+            self.series_average,
+            self.meta_ext,
             self.file_filter,
             self.mask_file,
             self.write_mode,
@@ -357,6 +364,7 @@ class specWrangler(wranglerWidget):
         self.include_subdir = self.parameters.child('Signal').child('include_subdir').value()
         self.thread.include_subdir = self.include_subdir
 
+        self.thread.series_average = self.series_average
         self.thread.meta_ext = self.meta_ext
 
         self.thread.h5_dir = self.h5_dir
@@ -499,6 +507,7 @@ class specWrangler(wranglerWidget):
         self.parameters.child('Signal').child('img_dir_browse').hide()
         self.parameters.child('Signal').child('include_subdir').hide()
         self.parameters.child('Signal').child('Filter').hide()
+        self.parameters.child('Signal').child('series_average').show()
         self.parameters.child('Signal').child('img_ext').hide()
 
         inp_type = self.parameters.child('Signal').child('inp_type').value()
@@ -513,6 +522,7 @@ class specWrangler(wranglerWidget):
 
         if inp_type == 'Single Image':
             self.single_img = True
+            self.parameters.child('Signal').child('series_average').hide()
 
         self.inp_type = inp_type
         self.get_img_fname()
@@ -582,6 +592,9 @@ class specWrangler(wranglerWidget):
                 and self.meta_ext):
             self.set_pars_from_meta()
 
+    def set_series_average(self):
+        self.series_average = self.parameters.child('Signal').child('series_average').value()
+
     def set_meta_ext(self):
         self.meta_ext = self.parameters.child('Signal').child('meta_ext').value()
         if self.meta_ext == 'None':
@@ -623,7 +636,6 @@ class specWrangler(wranglerWidget):
     def set_bg_type(self):
         """Change Parameter Names depending on BG Type
         """
-        # ic()
         for child in self.parameters.child('BG').children():
             child.hide()
         self.parameters.child('BG').child('bg_type').show()
@@ -631,8 +643,13 @@ class specWrangler(wranglerWidget):
         self.bg_type = self.parameters.child('BG').child('bg_type').value()
         if self.bg_type == 'None':
             return
-        elif self.bg_type == 'Single BG File':
+        elif self.bg_type != 'BG Directory':
             self.parameters.child('BG').child('File').show()
+            if self.bg_type == 'Single BG File':
+                opts = {'title': 'File Name'}
+            else:
+                opts = {'title': 'First File'}
+            self.parameters.child('BG').child('File').setOpts(**opts)
             self.parameters.child('BG').child('bg_file_browse').show()
         else:
             self.parameters.child('BG').child('Match').show()
@@ -788,6 +805,7 @@ class specThread(wranglerThread):
         img_file: str, path to image file
         img_dir: str, path to image directory
         img_ext : str, extension of image file
+        series_average : bool, flag to average over series
         meta_ext : str, extension of metadata file
         poni_dict: str, Poni File name
         detector: str, Detector name
@@ -823,6 +841,7 @@ class specThread(wranglerThread):
             img_dir,
             include_subdir,
             img_ext,
+            series_average,
             meta_ext,
             file_filter,
             mask_file,
@@ -858,6 +877,7 @@ class specThread(wranglerThread):
         img_dir: str, path to image directory
         include_subdir: bool, flag to include subdirectories
         img_ext : str, extension of image file
+        series_average : bool, flag to average over series
         meta_ext : str, extension of metadata file
         timeout: float or int, how long to continue checking for new
             data.
@@ -877,6 +897,7 @@ class specThread(wranglerThread):
         self.img_dir = img_dir
         self.include_subdir = include_subdir
         self.img_ext = img_ext
+        self.series_average = series_average
         self.meta_ext = meta_ext
         self.file_filter = file_filter
         self.mask_file = mask_file
@@ -902,6 +923,7 @@ class specThread(wranglerThread):
         self.detector = None
         self.img_fnames = []
         self.processed = []
+        self.processed_scans = []
         self.sub_label = ''
 
     def run(self):
@@ -915,6 +937,7 @@ class specThread(wranglerThread):
 
         self.img_fnames.clear()
         self.processed.clear()
+        self.processed_scans.clear()
         self.detector = self.poni_dict['detector']
         self.sub_label = ''
         self.get_mask()
@@ -944,7 +967,8 @@ class specThread(wranglerThread):
             else:
                 pass
 
-            img_file, img_number, img_data = self.get_next_image()
+            # img_file, img_number, img_data = self.get_next_image()
+            img_file, scan_name, img_number, img_data, img_meta = self.get_next_image()
             if img_data is None:
                 if img_file is None:
                     self.showLabel.emit(f'Checking for next image')
@@ -959,7 +983,10 @@ class specThread(wranglerThread):
                 else:
                     continue
 
-            self.scan_name = get_scan_name(img_file)
+            # self.scan_name = get_scan_name(img_file)
+            # ic(img_number, scan_name)
+            img_number = 1 if (img_number is None) else img_number
+            self.scan_name = scan_name
 
             # Initialize sphere and save to disk, send update for new scan
             if (sphere is None) or (self.scan_name != sphere.name):
@@ -971,46 +998,28 @@ class specThread(wranglerThread):
                     break
                 continue
 
-            # Get Meta Data
-            img_meta = get_img_meta(img_file, self.meta_ext) if self.meta_ext else {}
-            # print(f'Image meta: {time.time() - start1:0.2f}')
-
             # Get Background
-            # if self.bg_type != 'None':
             bg_raw = self.get_background(img_file, img_number, img_meta)
-                # bg_raw = self.get_background()
-                # self.subtract_bg(img_data, img_file, img_number, img_meta)
-            # print(f'Subtracted BG: {time.time() - start1:0.2f}')
 
             arch = EwaldArch(
                 img_number, img_data, poni_dict=self.poni_dict,
                 scan_info=img_meta, static=True, gi=self.gi,
                 # mask=self.mask, th_mtr=self.th_mtr,
                 th_mtr=self.th_mtr, bg_raw=bg_raw,
+                series_average=self.series_average
             )
 
             # integrate image to 1d and 2d arrays
             arch.integrate_1d(global_mask=self.mask, **sphere.bai_1d_args)
-            # print(f'Integrated 1D: {time.time() - start1:0.2f}')
             arch.integrate_2d(global_mask=self.mask, **sphere.bai_2d_args)
-            # print(f'Integrated 2D: {time.time() - start1:0.2f}')
-
-            # self.data_1d[int(img_number)] = arch.copy(include_2d=False)
-            # self.data_2d[int(img_number)] = {
-            #     'map_raw': deepcopy(arch.map_raw),
-            #     'mask': deepcopy(arch.mask),
-            #     'int_2d': deepcopy(arch.int_2d)
-            # }
-            # print(f'Copied data to Data dicts: {time.time() - start1:0.2f}')
 
             # Add arch copy to sphere, save to file
             with self.file_lock:
                 sphere.add_arch(
                     arch=arch, calculate=False, update=True,
                     get_sd=True, set_mg=False, static=True, gi=self.gi,
-                    th_mtr=self.th_mtr
+                    th_mtr=self.th_mtr, series_average=self.series_average
                 )
-                # print(f'Added arch data to sphere: {time.time() - start1:0.2f}')
                 sphere.save_to_h5(data_only=True, replace=False)
             # print(f'Saved data to h5: {time.time() - start1:0.2f}')
 
@@ -1045,8 +1054,11 @@ class specThread(wranglerThread):
             image_data {np.ndarray}: image file data array
         """
         if self.single_img:
-            img_data = get_img_data(self.img_file, self.detector,return_float=True)
-            return self.img_file, get_img_number(self.img_file), img_data
+            img_data = get_img_data(self.img_file, self.detector, return_float=True)
+            meta = get_img_meta(self.img_file, self.meta_ext) if self.meta_ext else {}
+            # return self.img_file, get_img_number(self.img_file), img_data
+            scan_name, img_number = get_sname_img_number(self.img_file)
+            return self.img_file, scan_name, img_number, img_data, meta
 
         if len(self.img_fnames) == 0:
             if self.inp_type != 'Image Directory':
@@ -1064,19 +1076,56 @@ class specThread(wranglerThread):
             self.img_fnames = [str(f) for f in self.img_fnames if
                                (str(f) >= first_img) and (str(f) not in self.processed)]
 
-        # ic(self.img_fnames, self.processed)
         self.img_fnames = deque(sorted(self.img_fnames))
-        for nn in range(len(self.img_fnames)):
-            img_file = self.img_fnames[0]
-            self.processed.append(img_file)
+        img_file, scan_name, img_number, img_data, img_meta = None, None, 1, None, {}
+        n = 0
+        while len(self.img_fnames) > 0:
+            fname = self.img_fnames[0]
+            sname, snumber = get_sname_img_number(fname)
+
+            if (n > 0) and (scan_name != sname):
+                break
+
+            self.processed.append(fname)
             self.img_fnames.popleft()
 
-            img_number = get_img_number(img_file)
-            img_data = get_img_data(img_file, self.detector, im=img_number-1, return_float=True)
-            if img_data is not None:
-                return img_file, img_number, img_data
+            data = get_img_data(fname, self.detector, return_float=True)
+            if data is None:
+                continue
 
-        return None, None, None
+            meta = get_img_meta(fname, self.meta_ext) if self.meta_ext else {}
+            n += 1
+
+            if (not self.series_average) or (snumber is None):
+                return fname, sname, snumber, data, meta
+            else:
+                if n == 1:
+                    img_data = data
+                    img_meta = meta
+                else:
+                    # img_data = img_data*(n-1)/n + data/n
+                    img_data += data
+                    for (k, v) in meta.items():
+                        try:
+                            img_meta[k] += meta[k]
+                        except TypeError:
+                            pass
+
+                scan_name, img_file = sname, fname
+                # ic(sname, scan_name, n)
+                # if len(self.img_fnames) == 0:
+                #     return img_file, scan_name, 1, img_data, meta
+
+        if n > 1:
+            img_data /= n
+            for (k, v) in img_meta.items():
+                try:
+                    img_meta[k] /= n
+                except TypeError:
+                    pass
+
+        return img_file, scan_name, img_number, img_data, img_meta
+        # return None, None, None, None, None
 
     def get_meta_data(self, img_file):
         meta_file = f'{os.path.splitext(img_file)[0]}.{self.meta_ext}'
@@ -1102,6 +1151,7 @@ class specThread(wranglerThread):
                              static=True,
                              gi=self.gi,
                              th_mtr=self.th_mtr,
+                             series_average=self.series_average,
                              single_img=self.single_img,
                              global_mask=self.mask,
                              **self.sphere_args)
@@ -1113,6 +1163,8 @@ class specThread(wranglerThread):
         with self.file_lock:
             if write_mode == 'Append':
                 sphere.load_from_h5(replace=False, mode='a')
+                for (k, v) in self.sphere_args.items():
+                    setattr(sphere, k, v)
                 existing_arches = sphere.arches.index
                 if len(existing_arches) == 0:
                     sphere.save_to_h5(replace=True)
@@ -1121,7 +1173,8 @@ class specThread(wranglerThread):
 
         self.sigUpdateFile.emit(
             self.scan_name, fname,
-            self.gi, self.th_mtr, self.single_img
+            self.gi, self.th_mtr, self.single_img,
+            self.series_average
         )
         print(f'\n***** New Scan *****')
 
@@ -1156,13 +1209,18 @@ class specThread(wranglerThread):
         if self.bg_type == 'None':
             return 0
 
-        bg_file, bg_meta, norm_factor = None, None, 1
+        bg, bg_file, bg_meta, norm_factor = 0, None, None, 1
         self.sub_label, norm_label, bg_scale_label = '', '', ''
 
         if self.bg_type == 'Single BG File':
             if self.bg_file:
                 bg_file = self.bg_file
                 bg_meta = get_img_meta(bg_file, self.meta_ext)
+        elif self.bg_type == 'Series Average':
+            if self.bg_file:
+                sname, fnames, bg, bg_meta = get_series_avg(self.bg_file, self.detector, self.meta_ext)
+                if sname is None:
+                    return 0
         else:
             if self.bg_dir and (self.bg_match_fname or self.bg_matching_par):
                 bg_file_filter = 'bg' if not self.bg_file_filter else self.bg_file_filter
@@ -1194,12 +1252,13 @@ class specThread(wranglerThread):
                             bg_file = None
                             continue
 
-        if bg_file is None:
-            return 0.
+        if self.bg_type != 'Series Average':
+            if bg_file is None:
+                return 0.
 
-        bg = get_img_data(bg_file, self.detector, return_float=True)
-        if bg is None:
-            return 0.
+            bg = get_img_data(bg_file, self.detector, return_float=True)
+            if bg is None:
+                return 0.
 
         if self.bg_scale != 1:
             bg *= self.bg_scale
@@ -1215,7 +1274,11 @@ class specThread(wranglerThread):
             except (KeyError, TypeError):
                 pass
 
-        self.sub_label = f'[Subtracted {bg_scale_label}{norm_label}{os.path.basename(bg_file)}]'
+        if self.bg_type != 'Series Average':
+            self.sub_label = f'[Subtracted {bg_scale_label}{norm_label}{os.path.basename(bg_file)}]'
+        else:
+            self.sub_label = f'[Subtracted {bg_scale_label}{norm_label}{sname}]'
+
         return bg
 
     @staticmethod

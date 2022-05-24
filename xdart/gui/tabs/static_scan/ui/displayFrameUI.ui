@@ -400,6 +400,11 @@
                  </item>
                  <item>
                   <property name="text">
+                   <string>Log-Log</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
                    <string>Sqrt</string>
                   </property>
                  </item>

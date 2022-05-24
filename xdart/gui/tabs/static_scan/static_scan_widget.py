@@ -196,8 +196,8 @@ class staticWidget(QWidget):
         self.command_queue = Queue()
         self.set_wrangler(self.ui.wranglerStack.currentIndex())
 
-        self.integratorTree.get_args('bai_1d')
-        self.integratorTree.get_args('bai_2d')
+        # self.integratorTree.get_args('bai_1d')
+        # self.integratorTree.get_args('bai_2d')
 
         # Setup defaultWidget in h5viewer with parameters
         parameters = [self.integratorTree.parameters]
@@ -238,7 +238,7 @@ class staticWidget(QWidget):
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
         self.h5viewer.sigNewFile.connect(self.wrangler.set_fname)
-        self.h5viewer.sigNewFile.connect(self.displayframe.set_image_units)
+        self.h5viewer.sigNewFile.connect(self.displayframe.set_axes)
         self.h5viewer.sigNewFile.connect(self.h5viewer.data_reset)
         # self.h5viewer.sigNewFile.connect(self.disable_displayframe_update)
 
@@ -438,7 +438,7 @@ class staticWidget(QWidget):
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
 
-    def new_scan(self, name, fname, gi, th_mtr, single_img):
+    def new_scan(self, name, fname, gi, th_mtr, single_img, series_average):
         """Connected to sigUpdateFile from wrangler. Called when a new
         scan is started.
 
@@ -453,6 +453,10 @@ class staticWidget(QWidget):
         self.sphere.gi = gi
         self.sphere.th_mtr = th_mtr
         self.sphere.single_img = single_img
+        self.sphere.series_average = series_average
+
+        self.integratorTree.get_args('bai_1d')
+        self.integratorTree.get_args('bai_2d')
 
         # Clear data objects
         self.data_1d.clear()
@@ -460,7 +464,7 @@ class staticWidget(QWidget):
         self.arches.clear()
         self.arch_ids.clear()
 
-        self.displayframe.set_image_units()
+        self.displayframe.set_axes()
         # self.displayframe.auto_last = True
 
         self.h5viewer.scan_name = name
@@ -504,6 +508,10 @@ class staticWidget(QWidget):
 
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
+
+        self.integratorTree.get_args('bai_1d')
+        self.integratorTree.get_args('bai_2d')
+
         args = {'bai_1d_args': self.sphere.bai_1d_args,
                 'bai_2d_args': self.sphere.bai_2d_args}
         self.wrangler.sphere_args = copy.deepcopy(args)

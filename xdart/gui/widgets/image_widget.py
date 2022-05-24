@@ -183,7 +183,6 @@ class pgImageWidget(Qt.QtWidgets.QWidget):
             self.histogram.axis.setLogMode(False)
 
         self.histogram.setColorMap(cm)
-        self.histogram.setLevels(values=levels)
         low, high = np.min(self.displayed_image), np.max(self.displayed_image)
         self.histogram.lo_lim, self.histogram.hi_lim = low, high
         self.histogram.setLevels(values=levels)

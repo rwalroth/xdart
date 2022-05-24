@@ -29,7 +29,7 @@ import xdart.utils as ut
 from ...widgets import pgImageWidget, pmeshImageWidget
 from xdart.utils import split_file_name
 
-from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 QFileDialog = QtWidgets.QFileDialog
 QInputDialog = QtWidgets.QInputDialog
@@ -49,11 +49,11 @@ Deg = u'\u00B0'
 Qxy = '<math>Q<sub>xy</sub></math>'
 Qz = '<math>Q<sub>z</sub></math>'
 
-plotUnits = [f"Q ({AA_inv})", f"2{Th} ({Deg})", f"{Chi} ({Deg})"]
+plotUnits = [f"Q ({AA_inv})", f"2{Th} ({Deg})", f"{Chi} ({Deg})", f"Qxy ({AA_inv})", f"Qz ({AA_inv})"]
 imageUnits = [f"Q-{Chi}", f"2{Th}-{Chi}", f"Qxy-Qz"]
 
-x_labels_1D = ('Q', f"2{Th}", Chi)
-x_units_1D = (AA_inv, Deg, Deg)
+x_labels_1D = ('Q', f"2{Th}", Chi, f'{Qxy}', f'{Qz}')
+x_units_1D = (AA_inv, Deg, Deg, AA_inv, AA_inv)
 
 x_labels_2D = ('Q', f"2{Th}", Qxy)
 x_units_2D = (AA_inv, Deg, AA_inv)
@@ -107,14 +107,6 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         super().__init__(parent)
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-
-        self.ui.imageUnit.setItemText(0, _translate("Form", imageUnits[0]))
-        self.ui.imageUnit.setItemText(1, _translate("Form", imageUnits[1]))
-        self.ui.imageUnit.setItemText(2, _translate("Form", imageUnits[2]))
-
-        self.ui.plotUnit.setItemText(0, _translate("Form", plotUnits[0]))
-        self.ui.plotUnit.setItemText(1, _translate("Form", plotUnits[1]))
-        self.ui.plotUnit.setItemText(2, _translate("Form", plotUnits[2]))
 
         self.ui.slice.setText(Chi)
 
@@ -242,7 +234,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         self.ui.save_1D.clicked.connect(self.save_1D)
 
         # Initialize image units
-        self.set_image_units()
+        self.set_axes()
         self._set_slice_range(initialize=True)
 
         # Setup Waterfall Options Popup
@@ -371,14 +363,22 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         """Disable buttons if update 2D is unchecked"""
         pass
 
-    def set_image_units(self):
+    def set_axes(self):
         """Disable/Enable Qz-Qxy option if we are/are not in GI mode"""
+
+        self.ui.imageUnit.setItemText(0, _translate("Form", imageUnits[0]))
+        self.ui.imageUnit.setItemText(1, _translate("Form", imageUnits[1]))
+
+        self.ui.plotUnit.setItemText(0, _translate("Form", plotUnits[0]))
+        self.ui.plotUnit.setItemText(1, _translate("Form", plotUnits[1]))
+        self.ui.plotUnit.setItemText(2, _translate("Form", plotUnits[2]))
+
         if self.sphere.gi:
-            if self.ui.imageUnit.count() == 2:
+            if self.ui.imageUnit.count() != 3:
                 self.ui.imageUnit.addItem(_translate("Form", imageUnits[2]))
-        else:
-            if self.ui.imageUnit.count() == 3:
-                self.ui.imageUnit.removeItem(2)
+            if self.ui.plotUnit.count() != 5:
+                self.ui.plotUnit.addItem(_translate("Form", plotUnits[3]))
+                self.ui.plotUnit.addItem(_translate("Form", plotUnits[4]))
 
     def _updated(self):
         """Check if there is data to update
@@ -543,6 +543,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         if (self.overall or self.sphere.single_img) and (len(self.arch_ids) > 1):
             self.ui.labelCurrent.setText(label)
+        elif self.sphere.series_average:
+            self.ui.labelCurrent.setText(label)
         elif len(self.arch_ids) > 1:
             self.ui.labelCurrent.setText(f'{label} [Average]')
         else:
@@ -557,7 +559,10 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # Get 1D data for all arches
         ydata, xdata = self.get_arches_int_1d()
-        arch_names = [f'{self.sphere.name}_{i}' for i in self.idxs]
+        if self.sphere.series_average:
+            arch_names = [self.sphere.name]
+        else:
+            arch_names = [f'{self.sphere.name}_{i}' for i in self.idxs]
 
         # Subtract background
         ydata -= self.bkg_1d
@@ -614,6 +619,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             int_label = f'I / {self.normChannel}'
 
         self.plot.getAxis("left").setLogMode(False)
+        self.plot.getAxis("bottom").setLogMode(False)
         ylabel = f'{int_label} (a.u.)'
         if self.scale == 'Log':
             if ydata.min() < 1:
@@ -621,6 +627,15 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             ydata = np.log10(ydata)
             self.plot.getAxis("left").setLogMode(True)
             ylabel = f'Log {int_label}(a.u.)'
+        elif self.scale == 'Log-Log':
+            if ydata.min() < 1:
+                ydata -= (ydata.min() - 1.)
+            ydata = np.log10(ydata)
+            self.plot.getAxis("left").setLogMode(True)
+            ylabel = f'Log {int_label}(a.u.)'
+
+            s_xdata = np.log10(s_xdata)
+            self.plot.getAxis("bottom").setLogMode(True)
         elif self.scale == 'Sqrt':
             if ydata.min() < 0.:
                 ydata_ = np.sqrt(np.abs(ydata))
@@ -752,10 +767,15 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
 
         # intensity, n_arches = 0., 0
         # for nn, idx in enumerate(idxs):
-        idx = idxs[0]
+        try:
+            idx = idxs[0]
+        except IndexError:
+            return None, None, None
+
         arch_1d = self.data_1d[int(idx)]
         arch_2d = self.data_2d[int(idx)]
-        ic(arch_2d['int_2d'].ttheta, arch_2d['int_2d'].i_tthChi)
+        # ic(arch_2d['int_2d'].ttheta, arch_2d['int_2d'].i_tthChi)
+        # print(arch_2d['int_2d'].ttheta, arch_2d['int_2d'].i_tthChi)
         # arch_intensity = self.get_int_2d(arch_2d['int_2d'], arch_1d)
         intensity = self.get_int_2d(arch_2d['int_2d'], arch_1d)
         # if (arch_intensity.ndim > 1) and (arch_intensity.shape[0] != 0):
@@ -839,7 +859,13 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         if self.ui.plotUnit.currentIndex() != 2:
             if not self.ui.slice.isChecked():
                 int_1d = arch.int_1d
-                intensity = int_1d.norm
+                if self.ui.plotUnit.currentIndex() == 3:
+                    intensity = int_1d.i_qxy
+                elif self.ui.plotUnit.currentIndex() == 4:
+                    intensity = int_1d.i_qz
+                else:
+                    intensity = int_1d.norm
+
                 ydata = self.normalize(intensity, arch.scan_info)
                 xdata = self.get_xdata(int_1d)
                 return xdata, ydata
@@ -916,8 +942,12 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
             xdata = int_data.q
         elif unit == 1:
             xdata = int_data.ttheta
-        else:
+        elif unit == 2:
             xdata = self.get_chi_1d()
+        elif unit == 3:
+            xdata = int_data.qxy
+        else:
+            xdata = int_data.qz
         return xdata
 
     def normalize(self, int_data, scan_info):

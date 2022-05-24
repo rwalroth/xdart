@@ -168,6 +168,70 @@ def split_file_name(fname):
     return directory, root, ext
 
 
+def get_sname_img_number(fname):
+    """Splits filename to get scan name and image number
+
+    Arguments:
+        fname {str} -- full image file name with path
+    Returns:
+        series_name {str} -- series name (or root if single acquisition)
+        img_number {int/None} -- image number (if part of series)
+    """
+    directory, root, ext = split_file_name(fname)
+    try:
+        img_number = int(root[root.rindex('_') + 1:])
+        root = root[:root.rindex('_')]
+    except ValueError:
+        img_number = None
+
+    return root, img_number
+
+
+def get_series_avg(fname, detector, meta_ext):
+    """ Returns the averaged image and meta data for a series
+
+    Arguments:
+        fname {str} -- full image file name with path
+        detector {obj} -- pyFAI detector object
+    Returns:
+        series_name {str} -- series name (if series exists)
+        series_file_names {str array} -- file names in series
+        img_data {ndarray} -- averaged 2D intensity over a series
+        img_mete {dict} -- averaged meta data over a series
+    """
+    fpath = Path(fname)
+    series_name, img_number = get_sname_img_number(fname)
+    if img_number is None:
+        return None, None, None, None
+
+    fnames = [str(f) for f in (fpath.parent.glob(f'{series_name}*[0-9][0-9][0-9][0-9]{fpath.suffix}'))]
+    data, img_meta = 0, {}
+    for ii, fname in enumerate(fnames):
+        data += get_img_data(fname, detector, return_float=True)
+        if data is None:
+            return None, None, None, None
+
+        meta = get_img_meta(fname, meta_ext) if meta_ext else {}
+        if ii == 0:
+            img_meta = meta
+        else:
+            for (k, v) in meta.items():
+                try:
+                    img_meta[k] += meta[k]
+                except TypeError:
+                    pass
+
+    n = len(fnames)
+    data /= n
+    for (k, v) in img_meta.items():
+        try:
+            img_meta[k] /= n
+        except TypeError:
+            pass
+
+    return series_name, fnames, data, img_meta
+
+
 def get_scan_name(fname):
     """Splits filename to get scan name
 
@@ -188,11 +252,6 @@ def get_scan_name(fname):
             return root[:root.rindex('_')]
         except ValueError:
             return root
-
-        #     first_img = int(first_img)
-        #     root = root[:root.rindex('_')]
-        # except ValueError:
-        #     pass
 
     return root
 
@@ -603,7 +662,7 @@ def get_fit(im, function='gaussian'):
     return out, pars, im_fit
 
 
-def fit_images_2D(fname, tth, function='gaussian',
+def fit_images_2D(fname, detector, tth, function='gaussian',
                   kernel_size=3, window_size=3, order=0,
                   Fit_Results={}, FNames={}, Img_Fits={}, Init_Params={},
                   verbose=False, **kwargs):
@@ -611,6 +670,7 @@ def fit_images_2D(fname, tth, function='gaussian',
 
     Args:
         fname (str): Image file name
+        detector (detector object): pyFAI detector object
         tth (float): Value of 2th (used as key for returned dictionary)
         function (str, optional): Fitting function. Defaults to 'gaussian'.
         kernel_size (int, optional): Gaussian smoothing kernel size. Defaults to 3.
@@ -627,7 +687,7 @@ def fit_images_2D(fname, tth, function='gaussian',
     """
     if verbose:
         print(f'Processing {fname}')
-    img = get_img_data(fname, return_float=True, verbose=False, **kwargs)
+    img = get_img_data(fname, detector, return_float=True, verbose=False, **kwargs)
     
     smooth_img(img, kernel_size=kernel_size, window_size=window_size, order=order)
     fit_result, init_params, img_fit = get_fit(img, function=function)

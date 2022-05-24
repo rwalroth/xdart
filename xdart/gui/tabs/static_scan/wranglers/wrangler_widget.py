@@ -45,14 +45,14 @@ class wranglerWidget(Qt.QtWidgets.QWidget):
         sigStart: Tells tthetaWidget to start the thread and prepare
             for new data.
         sigUpdateData: int, signals a new arch has been added.
-        sigUpdateFile: (str, str, bool, str, bool), sends new scan_name, file name
-            GI flag (grazing incidence), theta motor for GI, and
-             single_image flag to static_scan_Widget.
+        sigUpdateFile: (str, str, bool, str, bool, bool), sends new scan_name, file name
+            GI flag (grazing incidence), theta motor for GI, single_image and
+            series_average flag to static_scan_Widget.
     """
     sigStart = Qt.QtCore.Signal()
     sigUpdateData = Qt.QtCore.Signal(int)
     # sigUpdateArch = Qt.QtCore.Signal(dict)
-    sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str, bool)
+    sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str, bool, bool)
     sigUpdateGI = Qt.QtCore.Signal(bool)
     finished = Qt.QtCore.Signal()
     started = Qt.QtCore.Signal()
@@ -124,14 +124,14 @@ class wranglerThread(Qt.QtCore.QThread):
     
     signals:
         sigUpdate: int, signals a new arch has been added.
-        sigUpdateFile: (str, str, bool, str, bool), sends new scan_name, file name
-            GI flag (grazing incidence), theta motor for GI, and
-             single_image flag to static_scan_Widget.
+        sigUpdateFile: (str, str, bool, str, bool, bool), sends new scan_name, file name
+            GI flag (grazing incidence), theta motor for GI, single_image and
+            series_average flag to static_scan_Widget.
         sigUpdateGI: bool, signals the grazing incidence condition has changed.
     """
     sigUpdate = Qt.QtCore.Signal(int)
     # sigUpdateArch = Qt.QtCore.Signal(dict)
-    sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str, bool)
+    sigUpdateFile = Qt.QtCore.Signal(str, str, bool, str, bool, bool)
     sigUpdateGI = Qt.QtCore.Signal(bool)
 
     def __init__(self, command_queue, sphere_args, fname, file_lock,

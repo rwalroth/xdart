@@ -60,7 +60,7 @@ class EwaldSphere:
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={},
-                 static=False, gi=False, th_mtr='th',
+                 static=False, gi=False, th_mtr='th', series_average=False,
                  overall_raw=0, single_img=False,
                  global_mask=None, poni_dict={}
                  ):
@@ -90,6 +90,7 @@ class EwaldSphere:
         self.gi = gi
         self.th_mtr = th_mtr
         self.single_img = single_img
+        self.series_average = series_average
 
         if arches:
             self.arches = ArchSeries(self.data_file, self.file_lock, arches,
@@ -424,7 +425,8 @@ class EwaldSphere:
                 lst_attr = [
                     "scan_data", "global_mask", "mg_args", "bai_1d_args",
                     "bai_2d_args", "overall_raw",
-                    "static", "gi", "th_mtr", "single_img", "poni_dict"
+                    "static", "gi", "th_mtr", "single_img", "poni_dict",
+                    "series_average"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
@@ -478,7 +480,8 @@ class EwaldSphere:
                         lst_attr = [
                             "scan_data", "mg_args", "bai_1d_args",
                             "bai_2d_args", "overall_raw",
-                            "static", "gi", "th_mtr", "single_img", "poni_dict"
+                            "static", "gi", "th_mtr", "single_img", "poni_dict",
+                            "series_average"
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                         self._set_args(self.bai_1d_args)
