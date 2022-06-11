@@ -347,18 +347,62 @@ def get_img_meta(img_file, meta_ext, spec_path=None, rv='all'):
     return Extras | Counters | Motors
 
 
-def get_meta_from_spec(img_file, spec_path=None):
-    spec_file, scan_number = get_specFile_scanNumber(img_file, spec_path)
+def get_meta_from_spec(img_file, spec_path=None, spec_file=None, img_number=None):
+    if spec_file is None:
+        spec_file = get_specFile_scanNumber(img_file, spec_path)
     if spec_file is None:
         return {}, {}, {}
-    img_number = get_img_number(img_file)
 
-    sf = SpecFile(spec_file)[scan_number - 1]
-    Counters = {c: v for c, v in zip(sf.labels, sf.data_line(img_number))}
-    Motors = {m: v for m, v in zip(sf.motor_names, sf.motor_positions)}
+    scan_number = get_scanNumber(img_file)
+
+    if img_number is None:
+        img_number = get_img_number(img_file)
+
+    sf_object = SpecFile(spec_file)
+    sf = sf_object[scan_number - 1]
+    try:
+        Counters = {c: v for c, v in zip(sf.labels, sf.data_line(img_number))}
+        Motors = {m: v for m, v in zip(sf.motor_names, sf.motor_positions)}
+    except IndexError:
+        Counters, Motors = {}, {}
+    sf_object.close()
 
     Extras = {}
     return Counters, Motors, Extras
+
+
+def get_scanNumber(img_file):
+    img_fname = Path(img_file).stem
+
+    match = re.search(f'_scan\d+_\d+$', img_fname)
+    if match is None:
+        return None
+
+    return int(img_fname[match.start() + 5: img_fname.rfind('_')])
+
+
+def get_specFile(img_file, spec_path=None):
+    img_fname = Path(img_file).stem
+    if img_fname[0:2] == 'b_':
+        img_fname = img_fname[2:]
+
+    match = re.search(f'_scan\d+_\d+$', img_fname)
+    if match is None:
+        return None
+
+    spec_fname = img_fname[img_fname.find('_') + 1:match.start()]
+
+    if spec_path is not None:
+        s = os.path.join(spec_path, spec_fname)
+        if os.path.exists(s):
+            return s
+    else:
+        for nn in range(2):
+            s = os.path.join(img_file.parents[nn], spec_fname)
+            if os.path.isfile(s):
+                return s
+
+    return None
 
 
 def get_specFile_scanNumber(img_file, spec_path=None):
@@ -518,7 +562,10 @@ def get_img_data(
     except:
         return None
 
-    if img_data.shape != detector.shape:
+    try:
+        if img_data.shape != detector.shape:
+            return None
+    except AttributeError:
         return None
 
         # if 'tif' in fname[-5:]:

@@ -192,7 +192,10 @@ class EwaldArch():
         with self.arch_lock:
             self.map_norm = 1
             if monitor is not None:
-                self.map_norm = self.scan_info[monitor]
+                if monitor.upper() in self.scan_info.keys():
+                    self.map_norm = self.scan_info[monitor.upper()]
+                elif monitor.lower() in self.scan_info.keys():
+                    self.map_norm = self.scan_info[monitor.lower()]
 
             if self.mask is None:
                 self.mask = np.arange(self.map_raw.size)[self.map_raw.flatten() < 0]
@@ -286,7 +289,14 @@ class EwaldArch():
                 if self.static:
                     self.map_norm = 1
                 else:
-                    self.map_norm = self.scan_info[monitor]
+                    if monitor.upper() in self.scan_info.keys():
+                        self.map_norm = self.scan_info[monitor.upper()]
+                    elif monitor.lower() in self.scan_info.keys():
+                        self.map_norm = self.scan_info[monitor.lower()]
+                    else:
+                        self.map_norm = 1
+
+                    # self.map_norm = self.scan_info[monitor]
 
             if self.mask is None:
                 self.mask = np.arange(self.map_raw.size)[self.map_raw.flatten() < 0]

@@ -65,7 +65,8 @@ class XDImageWidget(Qt.QtWidgets.QWidget):
 
         self.ui.logButton.toggled.connect(self.update_image)
         self.ui.cmapBox.currentIndexChanged.connect(self.set_cmap)
-        self.set_cmap(0)
+        self.ui.cmapBox.setCurrentIndex(1)
+        self.set_cmap(1)
 
         self.show()
 

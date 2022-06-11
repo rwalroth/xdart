@@ -28,7 +28,7 @@ from .ui.specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from xdart.utils import get_img_data, get_img_meta
 from xdart.utils import split_file_name, get_scan_name, get_img_number, get_fname_dir, get_sname_img_number
-from xdart.utils import match_img_detector, get_spec_file, get_series_avg
+from xdart.utils import match_img_detector, get_spec_file, get_series_avg, get_specFile
 from xdart.utils import write_xye, write_csv
 from xdart.utils.containers.poni import get_poni_dict
 
@@ -611,7 +611,8 @@ class specWrangler(wranglerWidget):
             if os.path.exists(meta_files[0]) or os.path.exists(meta_files[1]):
                 return True
         else:
-            meta_file = get_spec_file(img_file)
+            # meta_file = get_spec_file(img_file)
+            meta_file = get_specFile(img_file)
             if meta_file and os.path.exists(meta_file):
                 return True
 

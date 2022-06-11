@@ -20,6 +20,7 @@ from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
 from xdart.modules.spec import MakePONI, get_spec_header, get_spec_scan
+from xdart.utils._utils import get_meta_from_spec
 from xdart.utils.containers import PONI
 from xdart.modules.ewald import EwaldArch, EwaldSphere
 from xdart.utils import catch_h5py_file as catch
@@ -28,7 +29,7 @@ from .specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from ....widgets import MaskWidget
 
-# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
 DETECTOR_DICT = {
     "Pilatus100k": {
@@ -230,7 +231,10 @@ class specWrangler(wranglerWidget):
         """Opens file dialogue and sets the calibration file
         """
         # ic()
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        # fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(
+            filter="PONI (*.poni *.PONI)"
+        )
         if fname != '':
             self.parameters.child('Calibration PONI File').setValue(fname)
     
@@ -610,15 +614,9 @@ class specProcess(wranglerProcess):
         """
         # ic()
         self.signal_q.put(('message', f'Checking for {i}'))
-        
+
         # reads in spec data file header
         self.specFile['header'] = get_spec_header(spec_path)
-
-        # reads in scan data
-        self.specFile['scans'][self.scan_number], \
-            self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
-            spec_path, self.scan_number, self.specFile['header']
-        )
 
         # checks for user and spec_name information
         if self.user is None:
@@ -626,18 +624,26 @@ class specProcess(wranglerProcess):
         if self.spec_name is None:
             self.spec_name = os.path.basename(self.specFile['header']['meta']['File'][0])
 
-        # ic(self.user, self.spec_name, self.scan_number, self.specFile['scans'].keys())
-
         # Construct raw_file path from attributes and index
         raw_file = self._get_raw_path(i)
 
+        Counters, Motors, Extras = get_meta_from_spec(raw_file, spec_file=spec_path)
+        image_meta = Motors | Counters
+        # ic(image_meta)
+
+        # reads in scan data
+        # self.specFile['scans'][self.scan_number], \
+        #     self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
+        #     spec_path, self.scan_number, self.specFile['header']
+        # )
+
         # Get scan meta data
-        if self.scan_number in self.specFile['scans'].keys():
-            image_meta = self.specFile['scans']\
-                                [self.scan_number].loc[i].to_dict()
-        
-        else:
-            image_meta = self.specFile['current_scan'].loc[i].to_dict()
+        # if self.scan_number in self.specFile['scans'].keys():
+        #     image_meta = self.specFile['scans']\
+        #                         [self.scan_number].loc[i].to_dict()
+        #
+        # else:
+        #     image_meta = self.specFile['current_scan'].loc[i].to_dict()
         # ic(image_meta)
 
         # Get poni dict based on meta data

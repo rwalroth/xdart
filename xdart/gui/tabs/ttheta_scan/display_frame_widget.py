@@ -397,7 +397,7 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         
         elif ext.lower() == 'tiff':
             data = self.update_image()
-            plt.imsave(fname, data.T, cmap='gray')
+            plt.imsave(fname, data.T, cmap='viridis')
     
     def save_array(self):
         """Saves currently displayed data. Currently supports .xye
