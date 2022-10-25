@@ -8,11 +8,10 @@ import os
 import sys
 import subprocess
 
-from xdart.utils.pyFAI_binaries import pyFAI_calib2_main
+import fabio
 from xdart.utils.pyFAI_binaries import pyFAI_drawmask_main
 from xdart.utils.pyFAI_binaries import MaskImageWidgetXdart
 from pyFAI.app.drawmask import postProcessId21
-# from xdart.utils._utils import launch
 
 # Qt imports
 import pyqtgraph as pg
@@ -890,10 +889,13 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.mask_window = MaskImageWidgetXdart()
         self.mask_window.setWindowModality(Qt.QtCore.Qt.WindowModal)
         self.mask_window.show()
-        pyFAI_drawmask_main(self.mask_window, processFile)
 
-        mask = self.mask_window.getSelectionMask()
-        postProcessId21([processFile], mask)
+        image = fabio.open(processFile).data
+        pyFAI_drawmask_main(self.mask_window, image, processFile)
+        # pyFAI_drawmask_main(self.mask_window, processFile)
+
+        # mask = self.mask_window.getSelectionMask()
+        # postProcessId21([processFile], mask)
 
     def set_image_units(self):
         """Disable/Enable Qz-Qxy option if we are/are not in GI mode"""

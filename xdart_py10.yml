@@ -1,0 +1,33 @@
+name: xdart_py10
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python[version='>=3.10']
+  - h5py[version='>=2.10']
+  - scikit-learn
+  - silx
+  - qdarkstyle
+  - requests
+  - qtpy
+  - scipy
+  - matplotlib
+  - pyqtgraph[version='>=0.12']
+  - pandas
+  - pyyaml
+  - fabio
+  - pyfai
+  - pillow
+  - scikit-image
+  - lmfit
+  - pygix
+  - pyopencl
+  - icecream
+  - nb_conda_kernels
+  - nodejs
+  - xlrd
+  - openpyxl
+  - ipympl
+  - ipywidgets
+  - numpy
+ 

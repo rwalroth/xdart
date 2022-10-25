@@ -17,6 +17,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 from collections import OrderedDict
+
+import scipy.ndimage
 from silx.io.specfile import SpecFile
 
 import scipy.ndimage as ndimage
@@ -142,10 +144,7 @@ def get_fname_dir():
         path: {str} Path where h5 file is saved
     """
     home_path = str(Path.home())
-    # today = datetime.today()
-    # date = str(today.date())
 
-    # path = os.path.join(home_path, 'xdart_processed_data', date, fname)
     path = os.path.join(home_path, 'xdart_processed_data')
     Path(path).mkdir(parents=True, exist_ok=True)
 
@@ -551,6 +550,7 @@ def get_img_data(
                     img_data = np.asarray(f['entry']['data']['data'][im], dtype=float)
                 except IndexError:
                     return None
+                os.path.e
         else:
             img_data = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
             try:
@@ -608,6 +608,31 @@ def get_img_data(
         img_data = np.fliplr(img_data)
 
     return img_data
+
+
+def get_mask_array(detector, mask_file=None, det_orientation=0):
+    """Get mask array from mask file
+    """
+    mask = detector.calc_mask()
+    if mask_file and os.path.exists(mask_file):
+        if mask is not None:
+            try:
+                mask += fabio.open(mask_file).data
+            except ValueError:
+                print('Mask file not valid for Detector')
+                pass
+        else:
+            mask = fabio.open(mask_file).data
+
+    if mask is None:
+        return None
+
+    if mask.shape != detector.shape:
+        print('Mask file not valid for Detector')
+        return None
+
+    mask = scipy.ndimage.rotate(mask, det_orientation)
+    return np.flatnonzero(mask)
 
 
 def get_norm_fac(normChannel, scan_data, arch_ids=None, return_sum=True):

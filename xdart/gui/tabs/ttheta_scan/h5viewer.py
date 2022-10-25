@@ -25,6 +25,7 @@ from .h5viewerUI import Ui_Form
 from .sphere_threads import fileHandlerThread
 from ...widgets import defaultWidget
 from ...gui_utils import XdartDecoder, XdartEncoder
+from pathlib import Path
 
 class H5Viewer(QWidget):
     """Widget for displaying the contents of an EwaldSphere object and
@@ -59,6 +60,8 @@ class H5Viewer(QWidget):
         self.local_path = local_path
         self.file_lock = file_lock
         self.dirname = dirname
+        if self.dirname == '':
+            self.dirname = str(Path.home())
         self.sphere = sphere
         self.arch = arch
         self.ui = Ui_Form()
@@ -173,6 +176,8 @@ class H5Viewer(QWidget):
         """
         self.ui.listScans.clear()
         self.ui.listScans.addItem('..')
+        if self.dirname == '':
+            self.dirname = str(Path.home())
         for name in os.listdir(self.dirname):
             abspath = os.path.join(self.dirname, name)
             if os.path.isdir(abspath):

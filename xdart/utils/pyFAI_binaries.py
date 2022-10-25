@@ -58,7 +58,8 @@ def pyFAI_calib2_main():
     context.saveSettings()
 
 
-def pyFAI_drawmask_main(window, processFile):
+# def pyFAI_drawmask_main(window, processFile):
+def pyFAI_drawmask_main(window, image, processFile):
     usage = "pyFAI-drawmask file1.edf file2.edf ..."
     version = "pyFAI-average version %s from %s" % (pyFAI.version, pyFAI.date)
     description = """
@@ -72,7 +73,7 @@ def pyFAI_drawmask_main(window, processFile):
     Optionally the script will print the number of pixel masked
     and the intensity masked (as well on other files provided in input)"""
 
-    image = fabio.open(processFile).data
+    # image = fabio.open(processFile).data
     window.setImageData(image)
     outfile = os.path.splitext(processFile)[0] + "-mask.edf"
     window.setOutputFile(outfile)

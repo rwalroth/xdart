@@ -157,14 +157,17 @@ class NamedActionParameterItem(ParameterItem):
     """
     def __init__(self, param, depth):
         ParameterItem.__init__(self, param, depth)
-        self.layoutWidget = QtGui.QWidget()
-        self.layout = QtGui.QHBoxLayout()
+        # self.layoutWidget = QtGui.QWidget()
+        self.layoutWidget = QtWidgets.QWidget()
+        # self.layout = QtGui.QHBoxLayout()
+        self.layout = QtWidgets.QHBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layoutWidget.setLayout(self.layout)
         title = param.opts.get('title', None)
         if title is None:
             title = param.name()
-        self.button = QtGui.QPushButton(title)
+        # self.button = QtGui.QPushButton(title)
+        self.button = QtWidgets.QPushButton(title)
         #self.layout.addSpacing(100)
         self.layout.addWidget(self.button)
         self.layout.addStretch()

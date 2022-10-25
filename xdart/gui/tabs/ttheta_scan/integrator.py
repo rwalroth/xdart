@@ -22,7 +22,7 @@ from ...widgets import rangeWidget
 params = [
     {'name': 'Default', 'type': 'group', 'children': [
             {'name': 'Integrate 1D', 'type': 'group', 'children': [
-                {'name': 'numpoints', 'type': 'int', 'value': 1000},
+                {'name': 'numpoints', 'type': 'int', 'value': 10000},
                 {'name': 'unit', 'type': 'list', 'values': {
                     "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
                     }, 'value': '2th_deg'},
@@ -59,8 +59,8 @@ params = [
                 ]
             },
             {'name': 'Integrate 2D', 'type': 'group', 'children': [
-                {'name': 'npt_rad', 'type': 'int', 'value': 1000},
-                {'name': 'npt_azim', 'type': 'int', 'value': 1000},
+                {'name': 'npt_rad', 'type': 'int', 'value': 2000},
+                {'name': 'npt_azim', 'type': 'int', 'value': 2000},
                 {'name': 'unit', 'type': 'list', 'values': {
                     "2" + u"\u03B8": '2th_deg', "q (A-1)": 'q_A^-1'
                     }, 'value': '2th_deg'},
@@ -154,14 +154,14 @@ class integratorTree(Qt.QtWidgets.QWidget):
                                        points_high=1e9, 
                                        parent=self,
                                        range_low=0, 
-                                       defaults=[0,180,1000])
+                                       defaults=[0,180,10000])
         self.azimuthalRange2D = rangeWidget("Azimuthal", 
                                           unit="(deg.)", 
                                           range_high=180, 
                                           points_high=1e9, 
                                           parent=self,
                                           range_low=-180, 
-                                          defaults=[-180,180,1000])
+                                          defaults=[-180,180,2000])
         self.radialRange2D = rangeWidget("Radial", 
                                        unit=["2" + u"\u03B8" + " (deg.)", 
                                              "q (A-1)"], 
@@ -169,7 +169,7 @@ class integratorTree(Qt.QtWidgets.QWidget):
                                        points_high=1e9, 
                                        parent=self,
                                        range_low=0, 
-                                       defaults=[0,180,1000])
+                                       defaults=[0,180,2000])
         self.ui.layout1D.insertWidget(1, self.radialRange1D)
         self.ui.layout2D.insertWidget(1, self.azimuthalRange2D)
         self.ui.layout2D.insertWidget(1, self.radialRange2D)
@@ -523,7 +523,7 @@ class advancedParameters(Qt.QtWidgets.QWidget):
             ]
             },
             {'name': 'Integrate 1D', 'type': 'group', 'children': [
-                {'name': 'npt', 'type': 'int', 'value': 1000},
+                {'name': 'npt', 'type': 'int', 'value': 10000},
                 {'name': 'monitor', 'type': 'str', 'value': 'None'},
                 {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
                 {'name': 'Apply polarization factor', 'type': 'bool', 'value': False},
@@ -532,8 +532,8 @@ class advancedParameters(Qt.QtWidgets.QWidget):
                 ]
             },
             {'name': 'Integrate 2D', 'type': 'group', 'children': [
-                {'name': 'npt_rad', 'type': 'int', 'value': 1000},
-                {'name': 'npt_azim', 'type': 'int', 'value': 1000},
+                {'name': 'npt_rad', 'type': 'int', 'value': 2000},
+                {'name': 'npt_azim', 'type': 'int', 'value': 2000},
                 {'name': 'monitor', 'type': 'str', 'value': 'None'},
                 {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
                 {'name': 'Apply polarization factor', 'type': 'bool', 'value': False},
@@ -545,4 +545,3 @@ class advancedParameters(Qt.QtWidgets.QWidget):
 
     }
     """
-    

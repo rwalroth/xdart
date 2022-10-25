@@ -130,7 +130,8 @@ def main():
     # multiprocessing.freeze_support()
     os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
     tab_paths = setup_data_folders(tabs.exp_list)
-    app = QtGui.QApplication(sys.argv)
+    # app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     # app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     mw = Main(tab_paths)
     mw.show()
