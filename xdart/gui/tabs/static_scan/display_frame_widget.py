@@ -990,6 +990,8 @@ class displayFrameWidget(Qt.QtWidgets.QWidget):
         normChannel = self.ui.normChannel.currentText()
         if normChannel == 'sec':
             normChannel = {'sec', 'seconds', 'Seconds', 'Sec', 'SECONDS', 'SEC'}
+        elif normChannel == 'Monitor':
+            normChannel = {'Monitor', 'monitor', 'mon', 'Mon', 'MON', 'MONITOR'}
         else:
             normChannel = {normChannel, normChannel.lower(), normChannel.upper()}
         if scan_data_keys is None:

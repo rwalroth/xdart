@@ -5,10 +5,10 @@
 
 # Standard library imports
 import os
+import re
 import time
 import glob
 import fnmatch
-from copy import deepcopy
 import numpy as np
 from pathlib import Path
 from collections import deque
@@ -31,6 +31,7 @@ from xdart.utils import split_file_name, get_scan_name, get_img_number, get_fnam
 from xdart.utils import match_img_detector, get_series_avg, get_specFile, get_mask_array
 from xdart.utils import write_xye, write_csv
 from xdart.utils.containers.poni import get_poni_dict
+# from xdart.utils import natural_sort_ints
 
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
@@ -66,7 +67,7 @@ params = [
          'values': ['tif', 'raw', 'h5', 'mar3450'], 'value':'tif', 'visible': False},
         {'name': 'series_average', 'title': 'Average Scan', 'type': 'bool', 'value': False, 'visible': True},
         {'name': 'meta_ext', 'title': 'Meta File', 'type': 'list',
-         'values': ['None', 'txt', 'pdi', 'SPEC'], 'value':'txt'},
+         'values': ['None', 'txt', 'pdi', 'SPEC'], 'value':'pdi'},
         {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
         {'name': 'write_mode', 'title': 'Write Mode  ', 'type': 'list',
          'values': ['Append', 'Overwrite'], 'value':'Append'},
@@ -340,7 +341,6 @@ class specWrangler(wranglerWidget):
     def setup(self):
         """Sets up the child thread, syncs all parameters.
         """
-        # ic()
         # Calibration
         self.poni_file = self.parameters.child('Calibration').child('poni_file').value()
         self.thread.poni_dict = self.poni_dict
@@ -553,7 +553,6 @@ class specWrangler(wranglerWidget):
     def get_img_fname(self):
         """Sets file name based on chosen options
         """
-        # ic()
         old_fname = self.img_file
         if self.inp_type != 'Image Directory':
             img_file = self.parameters.child('Signal').child('File').value()
@@ -570,14 +569,19 @@ class specWrangler(wranglerWidget):
             filters = '*' + '*'.join(f for f in self.file_filter.split()) + '*'
             filters = filters if filters != '**' else '*'
 
-            for subdir, dirs, files in os.walk(self.img_dir):
+            file_found = False
+            # ic(file_found, self.img_file)
+            for idx, (subdir, dirs, files) in enumerate(os.walk(self.img_dir)):
                 for file in files:
                     fname = os.path.join(subdir, file)
                     if fnmatch.fnmatch(fname, f'{filters}.{self.img_ext}'):
+                        # ic(fname, self.img_file, self.poni_dict)
                         if match_img_detector(fname, self.poni_dict):
+                            # ic(self.img_file, self.meta_ext)
                             if self.meta_ext:
                                 if self.exists_meta_file(fname):
                                     self.img_file = fname
+                                    file_found = True
                                     break
                                 else:
                                     continue
@@ -585,7 +589,9 @@ class specWrangler(wranglerWidget):
                                 self.img_file = fname
                                 break
                             # self.meta_ext = self.get_meta_ext(fname)
-                if not self.include_subdir:
+                # ic(self.img_file, file_found, self.include_subdir, idx)
+                if file_found or (not self.include_subdir):
+                    # ic('breaking')
                     break
 
         if (((self.img_file != old_fname) or (self.img_file and (len(self.scan_parameters) < 1)))
@@ -603,12 +609,14 @@ class specWrangler(wranglerWidget):
 
     def exists_meta_file(self, img_file):
         """Checks for existence of meta file for image file"""
+        # ic()
         if self.meta_ext != 'SPEC':
             meta_files = [
                 f'{os.path.splitext(img_file)[0]}.{self.meta_ext}',
-                f'{os.path.splitext(img_file)}.{self.meta_ext}'
+                f'{img_file}.{self.meta_ext}'
             ]
             if os.path.exists(meta_files[0]) or os.path.exists(meta_files[1]):
+                # ic('returning True \n')
                 return True
         else:
             meta_file = get_specFile(img_file)
@@ -885,7 +893,6 @@ class specThread(wranglerThread):
         gi: bool, grazing incidence flag to determine if pyGIX is to be used
         th_mtr: float, incidence angle
         """
-        # ic()
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
 
         self.h5_dir = h5_dir
@@ -930,7 +937,6 @@ class specThread(wranglerThread):
         """Initializes specProcess and watches for new commands from
         parent or signals from the process.
         """
-        # ic()
         t0 = time.time()
         if (self.poni_dict == '') or (self.img_file == ''):
             return
@@ -1078,7 +1084,9 @@ class specThread(wranglerThread):
             self.img_fnames = [str(f) for f in self.img_fnames if
                                (str(f) >= first_img) and (str(f) not in self.processed)]
 
-        self.img_fnames = deque(sorted(self.img_fnames))
+            # self.img_fnames = deque(sorted(self.img_fnames))
+            self.img_fnames = deque(natural_sort_ints(self.img_fnames))
+
         img_file, scan_name, img_number, img_data, img_meta = None, None, 1, None, {}
         n = 0
         while len(self.img_fnames) > 0:
@@ -1109,7 +1117,7 @@ class specThread(wranglerThread):
                     img_data += data
                     for (k, v) in meta.items():
                         try:
-                            img_meta[k] += meta[k]
+                            img_meta[k] = float(img_meta[k]) + float(meta[k])
                         except TypeError:
                             pass
 
@@ -1309,3 +1317,43 @@ class specThread(wranglerThread):
         # Write I(tth) to csv
         fname = os.path.join(path, f'itth_{sphere.name}_{str(idx).zfill(4)}.csv')
         write_csv(fname, tth, intensity)
+
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+
+def natural_keys_int(text):
+    """
+    alist.sort(key=natural_keys) sorts in human order
+    http://nedbatchelder.com/blog/200712/human_sorting.html
+    (See Toothy's implementation in the comments)
+    """
+    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+
+
+def atof(text):
+    try:
+        retval = float(text)
+    except ValueError:
+        retval = text
+    return retval
+
+
+def natural_keys_float(text):
+    """
+    alist.sort(key=natural_keys) sorts in human order
+    http://nedbatchelder.com/blog/200712/human_sorting.html
+    (See Toothy's implementation in the comments)
+    float regex comes from https://stackoverflow.com/a/12643073/190597
+    """
+    return [atof(c) for c in re.split(r'[+-]?([0-9]+(?:[.][0-9]*)?|[.][0-9]+)', text)]
+
+
+def natural_sort_ints(list_to_sort):
+    return sorted(list_to_sort, key=natural_keys_int)
+
+
+def natural_sort_float(list_to_sort):
+    return sorted(list_to_sort, key=natural_keys_float)
+

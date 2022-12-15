@@ -37,7 +37,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version='0.12.4',  # Required
+    version='0.12.5',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
@@ -141,7 +141,7 @@ setup(
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
     install_requires=['pyfai', 'pygix', 'pyqtgraph', 'pyqt5', 'pandas',
             'scikit-image', 'lmfit', 'pyyaml', 'numpy', 'scipy', 'silx',
-            'fabio', 'matplotlib', 'requests', 'h5py', 'hdf5plugin',
+            'fabio', 'matplotlib', 'requests', 'h5py', 'hdf5plugin', 'seaborn',
             'ipympl', 'ipywidgets', 'joblib', 'icecream', 'jupyterlab',
             'nodejs', 'hvplot', 'holoviews', 'panel', 'xlrd', 'openpyxl'],  # Optional
 
