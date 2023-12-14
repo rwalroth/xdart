@@ -6,9 +6,9 @@ X-ray Data Analysis in Real Time
 
 1. Install Anaconda if you don't already have it (Miniconda recommended) <https://docs.conda.io/en/latest/miniconda.html>
 
-2. From the terminal, create a new environment with python 3.9:
+2. From the terminal, create a new environment with python < 3.12:
    ```
-   conda create -n xdart python=3.9
+   conda create -n xdart python=3.11
    ```
 
 3. Activate the xdart environment:

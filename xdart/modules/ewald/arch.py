@@ -220,9 +220,14 @@ class EwaldArch():
 
                 # incident angle in deg
                 try:
-                    self.integrator.incident_angle = self.scan_info[self.th_mtr]
-                except KeyError:
-                    pass
+                    self.integrator.incident_angle = float(self.th_mtr)
+                except ValueError:
+                    try:
+                        self.integrator.incident_angle = self.scan_info[self.th_mtr]
+                    except KeyError:
+                        pass
+
+                # ic(self.integrator.incident_angle)
                 # tilt angle of sample in deg (misalignment in "chi")
                 self.integrator.tilt_angle = self.tilt_angle
 
@@ -325,7 +330,16 @@ class EwaldArch():
                 pg_args = {k: v for (k, v) in kwargs.items() if k in pg_args}
 
                 # incident angle in deg
-                self.integrator.incident_angle = self.scan_info[self.th_mtr]
+                try:
+                    self.integrator.incident_angle = float(self.th_mtr)
+                except ValueError:
+                    try:
+                        self.integrator.incident_angle = self.scan_info[self.th_mtr]
+                    except KeyError:
+                        pass
+
+                # ic(self.integrator.incident_angle)
+
                 # tilt angle of sample in deg (misalignment in "chi")
                 self.integrator.tilt_angle = self.tilt_angle
 

@@ -357,6 +357,7 @@ def get_meta_from_spec(img_file, spec_path=None, spec_file=None, img_number=None
     if img_number is None:
         img_number = get_img_number(img_file)
 
+    ic(spec_file)
     sf_object = SpecFile(spec_file)
     sf = sf_object[scan_number - 1]
     try:
@@ -396,8 +397,10 @@ def get_specFile(img_file, spec_path=None):
         if os.path.exists(s):
             return s
     else:
+        img_fpath = Path(img_file)
         for nn in range(2):
-            s = os.path.join(img_file.parents[nn], spec_fname)
+            s = os.path.join(img_fpath.parents[nn], spec_fname)
+            ic(s)
             if os.path.isfile(s):
                 return s
 
@@ -550,7 +553,6 @@ def get_img_data(
                     img_data = np.asarray(f['entry']['data']['data'][im], dtype=float)
                 except IndexError:
                     return None
-                os.path.e
         else:
             img_data = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
             try:

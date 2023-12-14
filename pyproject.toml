@@ -1,6 +1,53 @@
+[tool.poetry]
+name = "xdart"
+version = "0.13.1"
+description = "A pyFAI based GUI utility to rebin and visualize X-ray Diffraction data"
+authors = ["Vivek Thampy <vthampy@slac.stanford.edu>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/rwalroth/xdart.git"
+repository = "https://github.com/rwalroth/xdart.git"
+documentation = ""
+keywords = ["xrd", "diffracion", "pyFAI"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<4"
+pyfai = "*"
+pygix = "*"
+pyqtgraph = "*"
+pyqt5 = "*"
+pandas = "*"
+scikit-image = "*"
+lmfit = "*"
+pyyaml = "*"
+numpy = "*"
+scipy = "*"
+silx = "*"
+fabio = "*"
+matplotlib = "*"
+requests = "*"
+h5py = "*"
+hdf5plugin = "*"
+seaborn = "*"
+ipympl = "*"
+ipywidgets = "*"
+joblib = "*"
+icecream = "*"
+jupyterlab = "*"
+nodejs = "*"
+hvplot = "*"
+holoviews = "*"
+panel = "*"
+xlrd = "*"
+openpyxl = "*"
+imagecodecs = "*"
+
+[tool.poetry.dev-dependencies]
+# Add your development dependencies here
+
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
-]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+xdart = "xdart.xdart_main:main"

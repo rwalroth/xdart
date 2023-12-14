@@ -64,13 +64,13 @@ params = [
         NamedActionParameter(name='img_dir_browse', title='Browse...', visible=False),
         {'name': 'include_subdir', 'title': 'Subdirectories', 'type': 'bool', 'value': False, 'visible': False},
         {'name': 'img_ext', 'title': 'File Type  ', 'type': 'list',
-         'values': ['tif', 'raw', 'h5', 'mar3450'], 'value':'tif', 'visible': False},
+         'values': ['tif', 'raw', 'h5', 'mar3450'], 'value': 'tif', 'visible': False},
         {'name': 'series_average', 'title': 'Average Scan', 'type': 'bool', 'value': False, 'visible': True},
         {'name': 'meta_ext', 'title': 'Meta File', 'type': 'list',
-         'values': ['None', 'txt', 'pdi', 'SPEC'], 'value':'pdi'},
+         'values': ['None', 'txt', 'pdi', 'SPEC'], 'value': 'txt'},
         {'name': 'Filter', 'type': 'str', 'value': '', 'visible': False},
         {'name': 'write_mode', 'title': 'Write Mode  ', 'type': 'list',
-         'values': ['Append', 'Overwrite'], 'value':'Append'},
+         'values': ['Append', 'Overwrite'], 'value': 'Append'},
         {'name': 'mask_file', 'title': 'Mask File', 'type': 'str', 'value': ''},
         NamedActionParameter(name='mask_file_browse', title='Browse...'),
     ], 'expanded': True, 'visible': False},
@@ -93,12 +93,14 @@ params = [
     {'name': 'GI', 'title': 'Grazing Incidence', 'type': 'group', 'children': [
         {'name': 'Grazing', 'type': 'bool', 'value': False},
         {'name': 'th_motor', 'title': 'Theta Motor', 'type': 'list', 'values': ['th'], 'value': 'th'},
+        {'name': 'th_val', 'title': 'Theta', 'type': 'str', 'value': '0.1', 'visible': False},
     ], 'expanded': False, 'visible': False},
     {'name': 'h5_dir', 'title': 'Save Path', 'type': 'str', 'value': get_fname_dir(), 'enabled': False},
     NamedActionParameter(name='h5_dir_browse', title='Browse...', visible=False),
     {'name': 'Timeout', 'type': 'float', 'value': 1, 'visible': False},
 ]
 
+ctr = 1
 
 class specWrangler(wranglerWidget):
     """Widget for integrating data associated with spec file. Can be
@@ -282,6 +284,9 @@ class specWrangler(wranglerWidget):
         self.parameters.child('GI').child('th_motor').sigValueChanged.connect(
             self.set_gi_th_motor
         )
+        self.parameters.child('GI').child('th_val').sigValueChanged.connect(
+            self.set_gi_th_motor
+        )
         self.parameters.child('h5_dir_browse').sigActivated.connect(
             self.set_h5_dir
         )
@@ -342,6 +347,10 @@ class specWrangler(wranglerWidget):
         """Sets up the child thread, syncs all parameters.
         """
         # Calibration
+        global ctr
+        ctr += 1
+        # ic(ctr)
+
         self.poni_file = self.parameters.child('Calibration').child('poni_file').value()
         self.thread.poni_dict = self.poni_dict
 
@@ -407,8 +416,9 @@ class specWrangler(wranglerWidget):
         self.gi = self.parameters.child('GI').child('Grazing').value()
         self.thread.gi = self.gi
 
-        self.th_mtr = self.parameters.child('GI').child('th_motor').value()
+        # self.th_mtr = self.parameters.child('GI').child('th_motor').value()
         self.thread.th_mtr = self.th_mtr
+        # ic(self.th_mtr)
 
         # Timeout
         self.timeout = self.parameters.child('Timeout').value()
@@ -553,6 +563,7 @@ class specWrangler(wranglerWidget):
     def get_img_fname(self):
         """Sets file name based on chosen options
         """
+        # ic()
         old_fname = self.img_file
         if self.inp_type != 'Image Directory':
             img_file = self.parameters.child('Signal').child('File').value()
@@ -594,6 +605,7 @@ class specWrangler(wranglerWidget):
                     # ic('breaking')
                     break
 
+        # ic(self.img_file, self.scan_parameters)
         if (((self.img_file != old_fname) or (self.img_file and (len(self.scan_parameters) < 1)))
                 and self.meta_ext):
             self.set_pars_from_meta()
@@ -602,6 +614,7 @@ class specWrangler(wranglerWidget):
         self.series_average = self.parameters.child('Signal').child('series_average').value()
 
     def set_meta_ext(self):
+        # ic()
         self.meta_ext = self.parameters.child('Signal').child('meta_ext').value()
         if self.meta_ext == 'None':
             self.meta_ext = None
@@ -626,6 +639,7 @@ class specWrangler(wranglerWidget):
         return False
 
     def set_pars_from_meta(self):
+        # ic()
         self.get_scan_parameters()
         self.set_bg_matching_options()
         self.set_gi_motor_options()
@@ -671,7 +685,7 @@ class specWrangler(wranglerWidget):
         # ic()
         fname, _ = QFileDialog().getOpenFileName(
             filter=f"Images (*.{self.img_ext})"
-            )
+        )
         if fname != '':
             self.parameters.child('BG').child('File').setValue(fname)
         self.bg_file = fname
@@ -707,7 +721,7 @@ class specWrangler(wranglerWidget):
     def set_bg_matching_options(self):
         """Reads image metadata to populate matching parameters
         """
-        # ic()
+        # ic(self.scan_parameters)
         pars = [p for p in self.scan_parameters if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
         pars.insert(0, 'None')
         if 'TEMP' in pars:
@@ -730,6 +744,7 @@ class specWrangler(wranglerWidget):
         """
         # ic()
         pars = self.counters
+        # ic(self.counters)
         pars.insert(0, 'None')
 
         opts = {'values': pars, 'limits': pars, 'value': 'None'}
@@ -745,7 +760,6 @@ class specWrangler(wranglerWidget):
         """Reads image metadata to populate possible GI theta motor
         """
         # ic()
-        # pars = [p for p in self.scan_parameters if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
         pars = [p for p in self.motors if not any(x.lower() in p.lower() for x in ['ROI', 'PD'])]
         if 'th' in pars:
             pars.insert(0, pars.pop(pars.index('th')))
@@ -756,17 +770,25 @@ class specWrangler(wranglerWidget):
         else:
             value = 'Theta'
 
+        pars = ['Manual'] + pars
+        # ic(pars)
+
         opts = {'values': pars, 'limits': pars, 'value': value}
         self.parameters.child('GI').child('th_motor').setOpts(**opts)
 
     def set_gi_th_motor(self):
         """Update Grazing theta motor"""
         self.th_mtr = self.parameters.child('GI').child('th_motor').value()
+        self.parameters.child('GI').child('th_val').hide()
+        if self.th_mtr == 'Manual':
+            self.parameters.child('GI').child('th_val').show()
+            self.th_mtr = self.parameters.child('GI').child('th_val').value()
+            # ic(self.th_mtr)
 
     def get_scan_parameters(self):
-        """Reads image metadata to populate matching parameters
+        """ Reads image metadata to populate matching parameters
         """
-        # ic()
+        # ic(self.img_file)
         if not self.img_file:
             return
 
@@ -799,7 +821,6 @@ class specWrangler(wranglerWidget):
 
 
 class specThread(wranglerThread):
-
     """Thread for controlling the specProcessor process. Receives
     manages a command and signal queue to pass commands from the main
     thread and communicate back relevant signals
@@ -979,7 +1000,7 @@ class specThread(wranglerThread):
             if img_data is None:
                 if img_file is None:
                     self.showLabel.emit(f'Checking for next image')
-                    time.sleep(0.5)
+                    time.sleep(0.2)
                 else:
                     print(f'Invalid Image File {os.path.basename(img_file)}. Skipping...')
 
@@ -990,7 +1011,8 @@ class specThread(wranglerThread):
                 else:
                     continue
             else:
-                self.showLabel.emit(f'Checking for next image')
+                fname = os.path.splitext(os.path.basename(img_file))[0]
+                self.showLabel.emit(f'Processing {fname[-30:]}')
 
             # self.scan_name = get_scan_name(img_file)
             img_number = 1 if (img_number is None) else img_number
@@ -1009,10 +1031,12 @@ class specThread(wranglerThread):
             # Get Background
             bg_raw = self.get_background(img_file, img_number, img_meta)
 
+            # ic(self.th_mtr)
+
+            # Initialize arch and integrate
             arch = EwaldArch(
                 img_number, img_data, poni_dict=self.poni_dict,
                 scan_info=img_meta, static=True, gi=self.gi,
-                # mask=self.mask, th_mtr=self.th_mtr,
                 th_mtr=self.th_mtr, bg_raw=bg_raw,
                 series_average=self.series_average
             )
@@ -1035,7 +1059,6 @@ class specThread(wranglerThread):
             self.save_1d(sphere, arch, img_number)
             # print(f'Saved 1D data: {time.time() - start1:0.2f}')
 
-            fname = os.path.splitext(os.path.basename(img_file))[0]
             print(f'Processed {fname} {self.sub_label}')
             if len(fname) > 40:
                 fname = f'{fname[:8]}....{fname[-30:]}'
@@ -1278,7 +1301,7 @@ class specThread(wranglerThread):
                 if ((self.bg_norm_channel in img_meta.keys()) and
                         (self.bg_norm_channel in bg_meta.keys()) and
                         (bg_meta[self.bg_norm_channel] != 0)):
-                    norm_factor = (img_meta[self.bg_norm_channel]/bg_meta[self.bg_norm_channel])
+                    norm_factor = (img_meta[self.bg_norm_channel] / bg_meta[self.bg_norm_channel])
                     bg *= norm_factor
                     norm_label = f'{norm_factor:0.2f} [Normalized to Channel - {self.bg_norm_channel}] x '
             except (KeyError, TypeError):
@@ -1329,7 +1352,7 @@ def natural_keys_int(text):
     http://nedbatchelder.com/blog/200712/human_sorting.html
     (See Toothy's implementation in the comments)
     """
-    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+    return [atoi(c) for c in re.split(r'(\d+)', text)]
 
 
 def atof(text):
@@ -1356,4 +1379,3 @@ def natural_sort_ints(list_to_sort):
 
 def natural_sort_float(list_to_sort):
     return sorted(list_to_sort, key=natural_keys_float)
-

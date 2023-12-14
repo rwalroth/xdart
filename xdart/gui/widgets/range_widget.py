@@ -163,8 +163,8 @@ class rangeWidget(Qt.QtWidgets.QWidget):
         self.ui.low.setMaximum(self.ui.high.value())
         self.ui.high.setMinimum(self.ui.low.value())
         
-        self.ui.points.setMaximum(points_high)
-        self.ui.points.setMinimum(points_low)
+        self.ui.points.setMaximum(int(points_high))
+        self.ui.points.setMinimum(int(points_low))
         self.ui.points.setValue(points_low)
         self.ui.step.setValue(
             (self.ui.high.value() - self.ui.low.value()) /
@@ -233,4 +233,3 @@ class rangeWidget(Qt.QtWidgets.QWidget):
         self.ui.points.blockSignals(False)
         
         self.sigPointsChanged.emit(points)
-        

@@ -99,8 +99,11 @@ class EwaldSphere:
             self.arches = ArchSeries(self.data_file, self.file_lock,
                                      static=self.static, gi=self.gi)
         self.scan_data = scan_data
+
         self.mg_args = mg_args
-        self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
+        if len(arches) > 0:
+            self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
+
         self.bai_1d_args = bai_1d_args
         self.bai_2d_args = bai_2d_args
         self.mgi_1d = int_1d_data()
