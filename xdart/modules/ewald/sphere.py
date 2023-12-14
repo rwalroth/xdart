@@ -1,5 +1,6 @@
 from threading import Condition, _PyRLock
 import os
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from pyFAI.multi_geometry import MultiGeometry
@@ -59,7 +60,7 @@ class EwaldSphere:
     def __init__(self, name='scan0', arches=[], data_file=None,
                  scan_data=pd.DataFrame(), mg_args={'wavelength': 1e-10},
                  bai_1d_args={}, bai_2d_args={},
-                 static=False, gi=False, th_mtr='th',
+                 static=False, gi=False, th_mtr='th', series_average=False,
                  overall_raw=0, single_img=False,
                  global_mask=None, poni_dict={}
                  ):
@@ -89,6 +90,7 @@ class EwaldSphere:
         self.gi = gi
         self.th_mtr = th_mtr
         self.single_img = single_img
+        self.series_average = series_average
 
         if arches:
             self.arches = ArchSeries(self.data_file, self.file_lock, arches,
@@ -97,8 +99,11 @@ class EwaldSphere:
             self.arches = ArchSeries(self.data_file, self.file_lock,
                                      static=self.static, gi=self.gi)
         self.scan_data = scan_data
+
         self.mg_args = mg_args
-        self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
+        if len(arches) > 0:
+            self.multi_geo = MultiGeometry([a.integrator for a in arches], **mg_args)
+
         self.bai_1d_args = bai_1d_args
         self.bai_2d_args = bai_2d_args
         self.mgi_1d = int_1d_data()
@@ -195,7 +200,7 @@ class EwaldSphere:
                     [a.integrator for a in self.arches], **self.mg_args
                 )
 
-            self.overall_raw += arch.map_raw
+            self.overall_raw += (arch.map_raw - arch.bg_raw)
 
     def by_arch_integrate_1d(self, **args):
         """Integrates all arches individually, then sums the results for
@@ -423,7 +428,8 @@ class EwaldSphere:
                 lst_attr = [
                     "scan_data", "global_mask", "mg_args", "bai_1d_args",
                     "bai_2d_args", "overall_raw",
-                    "static", "gi", "th_mtr", "single_img", "poni_dict"
+                    "static", "gi", "th_mtr", "single_img", "poni_dict",
+                    "series_average"
                 ]
             utils.attributes_to_h5(self, grp, lst_attr,
                                    compression=compression)
@@ -477,7 +483,8 @@ class EwaldSphere:
                         lst_attr = [
                             "scan_data", "mg_args", "bai_1d_args",
                             "bai_2d_args", "overall_raw",
-                            "static", "gi", "th_mtr", "single_img", "poni_dict"
+                            "static", "gi", "th_mtr", "single_img", "poni_dict",
+                            "series_average"
                         ]
                         utils.h5_to_attributes(self, grp, lst_attr)
                         self._set_args(self.bai_1d_args)
@@ -566,3 +573,61 @@ class EwaldSphere:
             if 'range' in arg:
                 if args[arg] is not None:
                     args[arg] = list(args[arg])
+
+
+def get_1D_data(h5_file, arch_ids=None, static=True):
+    """Loads 1D data from hdf5 file
+
+    args:
+        h5_file: hdf5 file with processed data
+        arch_ids: arches whose 1D data is loaded
+        static: scan type flag
+
+    returns:
+        df: Pandas dataframe with integrated 1D data
+    """
+    h5_file = Path(h5_file)
+    scan_name = h5_file.stem
+    sphere = EwaldSphere(scan_name, data_file=str(h5_file), static=static)
+    sphere.load_from_h5(replace=False, mode='r')
+
+    df1 = pd.DataFrame(columns=('idx', 'intensity', 'tth', 'q'))
+    with utils.catch_h5py_file(sphere.data_file, 'r') as file:
+        if arch_ids is None:
+            arch_ids = sphere.arches.index
+
+        for idx in arch_ids:
+            try:
+                arch = EwaldArch(idx=idx, static=sphere.static, gi=sphere.gi)
+                if str(idx) not in file['arches']:
+                    print("No data can be found")
+                    continue
+                grp = file['arches'][str(idx)]
+                if 'type' in grp.attrs:
+                    if grp.attrs['type'] == 'EwaldArch':
+                        lst_attr = [
+                            "scan_info", "ai_args",
+                            "gi", "static", "poni_dict"
+                        ]
+                        utils.h5_to_attributes(arch, grp, lst_attr)
+                        arch.int_1d.from_hdf5(grp['int_1d'])
+
+                df1 = df1.append({
+                    'idx': idx,
+                    'intensity': list(arch.int_1d.norm),
+                    'tth': list(arch.int_1d.ttheta),
+                    'q': list(arch.int_1d.q)},
+                    ignore_index=True
+                )
+            except KeyError:
+                pass
+
+    df1.set_index(df1['idx'], inplace=True)
+    df2 = sphere.scan_data
+    df2.rename_axis('idx')
+
+    try:
+        df = pd.concat([df1, df2.loc[df1.index]], axis=1, join='outer')
+    except KeyError:
+        df = df1
+    return df.set_index(df['idx'])

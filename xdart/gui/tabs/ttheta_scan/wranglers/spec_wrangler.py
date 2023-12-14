@@ -12,23 +12,29 @@ import traceback
 
 # Other imports
 import numpy as np
+import fabio
 
 # Qt imports
-import pyqtgraph as pg
+import pyFAI
 from pyqtgraph import Qt
 from pyqtgraph.parametertree import ParameterTree, Parameter
 
 # This module imports
-from xdart.modules.spec import MakePONI, get_spec_header, get_spec_scan
+from xdart.modules.spec import MakePONI, get_spec_header
+from xdart.utils._utils import get_meta_from_spec
+from xdart.utils._utils import get_mask_array, get_img_data
 from xdart.utils.containers import PONI
 from xdart.modules.ewald import EwaldArch, EwaldSphere
-from xdart.utils import catch_h5py_file as catch
 from .wrangler_widget import wranglerWidget, wranglerThread, wranglerProcess
 from .specUI import Ui_Form
 from ....gui_utils import NamedActionParameter
 from ....widgets import MaskWidget
+from xdart.utils.pyFAI_binaries import pyFAI_drawmask_main
+from xdart.utils.pyFAI_binaries import MaskImageWidgetXdart
 
-# from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+
+QFileDialog = Qt.QtWidgets.QFileDialog
 
 DETECTOR_DICT = {
     "Pilatus100k": {
@@ -59,8 +65,13 @@ params = [
             "Pilatus100k"
         ],
      'value':'Pilatus100k'},
-    NamedActionParameter(name='set_mask', title= 'Set mask...'),
+    {'name': 'det_orientation', 'title': 'Detector Orientation', 'type': 'list',
+     'values': [0, 90, 180, 270], 'value': 0},
+    NamedActionParameter(name='set_mask', title= 'Make mask...'),
+    {'name': 'mask_file', 'title': 'Mask File', 'type': 'str', 'default': ''},
+    NamedActionParameter(name='mask_file_browse', title='Browse...'),
 ]
+
 
 class specWrangler(wranglerWidget):
     """Widget for integrating data associated with spec file. Can be
@@ -103,6 +114,7 @@ class specWrangler(wranglerWidget):
             in specLabel
     """
     showLabel = Qt.QtCore.Signal(str)
+
     def __init__(self, fname, file_lock, parent=None):
         """fname: str, file path
         file_lock: mp.Condition, process safe lock
@@ -138,11 +150,21 @@ class specWrangler(wranglerWidget):
         self.parameters.child('poni_file_browse').sigActivated.connect(
             self.set_poni_file
         )
+        self.parameters.child('mask_file').sigValueChanged.connect(
+            self.update_mask
+        )
+        self.parameters.child('mask_file_browse').sigActivated.connect(
+            self.set_mask_file
+        )
+        self.parameters.child('det_orientation').sigValueChanged.connect(
+            self.set_det_orientation
+        )
         
         # Set attributes
         self.scan_number = self.parameters.child('Scan Number').value()
         self.timeout = self.parameters.child('Timeout').value()
         self.parameters.sigTreeStateChanged.connect(self.setup)
+        self.det_orientation = int(self.parameters.child('det_orientation').value())
         
         # Setup thread
         self.thread = specThread(
@@ -151,25 +173,40 @@ class specWrangler(wranglerWidget):
             self.fname, 
             self.file_lock, 
             self.scan_name, 
-            0, {}, {}, None, 5, self
+            0,
+            {},
+            {},
+            None,
+            5,
+            self.mask,
+            self.det_orientation,
+            self
         )
         self.thread.showLabel.connect(self.ui.specLabel.setText)
         self.thread.sigUpdateFile.connect(self.sigUpdateFile.emit)
         self.thread.finished.connect(self.finished.emit)
         self.thread.sigUpdate.connect(self.sigUpdateData.emit)
 
-        self.mask = None
-        self.mask_widget = MaskWidget()
-        key = self.parameters.child("Detector").value()
-        data = np.zeros(DETECTOR_DICT[key]["shape"])
-        data[0, 0] = 1
-        self.mask_widget.set_data(data.T)
-        self.mask_widget.hide()
+        # self.mask_widget = MaskWidget()
+        detector_name = self.parameters.child("Detector").value()
+        self.detector = pyFAI.detector_factory(detector_name)
+
+        # data = np.zeros(DETECTOR_DICT[key]["shape"])
+        # data[0, 0] = 1
+        # self.mask_widget.set_data(data.T)
+        # self.mask_widget.hide()
+
+        self.mask_file = self.parameters.child('mask_file').value()
+        self.mask = get_mask_array(self.detector, self.mask_file)
+        self.thread.mask = self.mask
+
         self.parameters.child('set_mask').sigActivated.connect(
-            self.launch_mask_widget
+            self.run_pyfai_drawmask
+            # self.launch_mask_widget
         )
 
-        self.mask_widget.newMask.connect(self.set_mask)
+        self.mask_window = None
+        # self.mask_widget.newMask.connect(self.set_mask)
 
         self.setup()
 
@@ -194,6 +231,7 @@ class specWrangler(wranglerWidget):
         self.thread.file_lock = self.file_lock
         self.thread.sphere_args = self.sphere_args
         self.thread.mask = self.mask
+        self.thread.det_orientation = self.det_orientation
 
         if self.parameters.child('Rotation Motors').child('Rot2').value() == '':
             self.parameters.child('Rotation Motors').child('Rot2').setValue('tth')
@@ -230,10 +268,17 @@ class specWrangler(wranglerWidget):
         """Opens file dialogue and sets the calibration file
         """
         # ic()
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        # fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(
+            filter="PONI (*.poni *.PONI)"
+        )
         if fname != '':
             self.parameters.child('Calibration PONI File').setValue(fname)
-    
+
+    def set_det_orientation(self):
+        self.det_orientation = int(self.parameters.child('det_orientation').value())
+        self.update_mask()
+
     def _get_mp_inputs(self):
         """Organizes inputs for MakePONI from parameters.
         """
@@ -294,22 +339,65 @@ class specWrangler(wranglerWidget):
         self.tree.setEnabled(enable)
         self.ui.startButton.setEnabled(enable)
 
-    def set_mask(self, idx, mask):
-        self.mask = np.arange(self.mask_widget.data.size)[mask.ravel() == 1]
-        self.thread.mask = self.mask
+    def set_mask_file(self):
+        """Opens file dialogue and sets the mask file
+        """
+        fname, _ = QFileDialog().getOpenFileName(
+            filter="EDF (*.edf)"
+        )
+        if fname != '':
+            self.parameters.child('mask_file').setValue(fname)
+            self.mask_file = fname
+        self.update_mask()
 
-    def launch_mask_widget(self):
-        key = self.parameters.child("Detector").value()
-        data = np.zeros(DETECTOR_DICT[key]["shape"])
-        data[0, 0] = 1
-        if self.mask is not None:
-            _mask = np.zeros_like(data.T)
-            _mask.ravel()[self.mask] = 1
-            self.mask_widget.set_data(data.T, base=_mask)
-        else:
-            self.mask_widget.set_data(data.T)
-        self.mask_widget.show()
-                
+    def update_mask(self):
+        self.mask_file = self.parameters.child('mask_file').value()
+        self.mask = get_mask_array(self.detector, self.mask_file, det_orientation=self.det_orientation)
+
+        ic('updating mask...')
+        ic(self.mask, self.mask_file, self.detector, self.det_orientation)
+
+    # def set_mask(self, idx, mask):
+    #     self.mask = np.arange(self.mask_widget.data.size)[mask.ravel() == 1]
+    #     self.thread.mask = self.mask
+
+    # def launch_mask_widget(self):
+    #     key = self.parameters.child("Detector").value()
+    #     data = np.zeros(DETECTOR_DICT[key]["shape"])
+    #     data[0, 0] = 1
+    #     if self.mask is not None:
+    #         _mask = np.zeros_like(data.T)
+    #         _mask.ravel()[self.mask] = 1
+    #         self.mask_widget.set_data(data.T, base=_mask)
+    #     else:
+    #         self.mask_widget.set_data(data.T)
+    #     self.mask_widget.show()
+
+    def run_pyfai_drawmask(self):
+        filters = f'Images (*.tif *.tiff *.raw)'
+        processFile, _ = QFileDialog().getOpenFileName(
+            filter=filters,
+            caption='Choose Image File',
+            options=QFileDialog.DontUseNativeDialog
+        )
+        if not os.path.exists(processFile):
+            print('No Image Chosen')
+            return
+
+        self.mask_window = MaskImageWidgetXdart()
+        self.mask_window.setWindowModality(Qt.QtCore.Qt.WindowModal)
+        self.mask_window.show()
+
+        try:
+            image = fabio.open(processFile).data
+        except OSError:
+            image = get_img_data(processFile, self.detector)
+
+        pyFAI_drawmask_main(self.mask_window, image, processFile)
+
+        self.parameters.child('mask_file').setValue(self.mask_window.outFile)
+        self.mask_file = self.mask_window.outFile
+
 
 class specThread(wranglerThread):
     """Thread for controlling the specProcessor process. Receives
@@ -331,7 +419,9 @@ class specThread(wranglerThread):
             see EwaldSphere.
         timeout: float or int, how long to continue checking for new
             data.
-    
+        mask: 1D array, indices of 2D array to be masked
+        det_orientation: float or int, Orientation of detector
+
     signals:
         showLabel: str, sends out text to be used in specLabel
     
@@ -339,6 +429,7 @@ class specThread(wranglerThread):
         run: Main method, called by start
     """
     showLabel = Qt.QtCore.Signal(str)
+
     def __init__(
             self, 
             command_queue, 
@@ -351,6 +442,8 @@ class specThread(wranglerThread):
             lsf_inputs,
             img_dir, 
             timeout,
+            mask,
+            det_orientation,
             parent=None):
         """command_queue: mp.Queue, queue for commands sent from parent
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -364,6 +457,8 @@ class specThread(wranglerThread):
         img_dir: str, path to image directory
         timeout: float or int, how long to continue checking for new
             data.
+        mask: 1D array, indices of 2D array to be masked
+        det_orientation: float or int, Orientation of detector
         """
         # ic()
         super().__init__(command_queue, sphere_args, fname, file_lock, parent)
@@ -373,7 +468,8 @@ class specThread(wranglerThread):
         self.lsf_inputs = lsf_inputs
         self.img_dir = img_dir
         self.timeout = timeout
-        self.mask = None
+        self.mask = mask
+        self.det_orientation = det_orientation
 
     def run(self):
         """Initializes specProcess and watches for new commands from
@@ -392,7 +488,8 @@ class specThread(wranglerThread):
             self.mp_inputs,
             self.img_dir,
             self.timeout,
-            self.mask
+            self.mask,
+            self.det_orientation
         )
         process.start()
         last = False
@@ -468,7 +565,7 @@ class specProcess(wranglerProcess):
     """
     def __init__(self, command_q, signal_q, sphere_args, scan_name, 
                  scan_number, fname, file_lock, lsf_inputs, mp_inputs,
-                 img_dir, timeout, mask, *args, **kwargs):
+                 img_dir, timeout, mask, det_orientation, *args, **kwargs):
         """command_q: mp.Queue, queue for commands from parent thread.
         signal_q: queue to place signals back to parent thread.
         sphere_args: dict, used as **kwargs in sphere initialization.
@@ -482,6 +579,7 @@ class specProcess(wranglerProcess):
         img_dir: str, path to image directory
         timeout: float or int, how long to continue checking for new
             data.
+        det_orientation: float or int, Orientation of detector
         """
         # ic()
         super().__init__(command_q, signal_q, sphere_args, fname, file_lock,
@@ -506,7 +604,8 @@ class specProcess(wranglerProcess):
         self.spec_name = None
         self.timeout = timeout
         self.mask = mask
-    
+        self.det_orientation = det_orientation
+
     def _main(self):
         """Checks for commands in queue, sends back updates through
         signal queue, and catches errors. Calls wrangle method for
@@ -515,6 +614,7 @@ class specProcess(wranglerProcess):
         # ic()
         # Initialize sphere and save to disk, send update for new scan
         sphere = EwaldSphere(self.scan_name, data_file=self.fname,
+                             global_mask=self.mask,
                              **self.sphere_args)
         sphere.global_mask = self.mask
         with self.file_lock:
@@ -610,15 +710,9 @@ class specProcess(wranglerProcess):
         """
         # ic()
         self.signal_q.put(('message', f'Checking for {i}'))
-        
+
         # reads in spec data file header
         self.specFile['header'] = get_spec_header(spec_path)
-
-        # reads in scan data
-        self.specFile['scans'][self.scan_number], \
-            self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
-            spec_path, self.scan_number, self.specFile['header']
-        )
 
         # checks for user and spec_name information
         if self.user is None:
@@ -626,18 +720,26 @@ class specProcess(wranglerProcess):
         if self.spec_name is None:
             self.spec_name = os.path.basename(self.specFile['header']['meta']['File'][0])
 
-        # ic(self.user, self.spec_name, self.scan_number, self.specFile['scans'].keys())
-
         # Construct raw_file path from attributes and index
         raw_file = self._get_raw_path(i)
 
+        Counters, Motors, Extras = get_meta_from_spec(raw_file, spec_file=spec_path)
+        image_meta = Motors | Counters
+        # ic(image_meta)
+
+        # reads in scan data
+        # self.specFile['scans'][self.scan_number], \
+        #     self.specFile['scans_meta'][self.scan_number] = get_spec_scan(
+        #     spec_path, self.scan_number, self.specFile['header']
+        # )
+
         # Get scan meta data
-        if self.scan_number in self.specFile['scans'].keys():
-            image_meta = self.specFile['scans']\
-                                [self.scan_number].loc[i].to_dict()
-        
-        else:
-            image_meta = self.specFile['current_scan'].loc[i].to_dict()
+        # if self.scan_number in self.specFile['scans'].keys():
+        #     image_meta = self.specFile['scans']\
+        #                         [self.scan_number].loc[i].to_dict()
+        #
+        # else:
+        #     image_meta = self.specFile['current_scan'].loc[i].to_dict()
         # ic(image_meta)
 
         # Get poni dict based on meta data
@@ -690,7 +792,16 @@ class specProcess(wranglerProcess):
             arr = arr.reshape((195, 487))
             if mask:
                 for i in range(0, 10):
-                    arr[:,i] = -2.0
+                    arr[:, i] = -2.0
                 for i in range(477, 487):
-                    arr[:,i] = -2.0
-            return arr.T
+                    arr[:, i] = -2.0
+
+            if self.det_orientation == 0:
+                arr = arr.T
+            elif self.det_orientation == 90:
+                arr = arr
+            elif self.det_orientation == 180:
+                arr = arr.T[::-1, :]
+            elif self.det_orientation == 270:
+                arr = arr[::-1, :]
+            return arr

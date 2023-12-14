@@ -8,11 +8,10 @@ import os
 import sys
 import subprocess
 
-from xdart.utils.pyFAI_binaries import pyFAI_calib2_main
+import fabio
 from xdart.utils.pyFAI_binaries import pyFAI_drawmask_main
 from xdart.utils.pyFAI_binaries import MaskImageWidgetXdart
 from pyFAI.app.drawmask import postProcessId21
-# from xdart.utils._utils import launch
 
 # Qt imports
 import pyqtgraph as pg
@@ -59,7 +58,7 @@ params = [
                 #         {'name': 'Auto', 'type': 'bool', 'value': True, 'visible': False},
                 #     ], 'visible': False,
                 #  },
-                {'name': 'monitor', 'type': 'str', 'value': 'I0'},
+                # {'name': 'monitor', 'type': 'str', 'value': 'I0'},
                 {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
                 {'name': 'dummy', 'type': 'float', 'value': -1.0},
                 {'name': 'delta_dummy', 'type': 'float', 'value': 0.0},
@@ -95,7 +94,7 @@ params = [
                 #          'visible': True},
                 #     ], 'visible': False,
                 #  },
-                {'name': 'monitor', 'type': 'str', 'value': 'None'},
+                # {'name': 'monitor', 'type': 'str', 'value': 'None'},
                 {'name': 'correctSolidAngle', 'type': 'bool', 'value': True},
                 {'name': 'dummy', 'type': 'float', 'value': -1.0},
                 {'name': 'delta_dummy', 'type': 'float', 'value': 0.0},
@@ -877,7 +876,9 @@ class integratorTree(Qt.QtWidgets.QWidget):
 
     # @staticmethod
     def run_pyfai_drawmask(self):
+        filters = f'Images (*.tif *tiff)'
         processFile, _ = QFileDialog().getOpenFileName(
+            filter=filters,
             caption='Choose Image File',
             options=QFileDialog.DontUseNativeDialog
         )
@@ -888,10 +889,13 @@ class integratorTree(Qt.QtWidgets.QWidget):
         self.mask_window = MaskImageWidgetXdart()
         self.mask_window.setWindowModality(Qt.QtCore.Qt.WindowModal)
         self.mask_window.show()
-        pyFAI_drawmask_main(self.mask_window, processFile)
 
-        mask = self.mask_window.getSelectionMask()
-        postProcessId21([processFile], mask)
+        image = fabio.open(processFile).data
+        pyFAI_drawmask_main(self.mask_window, image, processFile)
+        # pyFAI_drawmask_main(self.mask_window, processFile)
+
+        # mask = self.mask_window.getSelectionMask()
+        # postProcessId21([processFile], mask)
 
     def set_image_units(self):
         """Disable/Enable Qz-Qxy option if we are/are not in GI mode"""

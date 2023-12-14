@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>1440</width>
-    <height>384</height>
+    <height>360</height>
    </rect>
   </property>
   <property name="maximumSize">
    <size>
     <width>16777215</width>
-    <height>430</height>
+    <height>360</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -411,7 +411,7 @@
             <number>5</number>
            </property>
            <property name="bottomMargin">
-            <number>32</number>
+            <number>20</number>
            </property>
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -869,7 +869,7 @@
             <number>5</number>
            </property>
            <property name="bottomMargin">
-            <number>32</number>
+            <number>20</number>
            </property>
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_11">

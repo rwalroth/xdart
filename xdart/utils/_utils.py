@@ -5,15 +5,22 @@
 
 # Standard library imports
 import time
+import os
+import subprocess
+import sys
 
 # Other imports
+import xml.etree.ElementTree
+
 import numpy as np
 import re
 from datetime import datetime
 from pathlib import Path
 from collections import OrderedDict
 
-from skimage import io
+import scipy.ndimage
+from silx.io.specfile import SpecFile
+
 import scipy.ndimage as ndimage
 from scipy.signal import medfilt2d
 
@@ -26,6 +33,16 @@ import fabio
 # This module imports
 from .lmfit_models import PlaneModel, Gaussian2DModel, LorentzianSquared2DModel, Pvoigt2DModel, update_param_hints
 
+from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
+
+# Detector File Sizes
+detector_file_sizes = {
+    'Rayonix MX225': 18878464,
+    'Rayonix SX165': 8392704,
+    'Pilatus 100k': 379860,
+    'Pilatus 1M': 4092732,
+}
+
 
 def write_xye(fname, xdata, ydata, variance=None):
     """Saves data to an xye file. Variance is the square root of the
@@ -37,7 +54,7 @@ def write_xye(fname, xdata, ydata, variance=None):
         ydata: intensity
     """
     if variance is None:
-        _variance = np.sqrt(ydata)
+        _variance = np.sqrt(abs(ydata))
     else:
         _variance = variance
     with open(fname, "w") as file:
@@ -58,7 +75,7 @@ def write_csv(fname, xdata, ydata, variance=None):
         ydata: intensity
     """
     if variance is None:
-        _variance = np.sqrt(ydata)
+        _variance = np.sqrt(abs(ydata))
     else:
         _variance = variance
     with open(fname, 'w') as file:
@@ -127,10 +144,7 @@ def get_fname_dir():
         path: {str} Path where h5 file is saved
     """
     home_path = str(Path.home())
-    # today = datetime.today()
-    # date = str(today.date())
 
-    # path = os.path.join(home_path, 'xdart_processed_data', date, fname)
     path = os.path.join(home_path, 'xdart_processed_data')
     Path(path).mkdir(parents=True, exist_ok=True)
 
@@ -153,6 +167,70 @@ def split_file_name(fname):
     return directory, root, ext
 
 
+def get_sname_img_number(fname):
+    """Splits filename to get scan name and image number
+
+    Arguments:
+        fname {str} -- full image file name with path
+    Returns:
+        series_name {str} -- series name (or root if single acquisition)
+        img_number {int/None} -- image number (if part of series)
+    """
+    directory, root, ext = split_file_name(fname)
+    try:
+        img_number = int(root[root.rindex('_') + 1:])
+        root = root[:root.rindex('_')]
+    except ValueError:
+        img_number = None
+
+    return root, img_number
+
+
+def get_series_avg(fname, detector, meta_ext):
+    """ Returns the averaged image and meta data for a series
+
+    Arguments:
+        fname {str} -- full image file name with path
+        detector {obj} -- pyFAI detector object
+    Returns:
+        series_name {str} -- series name (if series exists)
+        series_file_names {str array} -- file names in series
+        img_data {ndarray} -- averaged 2D intensity over a series
+        img_mete {dict} -- averaged meta data over a series
+    """
+    fpath = Path(fname)
+    series_name, img_number = get_sname_img_number(fname)
+    if img_number is None:
+        return None, None, None, None
+
+    fnames = [str(f) for f in (fpath.parent.glob(f'{series_name}*[0-9][0-9][0-9][0-9]{fpath.suffix}'))]
+    data, img_meta = 0, {}
+    for ii, fname in enumerate(fnames):
+        data += get_img_data(fname, detector, return_float=True)
+        if data is None:
+            return None, None, None, None
+
+        meta = get_img_meta(fname, meta_ext) if meta_ext else {}
+        if ii == 0:
+            img_meta = meta
+        else:
+            for (k, v) in meta.items():
+                try:
+                    img_meta[k] += meta[k]
+                except TypeError:
+                    pass
+
+    n = len(fnames)
+    data /= n
+    for (k, v) in img_meta.items():
+        try:
+            img_meta[k] /= n
+        except TypeError:
+            pass
+
+    return series_name, fnames, data, img_meta
+
+
 def get_scan_name(fname):
     """Splits filename to get scan name
 
@@ -173,11 +251,6 @@ def get_scan_name(fname):
             return root[:root.rindex('_')]
         except ValueError:
             return root
-
-        #     first_img = int(first_img)
-        #     root = root[:root.rindex('_')]
-        # except ValueError:
-        #     pass
 
     return root
 
@@ -202,6 +275,18 @@ def get_img_number(fname):
     return img_number
 
 
+def match_img_detector(img_file, poni_dict):
+    """Check if the file is created by the detector specified"""
+    detector_name = poni_dict['detector'].name
+    if detector_name not in detector_file_sizes.keys():
+        return True
+
+    if os.stat(img_file).st_size == detector_file_sizes[detector_name]:
+        return True
+
+    return False
+
+
 def query(question):
     """Ask a question with allowed options via input()
     and return their answer.
@@ -209,114 +294,218 @@ def query(question):
     sys.stdout.write(question)
     return input()
 
-    
-def get_image_meta_data(meta_file, rv='all'):
+
+def get_spec_file(img_fname):
+    """Check if SPEC file exists for an image file and return path if yes"""
+    fpath = Path(img_fname)
+    fname = fpath.stem
+    match = re.search(f'_scan\d+_\d+.', fname)
+    if match is None:
+        return None
+    spec_fname = fname[fname.find('_') + 1:match.start()]
+
+    for nn in range(3):
+        s = os.path.join(fpath.parents[nn], spec_fname)
+        if os.path.isfile(s):
+            return s
+
+    return None
+
+
+def get_img_meta(img_file, meta_ext, spec_path=None, rv='all'):
     """Get image meta data from pdi/txt files for different beamlines
 
     Args:
-        meta_file (str): Meta file name with path
+        img_file (str): Image file for which meta data is required
+        meta_ext (str): Extension of Meta file
+        spec_path (str): Path of spec file if not in regular path
         rv (str, optional): Return values (Counters, motors or all)
 
     Returns:
         [dict]: Dictionary with all the meta data
     """
+    if meta_ext == 'SPEC':
+        Counters, Motors, Extras = get_meta_from_spec(img_file, spec_path)
+    else:
+        meta_file = f'{os.path.splitext(img_file)[0]}.{meta_ext}'
+        meta_file = meta_file if os.path.exists(meta_file) else f'{img_file}.{meta_ext}'
 
-    with open(meta_file, 'r') as f:
-        data = f.read()
+        if not os.path.exists(meta_file):
+            return {}
 
-    image_meta_data = {}
-    meta_ext = os.path.splitext(meta_file)[1][1:]
-    # if BL == '2-1':
-    if meta_ext == 'pdi':  # Pilatus Image
-        data = data.replace('\n', ';')
-
-        try:
-            counters = re.search('All Counters;(.*);;# All Motors', data).group(1)
-            cts = re.split(';|=', counters)
-            Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-
-            motors = re.search('All Motors;(.*);#', data).group(1)
-            cts = re.split(';|=', motors)
-            Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-        except AttributeError:
-            ss1 = '# Diffractometer Motor Positions for image;# '
-            ss2 = ';# Calculated Detector Calibration Parameters for image:'
-
-            try:
-                motors = re.search(f'{ss1}(.*){ss2}', data).group(1)
-                cts = re.split(';|=', motors)
-                Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-                Motors['TwoTheta'] = Motors['2Theta']
-            except AttributeError:
-                Motors = {'TwoTheta': float(0.0), 'Theta': float(0.0)}
-            Counters = {}
-
-        if len(data[data.rindex(';')+1:]) > 0:
-            image_meta_data['epoch'] = data[data.rindex(';')+1:]
-
-    else:  # if BL == '11-3':
-
-        counters = re.search('# Counters\n(.*)\n', data).group(1)
-        cts = re.split(',|=', counters)
-        Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-
-        motors = re.search('# Motors\n(.*)\n', data).group(1)
-        cts = re.split(',|=', motors)
-        Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-        
-        # image_meta_data['User'] = (data[data.index('User: ')+5: data.index(', time')]).strip()
-        # image_meta_data['Time'] = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
-        Time = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
-        
-        # d = datetime.strptime(image_meta_data['Time'], "%a %b %d %H:%M:%S %Y")
-        d = datetime.strptime(Time, "%a %b %d %H:%M:%S %Y")
-        image_meta_data['epoch'] = time.mktime(d.timetuple())
-
-    image_meta_data.update(Counters)
-    image_meta_data.update(Motors)
+        if meta_ext == 'pdi':  # Pilatus Image
+            Counters, Motors, Extras = get_meta_from_pdi(meta_file)
+        else:
+            Counters, Motors, Extras = get_meta_from_txt(meta_file)
 
     if rv == 'Counters':
         return Counters
     elif rv == 'Motors':
         return Motors
 
-    return image_meta_data
+    return Extras | Counters | Motors
 
 
-def get_from_pdi(pdi_file):
+def get_meta_from_spec(img_file, spec_path=None, spec_file=None, img_number=None):
+    if spec_file is None:
+        spec_file = get_specFile_scanNumber(img_file, spec_path)
+    if spec_file is None:
+        return {}, {}, {}
+
+    scan_number = get_scanNumber(img_file)
+
+    if img_number is None:
+        img_number = get_img_number(img_file)
+
+    ic(spec_file)
+    sf_object = SpecFile(spec_file)
+    sf = sf_object[scan_number - 1]
+    try:
+        Counters = {c: v for c, v in zip(sf.labels, sf.data_line(img_number))}
+        Motors = {m: v for m, v in zip(sf.motor_names, sf.motor_positions)}
+    except IndexError:
+        Counters, Motors = {}, {}
+    sf_object.close()
+
+    Extras = {}
+    return Counters, Motors, Extras
+
+
+def get_scanNumber(img_file):
+    img_fname = Path(img_file).stem
+
+    match = re.search(f'_scan\d+_\d+$', img_fname)
+    if match is None:
+        return None
+
+    return int(img_fname[match.start() + 5: img_fname.rfind('_')])
+
+
+def get_specFile(img_file, spec_path=None):
+    img_fname = Path(img_file).stem
+    if img_fname[0:2] == 'b_':
+        img_fname = img_fname[2:]
+
+    match = re.search(f'_scan\d+_\d+$', img_fname)
+    if match is None:
+        return None
+
+    spec_fname = img_fname[img_fname.find('_') + 1:match.start()]
+
+    if spec_path is not None:
+        s = os.path.join(spec_path, spec_fname)
+        if os.path.exists(s):
+            return s
+    else:
+        img_fpath = Path(img_file)
+        for nn in range(2):
+            s = os.path.join(img_fpath.parents[nn], spec_fname)
+            ic(s)
+            if os.path.isfile(s):
+                return s
+
+    return None
+
+
+def get_specFile_scanNumber(img_file, spec_path=None):
+    img_file = Path(img_file)
+    img_fname = os.path.basename(img_file)
+    if img_fname[0:2] == 'b_':
+        img_fname = img_fname[2:]
+    img_ext = img_file.suffix[1:]
+
+    match = re.search(f'_scan\d+_\d+.{img_ext}', img_fname)
+    if match is None:
+        return None, None
+
+    spec_fname = img_fname[img_fname.find('_') + 1:match.start()]
+    scan_number = int(img_fname[match.start() + 5: img_fname.rfind('_')])
+    # print(f'{img_fname} \n{spec_fname} \n{match.group()} \n{img_ext} \n{scan_number}')
+
+    if spec_path is not None:
+        s = os.path.join(spec_path, spec_fname)
+        if os.path.exists(s):
+            return s, scan_number
+    else:
+        for nn in range(2):
+            s = os.path.join(img_file.parents[nn], spec_fname)
+            if os.path.isfile(s):
+                return s, scan_number
+
+    return None, None
+
+
+def get_meta_from_pdi(pdi_file):
     """Get motor and counter names and values from PDI file
 
     Args:
         pdi_file (str): PDI file name with path
 
     Returns:
-        [dict]: Tupe of two dictionaries containing Counters and Motors
+        [dict]: Tuple of two dictionaries containing Counters and Motors
     """
-
     with open(pdi_file, 'r') as f:
-        pdi_data = f.read()
-
-    pdi_data = pdi_data.replace('\n', ';')
+        data = f.read()
+    data = data.replace('\n', ';')
 
     try:
-        counters = re.search('All Counters;(.*);;# All Motors', pdi_data).group(1)
+        counters = re.search('All Counters;(.*);;# All Motors', data).group(1)
         cts = re.split(';|=', counters)
         Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
 
-        motors = find_between(pdi_data, 'All Motors;', ';#')
+        motors = re.search('All Motors;(.*);#', data).group(1)
         cts = re.split(';|=', motors)
         Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-    except:
+    except AttributeError:
         ss1 = '# Diffractometer Motor Positions for image;# '
         ss2 = ';# Calculated Detector Calibration Parameters for image:'
 
-        motors = re.search(f'{ss1}(.*){ss2}', pdi_data).group(1)
-        cts = re.split(';|=', motors)
-        Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
-        Motors['TwoTheta'] = Motors['2Theta']
+        try:
+            motors = re.search(f'{ss1}(.*){ss2}', data).group(1)
+            cts = re.split(';|=', motors)
+            Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+            Motors['TwoTheta'] = Motors['2Theta']
+        except AttributeError:
+            Motors = {'TwoTheta': float(0.0), 'Theta': float(0.0)}
         Counters = {}
 
-    return Counters, Motors
+    Extras = {}
+    if len(data[data.rindex(';') + 1:]) > 0:
+        Extras['epoch'] = data[data.rindex(';') + 1:]
+
+    return Counters, Motors, Extras
+
+
+def get_meta_from_txt(txt_file):
+    """Get motor and counter names and values from PDI file
+
+    Args:
+        txt_file (str): Txt meta file name with path
+
+    Returns:
+        [dict]: Tuple of two dictionaries containing Counters and Motors
+    """
+    with open(txt_file, 'r') as f:
+        data = f.read()
+
+    counters = re.search('# Counters\n(.*)\n', data).group(1)
+    cts = re.split(',|=', counters)
+    Counters = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+
+    motors = re.search('# Motors\n(.*)\n', data).group(1)
+    cts = re.split(',|=', motors)
+    Motors = {c.split()[0]: float(cs) for c, cs in zip(cts[::2], cts[1::2])}
+
+    # image_meta_data['User'] = (data[data.index('User: ')+5: data.index(', time')]).strip()
+    # image_meta_data['Time'] = (data[data.index('time: ')+5: data.index('# Temp')-2]).strip()
+    Time = (data[data.index('time: ') + 5: data.index('# Temp') - 2]).strip()
+
+    # d = datetime.strptime(image_meta_data['Time'], "%a %b %d %H:%M:%S %Y")
+    Extras = {}
+    d = datetime.strptime(Time, "%a %b %d %H:%M:%S %Y")
+    Extras['epoch'] = time.mktime(d.timetuple())
+
+    return Counters, Motors, Extras
 
 
 def get_motor_val(pdi_file, motor):
@@ -329,84 +518,145 @@ def get_motor_val(pdi_file, motor):
     Returns:
         float: Motor position
     """
-    _, Motors = get_from_pdi(pdi_file)
+    _, Motors = get_meta_from_pdi(pdi_file)
 
     return Motors[motor]
 
 
-def read_image_file(fname, orientation='horizontal',
-                    flip=False, fliplr=False, transpose=False,
-                    shape_100K=(195, 487), shape_300K=(195, 1475), shape_1M=(1043, 981),
-                    return_float=False, im=0, verbose=False):
+def get_img_data(
+        fname, detector, orientation='horizontal',
+        flip=False, fliplr=False, transpose=False,
+        return_float=False, im=0):
     """Read image file and return numpy array
 
     Args:
         fname (str): File Name with path
+        detector (detector object): pyFAI detector object
         orientation (str, optional): Orientation of detector. Options: 'horizontal', 'vertical'. Defaults to 'horizontal'.
         flip (bool, optional): Flag to flip the image up-down (required by pyFAI at times). Defaults to False.
         fliplr (bool, optional): Flag to flip the image left-right (required by pyFAI at times). Defaults to False.
         transpose (bool, optional): Flag to transpose the image (required by pyFAI at times). Defaults to False.
-        shape_100K (tuple, optional): Shape of numpy array for Pilatus 100K. Defaults to (195, 487).
-        shape_300K (tuple, optional): Shape of numpy array for Pilatus 300K. Defaults to (195,1475).
-        shape_1M (tuple, optional): Shape of numpy array for Pilatus 1M. Defaults to (1043,981).
         return_float (bool, optional): Convert array to float. Defaults to False.
         im (integer, optional): image number if input is h5 file from Eiger. Defaults to 0
-        verbose (bool, optional): Print debug messages. Defaults to False.
 
     Returns:
         ndarray: Image data read into numpy array
     """
-    if verbose:
-        print('Reading image data into numpy array..')
-
     try:
-        if 'tif' in fname[-5:]:
-            img = np.asarray(io.imread(fname))
-        elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
+        img_data = fabio.open(fname).data
+    except xml.etree.ElementTree.ParseError:
+        return None
+    except OSError:
+        if detector.name == 'Eiger 1M':
             with h5py.File(fname, mode='r') as f:
                 try:
-                    img = np.asarray(f['entry']['data']['data'][im], dtype=float)
+                    img_data = np.asarray(f['entry']['data']['data'][im], dtype=float)
                 except IndexError:
                     return None
-                img[514:551, :] = np.nan
-
-                # Hot pixel in SSRL Eiger 1M detector
-                img[0, 1029] = np.nan
-        elif 'mar3450' in fname[-9:]:
-            img = fabio.open(fname).data
         else:
-            img = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
-            if len(img) == np.prod(shape_100K):
-                img = img.reshape(shape_100K)
-            elif len(img) == np.prod(shape_300K):
-                img = img.reshape(shape_300K)
-            else:
-                img = img.reshape(shape_1M)
-                img[:, 487:487 + 7] = np.nan
-                for ii in range(1, 5):
-                    mod_start = 195 * ii + 17 * (ii - 1)
-                    img[mod_start:mod_start + 17] = np.nan
+            img_data = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
+            try:
+                img_data = img_data.reshape(detector.shape)
+            except ValueError:
+                return None
     except ValueError:
         return None
+    except:
+        return None
 
-        # try:
-        #     img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_100K))
-        # except ValueError:
-        #     img = np.asarray(np.fromfile(fname, dtype='int32', sep="").reshape(shape_300K))
+    try:
+        if img_data.shape != detector.shape:
+            return None
+    except AttributeError:
+        return None
+
+        # if 'tif' in fname[-5:]:
+        #     img_data = np.asarray(io.imread(fname))
+        # elif ('h5' in fname[-4:]) or ('hdf5' in fname[-6:]):
+        #     with h5py.File(fname, mode='r') as f:
+        #         try:
+        #             img_data = np.asarray(f['entry']['data']['data'][im], dtype=float)
+        #         except IndexError:
+        #             return None
+        #         img_data[514:551, :] = np.nan
+        #
+        #         # Hot pixel in SSRL Eiger 1M detector
+        #         img_data[0, 1029] = np.nan
+        # elif 'mar3450' in fname[-9:]:
+        #     img_data = fabio.open(fname).data
+        # else:
+        #     img_data = np.asarray(np.fromfile(fname, dtype='int32', sep=""), dtype=float)
+        #     if len(img_data) == np.prod(shape_100K):
+        #         img_data = img_data.reshape(shape_100K)
+        #     elif len(img_data) == np.prod(shape_300K):
+        #         img_data = img_data.reshape(shape_300K)
+        #     else:
+        #         img_data = img_data.reshape(shape_1M)
+        #         img_data[:, 487:487 + 7] = np.nan
+        #         for ii in range(1, 5):
+        #             mod_start = 195 * ii + 17 * (ii - 1)
+        #             img_data[mod_start:mod_start + 17] = np.nan
 
     if return_float:
-        img = np.asarray(img, dtype=float)
-        
+        img_data = np.asarray(img_data, dtype=float)
+
     if (orientation == 'vertical') or transpose:
-        img = img.T
+        img_data = img_data.T
 
     if flip:
-        img = np.flipud(img)
+        img_data = np.flipud(img_data)
 
     if fliplr:
-        img = np.fliplr(img)
+        img_data = np.fliplr(img_data)
 
-    return img
+    return img_data
+
+
+def get_mask_array(detector, mask_file=None, det_orientation=0):
+    """Get mask array from mask file
+    """
+    mask = detector.calc_mask()
+    if mask_file and os.path.exists(mask_file):
+        if mask is not None:
+            try:
+                mask += fabio.open(mask_file).data
+            except ValueError:
+                print('Mask file not valid for Detector')
+                pass
+        else:
+            mask = fabio.open(mask_file).data
+
+    if mask is None:
+        return None
+
+    if mask.shape != detector.shape:
+        print('Mask file not valid for Detector')
+        return None
+
+    mask = scipy.ndimage.rotate(mask, det_orientation)
+    return np.flatnonzero(mask)
+
+
+def get_norm_fac(normChannel, scan_data, arch_ids=None, return_sum=True):
+    """Check to see if normalization channel exists in metadata and return name"""
+    normChannel = get_normChannel(normChannel, scan_data_keys=scan_data.columns)
+    if arch_ids is None:
+        arch_ids = scan_data.index
+    norm_fac = scan_data[normChannel][arch_ids] if normChannel else 1
+    if return_sum and not isinstance(norm_fac, int):
+        norm_fac = norm_fac.mean()
+
+    return norm_fac
+
+
+def get_normChannel(normChannel, scan_data_keys):
+    """Check to see if normalization channel exists in metadata and return name"""
+    if normChannel == 'sec':
+        normChannel = {'sec', 'seconds', 'Seconds', 'Sec', 'SECONDS', 'SEC'}
+    else:
+        normChannel = {normChannel, normChannel.lower(), normChannel.upper()}
+    normChannel = normChannel.intersection(scan_data_keys)
+    return normChannel.pop() if len(normChannel) > 0 else None
 
 
 def smooth_img(img, kernel_size=3, window_size=3, order=0):
@@ -486,7 +736,7 @@ def get_fit(im, function='gaussian'):
     return out, pars, im_fit
 
 
-def fit_images_2D(fname, tth, function='gaussian',
+def fit_images_2D(fname, detector, tth, function='gaussian',
                   kernel_size=3, window_size=3, order=0,
                   Fit_Results={}, FNames={}, Img_Fits={}, Init_Params={},
                   verbose=False, **kwargs):
@@ -494,6 +744,7 @@ def fit_images_2D(fname, tth, function='gaussian',
 
     Args:
         fname (str): Image file name
+        detector (detector object): pyFAI detector object
         tth (float): Value of 2th (used as key for returned dictionary)
         function (str, optional): Fitting function. Defaults to 'gaussian'.
         kernel_size (int, optional): Gaussian smoothing kernel size. Defaults to 3.
@@ -510,7 +761,7 @@ def fit_images_2D(fname, tth, function='gaussian',
     """
     if verbose:
         print(f'Processing {fname}')
-    img = read_image_file(fname, return_float=True, verbose=False, **kwargs)
+    img = get_img_data(fname, detector, return_float=True, verbose=False, **kwargs)
     
     smooth_img(img, kernel_size=kernel_size, window_size=window_size, order=order)
     fit_result, init_params, img_fit = get_fit(img, function=function)
@@ -764,7 +1015,13 @@ def arr_to_h5(data, grp, key, compression):
         key: str, name of new Group or Dataset
         compression: str, compression algorithm to use. See h5py docs.
     """
-    arr = np.array(data)
+    if key in ['map_raw', 'bg_raw']:
+        arr = np.array(data, dtype='int32')
+    elif key in ['i_tthChi', 'i_qChi', 'i_QxyQz']:
+        arr = np.array(data, dtype='float32')
+    else:
+        arr = np.array(data)
+
     if key in grp:
         if check_encoded(grp[key], 'arr'):
             if grp[key].dtype == arr.dtype:
@@ -1083,11 +1340,6 @@ class FixSizeOrderedDict(OrderedDict):
                     self.popitem(False)
 
         OrderedDict.__setitem__(self, key, value)
-
-
-import os
-import subprocess
-import sys
 
 
 def launch(program):

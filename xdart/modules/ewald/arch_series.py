@@ -56,7 +56,6 @@ class ArchSeries():
                 if 'arches' not in f:
                     f.create_group('arches')
                 
-    
     def __getitem__(self, idx):
         """Initializes a new EwaldArch object and loads data from file
         into it.
@@ -137,4 +136,3 @@ class ArchSeries():
         """
         self._i = 0
         return self
-                

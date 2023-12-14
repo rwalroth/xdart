@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'h5viewerUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.15.4
+# Created by: PyQt5 UI code generator 5.15.6
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -16,12 +16,15 @@ class Ui_Form(object):
         Form.resize(1440, 842)
         Form.setMinimumSize(QtCore.QSize(0, 0))
         self.gridLayout = QtWidgets.QGridLayout(Form)
+        self.gridLayout.setContentsMargins(8, 8, 8, 12)
         self.gridLayout.setObjectName("gridLayout")
         self.label_3 = QtWidgets.QLabel(Form)
         self.label_3.setMaximumSize(QtCore.QSize(16777215, 20))
         self.label_3.setObjectName("label_3")
         self.gridLayout.addWidget(self.label_3, 1, 0, 1, 1)
         self.label_4 = QtWidgets.QLabel(Form)
+        self.label_4.setMaximumSize(QtCore.QSize(70, 16777215))
+        self.label_4.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.label_4.setObjectName("label_4")
         self.gridLayout.addWidget(self.label_4, 1, 1, 1, 1)
         self.show_all = QtWidgets.QPushButton(Form)
@@ -42,15 +45,17 @@ class Ui_Form(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.listScans.sizePolicy().hasHeightForWidth())
         self.listScans.setSizePolicy(sizePolicy)
-        self.listScans.setMinimumSize(QtCore.QSize(50, 0))
+        self.listScans.setMinimumSize(QtCore.QSize(30, 0))
+        self.listScans.setResizeMode(QtWidgets.QListView.Adjust)
         self.listScans.setObjectName("listScans")
         self.listData = QtWidgets.QListWidget(self.splitter)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.listData.sizePolicy().hasHeightForWidth())
         self.listData.setSizePolicy(sizePolicy)
-        self.listData.setMinimumSize(QtCore.QSize(50, 0))
+        self.listData.setMinimumSize(QtCore.QSize(45, 0))
+        self.listData.setMaximumSize(QtCore.QSize(60, 16777215))
         self.listData.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.listData.setTabKeyNavigation(False)
         self.listData.setAlternatingRowColors(True)
@@ -70,7 +75,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.label_3.setText(_translate("Form", "Scans"))
+        self.label_3.setText(_translate("Form", "  Scans"))
         self.label_4.setText(_translate("Form", "Data"))
         self.show_all.setText(_translate("Form", "Show All"))
         self.auto_last.setText(_translate("Form", "Auto Last"))

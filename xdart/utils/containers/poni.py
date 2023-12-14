@@ -143,9 +143,11 @@ def get_poni_dict(poni_file):
     ai = pyFAI.load(poni_file)
     poni_keys = ['_dist', '_rot1', '_rot2', '_rot3', '_poni1', '_poni2', 'detector', '_wavelength']
 
-    poni_dict = {k: ai.__getattribute__(k) for k in poni_keys}
-
-    return poni_dict
+    try:
+        poni_dict = {k: ai.__getattribute__(k) for k in poni_keys}
+        return poni_dict
+    except KeyError:
+        return None
 
 
 def create_ai_from_dict(poni_dict, gi=False):
@@ -155,7 +157,8 @@ def create_ai_from_dict(poni_dict, gi=False):
         ai.__setattr__(k, v)
 
     if not gi:
-        ai._rot3 -= np.deg2rad(90)
+        if 'MX225' in ai.detector.name:
+            ai._rot3 -= np.deg2rad(90)
     else:
         calib_pars = dict(
             dist=ai._dist, poni1=ai._poni1, poni2=ai._poni2,

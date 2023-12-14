@@ -104,6 +104,7 @@ class integratorThread(Qt.QtCore.QThread):
 
             self.data_2d[int(arch.idx)] = {
                 'map_raw': arch.map_raw,
+                'bg_raw': arch.bg_raw,
                 'mask': arch.mask,
                 'int_2d': arch.int_2d
             }
@@ -151,6 +152,7 @@ class integratorThread(Qt.QtCore.QThread):
             arch = self.sphere.arches[int(idx)]
             self.data_2d[int(idx)] = {
                 'map_raw': arch.map_raw,
+                'bg_raw': arch.bg_raw,
                 'mask': arch.mask,
                 'int_2d': arch.int_2d}
             self.update.emit(idx)
@@ -232,8 +234,11 @@ class fileHandlerThread(Qt.QtCore.QThread):
     
     def update_sphere(self):
         with self.file_lock:
-            self.sphere.load_from_h5(replace=False, data_only=True,
-                                     set_mg=False)
+            try:
+                self.sphere.load_from_h5(replace=False, data_only=True,
+                                         set_mg=False)
+            except KeyError:
+                pass
 
     def load_arch(self):
         with self.file_lock:
@@ -261,15 +266,20 @@ class fileHandlerThread(Qt.QtCore.QThread):
                                 arch.load_from_h5(file['arches'], load_2d=self.update_2d)
 
                             self.data_2d[int(idx)] = {'map_raw': arch.map_raw,
+                                                      'bg_raw': arch.bg_raw,
                                                       'mask': arch.mask,
                                                       'int_2d': arch.int_2d}
 
                             if idx in self.arches['add_idxs']:
                                 self.arches['sum_int_2d'] += self.data_2d[int(idx)]['int_2d']
-                                self.arches['sum_map_raw'] += self.data_2d[int(idx)]['map_raw']
+                                # self.arches['sum_map_raw'] += self.data_2d[int(idx)]['map_raw']
+                                self.arches['sum_map_raw'] += (self.data_2d[int(idx)]['map_raw'] -
+                                                               self.data_2d[int(idx)]['bg_raw'])
                             elif idx in self.arches['sub_idxs']:
                                 self.arches['sum_int_2d'] -= self.data_2d[int(idx)]['int_2d']
-                                self.arches['sum_map_raw'] -= self.data_2d[int(idx)]['map_raw']
+                                # self.arches['sum_map_raw'] -= self.data_2d[int(idx)]['map_raw']
+                                self.arches['sum_map_raw'] -= (self.data_2d[int(idx)]['map_raw'] -
+                                                               self.data_2d[int(idx)]['bg_raw'])
 
                     except KeyError:
                         pass

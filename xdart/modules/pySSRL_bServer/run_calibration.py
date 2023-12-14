@@ -64,13 +64,16 @@ def csvread(filename):
     csv.close()
     return x, y, i0
 
+
 def gauss_linbkg(x, m, b, x0, intint, fwhm):
     return m*x + b + intint*(2./fwhm)*np.sqrt(np.log(2.)/np.pi)*np.exp(-4.*np.log(2.)*((x-x0)/fwhm)**2)
+
     
 def Gauss_fit(x, y):
     pguess = [0, 0, np.argmax(y), np.max(y), 5.0]  # linear background (2), pos, intensity, fwhm
     popt, pcov = curve_fit(gauss_linbkg, x, y, p0=pguess)
     return popt
+
     
 def simple_line(x, m, b):
     return m*x + b

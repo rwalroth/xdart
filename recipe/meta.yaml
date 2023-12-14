@@ -1,0 +1,67 @@
+{% set name = "xdart" %}
+{% set version = "0.13.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  noarch: python
+  script: python -m pip install . --no-deps --ignore-installed --no-cache-dir
+  entry_points:
+    - xdart = xdart.xdart_main:main
+
+requirements:
+  host:
+    - python >=3.8,<3.12
+    - pip
+    - poetry
+  run:
+    - python >=3.8,<3.12
+    - pyfai
+    - pygix
+    - pyqtgraph
+    - pyqt
+    - pandas
+    - scikit-image
+    - lmfit
+    - pyyaml
+    - numpy
+    - scipy
+    - silx
+    - fabio
+    - matplotlib
+    - requests
+    - h5py
+    - hdf5plugin
+    - seaborn
+    - ipympl
+    - ipywidgets
+    - joblib
+    - icecream
+    - jupyterlab
+    - nodejs
+    - hvplot
+    - holoviews
+    - panel
+    - xlrd
+    - openpyxl
+    - imagecodecs
+
+about:
+  home: https://github.com/rwalroth/xdart.git
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'A pyFAI based GUI utility to rebin and visualize X-ray Diffraction data'
+  # The following are optional. Uncomment if you have them:
+  # doc_url: 
+  # dev_url: 
+
+extra:
+  recipe-maintainers:
+    - [vivekthampy]
+

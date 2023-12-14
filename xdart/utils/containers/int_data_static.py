@@ -24,7 +24,7 @@ class int_1d_data_static:
         to_hdf5: Saves data to hdf5 file
     """
 
-    def __init__(self, norm=None, ttheta=0, q=0):
+    def __init__(self, norm=None, ttheta=0, q=0, i_qz=None, qz=0, i_qxy=0, qxy=0):
         """
         norm: np.ndarray, integrated signal
         ttheta: numpy array, two-theta angle
@@ -33,6 +33,10 @@ class int_1d_data_static:
         self.norm = norm
         self.ttheta = ttheta
         self.q = q
+        self.i_qz = i_qz
+        self.qz = qz
+        self.i_qxy = i_qxy
+        self.qxy = qxy
 
     def from_result(self, result, wavelength, unit=None):
         """Parses out result obtained by pyFAI AzimuthalIntegrator.
@@ -155,8 +159,8 @@ class int_2d_data_static(int_1d_data_static):
         self.i_QxyQz = i_QxyQz
         self.qz = qz
         self.qxy = qxy
-        self.q_from_tth = False
-        self.tth_from_q = False
+        self.q_from_tth = True
+        self.tth_from_q = True
 
     def from_result(self, result, wavelength, unit=None,
                     i_QxyQz=0, qz=0, qxy=0):
@@ -198,7 +202,7 @@ class int_2d_data_static(int_1d_data_static):
             self.i_tthChi = result.intensity
             self.ttheta = tth = result.radial
             self.tth_from_q = False
-            if isinstance(self.i_qChi, int) or self.q_from_tth:
+            if self.q_from_tth:
                 tth_range = np.asarray([tth[0], tth[-1]])
                 q_range = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth_range / 2))
                 qtth = (4 * np.pi / (wavelength * 1e10)) * np.sin(np.radians(tth / 2))
@@ -206,13 +210,12 @@ class int_2d_data_static(int_1d_data_static):
 
                 spline = RectBivariateSpline(chi, qtth, result.intensity)
                 self.i_qChi = spline(chi, q)
-                self.q_from_tth = True
 
         elif unit == units.Q_A or str(unit) == 'q_A^-1':
             self.i_qChi = result.intensity
             self.q = q = result.radial
             self.q_from_tth = False
-            if isinstance(self.i_tthChi, int) or self.tth_from_q:
+            if self.tth_from_q:
                 q_range = np.array([q[0], q[-1]])
                 tth_range = 2 * np.degrees(np.arcsin(q_range * (wavelength * 1e10) / (4 * np.pi)))
                 tthq = 2 * np.degrees(np.arcsin(q * (wavelength * 1e10) / (4 * np.pi)))
@@ -220,7 +223,6 @@ class int_2d_data_static(int_1d_data_static):
 
                 spline = RectBivariateSpline(chi, tthq, result.intensity)
                 self.i_tthChi = spline(chi, tth)
-                self.tth_from_q = True
 
         # TODO: implement other unit options for unit
 

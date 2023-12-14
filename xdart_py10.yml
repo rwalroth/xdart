@@ -1,9 +1,9 @@
-name: xdart_env_pygix
+name: xdart_py10
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - python[version='>=3.9']
+  - python[version='>=3.10']
   - h5py[version='>=2.10']
   - scikit-learn
   - silx
@@ -23,3 +23,11 @@ dependencies:
   - pygix
   - pyopencl
   - icecream
+  - nb_conda_kernels
+  - nodejs
+  - xlrd
+  - openpyxl
+  - ipympl
+  - ipywidgets
+  - numpy
+ 

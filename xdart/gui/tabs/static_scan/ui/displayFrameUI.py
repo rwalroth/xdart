@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'displayFrameUI.ui'
 #
-# Created by: PyQt5 UI code generator 5.15.4
+# Created by: PyQt5 UI code generator 5.15.6
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1440, 842)
+        Form.resize(1440, 814)
         self.layout = QtWidgets.QHBoxLayout(Form)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
@@ -28,7 +28,12 @@ class Ui_Form(object):
         self.splitter.setHandleWidth(2)
         self.splitter.setObjectName("splitter")
         self.imageWindow = QtWidgets.QFrame(self.splitter)
-        self.imageWindow.setMinimumSize(QtCore.QSize(0, 440))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.imageWindow.sizePolicy().hasHeightForWidth())
+        self.imageWindow.setSizePolicy(sizePolicy)
+        self.imageWindow.setMinimumSize(QtCore.QSize(0, 400))
         self.imageWindow.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.imageWindow.setFrameShadow(QtWidgets.QFrame.Raised)
         self.imageWindow.setLineWidth(3)
@@ -93,6 +98,7 @@ class Ui_Form(object):
         self.horizontalLayout_6.setSpacing(0)
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
         self.labelCurrent = QtWidgets.QLabel(self.frame_5)
+        self.labelCurrent.setMaximumSize(QtCore.QSize(600, 16777215))
         font = QtGui.QFont()
         font.setPointSize(15)
         self.labelCurrent.setFont(font)
@@ -120,6 +126,7 @@ class Ui_Form(object):
         self.scale.setMaximumSize(QtCore.QSize(80, 16777215))
         self.scale.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.scale.setObjectName("scale")
+        self.scale.addItem("")
         self.scale.addItem("")
         self.scale.addItem("")
         self.scale.addItem("")
@@ -208,6 +215,11 @@ class Ui_Form(object):
         self.horizontalLayout_2.addWidget(self.save_2D)
         self.verticalLayout_3.addWidget(self.imageToolbar)
         self.plotWindow = QtWidgets.QFrame(self.splitter)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.plotWindow.sizePolicy().hasHeightForWidth())
+        self.plotWindow.setSizePolicy(sizePolicy)
         self.plotWindow.setMinimumSize(QtCore.QSize(0, 400))
         self.plotWindow.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.plotWindow.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -369,7 +381,8 @@ class Ui_Form(object):
         self.labelCurrent.setText(_translate("Form", "Current"))
         self.scale.setItemText(0, _translate("Form", "Linear"))
         self.scale.setItemText(1, _translate("Form", "Log"))
-        self.scale.setItemText(2, _translate("Form", "Sqrt"))
+        self.scale.setItemText(2, _translate("Form", "Log-Log"))
+        self.scale.setItemText(3, _translate("Form", "Sqrt"))
         self.cmap.setItemText(0, _translate("Form", "Default"))
         self.cmap.setItemText(1, _translate("Form", "viridis"))
         self.cmap.setItemText(2, _translate("Form", "grey"))

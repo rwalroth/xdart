@@ -31,7 +31,7 @@ from ....gui_utils import NamedActionParameter
 from ....widgets import commandLine
 from xdart.modules.pySSRL_bServer.watcher import Watcher
 from xdart.modules.pySSRL_bServer.bServer_funcs import specCommand
-from xdart.utils import get_from_pdi
+from xdart.utils import get_meta_from_pdi
 
 from .spec_wrangler import DETECTOR_DICT, MaskWidget
 
@@ -48,7 +48,7 @@ params = [
     NamedActionParameter(name='out_dir_browse', title= 'Browse...'),
     {'name': 'Rotation Motors', 'type': 'group', 'children': [
         {'name': 'Rot1', 'type': 'str', 'default': ''},
-        {'name': 'Rot2', 'type': 'str', 'default': ''},
+        {'name': 'Rot2', 'type': 'str', 'default': 'tth', 'value': 'tth'},
         {'name': 'Rot3', 'type': 'str', 'default': ''}
     ]},
     {'name': 'Calibration Angles', 'type': 'group', 'children': [
@@ -207,7 +207,11 @@ class liveSpecWrangler(wranglerWidget):
         self.thread.set_queues() 
         self.thread.pollingperiod = self.parameters.child('Polling Period').value()
         self.thread.mask = self.mask
-    
+
+        if self.parameters.child('Rotation Motors').child('Rot2').value() == '':
+            self.parameters.child('Rotation Motors').child('Rot2').setValue('tth')
+
+
     def send_command(self):
         """Sends command in command line to spec, and calls
         commandLine send_command method to add command to list of
@@ -247,7 +251,10 @@ class liveSpecWrangler(wranglerWidget):
     def set_poni_file(self):
         """Opens file dialogue and sets the calibration file
         """
-        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        # fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName()
+        fname, _ = Qt.QtWidgets.QFileDialog().getOpenFileName(
+            filter="PONI (*.poni *.PONI)"
+        )
         if fname != '':
             self.parameters.child('Calibration PONI File').setValue(fname)
 
@@ -273,7 +280,7 @@ class liveSpecWrangler(wranglerWidget):
         mp_inputs = OrderedDict(
             rotations = {
                 "rot1": None,
-                "rot2": None,
+                "rot2": 'tth',
                 "rot3": None
             },
             calib_rotations = {
@@ -626,7 +633,7 @@ class liveSpecProcess(wranglerProcess):
         return scan_name, idx
     
     def read_pdi(self, pdi_file):
-        """Gets the metadata from the pdi file. Uses get_from_pdi, but
+        """Gets the metadata from the pdi file. Uses get_meta_from_pdi, but
         returns a single dictionary rather than two.
         
         args:
@@ -635,7 +642,7 @@ class liveSpecProcess(wranglerProcess):
         returns:
             image_meta: dict, dictionary with metadata
         """
-        counters, motors = get_from_pdi(pdi_file)
+        counters, motors = get_meta_from_pdi(pdi_file)
         image_meta = {}
         image_meta.update(counters)
         image_meta.update(motors)

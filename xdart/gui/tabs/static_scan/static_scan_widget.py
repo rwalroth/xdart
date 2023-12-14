@@ -11,6 +11,7 @@ import os
 from collections import OrderedDict
 import gc
 import imageio
+import pyFAI
 
 # Qt imports
 from pyqtgraph.Qt import QtWidgets, QtCore
@@ -23,7 +24,7 @@ from .display_frame_widget import displayFrameWidget
 from .integrator import integratorTree
 from .metadata import metadataWidget
 from .wranglers import specWrangler, wranglerWidget
-from xdart.utils._utils import FixSizeOrderedDict, get_fname_dir, read_image_file
+from xdart.utils._utils import FixSizeOrderedDict, get_fname_dir, get_img_data
 
 # from icecream import ic; ic.configureOutput(prefix='', includeContext=True)
 
@@ -31,6 +32,9 @@ QWidget = QtWidgets.QWidget
 QSizePolicy = QtWidgets.QSizePolicy
 QFileDialog = QtWidgets.QFileDialog
 QMessageBox = QtWidgets.QMessageBox
+QDialog = QtWidgets.QDialog
+QInputDialog = QtWidgets.QInputDialog
+QCombo = QtWidgets.QComboBox
 
 wranglers = {
     'SPEC': specWrangler
@@ -122,6 +126,10 @@ class staticWidget(QWidget):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
+        self.detector_dialog = QDialog()
+        self.detector_widget = QCombo()
+        self.detector = None
+
         # H5Viewer setup
         self.h5viewer = H5Viewer(self.file_lock, self.local_path, self.dirname,
                                  self.sphere, self.arch, self.arch_ids, self.arches,
@@ -153,9 +161,7 @@ class staticWidget(QWidget):
         self.h5viewer.actionSaveImage.triggered.connect(
             self.displayframe.save_image
         )
-        self.h5viewer.actionSaveArray.triggered.connect(
-            self.displayframe.save_array
-        )
+        self.h5viewer.actionSaveArray.triggered.connect(self.displayframe.save_1D)
 
         # IntegratorFrame setup
         self.integratorTree = integratorTree(
@@ -181,8 +187,8 @@ class staticWidget(QWidget):
         for name, w in wranglers.items():
             self.ui.wranglerStack.addWidget(
                 w(
-                    self.fname,
-                    self.file_lock,
+                    self.fname, self.file_lock,
+                    self.sphere, self.data_1d, self.data_2d,
                 )
             )
             self.ui.wranglerBox.addItem(name)
@@ -190,8 +196,8 @@ class staticWidget(QWidget):
         self.command_queue = Queue()
         self.set_wrangler(self.ui.wranglerStack.currentIndex())
 
-        self.integratorTree.get_args('bai_1d')
-        self.integratorTree.get_args('bai_2d')
+        # self.integratorTree.get_args('bai_1d')
+        # self.integratorTree.get_args('bai_2d')
 
         # Setup defaultWidget in h5viewer with parameters
         parameters = [self.integratorTree.parameters]
@@ -226,13 +232,13 @@ class staticWidget(QWidget):
         self.wrangler.sigStart.connect(self.start_wrangler)
         self.wrangler.sigUpdateData.connect(self.update_data)
         self.wrangler.sigUpdateFile.connect(self.new_scan)
-        self.wrangler.sigUpdateArch.connect(self.new_arch)
+        # self.wrangler.sigUpdateArch.connect(self.new_arch)
         self.wrangler.sigUpdateGI.connect(self.update_scattering_geometry)
         self.wrangler.started.connect(self.thread_state_changed)
         self.wrangler.finished.connect(self.wrangler_finished)
         self.wrangler.setup()
         self.h5viewer.sigNewFile.connect(self.wrangler.set_fname)
-        self.h5viewer.sigNewFile.connect(self.displayframe.set_image_units)
+        self.h5viewer.sigNewFile.connect(self.displayframe.set_axes)
         self.h5viewer.sigNewFile.connect(self.h5viewer.data_reset)
         # self.h5viewer.sigNewFile.connect(self.disable_displayframe_update)
 
@@ -432,7 +438,7 @@ class staticWidget(QWidget):
             self.ui.wranglerBox.setEnabled(True)
             self.wrangler.enabled(True)
 
-    def new_scan(self, name, fname, gi, th_mtr, single_img):
+    def new_scan(self, name, fname, gi, th_mtr, single_img, series_average):
         """Connected to sigUpdateFile from wrangler. Called when a new
         scan is started.
 
@@ -447,6 +453,10 @@ class staticWidget(QWidget):
         self.sphere.gi = gi
         self.sphere.th_mtr = th_mtr
         self.sphere.single_img = single_img
+        self.sphere.series_average = series_average
+
+        self.integratorTree.get_args('bai_1d')
+        self.integratorTree.get_args('bai_2d')
 
         # Clear data objects
         self.data_1d.clear()
@@ -454,7 +464,7 @@ class staticWidget(QWidget):
         self.arches.clear()
         self.arch_ids.clear()
 
-        self.displayframe.set_image_units()
+        self.displayframe.set_axes()
         # self.displayframe.auto_last = True
 
         self.h5viewer.scan_name = name
@@ -498,6 +508,10 @@ class staticWidget(QWidget):
 
         self.ui.wranglerBox.setEnabled(False)
         self.wrangler.enabled(False)
+
+        self.integratorTree.get_args('bai_1d')
+        self.integratorTree.get_args('bai_2d')
+
         args = {'bai_1d_args': self.sphere.bai_1d_args,
                 'bai_2d_args': self.sphere.bai_2d_args}
         self.wrangler.sphere_args = copy.deepcopy(args)
@@ -512,6 +526,7 @@ class staticWidget(QWidget):
         """
         # ic()
         self.thread_state_changed()
+        self.wrangler.stop()
         if self.sphere.name == self.wrangler.scan_name:
             self.integrator_thread_finished()
         else:
@@ -551,8 +566,50 @@ class staticWidget(QWidget):
         # if len(self.data_2d) <= 1:
         #     self.h5viewer.ui.listData.setCurrentRow(self.h5viewer.ui.listData.count() - 1)
 
-    @staticmethod
-    def raw_to_tiff():
+    def raw_to_tiff(self):
+        self.popup_detector_options()
+
+    def popup_detector_options(self):
+        """
+        Popup Qt Window to select options for Waterfall Plot
+        Options include Y-axis unit and number of points to skip
+        """
+        if self.detector_dialog.layout() is None:
+            self.setup_detector_options_widget()
+
+        self.detector_dialog.show()
+
+    def setup_detector_options_widget(self):
+        """
+        Setup y-axis option for Waterfall plot
+        Setup first image and step size for wf and overlay plots
+        """
+        layout = QtWidgets.QGridLayout()
+        self.detector_dialog.setLayout(layout)
+
+        self.detector_widget = QCombo()
+        accept_button = QtWidgets.QPushButton('Okay')
+        cancel_button = QtWidgets.QPushButton('Cancel')
+
+        layout.addWidget(QtWidgets.QLabel('Choose Detector'), 0, 0)
+        layout.addWidget(self.detector_widget, 1, 0)
+        layout.addWidget(accept_button, 2, 1)
+        layout.addWidget(cancel_button, 2, 2)
+
+        detectors = ['Pilatus 1M', 'Pilatus 100k', 'Pilatus 300kw']
+        self.detector_widget.addItems(detectors)
+
+        accept_button.clicked.connect(self.set_detector)
+        cancel_button.clicked.connect(self.close_detector_popup)
+
+    def close_detector_popup(self):
+        self.detector_dialog.close()
+
+    def set_detector(self):
+        detector_name = self.detector_widget.currentText()
+        self.detector = pyFAI.detector_factory(name=detector_name)
+        self.detector_dialog.close()
+
         rawFile, _ = QFileDialog().getOpenFileName(
             filter='RAW (*.raw)',
             caption='Choose Raw File',
@@ -560,10 +617,13 @@ class staticWidget(QWidget):
         )
 
         if os.path.isfile(rawFile):
-            img = read_image_file(rawFile, return_float=False)
-            tifFile = os.path.splitext(rawFile)[0] + '.tif'
-            imageio.imwrite(tifFile, img)
-            message = f'{os.path.basename(tifFile)} saved'
+            img = get_img_data(rawFile, self.detector, return_float=False)
+            if img is not None:
+                tifFile = os.path.splitext(rawFile)[0] + '.tif'
+                imageio.imwrite(tifFile, img)
+                message = f'{os.path.basename(tifFile)} saved'
+            else:
+                message = 'File does not match detector..'
         else:
             message = 'Invalid Raw File'
 
