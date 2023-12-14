@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/rwalroth/xdart.git"
 repository = "https://github.com/rwalroth/xdart.git"
-documentation = ""
+documentation = "https://github.com/rwalroth/xdart/blob/master/xdart_manual.pdf"
 keywords = ["xrd", "diffracion", "pyFAI"]
 
 [tool.poetry.dependencies]
